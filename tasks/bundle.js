@@ -1,24 +1,24 @@
 'use strict';
 
 var browserify = require('browserify'),
-    derequire = require('browserify-derequire'),
-    UglifyJS = require('uglify-js'),
-    collapse = require('bundle-collapser/plugin'),
-    concat = require('source-map-concat'),
-    fs = require('fs'),
-    path = require('path');
-
+  derequire = require('browserify-derequire'),
+  sassify = require('sassify'),
+  UglifyJS = require('uglify-js'),
+  collapse = require('bundle-collapser/plugin'),
+  concat = require('source-map-concat'),
+  fs = require('fs'),
+  path = require('path');
 
 var BANNER = fs.readFileSync(__dirname + '/banner.txt', 'utf8'),
-    BANNER_MIN = fs.readFileSync(__dirname + '/banner-min.txt', 'utf8');
-
-var SOURCE_MAP_HEADER = '//# sourceMappingURL=data:application/json;charset=utf-8;base64,';
+  BANNER_MIN = fs.readFileSync(__dirname + '/banner-min.txt', 'utf8');
 
 
 function extractSourceMap(content) {
 
+  var SOURCE_MAP_HEADER = '//# sourceMappingURL=data:application/json;charset=utf-8;base64,';
+
   var idx = content.indexOf(SOURCE_MAP_HEADER),
-      map, code;
+    map, code;
 
   if (idx !== -1) {
     code = content.substring(0, idx);
@@ -41,7 +41,7 @@ function extractSourceMap(content) {
       map: JSON.parse(map)
     };
   } else {
-    throw new Error('no attached source map');
+    throw new Error('no attached source map'+idx);
   }
 }
 
@@ -79,25 +79,26 @@ module.exports = function(grunt) {
   grunt.registerMultiTask('bundle', function(target) {
 
     var data = this.data,
-        variant = data.name,
-        dest = data.dest,
-        src = path.resolve(data.src);
+      variant = data.name,
+      standaloneName = data.modName,
+      dest = data.dest,
+      src = path.resolve(data.src);
 
     grunt.config.set('config.variant', variant);
 
     var done = this.async();
 
     var browserifyOptions = {
-      standalone: 'BpmnJS',
+      standalone: standaloneName,
       debug: true,
       builtins: false,
       insertGlobalVars: {
-        // process: function () {
-        //     return 'undefined';
-        // },
-        // Buffer: function () {
-        //     return 'undefined';
-        // }
+        process: function () {
+          return 'undefined';
+        },
+        Buffer: function () {
+          return 'undefined';
+        }
       }
     };
 
@@ -106,17 +107,20 @@ module.exports = function(grunt) {
     var targetFileBase = path.join(dest, variant);
 
     var banner = grunt.template.process(BANNER, grunt.config.get()),
-        bannerMin = grunt.template.process(BANNER_MIN, grunt.config.get());
+      bannerMin = grunt.template.process(BANNER_MIN, grunt.config.get());
 
     browserify(browserifyOptions)
       .plugin(derequire)
       .plugin(collapse)
+      .transform(sassify)
       .add(src)
       .bundle(function(err, result) {
 
         timer.done('bundled');
 
         if (err) {
+          console.log(err);
+          console.log(src);
           return done(err);
         }
 
@@ -138,9 +142,10 @@ module.exports = function(grunt) {
 
         try {
           bannerBundled = concat([ bundled ])
-                            .prepend(banner + '\n')
-                            .add('//# sourceMappingURL=' + variant + '.js.map')
-                            .toStringWithSourceMap();
+            .prepend(banner + '\n')
+            .add('//# sourceMappingURL=' + variant + '.js.map')
+            .toStringWithSourceMap();
+
         } catch (e) {
           console.error(e.stack);
           throw e;

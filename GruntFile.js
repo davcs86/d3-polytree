@@ -12,7 +12,7 @@ module.exports = function(grunt) {
 
     config: {
       sources: 'lib',
-      dist: 'dist'
+      dist: 'dist/lib'
     },
 
     jshint: {
@@ -26,6 +26,7 @@ module.exports = function(grunt) {
 
     bundle: {
       d3sn: {
+        modName: 'D3SN',
         name: 'd3-simple-networks',
         src: '<%= config.sources %>/SimpleNetwork.js',
         dest: '<%= config.dist %>'
