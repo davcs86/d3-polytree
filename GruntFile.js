@@ -12,7 +12,7 @@ module.exports = function(grunt) {
 
     config: {
       sources: 'lib',
-      dist: 'dist/lib'
+      dist: 'dist'
     },
 
     jshint: {
