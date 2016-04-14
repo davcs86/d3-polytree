@@ -10,4 +10,6 @@ node_modules
 .npm
 
 # dist folder
-dist
+!dist/d3-simple-networks.js.map
+!dist/d3-simple-networks.js
+dist/*

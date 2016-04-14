@@ -1,0 +1,24 @@
+{
+  "name": "d3-simple-networks",
+  "description": "Simple directed networks with D3.js",
+  "main": "dist/d3-simple-networks.min.js",
+  "authors": [
+    "David Castillo"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "d3",
+    "node",
+    "network"
+  ],
+  "homepage": "https://github.com/davcs86/d3-simple-networks",
+  "moduleType": [],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
