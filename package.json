@@ -20,5 +20,9 @@
   "bugs": {
     "url": "https://github.com/davcs86/d3-simple-networks/issues"
   },
-  "homepage": "https://github.com/davcs86/d3-simple-networks#readme"
+  "homepage": "https://github.com/davcs86/d3-simple-networks#readme",
+  "dependencies": {
+    "d3": "^3.5.16",
+    "lodash": "^4.11.1"
+  }
 }
