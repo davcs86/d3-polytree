@@ -26,7 +26,7 @@ module.exports = function(grunt) {
 
     bundle: {
       d3sn: {
-        modName: 'D3SN',
+        modName: 'D3SimpleNetwork',
         name: 'd3-simple-networks',
         src: '<%= config.sources %>/SimpleNetwork.js',
         dest: '<%= config.dist %>'

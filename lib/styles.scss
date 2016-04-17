@@ -1,0 +1,17 @@
+.d3sn-container {
+  .node-circle {
+    fill: #ccc;
+    stroke: #fff;
+    stroke-width: 2px;
+  }
+
+  .link {
+    fill: none;
+    stroke: #666;
+    stroke-width: 1.5px;
+  }
+
+  text {
+    font-size: 8pt !important;
+  }
+}

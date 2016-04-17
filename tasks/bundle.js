@@ -112,7 +112,7 @@ module.exports = function(grunt) {
     browserify(browserifyOptions)
       .plugin(derequire)
       .plugin(collapse)
-      .transform(sassify)
+      .transform(sassify, {'auto-inject': true})
       .add(src)
       .bundle(function(err, result) {
 
