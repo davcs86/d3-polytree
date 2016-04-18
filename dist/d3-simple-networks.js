@@ -173,10 +173,15 @@ function SimpleNetwork(options) {
 
   /**
     * get the nodes
-    * Node: {
+    * nodes: {
+    *   nodeId: {
     *     adjacencyList: [],
     *     label: ''
-    *     iconType: 'box|process|field|exit'
+    *     iconType: 'default|field|storage|transfer|transport',
+    *     attachedData: {
+    *       Data1: [Col1Value, Col2Value]
+    *     }
+    *   }
     * }
     *
    **/
