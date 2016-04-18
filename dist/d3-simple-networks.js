@@ -8,7 +8,7 @@
  *
  * Source Code: https://github.com/davcs86/d3-simple-networks
  *
- * Date: 2016-04-17
+ * Date: 2016-04-18
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.D3SimpleNetwork = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
@@ -177,8 +177,6 @@ function SimpleNetwork(options) {
     *     adjacencyList: [],
     *     label: ''
     *     iconType: 'box|process|field|exit'
-    *     onClick: function(node, evt){},
-    *     onHover: function(node, evt){}
     * }
     *
    **/
@@ -245,6 +243,7 @@ SimpleNetwork.prototype.calculateNodes = function() {
     forEach(levelNodeIds, function(nk, i){
       // create the nodes
       nodes.push({
+        nodeId: nk,
         x: (levelNum-levelIdx)*totalWidth/(levelNum+1),
         y: (i+1)*totalHeight/(levelNodeIds.length+1),
         label: level[nk].label,
@@ -271,28 +270,35 @@ SimpleNetwork.prototype.calculateNodes = function() {
   });
   this._nodes = nodes;
   this._links = links;
-  console.log(this._nodes);
-  console.log(this._links);
+};
+
+SimpleNetwork.prototype.setAttachedData= function() {
+  var that = this;
+  forIn(this._nodes, function(node){
+    node.attachedData = that.nodes[node.nodeId].attachedData || {};
+  });
 };
 
 SimpleNetwork.prototype.defineIcons = function(){
-  // build the arrow.
+  // create the icons definitions
   var that = this;
   forIn(ICONS, function(icon, iconKey){
     var iconObj = that.SVG.select("defs").append("g")
       .attr("id", 'icon_'+iconKey);
     icon.fn.call(this, iconObj);
   });
-
 };
 
-SimpleNetwork.prototype.restart = function(reprocess){
+SimpleNetwork.prototype.restart = function(recalculate){
   var that = this;
-  if (reprocess) {
+  if (recalculate) {
     this.calculateLevels();
     // create the nodes (with their coordinates)
     this.calculateNodes();
   }
+  // set node's attached data
+  this.setAttachedData();
+
   // set the force
   this.force = d3js.layout.force()
     .size([this.SVG.style('width').replace('px',''), this.SVG.style('height').replace('px','')])
@@ -317,10 +323,10 @@ SimpleNetwork.prototype.restart = function(reprocess){
     .append("svg:path")
     .attr("d", "M0,-5L10,0L0,5");
 
-  // define the icon
+  // define the icons
   this.defineIcons();
 
-  // create the links
+  // create the links paths and marker
   this.link = this.SVG.append("svg:g").selectAll("path")
     .data(this.force.links())
     .enter().append("svg:path")
@@ -357,9 +363,35 @@ SimpleNetwork.prototype.restart = function(reprocess){
       return d.label;
     });
 
-
+  // append the attached data table
+  this.node.append('foreignObject')
+    .attr({
+      'x': 8,
+      'y': 42,
+      'width': 120
+    }).append('xhtml:div')
+    .html(function (d) {
+      var attachedData = d.attachedData || {},
+          table = '<table class="table table-striped table-condensed table-bordered">';
+      table += '<thead><tr>';
+      forEach(that.options.tableHeaders, function(v){
+        table += '<th>'+v+'</th>';
+      });
+      table += '</tr></thead>';
+      table += '<tbody>';
+      forIn(attachedData, function(v,k){
+        table += '<tr><td>'+k+':</td>';
+          forEach(v, function (vv){
+            table += '<td class="text-right">'+vv+'</td>';
+          });
+        table += '</tr>';
+      });
+      table += '</tbody>';
+      return table+'</table>';
+    });
 
   this.force.on('tick', function() {
+    // fix elements positions
     that.node
       .attr("transform", function(d) {
         return "translate(" + d.x + "," + d.y + ")"; });
@@ -394,7 +426,7 @@ SimpleNetwork.prototype.restart = function(reprocess){
 };
 
 SimpleNetwork.prototype.init = function(recalculate){
-  // init d3
+  // init d3 svg
   this.initSVG();
   // process the nodes
   recalculate = !!recalculate;
@@ -404,7 +436,7 @@ SimpleNetwork.prototype.init = function(recalculate){
 module.exports = SimpleNetwork;
 
 },{"184":184,"2":2,"266":266,"276":276,"312":312,"313":313,"5":5}],2:[function(_dereq_,module,exports){
-module.exports = _dereq_(314).byUrl('data:text/css;base64,LmQzc24tY29udGFpbmVyIC5ub2RlLWNpcmNsZSB7CiAgZmlsbDogI2NjYzsKICBzdHJva2U6ICNmZmY7CiAgc3Ryb2tlLXdpZHRoOiAycHg7IH0KCi5kM3NuLWNvbnRhaW5lciAubGluayB7CiAgZmlsbDogbm9uZTsKICBzdHJva2U6ICM2NjY7CiAgc3Ryb2tlLXdpZHRoOiAxLjVweDsgfQoKLmQzc24tY29udGFpbmVyIHRleHQgewogIGZvbnQtc2l6ZTogOHB0ICFpbXBvcnRhbnQ7IH0KCi8qIyBzb3VyY2VNYXBwaW5nVVJMPWRhdGE6YXBwbGljYXRpb24vanNvbjtiYXNlNjQsZXdvSkluWmxjbk5wYjI0aU9pQXpMQW9KSW1acGJHVWlPaUFpYzNSNWJHVnpMbk5qYzNNaUxBb0pJbk52ZFhKalpYTWlPaUJiQ2drSkluTjBlV3hsY3k1elkzTnpJZ29KWFN3S0NTSnpiM1Z5WTJWelEyOXVkR1Z1ZENJNklGc0tDUWtpTG1RemMyNHRZMjl1ZEdGcGJtVnlJSHRjYmlBZ0xtNXZaR1V0WTJseVkyeGxJSHRjYmlBZ0lDQm1hV3hzT2lBalkyTmpPMXh1SUNBZ0lITjBjbTlyWlRvZ0kyWm1aanRjYmlBZ0lDQnpkSEp2YTJVdGQybGtkR2c2SURKd2VEdGNiaUFnZlZ4dVhHNGdJQzVzYVc1cklIdGNiaUFnSUNCbWFXeHNPaUJ1YjI1bE8xeHVJQ0FnSUhOMGNtOXJaVG9nSXpZMk5qdGNiaUFnSUNCemRISnZhMlV0ZDJsa2RHZzZJREV1TlhCNE8xeHVJQ0I5WEc1Y2JpQWdkR1Y0ZENCN1hHNGdJQ0FnWm05dWRDMXphWHBsT2lBNGNIUWdJV2x0Y0c5eWRHRnVkRHRjYmlBZ2ZWeHVmVnh1SWdvSlhTd0tDU0p0WVhCd2FXNW5jeUk2SUNKQlFVRkJMR1ZCUVdVc1EwRkRZaXhaUVVGWkxFTkJRVU03UlVGRFdDeEpRVUZKTEVWQlFVVXNTVUZCU3p0RlFVTllMRTFCUVUwc1JVRkJSU3hKUVVGTE8wVkJRMklzV1VGQldTeEZRVUZGTEVkQlFVa3NSMEZEYmtJN08wRkJURWdzWlVGQlpTeERRVTlpTEV0QlFVc3NRMEZCUXp0RlFVTktMRWxCUVVrc1JVRkJSU3hKUVVGTE8wVkJRMWdzVFVGQlRTeEZRVUZGTEVsQlFVczdSVUZEWWl4WlFVRlpMRVZCUVVVc1MwRkJUU3hIUVVOeVFqczdRVUZZU0N4bFFVRmxMRU5CWVdJc1NVRkJTU3hEUVVGRE8wVkJRMGdzVTBGQlV5eEZRVUZGTEdOQlFXVXNSMEZETTBJaUxBb0pJbTVoYldWeklqb2dXMTBLZlE9PSAqLw==');;
+module.exports = _dereq_(314).byUrl('data:text/css;base64,LmQzc24tY29udGFpbmVyIC5ub2RlLWNpcmNsZSB7CiAgZmlsbDogI2NjYzsKICBzdHJva2U6ICNmZmY7CiAgc3Ryb2tlLXdpZHRoOiAycHg7IH0KCi5kM3NuLWNvbnRhaW5lciAubGluayB7CiAgZmlsbDogbm9uZTsKICBzdHJva2U6ICM2NjY7CiAgc3Ryb2tlLXdpZHRoOiAxLjVweDsgfQoKLmQzc24tY29udGFpbmVyID4gKiB7CiAgZm9udC1zaXplOiA4cHQgIWltcG9ydGFudDsgfQoKLmQzc24tY29udGFpbmVyIC50YWJsZS1jb25kZW5zZWQgPiB0aGVhZCA+IHRyID4gdGgsIC5kM3NuLWNvbnRhaW5lciAudGFibGUtY29uZGVuc2VkID4gdGJvZHkgPiB0ciA+IHRkIHsKICBwYWRkaW5nOiAycHggM3B4ICFpbXBvcnRhbnQ7IH0KCi8qIyBzb3VyY2VNYXBwaW5nVVJMPWRhdGE6YXBwbGljYXRpb24vanNvbjtiYXNlNjQsZXdvSkluWmxjbk5wYjI0aU9pQXpMQW9KSW1acGJHVWlPaUFpYzNSNWJHVnpMbk5qYzNNaUxBb0pJbk52ZFhKalpYTWlPaUJiQ2drSkluTjBlV3hsY3k1elkzTnpJZ29KWFN3S0NTSnpiM1Z5WTJWelEyOXVkR1Z1ZENJNklGc0tDUWtpTG1RemMyNHRZMjl1ZEdGcGJtVnlJSHRjYmlBZ0xtNXZaR1V0WTJseVkyeGxJSHRjYmlBZ0lDQm1hV3hzT2lBalkyTmpPMXh1SUNBZ0lITjBjbTlyWlRvZ0kyWm1aanRjYmlBZ0lDQnpkSEp2YTJVdGQybGtkR2c2SURKd2VEdGNiaUFnZlZ4dVhHNGdJQzVzYVc1cklIdGNiaUFnSUNCbWFXeHNPaUJ1YjI1bE8xeHVJQ0FnSUhOMGNtOXJaVG9nSXpZMk5qdGNiaUFnSUNCemRISnZhMlV0ZDJsa2RHZzZJREV1TlhCNE8xeHVJQ0I5WEc1Y2JpQWdKaUErSUNvZ2UxeHVJQ0FnSUdadmJuUXRjMmw2WlRvZ09IQjBJQ0ZwYlhCdmNuUmhiblE3WEc0Z0lIMWNibHh1SUNBdWRHRmliR1V0WTI5dVpHVnVjMlZrSUQ0Z2RHaGxZV1FnUGlCMGNpQStJSFJvTENBdWRHRmliR1V0WTI5dVpHVnVjMlZrSUQ0Z2RHSnZaSGtnUGlCMGNpQStJSFJrSUh0Y2JpQWdJQ0J3WVdSa2FXNW5PaUF5Y0hnZ00zQjRJQ0ZwYlhCdmNuUmhiblE3WEc0Z0lIMWNibjFjYmlJS0NWMHNDZ2tpYldGd2NHbHVaM01pT2lBaVFVRkJRU3hsUVVGbExFTkJRMklzV1VGQldTeERRVUZETzBWQlExZ3NTVUZCU1N4RlFVRkZMRWxCUVVzN1JVRkRXQ3hOUVVGTkxFVkJRVVVzU1VGQlN6dEZRVU5pTEZsQlFWa3NSVUZCUlN4SFFVRkpMRWRCUTI1Q096dEJRVXhJTEdWQlFXVXNRMEZQWWl4TFFVRkxMRU5CUVVNN1JVRkRTaXhKUVVGSkxFVkJRVVVzU1VGQlN6dEZRVU5ZTEUxQlFVMHNSVUZCUlN4SlFVRkxPMFZCUTJJc1dVRkJXU3hGUVVGRkxFdEJRVTBzUjBGRGNrSTdPMEZCV0Vnc1pVRkJaU3hIUVdGVUxFTkJRVU1zUTBGQlF6dEZRVU5LTEZOQlFWTXNSVUZCUlN4alFVRmxMRWRCUXpOQ096dEJRV1pJTEdWQlFXVXNRMEZwUW1Jc1owSkJRV2RDTEVkQlFVY3NTMEZCU3l4SFFVRkhMRVZCUVVVc1IwRkJSeXhGUVVGRkxFVkJha0p3UXl4bFFVRmxMRU5CYVVKMVFpeG5Ra0ZCWjBJc1IwRkJSeXhMUVVGTExFZEJRVWNzUlVGQlJTeEhRVUZITEVWQlFVVXNRMEZCUXp0RlFVTnlSU3hQUVVGUExFVkJRVVVzYTBKQlFXMUNMRWRCUXpkQ0lpd0tDU0p1WVcxbGN5STZJRnRkQ24wPSAqLw==');;
 },{"314":314}],3:[function(_dereq_,module,exports){
 function one(selector, el) {
   return el.querySelector(selector);
