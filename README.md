@@ -2,7 +2,7 @@
 
 Simple directed node networks with D3js
 
-Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/bffszf0d/1/)
+Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/bffszf0d/2/)
 
 ## Install
 
@@ -88,8 +88,8 @@ var network = new D3SimpleNetwork({
             "label": "Node-A refinery + Node-B",
             "iconType": "storage",
             "attachedData": {
-                "Qg": ["2.6", "2.7"],
-                "Qo": ["245", "250"]
+                "Qg": ["n/a", "2.7"],
+                "Qo": ["n/a", "250"]
             }
         },
         "NODE_C": {
