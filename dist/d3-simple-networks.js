@@ -38,7 +38,7 @@ var DEFAULT_OPTIONS = {
   scale: '1',
   nodes: {},
   draggable: true,
-  bgColor: "green"
+  bgColor: 'white'
 };
 
 var ICONS = {
@@ -109,15 +109,15 @@ var ICONS = {
             '3V276.374L357.962,276.374z');
       icon
         .append('rect')
-          .attr('x', "404.7")
-          .attr('y', "260.52")
-          .attr('width', "25.3")
-          .attr('height', "133.099");
+          .attr('x', '404.7')
+          .attr('y', '260.52')
+          .attr('width', '25.3')
+          .attr('height', '133.099');
       icon
         .append('rect')
-          .attr('y', "260.52")
-          .attr('width', "25.3")
-          .attr('height', "133.099");
+          .attr('y', '260.52')
+          .attr('width', '25.3')
+          .attr('height', '133.099');
     }
   },
   'transport': {
@@ -193,9 +193,7 @@ SimpleNetwork.prototype.initSVG = function(){
     if (!that.mousedown_node) {
       var trans = d3js.event.translate;
       var scale = d3js.event.scale;
-      that.SVG.attr("transform",
-        "translate(" + trans + ")"
-        + " scale(" + scale + ")");
+      that.SVG.attr('transform', 'translate(' + trans + ') scale(' + scale + ')');
     }
   };
   this.origSVG = d3js.select(this.container)
@@ -214,7 +212,7 @@ SimpleNetwork.prototype.initSVG = function(){
     .on('zoom', this.rescale);
 
   this.SVG = this.origSVG
-    .append("g")
+    .append('g')
     .call(zoom)
     .on('dblclick.zoom', null)
     .append('g');
@@ -235,7 +233,7 @@ SimpleNetwork.prototype.initSVG = function(){
 };
 
 SimpleNetwork.prototype.destroy = function(){
-  d3js.select(this.container).select("svg.d3sn-container").remove();
+  d3js.select(this.container).select('svg.d3sn-container').remove();
 };
 
 SimpleNetwork.prototype.calculateLevels = function() {
@@ -338,8 +336,8 @@ SimpleNetwork.prototype.defineIcons = function(){
   // create the icons definitions
   var that = this;
   forIn(ICONS, function(icon, iconKey){
-    var iconObj = that.SVG.select("defs").append("g")
-      .attr("id", 'icon_'+iconKey);
+    var iconObj = that.SVG.select('defs').append('g')
+      .attr('id', 'icon_'+iconKey);
     icon.fn.call(this, iconObj);
   });
 };
@@ -350,13 +348,13 @@ SimpleNetwork.prototype.restart = function(recalculate){
   var tick = function() {
     // fix elements positions
     that.node
-      .attr("transform", function(d) {
+      .attr('transform', function(d) {
         that.nodes[d.nodeId].position = {x: d.x, y: d.y};
-        return "translate(" + d.x + "," + d.y + ")";
+        return 'translate(' + d.x + ',' + d.y + ')';
       });
 
     that.labels
-      .attr("dx", function(){
+      .attr('dx', function(){
         return '-'+(this.getBBox().width/2);
       });
 
@@ -365,11 +363,11 @@ SimpleNetwork.prototype.restart = function(recalculate){
       .attr('x2', function(d) { return d.target.x; })
       .attr('y2', function(d) { return d.target.y; })
       .attr('d', function(d) {
-
+        var linePath = '';
         if (d.source.x>d.target.x){
-          var linePath = "M " + (d.source.x - 27) + "," + d.source.y;
+          linePath = 'M ' + (d.source.x - 27) + ',' + d.source.y;
         } else {
-          var linePath = "M " + (d.source.x + 27) + "," + d.source.y;
+          linePath = 'M ' + (d.source.x + 27) + ',' + d.source.y;
         }
         if (d.target.y == d.source.y){
           // straight line
@@ -414,66 +412,74 @@ SimpleNetwork.prototype.restart = function(recalculate){
     .links(this._links);
 
   // build the arrow.
-  this.SVG.append("svg:defs").selectAll("marker")
-    .data(["end"])      // Different link/path types can be defined here
-    .enter().append("svg:marker")    // This section adds in the arrows
-    .attr("id", String)
-    .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 10)
-    .attr("refY", 0)
-    .attr("markerWidth", 6)
-    .attr("markerHeight", 6)
-    .attr("orient", "auto")
-    .append("svg:path")
-    .attr("d", "M0,-5L10,0L0,5");
+  this.SVG
+    .append('defs')
+      .selectAll('marker')
+      .data(['end'])      // Different link/path types can be defined here
+      .enter()
+    .append('svg:marker')    // This section adds in the arrows
+      .attr('id', String)
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 10)
+      .attr('refY', 0)
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('orient', 'auto')
+    .append('path')
+      .attr('d', 'M0,-5L10,0L0,5');
 
   // define the icons
   this.defineIcons();
 
   // create the links paths and marker
-  this.link = this.SVG.append("svg:g").selectAll("path")
-    .data(this.force.links())
-    .enter().append("svg:path")
-    .attr("class", "link")
-    .attr("marker-end", "url(#end)");
+  this.link = this.SVG
+    .append('g')
+      .selectAll('path')
+      .data(this.force.links())
+      .enter()
+    .append('path')
+      .attr('class', 'link')
+      .attr('marker-end', 'url(#end)');
 
   // create the nodes
-  this.node = this.SVG.selectAll('.node')
+  this.node = this.SVG
+    .selectAll('.node')
     .data(this.force.nodes())
-    .enter().append("g")
-    .attr('class', 'node')
-    .attr('node-id', function(d){
-      return d.nodeId;
-    });
+    .enter()
+    .append('g')
+      .attr('class', 'node')
+      .attr('node-id', function(d){
+        return d.nodeId;
+      });
 
   // add an empty rect to increase the dragging area
   this.node.append('rect')
-    .attr("width", 50)
-    .attr("height", 50)
-    .attr("x", -25)
-    .attr("y", -25)
-    .attr("fill", this.options.bgColor);
+    .attr('width', 50)
+    .attr('height', 50)
+    .attr('x', -25)
+    .attr('y', -25)
+    .attr('fill', this.options.bgColor);
 
   // append the icon to the nodes
-  this.node.append("svg")
-    .attr("width", 50)
-    .attr("height", 50)
-    .attr("x", -25)
-    .attr("y", -25)
-    .attr("viewBox", function(d) {
+  this.node.append('svg')
+    .attr('width', 50)
+    .attr('height', 50)
+    .attr('x', -25)
+    .attr('y', -25)
+    .attr('viewBox', function(d) {
       if (!isUndefined(ICONS[d.iconType])) return ICONS[d.iconType].viewPort;
       return ICONS['default'].viewPort;
     })
-    .attr("preserveAspectRatio", "xMaxYMax meet")
-    .append("use")
-    .attr("xlink:href", function(d) {
-      if (!isUndefined(ICONS[d.iconType])) return "#icon_"+d.iconType;
-      return "#icon_default";
-    });
+    .attr('preserveAspectRatio', 'xMaxYMax meet')
+    .append('use')
+      .attr('xlink:href', function(d) {
+        if (!isUndefined(ICONS[d.iconType])) return '#icon_'+d.iconType;
+        return '#icon_default';
+      });
 
   // append the label to the node
-  this.labels = this.node.append("text")
-    .attr("y", 37)
+  this.labels = this.node.append('text')
+    .attr('y', 37)
     .text(function(d) {
       return d.label;
     });
@@ -506,27 +512,27 @@ SimpleNetwork.prototype.restart = function(recalculate){
     });
 
   // set node click listener
-  this.node.on("click", this.onNodeClick);
+  this.node.on('click', this.onNodeClick);
 
   if (this.options.draggable) {
     var drag = d3js.behavior.drag()
       .origin(function(d) { return d; })
-      .on("dragstart", function (d) {
+      .on('dragstart', function (d) {
         d3js.event.sourceEvent.stopPropagation();
         that.force.stop();
         that.mousedown_node = d;
         if (that.mousedown_node == that.selected_node) that.selected_node = null;
         else that.selected_node = that.mousedown_node;
       })
-      .on("drag", function(d){
+      .on('drag', function(d){
         d.px += d3js.event.dx;
         d.py += d3js.event.dy;
         d.x += d3js.event.dx;
         d.y += d3js.event.dy;
         tick();
       })
-      .on("dragend", function () {
-        d3js.select(this).classed("mousemove", false);
+      .on('dragend', function () {
+        d3js.select(this).classed('mousemove', false);
         that.selected_node = null;
         that.mousedown_node = null;
         tick();
@@ -542,14 +548,11 @@ SimpleNetwork.prototype.restart = function(recalculate){
 
 SimpleNetwork.prototype.getNodesPosition = function(){
   var canvasTransform = d3js.transform(this.SVG.attr('transform'));
-  var canvasBBox = this.SVG[0][0].parentElement.getBBox();
-  var settings = {
+  return {
     translate: canvasTransform.translate,
     scale: canvasTransform.scale[0],
-    nodes: this.nodes,
-    canvasBox: canvasBBox
+    nodes: this.nodes
   };
-  return settings;
 };
 
 SimpleNetwork.prototype.init = function(recalculate){

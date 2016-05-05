@@ -5,6 +5,7 @@
   "unused": "vars",
   "maxlen": 120,
   "expr": true,
+  "quotmark": "single",
   "globals": {
     "describe": false,
     "it": false,
