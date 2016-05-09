@@ -8,7 +8,7 @@
  *
  * Source Code: https://github.com/davcs86/d3-simple-networks
  *
- * Date: 2016-05-05
+ * Date: 2016-05-09
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.D3SimpleNetwork = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
@@ -301,9 +301,17 @@ SimpleNetwork.prototype.calculateNodes = function() {
       // create the links
       if (that.nodes[nk].adjacencyList){
         forIn(that.nodes[nk].adjacencyList, function(v, nnk){
+          // search in the previous levels
+          var targetLevel = levelIdx-1;
+          for (var i = targetLevel; i >= 0; i--){
+            if (!isUndefined(that.levels[i][nnk])){
+              targetLevel = i;
+              break;
+            }
+          }
           links.push({
             source: nodeIdx,
-            target: that.levels[(levelIdx-1)][nnk].position
+            target: that.levels[targetLevel][nnk].position
           });
         });
       }
@@ -355,7 +363,13 @@ SimpleNetwork.prototype.restart = function(recalculate){
 
     that.labels
       .attr('dx', function(){
-        return '-'+(this.getBBox().width/2);
+        var offset;
+        try {
+          offset = (this.getBBox().width/2);
+        } catch(ex){
+          offset = 0;
+        }
+        return '-'+offset;
       });
 
     that.link.attr('x1', function(d) { return d.source.x; })
