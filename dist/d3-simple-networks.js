@@ -8,7 +8,7 @@
  *
  * Source Code: https://github.com/davcs86/d3-simple-networks
  *
- * Date: 2016-05-10
+ * Date: 2016-05-16
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.D3SimpleNetwork = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
@@ -109,15 +109,19 @@ var ICONS = {
             '3V276.374L357.962,276.374z');
       icon
         .append('rect')
-          .attr('x', '404.7')
-          .attr('y', '260.52')
-          .attr('width', '25.3')
-          .attr('height', '133.099');
+          .attr({
+            'x': '404.7',
+            'y': '260.52',
+            'width': '25.3',
+            'height': '133.099'
+          });
       icon
         .append('rect')
-          .attr('y', '260.52')
-          .attr('width', '25.3')
-          .attr('height', '133.099');
+          .attr({
+            'y': '260.52',
+            'width': '25.3',
+            'height': '133.099'
+          });
     }
   },
   'asignacion': {
@@ -125,57 +129,74 @@ var ICONS = {
     fn: function(icon){
       icon
         .append('path')
-        .attr('fill', '#C1272D')
-        .attr('d', 'M85.5 86.5H73.18l-3.01-16h5.33v-6h-6.083l-3.388-18h2.47v-5h-16v5h3.24l-3.386 18H45.5v6h6.1l-3.01 1'+
-          '6H35.5v17h50v-17zM58.477 47.222l2.65 4.94 2.648-4.94 1.75 10.27-4.4-5.015-4.4 5.016 1.752-10.27zM52.64 85.6'+
-          '15l2.504-14.688 3.938 7.342-6.443 7.345zm7.86-11.808l-4.9-8.905 5.29-6.8 5.385 6.584-5.775 8.906v.215zm2.87'+
-          '7 4.463l3.94-7.342 2.506 14.688-6.446-7.346z');
+        .attr({
+          'fill': '#C1272D',
+          'd': 'M85.5 86.5H73.18l-3.01-16h5.33v-6h-6.083l-3.388-18h2.47v-5h-16v5h3.24l-3.386 18H45.5v6h6.1l-3.01 16H35'+
+               '.5v17h50v-17zM58.477 47.222l2.65 4.94 2.648-4.94 1.75 10.27-4.4-5.015-4.4 5.016 1.752-10.27zM52.64 85.'+
+               '615l2.504-14.688 3.938 7.342-6.443 7.345zm7.86-11.808l-4.9-8.905 5.29-6.8 5.385 6.584-5.775 8.906v.215'+
+               'zm2.877 4.463l3.94-7.342 2.506 14.688-6.446-7.346z'
+        });
       icon
         .append('path')
-        .attr('fill', '#C1272D')
-        .attr('d', 'M12.5 93.5h94v10h-94z');
+        .attr({
+          'fill': '#C1272D',
+          'd': 'M12.5 93.5h94v10h-94z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-width', '3')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76'+
-          'z');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-width': '3',
+          'stroke-miterlimit': '10',
+          'd': 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76z'
+        });
       icon
         .append('circle')
-        .attr('fill', '#C1272D')
-        .attr('cx', '25.167')
-        .attr('cy', '21.499')
-        .attr('r', '6.5');
+        .attr({
+          'fill': '#C1272D',
+          'cx': '25.167',
+          'cy': '21.499',
+          'r': '6.5'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('d', 'M36.33 88.016l-.66 6.968');
+        .attr({
+          'fill': 'none',
+          'd': 'M36.33 88.016l-.66 6.968'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M25.166 70.5l7-29.333-7-19.667M48.833 30.833L32.167 44.167');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M25.166 70.5l7-29.333-7-19.667M48.833 30.833L32.167 44.167'
+        });
       icon
         .append('circle')
-        .attr('fill', '#E6A9AB')
-        .attr('cx', '48.833')
-        .attr('cy', '30.833')
-        .attr('r', '4.167');
+        .attr({
+          'fill': '#E6A9AB',
+          'cx': '48.833',
+          'cy': '30.833',
+          'r': '4.167'
+        });
       icon
         .append('circle')
-        .attr('fill', '#CD5257')
-        .attr('cx', '32.167')
-        .attr('cy', '44.167')
-        .attr('r', '8.167');
+        .attr({
+          'fill': '#CD5257',
+          'cx': '32.167',
+          'cy': '44.167',
+          'r': '8.167'
+        });
       icon
         .append('circle')
-        .attr('fill', '#CD5257')
-        .attr('cx', '25.5')
-        .attr('cy', '72.5')
-        .attr('r', '10.5');
+        .attr({
+          'fill': '#CD5257',
+          'cx': '25.5',
+          'cy': '72.5',
+          'r': '10.5'
+        });
     }
   },
   'baterias': {
@@ -183,94 +204,125 @@ var ICONS = {
     fn: function (icon) {
       icon
         .append('path')
-        .attr('fill', '#C1272D')
-        .attr('d', 'M95.5 43.5h6v57h-6zm-30.152.834v-.02.02z');
+        .attr({
+          'fill': '#C1272D',
+          'd': 'M95.5 43.5h6v57h-6zm-30.152.834v-.02.02z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#911D22')
-        .attr('stroke-width', '3')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M24.5 78h9.15C36.4 78 39 75.25 39 72.5v-22c0-2.75 1.9-4.5 4.65-4.5h36.932C83.332 46 86 47.75 86 50'+
-          '.5v33');
+        .attr({
+          'fill': 'none',
+          'stroke': '#911D22',
+          'stroke-width': '3',
+          'stroke-miterlimit': '10',
+          'd': 'M24.5 78h9.15C36.4 78 39 75.25 39 72.5v-22c0-2.75 1.9-4.5 4.65-4.5h36.932C83.332 46 86 47.75 86 50.5v33'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#911D22')
-        .attr('stroke-width', '3')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M39.5 54h27.906c1.65 0 2.594.85 2.594 2.5v12c0 1.65 1.756 3.5 3.406 3.5H84.5m-36 4h21.67c1.65 0 2' +
-          '.83.85 2.83 2.5v6c0 1.65 1.52 3.5 3.17 3.5h8.33');
+        .attr({
+          'fill': 'none',
+          'stroke': '#911D22',
+          'stroke-width': '3',
+          'stroke-miterlimit': '10',
+          'd': 'M39.5 54h27.906c1.65 0 2.594.85 2.594 2.5v12c0 1.65 1.756 3.5 3.406 3.5H84.5m-36 4h21.67c1.65 0 2.83.' +
+               '85 2.83 2.5v6c0 1.65 1.52 3.5 3.17 3.5h8.33'
+        });
       icon
         .append('path')
-        .attr('fill', '#C1272D')
-        .attr('d', 'M94.5 92.5c0 2.76-2.24 5-5 5h-7c-2.76 0-5-2.24-5-5v-23c0-2.76 2.24-5 5-5h7c2.76 0 5 2.24 5 5v23zM' +
-          '63.827 39c-1.78-4.137-5.345-7-9.73-7-4.382 0-8.437 2.863-10.22 7-.695 1.616-1.376 3.42-1.376 5.334V93.5h22' +
-          'V44.314c0-1.906.02-3.704-.67-5.314zM34.88 64.5c-.587-5-3.486-8-6.98-8h-2.366c-3.496 0-7.034 2.497-8.034 7.' +
-          '042V95.5h17v-31h.38zm70.755-15.764l-13.864.145 3.145 10.62h7.636');
+        .attr({
+          'fill': '#C1272D',
+          'd': 'M94.5 92.5c0 2.76-2.24 5-5 5h-7c-2.76 0-5-2.24-5-5v-23c0-2.76 2.24-5 5-5h7c2.76 0 5 2.24 5 5v23zM63.8' +
+               '27 39c-1.78-4.137-5.345-7-9.73-7-4.382 0-8.437 2.863-10.22 7-.695 1.616-1.376 3.42-1.376 5.334V93.5h2' +
+               '2V44.314c0-1.906.02-3.704-.67-5.314zM34.88 64.5c-.587-5-3.486-8-6.98-8h-2.366c-3.496 0-7.034 2.497-8.' +
+               '034 7.042V95.5h17v-31h.38zm70.755-15.764l-13.864.145 3.145 10.62h7.636'
+        })
+        .attr();
       var lg = icon
         .append('linearGradient')
-        .attr('id', 'a')
-        .attr('gradientUnits', 'userSpaceOnUse')
-        .attr('x1', '59')
-        .attr('y1', '94.166')
-        .attr('x2', '59')
-        .attr('y2', '103.902');
+        .attr({
+          'id': 'a',
+          'gradientUnits': 'userSpaceOnUse',
+          'x1': '59',
+          'y1': '94.166',
+          'x2': '59',
+          'y2': '103.902'
+        });
       lg
         .append('stop')
-        .attr('offset', '0')
-        .attr('stop-color', '#C1272D');
+        .attr({
+          'offset': '0',
+          'stop-color': '#C1272D'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.146')
-        .attr('stop-color', '#BD262C');
+        .attr({
+          'offset': '0.146',
+          'stop-color': '#BD262C'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.29')
-        .attr('stop-color', '#B12429');
+        .attr({
+          'offset': '0.29',
+          'stop-color': '#B12429'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.434')
-        .attr('stop-color', '#9D2025');
+        .attr({
+          'offset': '0.434',
+          'stop-color': '#9D2025'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.577')
-        .attr('stop-color', '#811A1E');
+        .attr({
+          'offset': '0.577',
+          'stop-color': '#811A1E'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.721')
-        .attr('stop-color', '#5D1316');
+        .attr({
+          'offset': '0.721',
+          'stop-color': '#5D1316'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.862')
-        .attr('stop-color', '#320A0C');
+        .attr({
+          'offset': '0.862',
+          'stop-color': '#320A0C'
+        });
       lg
         .append('stop')
         .attr('offset', '1');
       icon
         .append('path')
-        .attr('fill', 'url(#a)')
-        .attr('d', 'M11.5 93.5h95v10h-95z');
+        .attr({
+          'fill': 'url(#a)',
+          'd': 'M11.5 93.5h95v10h-95z'
+        });
       icon
         .append('path')
-        .attr('fill', '#DA7D81')
-        .attr('d', 'M11.5 93.5h95v3h-95z');
+        .attr({
+          'fill': '#DA7D81',
+          'd': 'M11.5 93.5h95v3h-95z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#911D22')
-        .attr('stroke-width', '4')
-        .attr('stroke-miterlimit', '10')
-        .attr('stroke-linecap', 'round')
-        .attr('d', 'M41.5 68.5h24m-24 15h24');
+        .attr({
+          'fill': 'none',
+          'stroke': '#911D22',
+          'stroke-width': '4',
+          'stroke-miterlimit': '10',
+          'stroke-linecap': 'round',
+          'd': 'M41.5 68.5h24m-24 15h24'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-width', '3')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76' +
-          'z');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-width': '3',
+          'stroke-miterlimit': '10',
+          'd': 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76z'
+        });
     }
   },
   'entrega': {
@@ -278,16 +330,20 @@ var ICONS = {
     fn: function(icon){
       icon
         .append('path')
-          .attr('fill', '#CCE9DA')
-          .attr('d','M81.5,75.5c0,5.523-4.477,10-10,10h-25c-5.523,0-10-4.477-10-10v-25c0-5.523,4.477-10,10-10h25c5.523'+
-          ',0,10,4.477,10,10V75.5z');
+          .attr({
+            'fill': '#CCE9DA',
+            'd': 'M81.5,75.5c0,5.523-4.477,10-10,10h-25c-5.523,0-10-4.477-10-10v-25c0-5.523,4.477-10,10-10h25c5.523,0,'+
+                 '10,4.477,10,10V75.5z'
+          });
       icon
         .append('path')
-          .attr('fill', 'none')
-          .attr('stroke', '#61C46E')
-          .attr('stroke-width', '3')
-          .attr('stroke-miterlimit', '10')
-          .attr('d','M82,75c0,5.5-4.5,10-10,10H47c-5.5,0-10-4.5-10-10V50c0-5.5,4.5-10,10-10h25c5.5,0,10,4.5,10,10V75z');
+          .attr({
+            'fill': 'none',
+            'stroke': '#61C46E',
+            'stroke-width': '3',
+            'stroke-miterlimit': '10',
+            'd': 'M82,75c0,5.5-4.5,10-10,10H47c-5.5,0-10-4.5-10-10V50c0-5.5,4.5-10,10-10h25c5.5,0,10,4.5,10,10V75z'
+          });
     }
   },
   'mezcla': {
@@ -295,68 +351,92 @@ var ICONS = {
     fn: function(icon){
       icon
         .append('path')
-        .attr('fill', '#CCFFD9')
-        .attr('d','M14.848 107.014c1.082 1.042 4.27 2.486 4.27 2.486H61.5v-94H20.817s-3.626.71-5.01 2.04c-1.44 1.39-3.'+
-          '308 4.99-3.308 4.99v81.23s1.387 2.327 2.347 3.254z');
+        .attr({
+          'fill': '#CCFFD9',
+          'd': 'M14.848 107.014c1.082 1.042 4.27 2.486 4.27 2.486H61.5v-94H20.817s-3.626.71-5.01 2.04c-1.44 1.39-3.308'+
+               ' 4.99-3.308 4.99v81.23s1.387 2.327 2.347 3.254z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#61C46E')
-        .attr('stroke-width', '3')
-        .attr('stroke-miterlimit', '10')
-        .attr('d','M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76z');
+        .attr({
+          'fill': 'none',
+          'stroke': '#61C46E',
+          'stroke-width': '3',
+          'stroke-miterlimit': '10',
+          'd': 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76z'
+        });
       icon
         .append('path')
-        .attr('fill', '#006837')
-        .attr('d','M105.25 61.46l-7.375-7.21.125.25H53.5v15h44v-.583');
+        .attr({
+          'fill': '#006837',
+          'd': 'M105.25 61.46l-7.375-7.21.125.25H53.5v15h44v-.583'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#006837')
-        .attr('stroke-width', '14')
-        .attr('stroke-miterlimit', '10')
-        .attr('d','M14.5 41.5h27.833c5.5 0 10.167 4 10.167 9.5v22.834c0 5.5-4.667 9.666-10.167 9.666H14.5');
+        .attr({
+          'fill': 'none',
+          'stroke': '#006837',
+          'stroke-width': '14',
+          'stroke-miterlimit': '10',
+          'd': 'M14.5 41.5h27.833c5.5 0 10.167 4 10.167 9.5v22.834c0 5.5-4.667 9.666-10.167 9.666H14.5'
+        });
       icon
         .append('path')
-        .attr('opacity', '0.3')
-        .attr('fill', '#39B54A')
-        .attr('d','M66.5 54.25v.25h-5v-.25l7.5 7.334-7.5 7.333v.583h5v-.583l7.5-7.333');
+        .attr({
+          'opacity': '0.3',
+          'fill': '#39B54A',
+          'd': 'M66.5 54.25v.25h-5v-.25l7.5 7.334-7.5 7.333v.583h5v-.583l7.5-7.333'
+        });
       icon
         .append('path')
-        .attr('opacity', '0.5')
-        .attr('fill', '#39B54A')
-        .attr('d','M77.5 54.25v.25h-5v-.25l7.5 7.334-7.5 7.333v.583h5v-.583l7.5-7.333');
+        .attr({
+          'opacity': '0.5',
+          'fill': '#39B54A',
+          'd': 'M77.5 54.25v.25h-5v-.25l7.5 7.334-7.5 7.333v.583h5v-.583l7.5-7.333'
+        });
       icon
         .append('path')
-        .attr('opacity', '0.8')
-        .attr('fill', '#39B54A')
-        .attr('d','M88.5 54.25v.25h-5v-.25l7.5 7.334-7.5 7.333v.583h5v-.583l7.5-7.333');
+        .attr({
+          'opacity': '0.8',
+          'fill': '#39B54A',
+          'd': 'M88.5 54.25v.25h-5v-.25l7.5 7.334-7.5 7.333v.583h5v-.583l7.5-7.333'
+        });
       icon
         .append('path')
-        .attr('fill', '#39B54A')
-        .attr('d','M98.5 54.25v.25h-5v-.25l7.5 7.334-7.5 7.333v.583h5v-.583l7.5-7.333M18.5 79.25v.25h-4v-.25l5 4.848-5'+
-          ' 4.846v.556h3v-.556l5.5-4.846');
+        .attr({
+          'fill': '#39B54A',
+          'd': 'M98.5 54.25v.25h-5v-.25l7.5 7.334-7.5 7.333v.583h5v-.583l7.5-7.333M18.5 79.25v.25h-4v-.25l5 4.848-5 4.'+
+               '846v.556h3v-.556l5.5-4.846'
+        });
       icon
         .append('path')
-        .attr('opacity', '0.5')
-        .attr('fill', '#39B54A')
-        .attr('d','M27.5 79.25v.25h-4v-.25l5 4.848-5 4.846v.556h3v-.556l5.5-4.846');
+        .attr({
+          'opacity': '0.5',
+          'fill': '#39B54A',
+          'd': 'M27.5 79.25v.25h-4v-.25l5 4.848-5 4.846v.556h3v-.556l5.5-4.846'
+        });
       icon
         .append('path')
-        .attr('opacity', '0.2')
-        .attr('fill', '#39B54A')
-        .attr('d','M35.5 79.25v.25h-4v-.25l5 4.848-5 4.846v.556h3v-.556l5.5-4.846');
+        .attr({
+          'opacity': '0.2',
+          'fill': '#39B54A',
+          'd': 'M35.5 79.25v.25h-4v-.25l5 4.848-5 4.846v.556h3v-.556l5.5-4.846'
+        });
       icon
         .append('circle')
-        .attr('fill', '#2B8838')
-        .attr('cx', '53.083')
-        .attr('cy', '61.916')
-        .attr('r', '6.917');
+        .attr({
+          'fill': '#2B8838',
+          'cx': '53.083',
+          'cy': '61.916',
+          'r': '6.917'
+        });
       icon
         .append('path')
-        .attr('opacity', '0.2')
-        .attr('fill', '#39B54A')
-        .attr('d','M43.203 78.307l-3.244.766 6.01 3.69-3.723 5.987.012.055 2.92-.69-.014-.054 3.884-6.025');
+        .attr({
+          'opacity': '0.2',
+          'fill': '#39B54A',
+          'd': 'M43.203 78.307l-3.244.766 6.01 3.69-3.723 5.987.012.055 2.92-.69-.014-.054 3.884-6.025'
+        });
       var g = icon
         .append('path')
         .attr('fill', '#39B54A');
@@ -365,13 +445,18 @@ var ICONS = {
         .attr('d', 'M18.5 46.152v.348h-3v-.348l5-4.894-5-4.896v.138h3v-.138l5 4.896');
       g
         .append('path')
-        .attr('opacity', '0.5')
-        .attr('d','M27.5 46.152v.348h-3v-.348l5-4.894-5-4.896v.138h3v-.138l5 4.896');
+        .attr({
+          'opacity': '0.5',
+          'd': 'M27.5 46.152v.348h-3v-.348l5-4.894-5-4.896v.138h3v-.138l5 4.896'
+        })
+        .attr();
       g
         .append('path')
-        .attr('opacity', '0.2')
-        .attr('d','M35.5 46.152v.348h-3v-.348l5-4.894-5-4.896v.138h3v-.138l5 4.896M44.203 47l-3.244-.767 6.01-3.688-3.'+
-          '723-5.988.012-.055 2.92.69-.014.054 3.884 6.026');
+        .attr({
+          'opacity': '0.2',
+          'd': 'M35.5 46.152v.348h-3v-.348l5-4.894-5-4.896v.138h3v-.138l5 4.896M44.203 47l-3.244-.767 6.01-3.688-3.723'+
+               '-5.988.012-.055 2.92.69-.014.054 3.884 6.026'
+        });
     }
   },
   'transporte': {
@@ -379,222 +464,310 @@ var ICONS = {
     fn: function(icon){
       var lg = icon
         .append('linearGradient')
-        .attr('id', 'a')
-        .attr('gradientUnits', 'userSpaceOnUse')
-        .attr('x1', '60.5')
-        .attr('y1', '87.794')
-        .attr('x2', '60.5')
-        .attr('y2', '31.496');
+        .attr({
+          'id': 'a',
+          'x1': '60.5',
+          'y1': '87.794',
+          'x2': '60.5',
+          'y2': '31.496'
+        });
       lg
         .append('stop')
         .attr('offset', '0');
       lg
         .append('stop')
-        .attr('offset', '0.046')
-        .attr('stop-color', '#070202');
+        .attr({
+          'offset': '0.046',
+          'stop-color': '#070202'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.116')
-        .attr('stop-color', '#1C0607');
+        .attr({
+          'offset': '0.116',
+          'stop-color': '#1C0607'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.2')
-        .attr('stop-color', '#3E0C0E');
+        .attr({
+          'offset': '0.2',
+          'stop-color': '#3E0C0E'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.295')
-        .attr('stop-color', '#6D1619');
+        .attr({
+          'offset': '0.295',
+          'stop-color': '#6D1619'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.399')
-        .attr('stop-color', '#A82227');
+        .attr({
+          'offset': '0.399',
+          'stop-color': '#A82227'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.44')
-        .attr('stop-color', '#C1272D');
+        .attr({
+          'offset': '0.44',
+          'stop-color': '#C1272D'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.584')
-        .attr('stop-color', '#76181C');
+        .attr({
+          'offset': '0.584',
+          'stop-color': '#76181C'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.719')
-        .attr('stop-color', '#360B0D');
+        .attr({
+          'offset': '0.719',
+          'stop-color': '#360B0D'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.816')
-        .attr('stop-color', '#0F0303');
+        .attr({
+          'offset': '0.816',
+          'stop-color': '#0F0303'
+        });
       lg
         .append('stop')
         .attr('offset', '0.867');
       icon
         .append('path')
-        .attr('fill', 'url(#a)')
-        .attr('d', 'M17.5 53.5h86v22h-86z');
+        .attr({
+          'fill': 'url(#a)',
+          'd': 'M17.5 53.5h86v22h-86z'
+        });
       icon
         .append('path')
-        .attr('fill', '#4A1214')
-        .attr('d', 'M44.5 50.5h31v2h-31zm0 13h31v2h-31zm0 13h31v2h-31z');
+        .attr({
+          'fill': '#4A1214',
+          'd': 'M44.5 50.5h31v2h-31zm0 13h31v2h-31zm0 13h31v2h-31z'
+        });
       icon
         .append('path')
-        .attr('fill', '#6F1B1E')
-        .attr('d', 'M48.5 46.5h7v35h-7zm15 0h8v35h-8z');
+        .attr({
+          'fill': '#6F1B1E',
+          'd': 'M48.5 46.5h7v35h-7zm15 0h8v35h-8z'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M72.5 49.5h-2m-22 14h-3m0-3h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M72.5 49.5h-2m-22 14h-3m0-3h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M48.5 63h-3m3 4h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M48.5 63h-3m3 4h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M48.5 50.5h-3m0-3h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M48.5 50.5h-3m0-3h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M48.5 49h-3m3 5h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M48.5 49h-3m3 5h-3'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-width', '3')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76'+
-          'z');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-width': '3',
+          'stroke-miterlimit': '10',
+          'd': 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76z'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M71.5 47.5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M71.5 47.5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M74.5 49h-3m3 5h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M74.5 49h-3m3 5h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M71.5 60.5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M71.5 60.5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M74.5 62h-3m3 5h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M74.5 62h-3m3 5h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M71.5 72.5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M71.5 72.5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M74.5 73h-3m3 5h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M74.5 73h-3m3 5h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M45.5 72.5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M45.5 72.5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M48.5 73h-3m3 5h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M48.5 73h-3m3 5h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M99.5 50.5h-3');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M99.5 50.5h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#4A1214')
-        .attr('d', 'M96.5 50.5h11v3h-11zm0 13h11v3h-11z');
+        .attr({
+          'fill': '#4A1214',
+          'd': 'M96.5 50.5h11v3h-11zm0 13h11v3h-11z'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M100.5 63.5h-3m0-3h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M100.5 63.5h-3m0-3h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M100.5 63h-3m3 4h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M100.5 63h-3m3 4h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M97.5 47.5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M97.5 47.5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M100.5 49h-3m3 5h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M100.5 49h-3m3 5h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#4A1214')
-        .attr('d', 'M96.5 75.5h11v3h-11z');
+        .attr({
+          'fill': '#4A1214',
+          'd': 'M96.5 75.5h11v3h-11z'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M97.5 72.5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M97.5 72.5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M100.5 73h-3m3 5h-3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M100.5 73h-3m3 5h-3'
+        });
       icon
         .append('path')
-        .attr('fill', '#6F1B1E')
-        .attr('d', 'M100.5 46.5h7v35h-7z');
+        .attr({
+          'fill': '#6F1B1E',
+          'd': 'M100.5 46.5h7v35h-7z'
+        });
       icon
         .append('path')
-        .attr('fill', '#4A1214')
-        .attr('d', 'M14.5 75.5h11v3h-11zm0-13h11v3h-11z');
+        .attr({
+          'fill': '#4A1214',
+          'd': 'M14.5 75.5h11v3h-11zm0-13h11v3h-11z'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M21.5 65.5h3m-3-5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M21.5 65.5h3m-3-5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M21.5 66h3m-3-4h3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M21.5 66h3m-3-4h3'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M21.5 73.5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M21.5 73.5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M21.5 80h3m-3-5h3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M21.5 80h3m-3-5h3'
+        });
       icon
         .append('path')
-        .attr('fill', '#4A1214')
-        .attr('d', 'M14.5 50.5h11v3h-11z');
+        .attr({
+          'fill': '#4A1214',
+          'd': 'M14.5 50.5h11v3h-11z'
+        });
       icon
         .append('path')
-        .attr('fill', '#CD5257')
-        .attr('d', 'M21.5 48.5h3v8h-3z');
+        .attr({
+          'fill': '#CD5257',
+          'd': 'M21.5 48.5h3v8h-3z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M21.5 56h3m-3-5h3');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-miterlimit': '10',
+          'd': 'M21.5 56h3m-3-5h3'
+        });
       icon
         .append('path')
-        .attr('fill', '#6F1B1E')
-        .attr('d', 'M14.5 47.5h7v35h-7z');
+        .attr({
+          'fill': '#6F1B1E',
+          'd': 'M14.5 47.5h7v35h-7z'
+        });
     }
   },
   'compresor': {
@@ -602,142 +775,179 @@ var ICONS = {
     fn: function(icon){
       var lg = icon
         .append('linearGradient')
-        .attr('id', 'a')
-        .attr('gradientUnits', 'userSpaceOnUse')
-        .attr('x1', '60.')
-        .attr('y1', '95.166')
-        .attr('x2', '60')
-        .attr('y2', '104.902');
+        .attr({
+          'id': 'a',
+          'gradientUnits': 'userSpaceOnUse',
+          'x1': '60.',
+          'y1': '95.166',
+          'x2': '60',
+          'y2': '104.902'
+        });
       lg
         .append('stop')
-        .attr('offset', '0')
-        .attr('stop-color', '#C1272D');
+        .attr({
+          'offset': '0',
+          'stop-color': '#C1272D'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.146')
-        .attr('stop-color', '#BD262C');
+        .attr({
+          'offset': '0.146',
+          'stop-color': '#BD262C'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.29')
-        .attr('stop-color', '#B12429');
+        .attr({
+          'offset': '0.29',
+          'stop-color': '#B12429'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.434')
-        .attr('stop-color', '#9D2025');
+        .attr({
+          'offset': '0.434',
+          'stop-color': '#9D2025'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.577')
-        .attr('stop-color', '#811A1E');
+        .attr({
+          'offset': '0.577',
+          'stop-color': '#811A1E'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.721')
-        .attr('stop-color', '#5D1316');
+        .attr({
+          'offset': '0.721',
+          'stop-color': '#5D1316'
+        });
       lg
         .append('stop')
-        .attr('offset', '0.862')
-        .attr('stop-color', '#320A0C');
+        .attr({
+          'offset': '0.862',
+          'stop-color': '#320A0C'
+        });
       lg
         .append('stop')
         .attr('offset', '1');
       icon
         .append('path')
-        .attr('fill', '#C1272D')
-        .attr('d', 'M31.5 86.5h3v8h-3zm26-39h48v47h-48z');
+        .attr({
+          'fill': '#C1272D',
+          'd': 'M31.5 86.5h3v8h-3zm26-39h48v47h-48z'
+        });
       icon
         .append('path')
-        .attr('fill', '#C1272D')
-        .attr('d', 'M19.758 60.222c-2.964 2.194-5.015 6.53-5.015 11.93 0 5.4 2.05 10.427 5.015 12.622 1.158.857 2.45 1'+
-          '.727 3.82 1.727H55.5v-27H23.566c-1.366 0-2.653-.13-3.808.73z');
+        .attr({
+          'fill': '#C1272D',
+          'd': 'M19.758 60.222c-2.964 2.194-5.015 6.53-5.015 11.93 0 5.4 2.05 10.427 5.015 12.622 1.158.857 2.45 1.727'+
+               ' 3.82 1.727H55.5v-27H23.566c-1.366 0-2.653-.13-3.808.73z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-width', '4')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M66.5 93.5V75.625c0-1.65-1.35-3.125-3-3.125h-52');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-width': '4',
+          'stroke-miterlimit': '10',
+          'd': 'M66.5 93.5V75.625c0-1.65-1.35-3.125-3-3.125h-52'
+        });
       icon
         .append('path')
-        .attr('fill', 'url(#a)')
-        .attr('d', 'M11.5 94.5h97v10h-97z');
+        .attr({
+          'fill': 'url(#a)',
+          'd': 'M11.5 94.5h97v10h-97z'
+        });
       icon
         .append('path')
-        .attr('fill', '#DA7D81')
-        .attr('d', 'M11.5 94.5h97v3h-97z');
+        .attr({
+          'fill': '#DA7D81',
+          'd': 'M11.5 94.5h97v3h-97z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#C1272D')
-        .attr('stroke-width', '3')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76'+
-          'z');
+        .attr({
+          'fill': 'none',
+          'stroke': '#C1272D',
+          'stroke-width': '3',
+          'stroke-miterlimit': '10',
+          'd': 'M109 100c0 5.5-4.5 10-10 10H23c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h76c5.5 0 10 4.5 10 10v76z'
+        });
       icon
         .append('path')
-        .attr('fill', '#911D22')
-        .attr('d', 'M48.5 58.5h7v29h-7z');
+        .attr({
+          'fill': '#911D22',
+          'd': 'M48.5 58.5h7v29h-7z'
+        });
       icon
         .append('path')
-        .attr('fill-rule', 'evenodd')
-        .attr('clip-rule', 'evenodd')
-        .attr('fill', '#F0CBCD')
-        .attr('d', 'M82.604 48c12.53.056 22.402 10.057 22.333 22.625-.067 12.35-10.144 22.198-22.633 22.12-12.268-.076'+
-          '-22.16-10.13-22.11-22.47.05-12.37 10.072-22.33 22.41-22.275zm-21.3 22.317c-.045 11.766 9.424 21.28 21.212 2'+
-          '1.317 11.784.036 21.24-9.37 21.31-21.193.07-11.75-9.404-21.28-21.194-21.32-11.777-.04-21.282 9.41-21.327 21'+
-          '.2z');
+        .attr({
+          'fill-rule': 'evenodd',
+          'clip-rule': 'evenodd',
+          'fill': '#F0CBCD',
+          'd': 'M82.604 48c12.53.056 22.402 10.057 22.333 22.625-.067 12.35-10.144 22.198-22.633 22.12-12.268-.076-22.'+
+               '16-10.13-22.11-22.47.05-12.37 10.072-22.33 22.41-22.275zm-21.3 22.317c-.045 11.766 9.424 21.28 21.212 '+
+               '21.317 11.784.036 21.24-9.37 21.31-21.193.07-11.75-9.404-21.28-21.194-21.32-11.777-.04-21.282 9.41-21.'+
+               '327 21.2z'
+        });
       icon
         .append('path')
-        .attr('fill-rule', 'evenodd')
-        .attr('clip-rule', 'evenodd')
-        .attr('fill', '#E6A9AB')
-        .attr('d', 'M73.726 51.835c.736 1.15 1.264 2.354 2.12 3.238 1.99 2.056 2.953 4.514 3.346 7.265.128.893.217 1.7'+
-          '9.325 2.688.867-.153.893-.165.788-1.08-.292-2.542-1-4.96-2.394-7.124-.92-1.438-1.95-2.813-2.96-4.262 1.05-1'+
-          '.3 2.39-2.157 4.18-2.467-.12 1.584.38 2.93 1.12 4.213 1.38 2.397 1.42 5 1.13 7.646-.09.833-.23 1.66-.36 2.5'+
-          '43.67.102.92-.123 1.03-.755.63-3.828-.06-7.45-1.61-10.953-.21-.483-.42-.97-.62-1.45 1.06-1.067 2.97-1.647 4'+
-          '.67-1.37-.61 1.63-.22 3.22.14 4.835.51 2.28 0 4.468-.81 6.597-.36.95-.79 1.89-1.2 2.87.63.31.94.08 1.2-.51 '+
-          '1.51-3.32 1.83-6.78 1.33-10.35l-.3-2.19c1.56-.74 3.45-.77 4.87-.09-.85 1.26-1.1 2.68-1.1 4.17.01 2.34-.89 4'+
-          '.38-2.2 6.26-.69 1-1.46 1.94-2.22 2.94.48.41.82.36 1.27-.17 2.54-3.04 3.68-6.62 4.1-10.48.05-.47.12-.93.18-'+
-          '1.45 1.74-.22 3.29.14 4.77 1.16-1.24 1.07-1.81 2.46-2.24 3.95-.7 2.44-2.31 4.24-4.25 5.79-.75.6-1.54 1.17-2'+
-          '.3 1.75.32.68.7.58 1.22.21 3.13-2.2 5.14-5.23 6.54-8.72l.65-1.64c1.63.09 3.18.92 4.3 2.33-1.6.71-2.46 2.11-'+
-          '3.36 3.51-1.37 2.13-3.46 3.37-5.74 4.33-.79.34-1.6.65-2.4.97.25.67.62.72 1.19.5 3.41-1.29 6.1-3.5 8.27-6.38'+
-          'l1.36-1.78c1.53.49 2.91 1.8 3.52 3.37-1.72.29-2.91 1.41-4.13 2.53-1.83 1.65-4.1 2.32-6.48 2.66-.89.12-1.79.'+
-          '21-2.69.32.195.88.24.9 1.304.77 3.07-.38 5.85-1.48 8.35-3.3.91-.66 1.8-1.35 2.77-2.08 1.34 1.06 2.19 2.42 2'+
-          '.47 3.92-1.32.41-2.65.6-3.74 1.21-2.6 1.46-5.32 1.65-8.17 1.3-.8-.1-1.6-.22-2.4-.33-.02.88-.013.87.73.99 3.'+
-          '65.61 7.14.02 10.51-1.44.63-.27 1.26-.53 1.96-.83 1.028 1.39 1.51 2.9 1.32 4.73-1.6-.59-3.11-.3-4.64.07-2.7'+
-          '2.66-5.252-.093-7.74-1.11-.66-.27-1.31-.57-1.96-.86-.35.69-.03.97.54 1.23 3.29 1.49 6.73 1.797 10.27 1.323.'+
-          '31-.04.62-.087.928-.12 1.57-.187 1.67-.17 1.8 1.42.09 1.06-.07 2.14-.14 3.42-1.62-1.077-3.16-1.23-4.77-1.28'+
-          '-2.82-.08-5.11-1.47-7.25-3.15-.513-.4-1.02-.82-1.57-1.26-.46.49-.4.83.117 1.27 3.04 2.53 6.6 3.69 10.47 4.1'+
-          '.49.05.97.13 1.48.2.2 1.74-.177 3.27-1.176 4.75-1.12-1.33-2.64-1.85-4.2-2.33-2.43-.74-4.18-2.43-5.71-4.376-'+
-          '.552-.71-1.08-1.44-1.68-2.23l-.49.726c2.52 4.11 6.44 6.26 10.82 7.81-.34 1.7-.99 3.13-2.4 4.32-.86-1.904-2.'+
-          '643-2.694-4.14-3.832-2.23-1.696-3.31-4.16-4.292-6.68l-.4-1.03c-.7.25-.73.65-.5 1.244 1.17 3.007 2.98 5.53 5'+
-          '.53 7.52.88.69 1.75 1.39 2.67 2.11-.68 1.585-1.8 2.747-3.45 3.564-.22-1.61-1.075-2.74-2.11-3.76-1.92-1.89-2'+
-          '.665-4.31-3.064-6.877-.147-.92-.24-1.84-.35-2.79-.75.02-.85.42-.79.99.3 2.81 1.13 5.43 2.73 7.77.84 1.24 1.'+
-          '72 2.45 2.64 3.75-1.02 1.31-2.39 2.16-4.19 2.49.15-1.67-.43-3.05-1.18-4.39-1.34-2.38-1.33-4.96-1.03-7.57.09'+
-          '-.8.22-1.594.348-2.46-.62-.07-.91.076-1.01.69-.57 3.68-.09 7.21 1.46 10.6.287.62.516 1.27.8 1.98-1.36 1.04-'+
-          '2.88 1.49-4.69 1.33.55-1.67.29-3.237-.11-4.827-.576-2.277-.04-4.46.75-6.59.37-.99.81-1.956 1.23-2.95-.64-.3'+
-          '1-.94-.06-1.21.53-1.52 3.35-1.82 6.84-1.31 10.44.044.31.08.62.12.93.17 1.325.18 1.42-1.13 1.57-1.15.13-2.32'+
-          '4.01-3.777 0 1.27-1.876 1.23-3.68 1.37-5.47.14-1.81.89-3.44 1.9-4.927.76-1.13 1.61-2.2 2.45-3.323-.43-.28-.'+
-          '75-.44-1.17.08-2.23 2.73-3.567 5.82-3.967 9.33-.1.89-.26 1.78-.39 2.65-1.85.266-3.45-.13-4.72-1.16 1.186-1.'+
-          '02 1.756-2.375 2.17-3.84.687-2.41 2.24-4.22 4.16-5.754.8-.64 1.63-1.25 2.53-1.94l-.7-.5c-4.084 2.523-6.27 6'+
-          '.413-7.78 10.75-1.7-.11-3.29-.974-4.31-2.34 1.51-.71 2.39-2 3.23-3.36 1.27-2.05 3.19-3.31 5.34-4.27.94-.414'+
-          ' 1.9-.77 2.85-1.16-.13-.76-.533-.75-1.13-.524-3.48 1.3-6.18 3.59-8.39 6.52l-1.273 1.7c-1.582-.71-2.754-1.78'+
-          '8-3.54-3.44 1.71-.29 2.887-1.32 4.056-2.406 2.25-2.09 5.09-2.66 8.01-2.98.457-.04.91-.11 1.368-.16-.137-1.0'+
-          '9-.88-.79-1.44-.724-2.91.35-5.566 1.37-7.96 3.057-1.046.74-2.056 1.52-3.12 2.3-1.33-1.08-2.18-2.43-2.51-4.2'+
-          '1 1.67.15 3.05-.44 4.4-1.19 2.38-1.334 4.97-1.32 7.57-1.026.8.09 1.6.223 2.46.35.06-.69-.18-.92-.8-1.02-3.6'+
-          '3-.6-7.08-.01-10.43 1.4-.652.278-1.31.56-2.02.87-1.042-1.39-1.5-2.91-1.34-4.73 1.61.58 3.12.3 4.65-.074 2.3'+
-          '4-.576 4.59-.087 6.78.74.99.37 1.95.81 2.94 1.224.31-.65.04-.95-.54-1.21-3.32-1.5-6.785-1.82-10.356-1.32-.3'+
-          '1.05-.62.09-.93.13-1.47.17-1.56.17-1.7-1.32-.1-1.09.058-2.206.108-3.555 1.71 1.17 3.367 1.23 5.05 1.326 3.1'+
-          '3.17 5.54 1.93 7.864 3.82.22.17.433.35.65.53.02.01.057 0 .1 0 .46-.51.28-.85-.22-1.27-3-2.48-6.51-3.62-10.3'+
-          '04-4.05-.52-.06-1.04-.13-1.59-.2-.205-1.76.16-3.31 1.18-4.76 1.01 1.184 2.29 1.78 3.7 2.164 2.56.69 4.446 2'+
-          '.33 6.05 4.35.6.757 1.17 1.538 1.75 2.305.65-.343.566-.72.197-1.24-2.2-3.125-5.22-5.14-8.72-6.53l-1.63-.65c'+
-          '.09-1.62.957-3.226 2.34-4.29.72 1.55 2.06 2.42 3.44 3.293 2.205 1.4 3.466 3.55 4.44 5.89.31.75.596 1.5.926 '+
-          '2.34l.71-.49c-1.39-4.6-4.58-7.71-8.37-10.3.42-1.47 1.785-2.93 3.1-3.46zM86.876 70.4c.014-2.335-1.932-4.312-'+
-          '4.26-4.327-2.396-.016-4.362 1.938-4.352 4.324.01 2.337 1.97 4.29 4.3 4.288 2.34-.003 4.3-1.95 4.312-4.284z');
+        .attr({
+          'fill-rule': 'evenodd',
+          'clip-rule': 'evenodd',
+          'fill': '#E6A9AB',
+          'd': 'M73.726 51.835c.736 1.15 1.264 2.354 2.12 3.238 1.99 2.056 2.953 4.514 3.346 7.265.128.893.217 1.79.32'+
+               '5 2.688.867-.153.893-.165.788-1.08-.292-2.542-1-4.96-2.394-7.124-.92-1.438-1.95-2.813-2.96-4.262 1.05-'+
+               '1.3 2.39-2.157 4.18-2.467-.12 1.584.38 2.93 1.12 4.213 1.38 2.397 1.42 5 1.13 7.646-.09.833-.23 1.66-.'+
+               '36 2.543.67.102.92-.123 1.03-.755.63-3.828-.06-7.45-1.61-10.953-.21-.483-.42-.97-.62-1.45 1.06-1.067 2'+
+               '.97-1.647 4.67-1.37-.61 1.63-.22 3.22.14 4.835.51 2.28 0 4.468-.81 6.597-.36.95-.79 1.89-1.2 2.87.63.3'+
+               '1.94.08 1.2-.51 1.51-3.32 1.83-6.78 1.33-10.35l-.3-2.19c1.56-.74 3.45-.77 4.87-.09-.85 1.26-1.1 2.68-1'+
+               '.1 4.17.01 2.34-.89 4.38-2.2 6.26-.69 1-1.46 1.94-2.22 2.94.48.41.82.36 1.27-.17 2.54-3.04 3.68-6.62 4'+
+               '.1-10.48.05-.47.12-.93.18-1.45 1.74-.22 3.29.14 4.77 1.16-1.24 1.07-1.81 2.46-2.24 3.95-.7 2.44-2.31 4'+
+               '.24-4.25 5.79-.75.6-1.54 1.17-2.3 1.75.32.68.7.58 1.22.21 3.13-2.2 5.14-5.23 6.54-8.72l.65-1.64c1.63.0'+
+               '9 3.18.92 4.3 2.33-1.6.71-2.46 2.11-3.36 3.51-1.37 2.13-3.46 3.37-5.74 4.33-.79.34-1.6.65-2.4.97.25.67'+
+               '.62.72 1.19.5 3.41-1.29 6.1-3.5 8.27-6.38l1.36-1.78c1.53.49 2.91 1.8 3.52 3.37-1.72.29-2.91 1.41-4.13 '+
+               '2.53-1.83 1.65-4.1 2.32-6.48 2.66-.89.12-1.79.21-2.69.32.195.88.24.9 1.304.77 3.07-.38 5.85-1.48 8.35-'+
+               '3.3.91-.66 1.8-1.35 2.77-2.08 1.34 1.06 2.19 2.42 2.47 3.92-1.32.41-2.65.6-3.74 1.21-2.6 1.46-5.32 1.6'+
+               '5-8.17 1.3-.8-.1-1.6-.22-2.4-.33-.02.88-.013.87.73.99 3.65.61 7.14.02 10.51-1.44.63-.27 1.26-.53 1.96-'+
+               '.83 1.028 1.39 1.51 2.9 1.32 4.73-1.6-.59-3.11-.3-4.64.07-2.72.66-5.252-.093-7.74-1.11-.66-.27-1.31-.5'+
+               '7-1.96-.86-.35.69-.03.97.54 1.23 3.29 1.49 6.73 1.797 10.27 1.323.31-.04.62-.087.928-.12 1.57-.187 1.6'+
+               '7-.17 1.8 1.42.09 1.06-.07 2.14-.14 3.42-1.62-1.077-3.16-1.23-4.77-1.28-2.82-.08-5.11-1.47-7.25-3.15-.'+
+               '513-.4-1.02-.82-1.57-1.26-.46.49-.4.83.117 1.27 3.04 2.53 6.6 3.69 10.47 4.1.49.05.97.13 1.48.2.2 1.74'+
+               '-.177 3.27-1.176 4.75-1.12-1.33-2.64-1.85-4.2-2.33-2.43-.74-4.18-2.43-5.71-4.376-.552-.71-1.08-1.44-1.'+
+               '68-2.23l-.49.726c2.52 4.11 6.44 6.26 10.82 7.81-.34 1.7-.99 3.13-2.4 4.32-.86-1.904-2.643-2.694-4.14-3'+
+               '.832-2.23-1.696-3.31-4.16-4.292-6.68l-.4-1.03c-.7.25-.73.65-.5 1.244 1.17 3.007 2.98 5.53 5.53 7.52.88'+
+               '.69 1.75 1.39 2.67 2.11-.68 1.585-1.8 2.747-3.45 3.564-.22-1.61-1.075-2.74-2.11-3.76-1.92-1.89-2.665-4'+
+               '.31-3.064-6.877-.147-.92-.24-1.84-.35-2.79-.75.02-.85.42-.79.99.3 2.81 1.13 5.43 2.73 7.77.84 1.24 1.7'+
+               '2 2.45 2.64 3.75-1.02 1.31-2.39 2.16-4.19 2.49.15-1.67-.43-3.05-1.18-4.39-1.34-2.38-1.33-4.96-1.03-7.5'+
+               '7.09-.8.22-1.594.348-2.46-.62-.07-.91.076-1.01.69-.57 3.68-.09 7.21 1.46 10.6.287.62.516 1.27.8 1.98-1'+
+               '.36 1.04-2.88 1.49-4.69 1.33.55-1.67.29-3.237-.11-4.827-.576-2.277-.04-4.46.75-6.59.37-.99.81-1.956 1.'+
+               '23-2.95-.64-.31-.94-.06-1.21.53-1.52 3.35-1.82 6.84-1.31 10.44.044.31.08.62.12.93.17 1.325.18 1.42-1.1'+
+               '3 1.57-1.15.13-2.324.01-3.777 0 1.27-1.876 1.23-3.68 1.37-5.47.14-1.81.89-3.44 1.9-4.927.76-1.13 1.61-'+
+               '2.2 2.45-3.323-.43-.28-.75-.44-1.17.08-2.23 2.73-3.567 5.82-3.967 9.33-.1.89-.26 1.78-.39 2.65-1.85.26'+
+               '6-3.45-.13-4.72-1.16 1.186-1.02 1.756-2.375 2.17-3.84.687-2.41 2.24-4.22 4.16-5.754.8-.64 1.63-1.25 2.'+
+               '53-1.94l-.7-.5c-4.084 2.523-6.27 6.413-7.78 10.75-1.7-.11-3.29-.974-4.31-2.34 1.51-.71 2.39-2 3.23-3.3'+
+               '6 1.27-2.05 3.19-3.31 5.34-4.27.94-.414 1.9-.77 2.85-1.16-.13-.76-.533-.75-1.13-.524-3.48 1.3-6.18 3.5'+
+               '9-8.39 6.52l-1.273 1.7c-1.582-.71-2.754-1.788-3.54-3.44 1.71-.29 2.887-1.32 4.056-2.406 2.25-2.09 5.09'+
+               '-2.66 8.01-2.98.457-.04.91-.11 1.368-.16-.137-1.09-.88-.79-1.44-.724-2.91.35-5.566 1.37-7.96 3.057-1.0'+
+               '46.74-2.056 1.52-3.12 2.3-1.33-1.08-2.18-2.43-2.51-4.21 1.67.15 3.05-.44 4.4-1.19 2.38-1.334 4.97-1.32'+
+               ' 7.57-1.026.8.09 1.6.223 2.46.35.06-.69-.18-.92-.8-1.02-3.63-.6-7.08-.01-10.43 1.4-.652.278-1.31.56-2.'+
+               '02.87-1.042-1.39-1.5-2.91-1.34-4.73 1.61.58 3.12.3 4.65-.074 2.34-.576 4.59-.087 6.78.74.99.37 1.95.81'+
+               ' 2.94 1.224.31-.65.04-.95-.54-1.21-3.32-1.5-6.785-1.82-10.356-1.32-.31.05-.62.09-.93.13-1.47.17-1.56.1'+
+               '7-1.7-1.32-.1-1.09.058-2.206.108-3.555 1.71 1.17 3.367 1.23 5.05 1.326 3.13.17 5.54 1.93 7.864 3.82.22'+
+               '.17.433.35.65.53.02.01.057 0 .1 0 .46-.51.28-.85-.22-1.27-3-2.48-6.51-3.62-10.304-4.05-.52-.06-1.04-.1'+
+               '3-1.59-.2-.205-1.76.16-3.31 1.18-4.76 1.01 1.184 2.29 1.78 3.7 2.164 2.56.69 4.446 2.33 6.05 4.35.6.75'+
+               '7 1.17 1.538 1.75 2.305.65-.343.566-.72.197-1.24-2.2-3.125-5.22-5.14-8.72-6.53l-1.63-.65c.09-1.62.957-'+
+               '3.226 2.34-4.29.72 1.55 2.06 2.42 3.44 3.293 2.205 1.4 3.466 3.55 4.44 5.89.31.75.596 1.5.926 2.34l.71'+
+               '-.49c-1.39-4.6-4.58-7.71-8.37-10.3.42-1.47 1.785-2.93 3.1-3.46zM86.876 70.4c.014-2.335-1.932-4.312-4.2'+
+               '6-4.327-2.396-.016-4.362 1.938-4.352 4.324.01 2.337 1.97 4.29 4.3 4.288 2.34-.003 4.3-1.95 4.312-4.284z'
+        });
       icon
         .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', '#611417')
-        .attr('stroke-miterlimit', '10')
-        .attr('d', 'M48.5 66h-33m33 11h-34m34 7h-30m30-14h-34m34 10h-33m33-18h-31');
+        .attr({
+          'fill': 'none',
+          'stroke': '#611417',
+          'stroke-miterlimit': '10',
+          'd': 'M48.5 66h-33m33 11h-34m34 7h-30m30-14h-34m34 10h-33m33-18h-31'
+        });
     }
   }
 };
@@ -800,12 +1010,14 @@ SimpleNetwork.prototype.initSVG = function(){
   };
   this.origSVG = d3js.select(this.container)
     .append('svg')
-      .attr('onContextMenu', 'return false;')
-      .attr('class', 'd3sn-container')
-      .attr('viewBox', '0 0 ' + this.options.width + ' ' + this.options.height)
-      .attr('width', '100%')
-      .attr('height', '100%')
-      .attr('pointer-events', 'all');
+      .attr({
+        'onContextMenu': 'return false;',
+        'class': 'd3sn-container',
+        'width': '100%',
+        'height': '100%',
+        'pointer-events': 'all'
+      })
+      .attr('viewBox', '0 0 ' + this.options.width + ' ' + this.options.height);
   
   var zoom = d3js
     .behavior
@@ -1035,12 +1247,14 @@ SimpleNetwork.prototype.restart = function(recalculate){
       .enter()
     .append('svg:marker')    // This section adds in the arrows
       .attr('id', String)
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 10)
-      .attr('refY', 0)
-      .attr('markerWidth', 6)
-      .attr('markerHeight', 6)
-      .attr('orient', 'auto')
+      .attr({
+        'viewBox': '0 -5 10 10',
+        'refX': 10,
+        'refY': 0,
+        'markerWidth': 6,
+        'markerHeight': 6,
+        'orient': 'auto'
+      })
     .append('path')
       .attr('d', 'M0,-5L10,0L0,5');
 
@@ -1054,8 +1268,10 @@ SimpleNetwork.prototype.restart = function(recalculate){
       .data(this.force.links())
       .enter()
     .append('path')
-      .attr('class', 'link')
-      .attr('marker-end', 'url(#end)');
+      .attr({
+        'class': 'link',
+        'marker-end': 'url(#end)'
+      });
 
   // create the nodes
   this.node = this.SVG
@@ -1070,18 +1286,22 @@ SimpleNetwork.prototype.restart = function(recalculate){
 
   // add an empty rect to increase the dragging area
   this.node.append('rect')
-    .attr('width', 50)
-    .attr('height', 50)
-    .attr('x', -25)
-    .attr('y', -25)
+    .attr({
+      'width': 50,
+      'height': 50,
+      'x': -25,
+      'y': -25
+    })
     .attr('fill', this.options.bgColor);
 
   // append the icon to the nodes
   this.node.append('svg')
-    .attr('width', 50)
-    .attr('height', 50)
-    .attr('x', -25)
-    .attr('y', -25)
+    .attr({
+      'width': 50,
+      'height': 50,
+      'x': -25,
+      'y': -25
+    })
     .attr('viewBox', function(d) {
       if (!isUndefined(ICONS[d.iconType])) return ICONS[d.iconType].viewPort;
       return ICONS['default'].viewPort;
