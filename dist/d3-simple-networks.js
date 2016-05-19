@@ -8,7 +8,7 @@
  *
  * Source Code: https://github.com/davcs86/d3-simple-networks
  *
- * Date: 2016-05-16
+ * Date: 2016-05-19
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.D3SimpleNetwork = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
@@ -38,7 +38,10 @@ var DEFAULT_OPTIONS = {
   scale: '1',
   nodes: {},
   draggable: true,
-  bgColor: 'white'
+  bgColor: 'white',
+  gridSize: 25,
+  gridLinesColor: '#ddd',
+  showGridLines: true
 };
 
 var ICONS = {
@@ -999,6 +1002,51 @@ function SimpleNetwork(options) {
   this.init(true);
 }
 
+SimpleNetwork.prototype.drawGridLines = function(){
+  var that = this;
+  // create the grid lines
+  var horizontalLines = Math.ceil(this.options.height / this.options.gridSize);
+  this.origSVG // horizontal lines
+    .selectAll('.hline')
+    .data(d3js.range(horizontalLines))
+    .enter()
+    .append('line')
+      .attr('y1', function (d) {
+        return d * that.options.gridSize;
+      })
+      .attr('y2', function (d) {
+        return d * that.options.gridSize;
+      })
+      .attr('x1', function () {
+        return 0;
+      })
+      .attr('x2', function () {
+        return that.options.width;
+      })
+      .style('stroke', this.options.gridLinesColor)
+      .attr('class', 'gridline');
+  var verticalLines = Math.ceil(this.options.width / this.options.gridSize);
+  this.origSVG // vertical lines
+    .selectAll('.vline')
+    .data(d3js.range(verticalLines))
+    .enter()
+    .append('line')
+      .attr('x1', function (d) {
+        return d * that.options.gridSize;
+      })
+      .attr('x2', function (d) {
+        return d * that.options.gridSize;
+      })
+      .attr('y1', function () {
+        return 0;
+      })
+      .attr('y2', function () {
+        return that.options.height;
+      })
+      .style('stroke', this.options.gridLinesColor)
+      .attr('class', 'gridline');
+};
+
 SimpleNetwork.prototype.initSVG = function(){
   var that = this;
   this.rescale = function () {
@@ -1018,7 +1066,11 @@ SimpleNetwork.prototype.initSVG = function(){
         'pointer-events': 'all'
       })
       .attr('viewBox', '0 0 ' + this.options.width + ' ' + this.options.height);
-  
+
+  if (this.options.showGridLines){
+    this.drawGridLines();
+  }
+
   var zoom = d3js
     .behavior
     .zoom()
@@ -1186,7 +1238,13 @@ SimpleNetwork.prototype.restart = function(recalculate){
         return '-'+offset;
       });
 
-    that.link.attr('x1', function(d) { return d.source.x; })
+    that.link
+      .attr('marker-end', function() {
+        var curr = this.getAttribute('marker-end')+'';
+        var hasA = curr.lastIndexOf('A') > -1;
+        return hasA?'url(#end)':'url(#endA)';
+      })
+      .attr('x1', function(d) { return d.source.x; })
       .attr('y1', function(d) { return d.source.y; })
       .attr('x2', function(d) { return d.target.x; })
       .attr('y2', function(d) { return d.target.y; })
@@ -1240,13 +1298,26 @@ SimpleNetwork.prototype.restart = function(recalculate){
     .links(this._links);
 
   // build the arrow.
-  this.SVG
-    .append('defs')
-      .selectAll('marker')
-      .data(['end'])      // Different link/path types can be defined here
-      .enter()
-    .append('svg:marker')    // This section adds in the arrows
-      .attr('id', String)
+  var defs = this.SVG
+    .append('defs');
+
+  defs
+    .append('marker')    // This section adds in the arrows
+      .attr('id', 'end')
+      .attr({
+        'viewBox': '0 -5 10 10',
+        'refX': 10,
+        'refY': 0,
+        'markerWidth': 6,
+        'markerHeight': 6,
+        'orient': 'auto'
+      })
+    .append('path')
+      .attr('d', 'M0,-5L10,0L0,5');
+
+  defs
+    .append('marker')    // This section adds in the arrows
+      .attr('id', 'endA')
       .attr({
         'viewBox': '0 -5 10 10',
         'refX': 10,
@@ -1402,7 +1473,7 @@ SimpleNetwork.prototype.init = function(recalculate){
 module.exports = SimpleNetwork;
 
 },{"2":2,"217":217,"304":304,"322":322,"365":365,"369":369,"5":5}],2:[function(_dereq_,module,exports){
-module.exports = _dereq_(370).byUrl('data:text/css;base64,LmQzc24tY29udGFpbmVyIC5ub2RlIHsKICBjdXJzb3I6IHBvaW50ZXI7IH0KCi5kM3NuLWNvbnRhaW5lciAubm9kZS1jaXJjbGUgewogIGZpbGw6ICNjY2M7CiAgc3Ryb2tlOiAjZmZmOwogIHN0cm9rZS13aWR0aDogMnB4OyB9CgouZDNzbi1jb250YWluZXIgLmxpbmsgewogIGZpbGw6IG5vbmU7CiAgc3Ryb2tlOiAjNjY2OwogIHN0cm9rZS13aWR0aDogMS41cHg7IH0KCi5kM3NuLWNvbnRhaW5lciA+ICogewogIGZvbnQtc2l6ZTogOHB0ICFpbXBvcnRhbnQ7IH0KCi5kM3NuLWNvbnRhaW5lciAudGFibGUtY29uZGVuc2VkID4gdGhlYWQgPiB0ciA+IHRoLCAuZDNzbi1jb250YWluZXIgLnRhYmxlLWNvbmRlbnNlZCA+IHRib2R5ID4gdHIgPiB0ZCB7CiAgcGFkZGluZzogMnB4IDNweCAhaW1wb3J0YW50OyB9CgouZDNzbi1jb250YWluZXIgLm1vdXNlbW92ZSB7CiAgY3Vyc29yOiBtb3ZlOyB9CgovKiMgc291cmNlTWFwcGluZ1VSTD1kYXRhOmFwcGxpY2F0aW9uL2pzb247YmFzZTY0LGV3b0pJblpsY25OcGIyNGlPaUF6TEFvSkltWnBiR1VpT2lBaWMzUjViR1Z6TG5OamMzTWlMQW9KSW5OdmRYSmpaWE1pT2lCYkNna0pJbk4wZVd4bGN5NXpZM056SWdvSlhTd0tDU0p6YjNWeVkyVnpRMjl1ZEdWdWRDSTZJRnNLQ1FraUxtUXpjMjR0WTI5dWRHRnBibVZ5SUh0Y2NseHVJQ0F1Ym05a1pTQjdYSEpjYmlBZ0lDQmpkWEp6YjNJNklIQnZhVzUwWlhJN1hISmNiaUFnZlZ4eVhHNWNjbHh1SUNBdWJtOWtaUzFqYVhKamJHVWdlMXh5WEc0Z0lDQWdabWxzYkRvZ0kyTmpZenRjY2x4dUlDQWdJSE4wY205clpUb2dJMlptWmp0Y2NseHVJQ0FnSUhOMGNtOXJaUzEzYVdSMGFEb2dNbkI0TzF4eVhHNGdJSDFjY2x4dVhISmNiaUFnTG14cGJtc2dlMXh5WEc0Z0lDQWdabWxzYkRvZ2JtOXVaVHRjY2x4dUlDQWdJSE4wY205clpUb2dJelkyTmp0Y2NseHVJQ0FnSUhOMGNtOXJaUzEzYVdSMGFEb2dNUzQxY0hnN1hISmNiaUFnZlZ4eVhHNWNjbHh1SUNBbUlENGdLaUI3WEhKY2JpQWdJQ0JtYjI1MExYTnBlbVU2SURod2RDQWhhVzF3YjNKMFlXNTBPMXh5WEc0Z0lIMWNjbHh1WEhKY2JpQWdMblJoWW14bExXTnZibVJsYm5ObFpDQStJSFJvWldGa0lENGdkSElnUGlCMGFDd2dMblJoWW14bExXTnZibVJsYm5ObFpDQStJSFJpYjJSNUlENGdkSElnUGlCMFpDQjdYSEpjYmlBZ0lDQndZV1JrYVc1bk9pQXljSGdnTTNCNElDRnBiWEJ2Y25SaGJuUTdYSEpjYmlBZ2ZWeHlYRzVjY2x4dUlDQXViVzkxYzJWdGIzWmxJSHRjY2x4dUlDQWdJR04xY25OdmNqb2diVzkyWlR0Y2NseHVJQ0I5WEhKY2JuMWNjbHh1SWdvSlhTd0tDU0p0WVhCd2FXNW5jeUk2SUNKQlFVRkJMR1ZCUVdVc1EwRkRZaXhMUVVGTExFTkJRVU03UlVGRFNpeE5RVUZOTEVWQlFVVXNUMEZCVVN4SFFVTnFRanM3UVVGSVNDeGxRVUZsTEVOQlMySXNXVUZCV1N4RFFVRkRPMFZCUTFnc1NVRkJTU3hGUVVGRkxFbEJRVXM3UlVGRFdDeE5RVUZOTEVWQlFVVXNTVUZCU3p0RlFVTmlMRmxCUVZrc1JVRkJSU3hIUVVGSkxFZEJRMjVDT3p0QlFWUklMR1ZCUVdVc1EwRlhZaXhMUVVGTExFTkJRVU03UlVGRFNpeEpRVUZKTEVWQlFVVXNTVUZCU3p0RlFVTllMRTFCUVUwc1JVRkJSU3hKUVVGTE8wVkJRMklzV1VGQldTeEZRVUZGTEV0QlFVMHNSMEZEY2tJN08wRkJaa2dzWlVGQlpTeEhRV2xDVkN4RFFVRkRMRU5CUVVNN1JVRkRTaXhUUVVGVExFVkJRVVVzWTBGQlpTeEhRVU16UWpzN1FVRnVRa2dzWlVGQlpTeERRWEZDWWl4blFrRkJaMElzUjBGQlJ5eExRVUZMTEVkQlFVY3NSVUZCUlN4SFFVRkhMRVZCUVVVc1JVRnlRbkJETEdWQlFXVXNRMEZ4UW5WQ0xHZENRVUZuUWl4SFFVRkhMRXRCUVVzc1IwRkJSeXhGUVVGRkxFZEJRVWNzUlVGQlJTeERRVUZETzBWQlEzSkZMRTlCUVU4c1JVRkJSU3hyUWtGQmJVSXNSMEZETjBJN08wRkJka0pJTEdWQlFXVXNRMEY1UW1Jc1ZVRkJWU3hEUVVGRE8wVkJRMVFzVFVGQlRTeEZRVUZGTEVsQlFVc3NSMEZEWkNJc0Nna2libUZ0WlhNaU9pQmJYUXA5ICov');;
+module.exports = _dereq_(370).byUrl('data:text/css;base64,LmQzc24tY29udGFpbmVyIC5ub2RlIHsKICBjdXJzb3I6IHBvaW50ZXI7IH0KCi5kM3NuLWNvbnRhaW5lciAubm9kZS1jaXJjbGUgewogIGZpbGw6ICNjY2M7CiAgc3Ryb2tlOiAjZmZmOwogIHN0cm9rZS13aWR0aDogMnB4OyB9CgouZDNzbi1jb250YWluZXIgLmxpbmsgewogIGZpbGw6IG5vbmU7CiAgc3Ryb2tlOiAjMjIyOwogIHN0cm9rZS13aWR0aDogMnB4OyB9CgouZDNzbi1jb250YWluZXIgLmdyaWRsaW5lIHsKICBmaWxsOiBub25lOwogIHN0cm9rZS13aWR0aDogMXB4OyB9CgouZDNzbi1jb250YWluZXIgPiAqIHsKICBmb250LXNpemU6IDhwdCAhaW1wb3J0YW50OyB9CgouZDNzbi1jb250YWluZXIgLnRhYmxlLWNvbmRlbnNlZCA+IHRoZWFkID4gdHIgPiB0aCwgLmQzc24tY29udGFpbmVyIC50YWJsZS1jb25kZW5zZWQgPiB0Ym9keSA+IHRyID4gdGQgewogIHBhZGRpbmc6IDJweCAzcHggIWltcG9ydGFudDsgfQoKLmQzc24tY29udGFpbmVyIC5tb3VzZW1vdmUgewogIGN1cnNvcjogbW92ZTsgfQoKLyojIHNvdXJjZU1hcHBpbmdVUkw9ZGF0YTphcHBsaWNhdGlvbi9qc29uO2Jhc2U2NCxld29KSW5abGNuTnBiMjRpT2lBekxBb0pJbVpwYkdVaU9pQWljM1I1YkdWekxuTmpjM01pTEFvSkluTnZkWEpqWlhNaU9pQmJDZ2tKSW5OMGVXeGxjeTV6WTNOeklnb0pYU3dLQ1NKemIzVnlZMlZ6UTI5dWRHVnVkQ0k2SUZzS0NRa2lMbVF6YzI0dFkyOXVkR0ZwYm1WeUlIdGNjbHh1SUNBdWJtOWtaU0I3WEhKY2JpQWdJQ0JqZFhKemIzSTZJSEJ2YVc1MFpYSTdYSEpjYmlBZ2ZWeHlYRzVjY2x4dUlDQXVibTlrWlMxamFYSmpiR1VnZTF4eVhHNGdJQ0FnWm1sc2JEb2dJMk5qWXp0Y2NseHVJQ0FnSUhOMGNtOXJaVG9nSTJabVpqdGNjbHh1SUNBZ0lITjBjbTlyWlMxM2FXUjBhRG9nTW5CNE8xeHlYRzRnSUgxY2NseHVYSEpjYmlBZ0xteHBibXNnZTF4eVhHNGdJQ0FnWm1sc2JEb2dibTl1WlR0Y2NseHVJQ0FnSUhOMGNtOXJaVG9nSXpJeU1qdGNjbHh1SUNBZ0lITjBjbTlyWlMxM2FXUjBhRG9nTW5CNE8xeHlYRzRnSUgxY2NseHVYSEpjYmlBZ0xtZHlhV1JzYVc1bElIdGNjbHh1SUNBZ0lHWnBiR3c2SUc1dmJtVTdYSEpjYmlBZ0lDQnpkSEp2YTJVdGQybGtkR2c2SURGd2VEdGNjbHh1SUNCOVhISmNibHh5WEc0Z0lDWWdQaUFxSUh0Y2NseHVJQ0FnSUdadmJuUXRjMmw2WlRvZ09IQjBJQ0ZwYlhCdmNuUmhiblE3WEhKY2JpQWdmVnh5WEc1Y2NseHVJQ0F1ZEdGaWJHVXRZMjl1WkdWdWMyVmtJRDRnZEdobFlXUWdQaUIwY2lBK0lIUm9MQ0F1ZEdGaWJHVXRZMjl1WkdWdWMyVmtJRDRnZEdKdlpIa2dQaUIwY2lBK0lIUmtJSHRjY2x4dUlDQWdJSEJoWkdScGJtYzZJREp3ZUNBemNIZ2dJV2x0Y0c5eWRHRnVkRHRjY2x4dUlDQjlYSEpjYmx4eVhHNGdJQzV0YjNWelpXMXZkbVVnZTF4eVhHNGdJQ0FnWTNWeWMyOXlPaUJ0YjNabE8xeHlYRzRnSUgxY2NseHVmVnh5WEc0aUNnbGRMQW9KSW0xaGNIQnBibWR6SWpvZ0lrRkJRVUVzWlVGQlpTeERRVU5pTEV0QlFVc3NRMEZCUXp0RlFVTktMRTFCUVUwc1JVRkJSU3hQUVVGUkxFZEJRMnBDT3p0QlFVaElMR1ZCUVdVc1EwRkxZaXhaUVVGWkxFTkJRVU03UlVGRFdDeEpRVUZKTEVWQlFVVXNTVUZCU3p0RlFVTllMRTFCUVUwc1JVRkJSU3hKUVVGTE8wVkJRMklzV1VGQldTeEZRVUZGTEVkQlFVa3NSMEZEYmtJN08wRkJWRWdzWlVGQlpTeERRVmRpTEV0QlFVc3NRMEZCUXp0RlFVTktMRWxCUVVrc1JVRkJSU3hKUVVGTE8wVkJRMWdzVFVGQlRTeEZRVUZGTEVsQlFVczdSVUZEWWl4WlFVRlpMRVZCUVVVc1IwRkJTU3hIUVVOdVFqczdRVUZtU0N4bFFVRmxMRU5CYVVKaUxGTkJRVk1zUTBGQlF6dEZRVU5TTEVsQlFVa3NSVUZCUlN4SlFVRkxPMFZCUTFnc1dVRkJXU3hGUVVGRkxFZEJRVWtzUjBGRGJrSTdPMEZCY0VKSUxHVkJRV1VzUjBGelFsUXNRMEZCUXl4RFFVRkRPMFZCUTBvc1UwRkJVeXhGUVVGRkxHTkJRV1VzUjBGRE0wSTdPMEZCZUVKSUxHVkJRV1VzUTBFd1FtSXNaMEpCUVdkQ0xFZEJRVWNzUzBGQlN5eEhRVUZITEVWQlFVVXNSMEZCUnl4RlFVRkZMRVZCTVVKd1F5eGxRVUZsTEVOQk1FSjFRaXhuUWtGQlowSXNSMEZCUnl4TFFVRkxMRWRCUVVjc1JVRkJSU3hIUVVGSExFVkJRVVVzUTBGQlF6dEZRVU55UlN4UFFVRlBMRVZCUVVVc2EwSkJRVzFDTEVkQlF6ZENPenRCUVRWQ1NDeGxRVUZsTEVOQk9FSmlMRlZCUVZVc1EwRkJRenRGUVVOVUxFMUJRVTBzUlVGQlJTeEpRVUZMTEVkQlEyUWlMQW9KSW01aGJXVnpJam9nVzEwS2ZRPT0gKi8=');;
 },{"370":370}],3:[function(_dereq_,module,exports){
 function one(selector, el) {
   return el.querySelector(selector);
