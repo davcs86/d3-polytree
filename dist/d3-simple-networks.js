@@ -8,7 +8,7 @@
  *
  * Source Code: https://github.com/davcs86/d3-simple-networks
  *
- * Date: 2016-05-19
+ * Date: 2016-05-20
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.D3SimpleNetwork = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
@@ -326,6 +326,7 @@ SimpleNetwork.prototype.restart = function(recalculate){
 
     that.link
       .attr('marker-end', function() {
+        // hack for IE10, IE11
         var curr = this.getAttribute('marker-end')+'';
         var hasA = curr.lastIndexOf('A') > -1;
         return hasA?'url(#end)':'url(#endA)';
@@ -335,34 +336,113 @@ SimpleNetwork.prototype.restart = function(recalculate){
       .attr('x2', function(d) { return d.target.x; })
       .attr('y2', function(d) { return d.target.y; })
       .attr('d', function(d) {
-        var linePath = '';
-        if (d.source.x>d.target.x){
+        var linePath = '',
+            midPoint, endX, endY;
+        if (Math.abs(d.target.x - d.source.x) < 50){
+          if (d.source.y < d.target.y){
+            linePath = 'M ' + d.source.x + ',' + (d.source.y + 42);
+          } else {
+            linePath = 'M ' + d.source.x + ',' + (d.source.y - 27);
+          }
+        }
+        else if (d.source.x > d.target.x){
           linePath = 'M ' + (d.source.x - 27) + ',' + d.source.y;
         } else {
           linePath = 'M ' + (d.source.x + 27) + ',' + d.source.y;
         }
         if (d.target.y == d.source.y){
           // straight line
-          if (d.source.x>d.target.x){
-            linePath += 'L'+(d.target.x + 27)+','+d.target.y;
+          if (d.source.x > d.target.x){
+            linePath += 'L' + (d.target.x + 27) + ',' + d.target.y;
           } else {
-            linePath += 'L'+(d.target.x - 27)+','+d.target.y;
+            linePath += 'L' + (d.target.x - 27) + ',' + d.target.y;
           }
         } else if (Math.abs(d.target.y - d.source.y) < 50){
-          // angular line (forward)
-          linePath += 'L'+(d.source.x + ((d.target.x - d.source.x)/2))+','+d.source.y;
-          linePath += 'L'+(d.source.x + ((d.target.x - d.source.x)/2))+','+d.target.y;
-          if (d.source.x>d.target.x){
-            linePath += 'L'+(d.target.x + 27)+','+d.target.y;
+          // angular line (horizontal)
+          midPoint = (d.source.x + ((d.target.x - d.source.x) / 2));
+          endX = midPoint;
+          endY = midPoint;
+          if (d.source.x > d.target.x){
+            endX += 10;
+            if (endX > (d.source.x - 27)){ endX = (d.source.x - 27); }
+            endY -= 10;
+            if (endY < (d.target.x - 27)){ endY = (d.target.x - 27); }
           } else {
-            linePath += 'L'+(d.target.x - 27)+','+d.target.y;
+            endX -= 10;
+            if (endX < (d.source.x + 27)){ endX = (d.source.x + 27); }
+            endY += 10;
+            if (endY > (d.target.x + 27)){ endY = (d.target.x + 27); }
+          }
+          linePath += 'L' + endX + ',' + d.source.y;
+          linePath += 'Q' + midPoint + ' ' + d.source.y;
+          linePath += ' ' + midPoint;
+          linePath += ' ' + (d.source.y + ((d.target.y - d.source.y) / 2));
+
+          linePath += 'Q' + midPoint + ' ' + d.target.y;
+          linePath += ' ' + endY;
+          linePath += ' ' + d.target.y;
+
+          if (d.source.x > d.target.x){
+            linePath += 'L' + (d.target.x + 27) + ',' + d.target.y;
+          } else {
+            linePath += 'L' + (d.target.x - 27) + ',' + d.target.y;
+          }
+        } else if (Math.abs(d.target.x - d.source.x) < 50){
+          // angular line (vertical)
+          midPoint = (d.source.y + ((d.target.y - d.source.y) / 2));
+          endX = midPoint;
+          endY = midPoint;
+          if (d.source.y > d.target.y){
+            endX += 10;
+            if (endX > (d.source.y - 27)){ endX = (d.source.y - 27); }
+            endY -= 10;
+            if (endY < (d.target.y - 27)){ endY = (d.target.y - 27); }
+          } else {
+            endX -= 10;
+            if (endX < (d.source.y + 27)){ endX = (d.source.y + 27); }
+            endY += 10;
+            if (endY > (d.target.y + 27)){ endY = (d.target.y + 27); }
+          }
+
+          linePath += 'L' + d.source.x + ',' + endX;
+          // Terminar
+          linePath += 'Q' + d.source.x + ' ' + midPoint;
+          linePath += ' ' + (d.source.x + ((d.target.x - d.source.x) / 2));
+          linePath += ' ' + midPoint;
+          //
+          linePath += 'Q' + d.target.x + ' ' + midPoint;
+          linePath += ' ' + d.target.x;
+          linePath += ' ' + endY;
+          //
+          // linePath += 'L' + d.source.x + ',' + (d.source.y + ((d.target.y - d.source.y) / 2));
+          // linePath += 'L' + d.target.x + ',' + (d.source.y + ((d.target.y - d.source.y) / 2));
+          if (d.source.y < d.target.y){
+            linePath += 'L' + d.target.x + ',' + (d.target.y - 27);
+          } else {
+            linePath += 'L' + d.target.x + ',' + (d.target.y + 42);
           }
         } else {
           // angular line
-          linePath += 'L'+d.target.x+','+d.source.y;
-          if (d.source.y<d.target.y) {
+          endX = d.target.x;
+          endY = d.source.y;
+          if (d.source.x > d.target.x){
+            endX += 10;
+            if (endX > (d.source.x - 27)){ endX = (d.source.x - 27); }
+          } else {
+            endX -= 10;
+            if (endX < (d.source.x + 27)){ endX = (d.source.x + 27); }
+          }
+          linePath += 'L' + endX + ',' + d.source.y;
+          linePath += 'Q' + d.target.x + ' ' + d.source.y;
+          if (d.source.y < d.target.y) {
+            endY += 10;
+            if (endY > (d.target.y - 27)){ endY = (d.target.y - 27); }
+            linePath += ' ' + d.target.x + ' ' + endY;
             linePath += 'L' + d.target.x + ',' + (d.target.y - 27);
           } else {
+            endY -= 10;
+            if (endY < (d.target.y + 42)){ endY = (d.target.y + 42); }
+            linePath += ' ' + d.target.x + ' ' + endY;
             linePath += 'L' + d.target.x + ',' + (d.target.y + 42);
           }
         }
