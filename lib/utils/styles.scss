@@ -1,18 +1,31 @@
 .d3sn-container {
+
   .node {
     cursor: pointer;
   }
 
-  .node-circle {
-    fill: #ccc;
-    stroke: #fff;
+  .node-groups {
     stroke-width: 2px;
+    fill-opacity: 0.3;
   }
 
   .link {
+     stroke: black;
+     fill: none;
+     stroke-width: 4px;
+     stroke-linecap: round;
+  }
+
+  .inner-link {
+    stroke: white;
     fill: none;
-    stroke: #222;
-    stroke-width: 2px;
+    stroke-width: 1.5px;
+    stroke-linecap: round;
+  }
+
+  .marker {
+    stroke: black;
+    fill: white;
   }
 
   .gridline {
