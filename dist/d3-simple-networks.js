@@ -8,7 +8,7 @@
  *
  * Source Code: https://github.com/davcs86/d3-simple-networks
  *
- * Date: 2016-05-26
+ * Date: 2016-05-30
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.D3SimpleNetwork = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
@@ -127,10 +127,11 @@ SimpleNetwork.prototype.drawGridLines = function(){
       .attr('class', 'gridline');
 };
 
-SimpleNetwork.prototype.calculateGroupBoundaries = function(groupNodes){
+SimpleNetwork.prototype.calculateGroupBoundaries = function(groupNodes, label){
   var that = this,
       xArr = [],
-      yArr = [];
+      yArr = [],
+      hasLabel = !isUndefined(label);
   forIn(groupNodes, function(n, k){
     var pos = that.nodes[k].position;
     if (isUndefined(pos)){
@@ -141,7 +142,7 @@ SimpleNetwork.prototype.calculateGroupBoundaries = function(groupNodes){
   });
   var x = d3js.min(xArr) - 32,
       width = d3js.max(xArr) - x + 32,
-      y = d3js.min(yArr) - 32,
+      y = d3js.min(yArr) - 32 - (hasLabel ? 6 : 0),
       height = d3js.max(yArr) - y + 42;
   return {
     x: x,
@@ -156,17 +157,18 @@ SimpleNetwork.prototype.drawGroups= function(){
   // get the groups
   var groupsArray = values(this.options.groups);
   // create the groups
-  this.groups = this.SVG
+  var groups = this.SVG
     .selectAll('.group')
     .data(groupsArray)
     .enter()
+    .append('g');
+  this.groups = groups
     .append('rect')
       .attr('coords', function(d) {
-        d.coords = that.calculateGroupBoundaries(d.nodes);
-        return d.coords;
+        d.coords = that.calculateGroupBoundaries(d.nodes, d.label);
+        return null;
       })
       .attr('x', function (d) {
-        console.log(d);
         return d.coords.x;
       })
       .attr('y', function (d) {
@@ -178,9 +180,6 @@ SimpleNetwork.prototype.drawGroups= function(){
       .attr('height', function (d) {
         return d.coords.height;
       })
-      .attr('ry', function () {
-        return '5';
-      })
       .attr('rx', function () {
         return '5';
       })
@@ -191,6 +190,23 @@ SimpleNetwork.prototype.drawGroups= function(){
         return d.color;
       })
       .attr('class', 'node-groups');
+
+  this.groupsLabels = groups
+    .append('text')
+      .attr('x', function (d) {
+        return d.coords.x + 3;
+      })
+      .attr('y', function (d) {
+        return d.coords.y + 10;
+      })
+      .style('font-size', '8px')
+      .style('font-weight', 'bold')
+      .style('fill', function(d){
+        return d.color;
+      })
+      .text(function(d){
+        return isUndefined(d.label)?null:d.label;
+      });
 };
 
 SimpleNetwork.prototype.initSVG = function(){
@@ -337,8 +353,8 @@ SimpleNetwork.prototype.calculateNodes = function() {
   // fix with the settings
   forEach(nodes, function(node){
     if (node.overridePosition){
-      node.x = node.positionX;//*totalWidth;
-      node.y = node.positionY;//*totalHeight;
+      node.x = node.positionX;
+      node.y = node.positionY;
     }
   });
   this._nodes = nodes;
@@ -373,14 +389,17 @@ SimpleNetwork.prototype.restart = function(recalculate){
         return 'translate(' + d.x + ',' + d.y + ')';
       });
 
+    that.linkNotes
+      .attr('text-anchor', helper.calculateLinkNoteAnchor)
+      .attr('transform', helper.calculateLinkNotePosition);
+
     // fix the groups
     that.groups
       .attr('coords', function(d) {
-        d.coords = that.calculateGroupBoundaries(d.nodes);
-        return d.coords;
+        d.coords = that.calculateGroupBoundaries(d.nodes, d.label);
+        return null;
       })
       .attr('x', function (d) {
-        console.log(d);
         return d.coords.x;
       })
       .attr('y', function (d) {
@@ -393,15 +412,12 @@ SimpleNetwork.prototype.restart = function(recalculate){
         return d.coords.height;
       });
 
-    that.labels
-      .attr('dx', function(){
-        var offset;
-        try {
-          offset = (this.getBBox().width/2);
-        } catch(ex){
-          offset = 0;
-        }
-        return '-'+offset;
+    that.groupsLabels
+      .attr('x', function (d) {
+        return d.coords.x + 3;
+      })
+      .attr('y', function (d) {
+        return d.coords.y + 10;
       });
 
     that.link
@@ -411,22 +427,10 @@ SimpleNetwork.prototype.restart = function(recalculate){
         var hasA = curr.lastIndexOf('A') > -1;
         return hasA?'url(#end)':'url(#endA)';
       })
-      .attr('x1', function(d) { return d.source.x; })
-      .attr('y1', function(d) { return d.source.y; })
-      .attr('x2', function(d) { return d.target.x; })
-      .attr('y2', function(d) { return d.target.y; })
-      .attr('d', function(d) {
-        return helper.calculateLinkPath(d);
-      });
+      .attr('d', helper.calculateLinkPath);
 
     that.sublink
-      .attr('x1', function(d) { return d.source.x; })
-      .attr('y1', function(d) { return d.source.y; })
-      .attr('x2', function(d) { return d.target.x; })
-      .attr('y2', function(d) { return d.target.y; })
-      .attr('d', function(d) {
-        return helper.calculateLinkPath(d);
-      });
+      .attr('d', helper.calculateLinkPath);
   };
 
   if (recalculate) {
@@ -485,25 +489,33 @@ SimpleNetwork.prototype.restart = function(recalculate){
   this.drawGroups();
 
   // create the links paths and marker
-  this.link = this.SVG
+  this.linkg = this.SVG
     .append('g')
       .selectAll('.link')
       .data(this.force.links())
       .enter()
+    .append('g');
+
+  this.link = this.linkg
     .append('path')
       .attr({
         'class': 'link',
         'marker-end': 'url(#end)'
       });
 
-  this.sublink = this.SVG
-    .append('g')
-      .selectAll('.inner-link')
-      .data(this.force.links())
-      .enter()
+  this.sublink = this.linkg
     .append('path')
       .attr({
         'class': 'inner-link'
+      });
+
+  this.linkNotes = this.linkg
+    .append('text')
+      .attr('text-anchor', 'middle')
+      .style('font-weight', 'bold')
+      .style('font-size', '7px')
+      .text(function(d){
+        return d.label;
       });
 
   // create the nodes
@@ -518,17 +530,20 @@ SimpleNetwork.prototype.restart = function(recalculate){
       });
 
   // add an empty rect to increase the dragging area
-  this.node.append('rect')
+  this.node
+    .append('rect')
     .attr({
       'width': 50,
       'height': 50,
       'x': -25,
-      'y': -25
+      'y': -25,
+      'rx': 9
     })
     .attr('fill', 'white');
 
   // append the icon to the nodes
-  this.node.append('svg')
+  this.node
+    .append('svg')
     .attr({
       'width': 50,
       'height': 50,
@@ -547,11 +562,13 @@ SimpleNetwork.prototype.restart = function(recalculate){
       });
 
   // append the label to the node
-  this.labels = this.node.append('text')
-    .attr('y', 37)
-    .text(function(d) {
-      return d.label;
-    });
+  this.labels = this.node
+    .append('text')
+      .attr('text-anchor', 'middle')
+      .attr('y', 37)
+      .text(function(d) {
+        return d.label;
+      });
 
   // append the attached data table
   this.node.append('foreignObject')
@@ -637,8 +654,50 @@ module.exports = SimpleNetwork;
 },{"2":2,"219":219,"3":3,"306":306,"324":324,"367":367,"371":371,"4":4,"7":7}],2:[function(_dereq_,module,exports){
 'use strict';
 
+var d3js = _dereq_(7);
+
 function D3SNHelpers(){
 }
+
+D3SNHelpers.prototype.calculateLinkNoteAnchor = function(d) {
+  var anchor = 'middle',
+      xDiffAbs = Math.abs(d.target.x - d.source.x);
+  if (xDiffAbs <= 57) {
+    anchor = 'start';
+  }
+  return anchor;
+};
+
+D3SNHelpers.prototype.calculateLinkNotePosition = function(d) {
+  var position = 'translate(',
+      x = 0,
+      y = 0,
+      yDiff = d.target.y - d.source.y,
+      yDiffAbs = Math.abs(yDiff),
+      xDiff = d.target.x - d.source.x,
+      xDiffAbs = Math.abs(xDiff);
+  if (xDiffAbs > 57) {
+    x = (d.source.x + ((d.target.x - d.source.x) / 2));
+    if (yDiffAbs > 57) {
+      x += (xDiff > 0) ? 27 : -27;
+    }
+    if (yDiff < 0 && yDiffAbs > 57) {
+      y = d.source.y + 9.5;
+    } else {
+      y = d3js.min([d.source.y, d.target.y]) - 4;
+    }
+  } else {
+    y = (d.source.y + ((d.target.y - d.source.y) / 2));
+    x = (xDiff > 0) ? d.source.x + 6 : d.target.x + 6;
+    if (yDiff < 0){
+      y += (xDiff > 0) ? 10 : -6;
+    } else {
+      y += (xDiff > 0) ? -6 : 10;
+    }
+  }
+  position += x + ',' + y + ')';
+  return position;
+};
 
 D3SNHelpers.prototype.calculateLinkPath = function(d){
   var linePath = '',
@@ -752,7 +811,7 @@ D3SNHelpers.prototype.calculateLinkPath = function(d){
 };
 
 module.exports = new D3SNHelpers();
-},{}],3:[function(_dereq_,module,exports){
+},{"7":7}],3:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = {
@@ -1945,7 +2004,7 @@ module.exports = {
 };
 
 },{}],4:[function(_dereq_,module,exports){
-module.exports = _dereq_(372).byUrl('data:text/css;base64,LmQzc24tY29udGFpbmVyIC5ub2RlIHsKICBjdXJzb3I6IHBvaW50ZXI7IH0KCi5kM3NuLWNvbnRhaW5lciAubm9kZS1ncm91cHMgewogIHN0cm9rZS13aWR0aDogMnB4OwogIGZpbGwtb3BhY2l0eTogMC4zOyB9CgouZDNzbi1jb250YWluZXIgLmxpbmsgewogIHN0cm9rZTogYmxhY2s7CiAgZmlsbDogbm9uZTsKICBzdHJva2Utd2lkdGg6IDRweDsKICBzdHJva2UtbGluZWNhcDogcm91bmQ7IH0KCi5kM3NuLWNvbnRhaW5lciAuaW5uZXItbGluayB7CiAgc3Ryb2tlOiB3aGl0ZTsKICBmaWxsOiBub25lOwogIHN0cm9rZS13aWR0aDogMS41cHg7CiAgc3Ryb2tlLWxpbmVjYXA6IHJvdW5kOyB9CgouZDNzbi1jb250YWluZXIgLm1hcmtlciB7CiAgc3Ryb2tlOiBibGFjazsKICBmaWxsOiB3aGl0ZTsgfQoKLmQzc24tY29udGFpbmVyIC5ncmlkbGluZSB7CiAgZmlsbDogbm9uZTsKICBzdHJva2Utd2lkdGg6IDFweDsgfQoKLmQzc24tY29udGFpbmVyID4gKiB7CiAgZm9udC1zaXplOiA4cHQgIWltcG9ydGFudDsgfQoKLmQzc24tY29udGFpbmVyIC50YWJsZS1jb25kZW5zZWQgPiB0aGVhZCA+IHRyID4gdGgsIC5kM3NuLWNvbnRhaW5lciAudGFibGUtY29uZGVuc2VkID4gdGJvZHkgPiB0ciA+IHRkIHsKICBwYWRkaW5nOiAycHggM3B4ICFpbXBvcnRhbnQ7IH0KCi5kM3NuLWNvbnRhaW5lciAubW91c2Vtb3ZlIHsKICBjdXJzb3I6IG1vdmU7IH0KCi8qIyBzb3VyY2VNYXBwaW5nVVJMPWRhdGE6YXBwbGljYXRpb24vanNvbjtiYXNlNjQsZXdvSkluWmxjbk5wYjI0aU9pQXpMQW9KSW1acGJHVWlPaUFpYzNSNWJHVnpMbk5qYzNNaUxBb0pJbk52ZFhKalpYTWlPaUJiQ2drSkluTjBlV3hsY3k1elkzTnpJZ29KWFN3S0NTSnpiM1Z5WTJWelEyOXVkR1Z1ZENJNklGc0tDUWtpTG1RemMyNHRZMjl1ZEdGcGJtVnlJSHRjY2x4dVhISmNiaUFnTG01dlpHVWdlMXh5WEc0Z0lDQWdZM1Z5YzI5eU9pQndiMmx1ZEdWeU8xeHlYRzRnSUgxY2NseHVYSEpjYmlBZ0xtNXZaR1V0WjNKdmRYQnpJSHRjY2x4dUlDQWdJSE4wY205clpTMTNhV1IwYURvZ01uQjRPMXh5WEc0Z0lDQWdabWxzYkMxdmNHRmphWFI1T2lBd0xqTTdYSEpjYmlBZ2ZWeHlYRzVjY2x4dUlDQXViR2x1YXlCN1hISmNiaUFnSUNBZ2MzUnliMnRsT2lCaWJHRmphenRjY2x4dUlDQWdJQ0JtYVd4c09pQnViMjVsTzF4eVhHNGdJQ0FnSUhOMGNtOXJaUzEzYVdSMGFEb2dOSEI0TzF4eVhHNGdJQ0FnSUhOMGNtOXJaUzFzYVc1bFkyRndPaUJ5YjNWdVpEdGNjbHh1SUNCOVhISmNibHh5WEc0Z0lDNXBibTVsY2kxc2FXNXJJSHRjY2x4dUlDQWdJSE4wY205clpUb2dkMmhwZEdVN1hISmNiaUFnSUNCbWFXeHNPaUJ1YjI1bE8xeHlYRzRnSUNBZ2MzUnliMnRsTFhkcFpIUm9PaUF4TGpWd2VEdGNjbHh1SUNBZ0lITjBjbTlyWlMxc2FXNWxZMkZ3T2lCeWIzVnVaRHRjY2x4dUlDQjlYSEpjYmx4eVhHNGdJQzV0WVhKclpYSWdlMXh5WEc0Z0lDQWdjM1J5YjJ0bE9pQmliR0ZqYXp0Y2NseHVJQ0FnSUdacGJHdzZJSGRvYVhSbE8xeHlYRzRnSUgxY2NseHVYSEpjYmlBZ0xtZHlhV1JzYVc1bElIdGNjbHh1SUNBZ0lHWnBiR3c2SUc1dmJtVTdYSEpjYmlBZ0lDQnpkSEp2YTJVdGQybGtkR2c2SURGd2VEdGNjbHh1SUNCOVhISmNibHh5WEc0Z0lDWWdQaUFxSUh0Y2NseHVJQ0FnSUdadmJuUXRjMmw2WlRvZ09IQjBJQ0ZwYlhCdmNuUmhiblE3WEhKY2JpQWdmVnh5WEc1Y2NseHVJQ0F1ZEdGaWJHVXRZMjl1WkdWdWMyVmtJRDRnZEdobFlXUWdQaUIwY2lBK0lIUm9MQ0F1ZEdGaWJHVXRZMjl1WkdWdWMyVmtJRDRnZEdKdlpIa2dQaUIwY2lBK0lIUmtJSHRjY2x4dUlDQWdJSEJoWkdScGJtYzZJREp3ZUNBemNIZ2dJV2x0Y0c5eWRHRnVkRHRjY2x4dUlDQjlYSEpjYmx4eVhHNGdJQzV0YjNWelpXMXZkbVVnZTF4eVhHNGdJQ0FnWTNWeWMyOXlPaUJ0YjNabE8xeHlYRzRnSUgxY2NseHVmVnh5WEc0aUNnbGRMQW9KSW0xaGNIQnBibWR6SWpvZ0lrRkJRVUVzWlVGQlpTeERRVVZpTEV0QlFVc3NRMEZCUXp0RlFVTktMRTFCUVUwc1JVRkJSU3hQUVVGUkxFZEJRMnBDT3p0QlFVcElMR1ZCUVdVc1EwRk5ZaXhaUVVGWkxFTkJRVU03UlVGRFdDeFpRVUZaTEVWQlFVVXNSMEZCU1R0RlFVTnNRaXhaUVVGWkxFVkJRVVVzUjBGQlNTeEhRVU51UWpzN1FVRlVTQ3hsUVVGbExFTkJWMklzUzBGQlN5eERRVUZETzBWQlEwZ3NUVUZCVFN4RlFVRkZMRXRCUVUwN1JVRkRaQ3hKUVVGSkxFVkJRVVVzU1VGQlN6dEZRVU5ZTEZsQlFWa3NSVUZCUlN4SFFVRkpPMFZCUTJ4Q0xHTkJRV01zUlVGQlJTeExRVUZOTEVkQlEzaENPenRCUVdoQ1NDeGxRVUZsTEVOQmEwSmlMRmRCUVZjc1EwRkJRenRGUVVOV0xFMUJRVTBzUlVGQlJTeExRVUZOTzBWQlEyUXNTVUZCU1N4RlFVRkZMRWxCUVVzN1JVRkRXQ3haUVVGWkxFVkJRVVVzUzBGQlRUdEZRVU53UWl4alFVRmpMRVZCUVVVc1MwRkJUU3hIUVVOMlFqczdRVUYyUWtnc1pVRkJaU3hEUVhsQ1lpeFBRVUZQTEVOQlFVTTdSVUZEVGl4TlFVRk5MRVZCUVVVc1MwRkJUVHRGUVVOa0xFbEJRVWtzUlVGQlJTeExRVUZOTEVkQlEySTdPMEZCTlVKSUxHVkJRV1VzUTBFNFFtSXNVMEZCVXl4RFFVRkRPMFZCUTFJc1NVRkJTU3hGUVVGRkxFbEJRVXM3UlVGRFdDeFpRVUZaTEVWQlFVVXNSMEZCU1N4SFFVTnVRanM3UVVGcVEwZ3NaVUZCWlN4SFFXMURWQ3hEUVVGRExFTkJRVU03UlVGRFNpeFRRVUZUTEVWQlFVVXNZMEZCWlN4SFFVTXpRanM3UVVGeVEwZ3NaVUZCWlN4RFFYVkRZaXhuUWtGQlowSXNSMEZCUnl4TFFVRkxMRWRCUVVjc1JVRkJSU3hIUVVGSExFVkJRVVVzUlVGMlEzQkRMR1ZCUVdVc1EwRjFRM1ZDTEdkQ1FVRm5RaXhIUVVGSExFdEJRVXNzUjBGQlJ5eEZRVUZGTEVkQlFVY3NSVUZCUlN4RFFVRkRPMFZCUTNKRkxFOUJRVThzUlVGQlJTeHJRa0ZCYlVJc1IwRkROMEk3TzBGQmVrTklMR1ZCUVdVc1EwRXlRMklzVlVGQlZTeERRVUZETzBWQlExUXNUVUZCVFN4RlFVRkZMRWxCUVVzc1IwRkRaQ0lzQ2draWJtRnRaWE1pT2lCYlhRcDkgKi8=');;
+module.exports = _dereq_(372).byUrl('data:text/css;base64,LmQzc24tY29udGFpbmVyIC5ub2RlIHsKICBjdXJzb3I6IHBvaW50ZXI7IH0KCi5kM3NuLWNvbnRhaW5lciAubm9kZS1ncm91cHMgewogIHN0cm9rZS13aWR0aDogMnB4OwogIGZpbGwtb3BhY2l0eTogMC4zOyB9CgouZDNzbi1jb250YWluZXIgLmxpbmsgewogIHN0cm9rZTogYmxhY2s7CiAgZmlsbDogbm9uZTsKICBzdHJva2Utd2lkdGg6IDRweDsKICBzdHJva2UtbGluZWNhcDogcm91bmQ7IH0KCi5kM3NuLWNvbnRhaW5lciAuaW5uZXItbGluayB7CiAgc3Ryb2tlOiB3aGl0ZTsKICBmaWxsOiBub25lOwogIHN0cm9rZS13aWR0aDogMS41cHg7CiAgc3Ryb2tlLWxpbmVjYXA6IHJvdW5kOyB9CgouZDNzbi1jb250YWluZXIgLm1hcmtlciB7CiAgc3Ryb2tlOiBibGFjazsKICBmaWxsOiB3aGl0ZTsgfQoKLmQzc24tY29udGFpbmVyIC5ncmlkbGluZSB7CiAgZmlsbDogbm9uZTsKICBzdHJva2Utd2lkdGg6IDFweDsgfQoKLmQzc24tY29udGFpbmVyID4gKiB7CiAgZm9udC1mYW1pbHk6ICJIZWx2ZXRpY2EgTmV1ZSIsSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYgIWltcG9ydGFudDsKICBmb250LXNpemU6IDEwcHggIWltcG9ydGFudDsgfQoKLmQzc24tY29udGFpbmVyIC50YWJsZS1jb25kZW5zZWQgPiB0aGVhZCA+IHRyID4gdGgsIC5kM3NuLWNvbnRhaW5lciAudGFibGUtY29uZGVuc2VkID4gdGJvZHkgPiB0ciA+IHRkIHsKICBwYWRkaW5nOiAycHggM3B4ICFpbXBvcnRhbnQ7IH0KCi5kM3NuLWNvbnRhaW5lciAubW91c2Vtb3ZlIHsKICBjdXJzb3I6IG1vdmU7IH0KCi8qIyBzb3VyY2VNYXBwaW5nVVJMPWRhdGE6YXBwbGljYXRpb24vanNvbjtiYXNlNjQsZXdvSkluWmxjbk5wYjI0aU9pQXpMQW9KSW1acGJHVWlPaUFpYzNSNWJHVnpMbk5qYzNNaUxBb0pJbk52ZFhKalpYTWlPaUJiQ2drSkluTjBlV3hsY3k1elkzTnpJZ29KWFN3S0NTSnpiM1Z5WTJWelEyOXVkR1Z1ZENJNklGc0tDUWtpTG1RemMyNHRZMjl1ZEdGcGJtVnlJSHRjY2x4dVhISmNiaUFnTG01dlpHVWdlMXh5WEc0Z0lDQWdZM1Z5YzI5eU9pQndiMmx1ZEdWeU8xeHlYRzRnSUgxY2NseHVYSEpjYmlBZ0xtNXZaR1V0WjNKdmRYQnpJSHRjY2x4dUlDQWdJSE4wY205clpTMTNhV1IwYURvZ01uQjRPMXh5WEc0Z0lDQWdabWxzYkMxdmNHRmphWFI1T2lBd0xqTTdYSEpjYmlBZ2ZWeHlYRzVjY2x4dUlDQXViR2x1YXlCN1hISmNiaUFnSUNBZ2MzUnliMnRsT2lCaWJHRmphenRjY2x4dUlDQWdJQ0JtYVd4c09pQnViMjVsTzF4eVhHNGdJQ0FnSUhOMGNtOXJaUzEzYVdSMGFEb2dOSEI0TzF4eVhHNGdJQ0FnSUhOMGNtOXJaUzFzYVc1bFkyRndPaUJ5YjNWdVpEdGNjbHh1SUNCOVhISmNibHh5WEc0Z0lDNXBibTVsY2kxc2FXNXJJSHRjY2x4dUlDQWdJSE4wY205clpUb2dkMmhwZEdVN1hISmNiaUFnSUNCbWFXeHNPaUJ1YjI1bE8xeHlYRzRnSUNBZ2MzUnliMnRsTFhkcFpIUm9PaUF4TGpWd2VEdGNjbHh1SUNBZ0lITjBjbTlyWlMxc2FXNWxZMkZ3T2lCeWIzVnVaRHRjY2x4dUlDQjlYSEpjYmx4eVhHNGdJQzV0WVhKclpYSWdlMXh5WEc0Z0lDQWdjM1J5YjJ0bE9pQmliR0ZqYXp0Y2NseHVJQ0FnSUdacGJHdzZJSGRvYVhSbE8xeHlYRzRnSUgxY2NseHVYSEpjYmlBZ0xtZHlhV1JzYVc1bElIdGNjbHh1SUNBZ0lHWnBiR3c2SUc1dmJtVTdYSEpjYmlBZ0lDQnpkSEp2YTJVdGQybGtkR2c2SURGd2VEdGNjbHh1SUNCOVhISmNibHh5WEc0Z0lDWWdQaUFxSUh0Y2NseHVJQ0FnSUdadmJuUXRabUZ0YVd4NU9pQmNJa2hsYkhabGRHbGpZU0JPWlhWbFhDSXNTR1ZzZG1WMGFXTmhMRUZ5YVdGc0xITmhibk10YzJWeWFXWWdJV2x0Y0c5eWRHRnVkRHRjY2x4dUlDQWdJR1p2Ym5RdGMybDZaVG9nTVRCd2VDQWhhVzF3YjNKMFlXNTBPMXh5WEc0Z0lIMWNjbHh1WEhKY2JpQWdMblJoWW14bExXTnZibVJsYm5ObFpDQStJSFJvWldGa0lENGdkSElnUGlCMGFDd2dMblJoWW14bExXTnZibVJsYm5ObFpDQStJSFJpYjJSNUlENGdkSElnUGlCMFpDQjdYSEpjYmlBZ0lDQndZV1JrYVc1bk9pQXljSGdnTTNCNElDRnBiWEJ2Y25SaGJuUTdYSEpjYmlBZ2ZWeHlYRzVjY2x4dUlDQXViVzkxYzJWdGIzWmxJSHRjY2x4dUlDQWdJR04xY25OdmNqb2diVzkyWlR0Y2NseHVJQ0I5WEhKY2JuMWNjbHh1SWdvSlhTd0tDU0p0WVhCd2FXNW5jeUk2SUNKQlFVRkJMR1ZCUVdVc1EwRkZZaXhMUVVGTExFTkJRVU03UlVGRFNpeE5RVUZOTEVWQlFVVXNUMEZCVVN4SFFVTnFRanM3UVVGS1NDeGxRVUZsTEVOQlRXSXNXVUZCV1N4RFFVRkRPMFZCUTFnc1dVRkJXU3hGUVVGRkxFZEJRVWs3UlVGRGJFSXNXVUZCV1N4RlFVRkZMRWRCUVVrc1IwRkRia0k3TzBGQlZFZ3NaVUZCWlN4RFFWZGlMRXRCUVVzc1EwRkJRenRGUVVOSUxFMUJRVTBzUlVGQlJTeExRVUZOTzBWQlEyUXNTVUZCU1N4RlFVRkZMRWxCUVVzN1JVRkRXQ3haUVVGWkxFVkJRVVVzUjBGQlNUdEZRVU5zUWl4alFVRmpMRVZCUVVVc1MwRkJUU3hIUVVONFFqczdRVUZvUWtnc1pVRkJaU3hEUVd0Q1lpeFhRVUZYTEVOQlFVTTdSVUZEVml4TlFVRk5MRVZCUVVVc1MwRkJUVHRGUVVOa0xFbEJRVWtzUlVGQlJTeEpRVUZMTzBWQlExZ3NXVUZCV1N4RlFVRkZMRXRCUVUwN1JVRkRjRUlzWTBGQll5eEZRVUZGTEV0QlFVMHNSMEZEZGtJN08wRkJka0pJTEdWQlFXVXNRMEY1UW1Jc1QwRkJUeXhEUVVGRE8wVkJRMDRzVFVGQlRTeEZRVUZGTEV0QlFVMDdSVUZEWkN4SlFVRkpMRVZCUVVVc1MwRkJUU3hIUVVOaU96dEJRVFZDU0N4bFFVRmxMRU5CT0VKaUxGTkJRVk1zUTBGQlF6dEZRVU5TTEVsQlFVa3NSVUZCUlN4SlFVRkxPMFZCUTFnc1dVRkJXU3hGUVVGRkxFZEJRVWtzUjBGRGJrSTdPMEZCYWtOSUxHVkJRV1VzUjBGdFExUXNRMEZCUXl4RFFVRkRPMFZCUTBvc1YwRkJWeXhGUVVGRkxITkVRVUYxUkR0RlFVTndSU3hUUVVGVExFVkJRVVVzWlVGQlowSXNSMEZETlVJN08wRkJkRU5JTEdWQlFXVXNRMEYzUTJJc1owSkJRV2RDTEVkQlFVY3NTMEZCU3l4SFFVRkhMRVZCUVVVc1IwRkJSeXhGUVVGRkxFVkJlRU53UXl4bFFVRmxMRU5CZDBOMVFpeG5Ra0ZCWjBJc1IwRkJSeXhMUVVGTExFZEJRVWNzUlVGQlJTeEhRVUZITEVWQlFVVXNRMEZCUXp0RlFVTnlSU3hQUVVGUExFVkJRVVVzYTBKQlFXMUNMRWRCUXpkQ096dEJRVEZEU0N4bFFVRmxMRU5CTkVOaUxGVkJRVlVzUTBGQlF6dEZRVU5VTEUxQlFVMHNSVUZCUlN4SlFVRkxMRWRCUTJRaUxBb0pJbTVoYldWeklqb2dXMTBLZlE9PSAqLw==');;
 },{"372":372}],5:[function(_dereq_,module,exports){
 function one(selector, el) {
   return el.querySelector(selector);
