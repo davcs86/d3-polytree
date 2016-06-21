@@ -48,6 +48,7 @@ var assign = _dereq_(331).assign,
     gridLinesColor: '#ddd',
     gridLinesWidth: 1,
     showGridLines: true,
+    fontColor: '#333',
     groups: {}
   },
   ICONS = _dereq_(4),
@@ -74,6 +75,7 @@ function SimpleNetwork(options) {
   }
 
   this.container = parent;
+  this.container.style.backgroundColor = this.options.bgColor;
 
   this.nodes = cloneDeep(options.nodes);
 
@@ -138,6 +140,7 @@ SimpleNetwork.prototype.drawGridLines = function(){
         return that.options.height;
       })
       .style('stroke', this.options.gridLinesColor)
+      .style('stroke-width', this.options.gridLinesWidth + 'px')
       .attr('class', 'gridline');
 };
 
@@ -239,9 +242,10 @@ SimpleNetwork.prototype.initSVG = function(){
         'class': 'd3sn-container',
         'width': this.options.width,
         'height': this.options.height,
-        'pointer-events': 'all'
-      })
-      .attr('viewBox', '0 0 ' + this.options.width + ' ' + this.options.height);
+        'pointer-events': 'all',
+        'viewBox': '0 0 ' + this.options.width + ' ' + this.options.height,
+        'fill': 'transparent'
+      });
 
   if (this.options.showGridLines){
     this.drawGridLines();
@@ -269,8 +273,7 @@ SimpleNetwork.prototype.initSVG = function(){
     .attr('width', this.options.width*5)
     .attr('height', this.options.height*5)
     .attr('x', -1*this.options.width*2)
-    .attr('y', -1*this.options.height*2)
-    .attr('fill', this.options.bgColor);
+    .attr('y', -1*this.options.height*2);
 
 };
 
@@ -526,6 +529,7 @@ SimpleNetwork.prototype.restart = function(recalculate){
   this.linkNotes = this.linkg
     .append('text')
       .attr('text-anchor', 'middle')
+      .attr('fill', this.options.fontColor)
       .style('font-weight', 'bold')
       .style('font-size', '7px')
       .text(function(d){
@@ -578,8 +582,11 @@ SimpleNetwork.prototype.restart = function(recalculate){
   // append the label to the node
   this.labels = this.node
     .append('text')
-      .attr('text-anchor', 'middle')
-      .attr('y', 37)
+      .attr({
+        'text-anchor': 'middle',
+        'y': 37,
+        'fill': this.options.fontColor
+      })
       .text(function(d) {
         return d.label;
       });
