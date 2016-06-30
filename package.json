@@ -22,9 +22,14 @@
   },
   "homepage": "https://github.com/davcs86/d3-simple-networks#readme",
   "dependencies": {
+    "bootstrap-sass": "^3.3.6",
     "d3": "^3.5.16",
+    "ionicons": "^3.0.0",
     "lodash": "^4.11.1",
-    "min-dom": "^0.2.0"
+    "min-dom": "^0.2.0",
+    "require-dir": "^0.3.0",
+    "svg-browserify": "0.0.2",
+    "xml2js": "^0.4.16"
   },
   "devDependencies": {
     "browserify": "^13.0.0",

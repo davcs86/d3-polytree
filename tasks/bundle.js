@@ -3,6 +3,7 @@
 var browserify = require('browserify'),
   derequire = require('browserify-derequire'),
   sassify = require('sassify'),
+  svgify = require('svg-browserify'),
   UglifyJS = require('uglify-js'),
   collapse = require('bundle-collapser/plugin'),
   concat = require('source-map-concat'),
@@ -113,6 +114,7 @@ module.exports = function(grunt) {
       .plugin(derequire)
       .plugin(collapse)
       .transform(sassify, {'auto-inject': true})
+      .transform(svgify)
       .add(src)
       .bundle(function(err, result) {
 
