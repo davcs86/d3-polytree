@@ -759,6 +759,7 @@ var icons = {
   'planta-liquidos': _dereq_(14),
   'quemador': _dereq_(15),
   'transporte-barco': _dereq_(16),
+  'transporte': _dereq_(17),
   'transporte-ducto': _dereq_(17),
   'transporte-pipa': _dereq_(18)
 };
