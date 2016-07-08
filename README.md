@@ -38,6 +38,29 @@ Just download the master branch of this repo, then import it with
 <script src="<your-scripts-folder>/d3-simple-networks/dist/d3-simple-networks.min.js"></script>
 ```
 
+## Bundle it
+
+Just clone the master branch of this repo
+
+```shell
+$> git clone https://github.com/davcs86/d3-simple-networks.git
+```
+
+Install `Grunt` and the nodejs dependencies
+
+```shell
+$> npm install -g grunt-cli
+$> cd d3-simple-networks
+$> npm install
+```
+
+Run the `default` task with grunt
+
+```shell
+$> grunt default
+```
+
+
 ## Usage
 
 Example:
