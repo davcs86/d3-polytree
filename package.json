@@ -39,6 +39,7 @@
     "grunt-contrib-jshint": "^0.12.0",
     "grunt-contrib-watch": "^0.6.1",
     "load-grunt-tasks": "^3.4.0",
+    "q": "^1.4.1",
     "sassify": "^0.10.0",
     "source-map-concat": "^1.0.0",
     "stringify": "^3.2.0",
