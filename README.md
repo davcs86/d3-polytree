@@ -1,6 +1,6 @@
-# d3-simple-networks
+# D3 Polytree graph
 
-Simple directed node networks with D3js
+Interactive [polytree](https://www.google.com/search?q=polytree) graphs viewer.
 
 Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/bffszf0d/2/)
 
@@ -9,25 +9,25 @@ Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/bffszf0d/2/)
 - With bower
 
 ```shell
-$> bower install --save git://github.com/davcs86/d3-simple-networks
+$> bower install --save git://github.com/davcs86/D3PolytreeGraph
 ```
 
 import it with
 
 ```html
-<script src="bower_components/d3-simple-networks/dist/d3-simple-networks.min.js"></script>
+<script src="bower_components/d3-simple-networks/dist/D3PolytreeGraph.min.js"></script>
 ```
 
 - With npm
 
 ```shell
-$> npm install --save davcs86/d3-simple-networks
+$> npm install --save davcs86/D3PolytreeGraph
 ```
 
 use it with
 
 ```js
-var d3sn = require('d3-simple-networks');
+var d3sn = require('D3PolytreeGraph');
 ```
 
 - Old-school way
@@ -35,7 +35,7 @@ var d3sn = require('d3-simple-networks');
 Just download the master branch of this repo, then import it with 
 
 ```html
-<script src="<your-scripts-folder>/d3-simple-networks/dist/d3-simple-networks.min.js"></script>
+<script src="<your-scripts-folder>/d3-simple-networks/dist/D3PolytreeGraph.min.js"></script>
 ```
 
 ## Bundle it
@@ -43,14 +43,14 @@ Just download the master branch of this repo, then import it with
 Just clone the master branch of this repo
 
 ```shell
-$> git clone https://github.com/davcs86/d3-simple-networks.git
+$> git clone https://github.com/davcs86/D3PolytreeGraph.git
 ```
 
 Install `Grunt` and the nodejs dependencies
 
 ```shell
 $> npm install -g grunt-cli
-$> cd d3-simple-networks
+$> cd D3PolytreeGraph
 $> npm install
 ```
 
