@@ -39,8 +39,5 @@ module.exports = function(grunt) {
 
   // tasks
 
-
-  grunt.registerTask('build', [ 'bundle' ]);
-
-  grunt.registerTask('default', [ 'jshint', 'build' ]);
+  grunt.registerTask('default', [ 'jshint', 'bundle' ]);
 };
