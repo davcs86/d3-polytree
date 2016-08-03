@@ -34,6 +34,7 @@
     "browserify-css": "^0.9.0",
     "browserify-derequire": "^0.9.4",
     "bundle-collapser": "^1.2.1",
+    "didi": "^0.1.1",
     "grunt": "^0.4.5",
     "grunt-browserify": "^3.3.0",
     "grunt-contrib-jshint": "^0.12.0",

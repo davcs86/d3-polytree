@@ -1,1 +1,1 @@
-module.exports = require('./lib/SimpleNetwork');
+module.exports = require('./lib/Viewer');

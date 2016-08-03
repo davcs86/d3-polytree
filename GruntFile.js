@@ -23,12 +23,20 @@ module.exports = function(grunt) {
         jshintrc: true
       }
     },
-
     bundle: {
-      d3sn: {
-        modName: 'D3SimpleNetwork',
-        name: 'd3-simple-networks',
-        src: '<%= config.sources %>/SimpleNetwork.js',
+      viewer: {
+        name: 'D3PolytreeViewer',
+        src: '<%= config.sources %>/Viewer.js',
+        dest: '<%= config.dist %>'
+      },
+      navigated_viewer: {
+        name: 'D3PolytreeNavigatedViewer',
+        src: '<%= config.sources %>/NavigatedViewer.js',
+        dest: '<%= config.dist %>'
+      },
+      modeler: {
+        name: 'D3PolytreeModeler',
+        src: '<%= config.sources %>/Modeler.js',
         dest: '<%= config.dist %>'
       }
     }
