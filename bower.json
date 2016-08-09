@@ -1,17 +1,18 @@
 {
-  "name": "d3-simple-networks",
-  "description": "Simple directed networks with D3.js",
-  "main": "dist/d3-simple-networks.js",
+  "name": "d3-polytree",
+  "description": "Interactive polytree viewer based on D3.js",
+  "main": "dist/d3-polytree.js",
   "authors": [
     "David Castillo"
   ],
   "license": "MIT",
   "keywords": [
     "d3",
+    "polytree",
     "node",
     "network"
   ],
-  "homepage": "https://github.com/davcs86/d3-simple-networks",
+  "homepage": "https://github.com/davcs86/d3-polytree",
   "moduleType": [],
   "private": true,
   "ignore": [

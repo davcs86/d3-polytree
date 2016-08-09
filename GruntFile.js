@@ -28,7 +28,7 @@ module.exports = function(grunt) {
         name: 'D3PolytreeViewer',
         src: '<%= config.sources %>/Viewer.js',
         dest: '<%= config.dist %>'
-      },
+      }/*,
       navigated_viewer: {
         name: 'D3PolytreeNavigatedViewer',
         src: '<%= config.sources %>/NavigatedViewer.js',
@@ -38,7 +38,7 @@ module.exports = function(grunt) {
         name: 'D3PolytreeModeler',
         src: '<%= config.sources %>/Modeler.js',
         dest: '<%= config.dist %>'
-      }
+      }*/
     }
 
   });

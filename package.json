@@ -1,14 +1,14 @@
 {
-  "name": "d3-simple-networks",
+  "name": "d3-polytree",
   "version": "1.0.0",
-  "description": "Simple directed networks with D3.js",
+  "description": "Interactive polytree viewer based on D3.js",
   "main": "index.js",
   "scripts": {
     "test": "echo 0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/davcs86/d3-simple-networks.git"
+    "url": "git+https://github.com/davcs86/d3-polytree.git"
   },
   "keywords": [
     "d3",
@@ -18,9 +18,9 @@
   "author": "David Castillo",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/davcs86/d3-simple-networks/issues"
+    "url": "https://github.com/davcs86/d3-polytree/issues"
   },
-  "homepage": "https://github.com/davcs86/d3-simple-networks#readme",
+  "homepage": "https://github.com/davcs86/d3-polytree#readme",
   "dependencies": {
     "bootstrap-sass": "^3.3.6",
     "d3": "^3.5.16",
