@@ -25,7 +25,8 @@ module.exports = function(grunt) {
     },
     bundle: {
       viewer: {
-        name: 'D3PolytreeViewer',
+        modName: 'D3PolytreeViewer',
+        name: 'd3-polytree-viewer',
         src: '<%= config.sources %>/Viewer.js',
         dest: '<%= config.dist %>'
       }/*,
