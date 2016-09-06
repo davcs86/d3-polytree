@@ -6,6 +6,7 @@
   "maxlen": 120,
   "expr": true,
   "quotmark": "single",
+  "esversion": 6,
   "globals": {
     "describe": false,
     "it": false,

@@ -3,6 +3,7 @@
 var browserify = require('browserify'),
   derequire = require('browserify-derequire'),
   sassify = require('sassify'),
+  babelify = require('babelify'),
   svgify = require('svg-browserify'),
   UglifyJS = require('uglify-js'),
   collapse = require('bundle-collapser/plugin'),
@@ -114,6 +115,7 @@ module.exports = function(grunt) {
       .plugin(derequire)
       .plugin(collapse)
       .transform(sassify, {'auto-inject': true})
+      .transform(babelify, {'presets': ['es2015']})
       .transform(svgify)
       .add(src)
       .bundle(function(err, result) {
