@@ -27,7 +27,7 @@ $> npm install --save davcs86/d3-simple-networks
 use it with
 
 ```js
-var d3sn = require('D3Polytree');
+var d3sn = require('d3-simple-networks');
 ```
 
 - Old-school way
