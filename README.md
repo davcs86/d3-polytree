@@ -2,14 +2,14 @@
 
 Interactive [polytree](https://www.google.com/search?q=polytree) viewer based on D3js.
 
-Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/bffszf0d/2/)
+Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/yywby23u/)
 
 ## Install
 
 - With bower
 
 ```shell
-$> bower install --save git://github.com/davcs86/D3Polytree
+$> bower install --save git://github.com/davcs86/d3-simple-networks
 ```
 
 import it with
@@ -21,7 +21,7 @@ import it with
 - With npm
 
 ```shell
-$> npm install --save davcs86/D3Polytree
+$> npm install --save davcs86/d3-simple-networks
 ```
 
 use it with
@@ -35,7 +35,7 @@ var d3sn = require('D3Polytree');
 Just download the master branch of this repo, then import it with 
 
 ```html
-<script src="<your-scripts-folder>/d3-simple-networks/dist/D3Polytree.min.js"></script>
+<script src="<your-scripts-folder>/d3-simple-networks/dist/d3-simple-networks.min.js"></script>
 ```
 
 ## Bundle it
@@ -43,14 +43,14 @@ Just download the master branch of this repo, then import it with
 Just clone the master branch of this repo
 
 ```shell
-$> git clone https://github.com/davcs86/D3Polytree.git
+$> git clone https://github.com/davcs86/d3-polytree-graph.git
 ```
 
 Install `Grunt` and the nodejs dependencies
 
 ```shell
 $> npm install -g grunt-cli
-$> cd D3Polytree
+$> cd d3-polytree-graph
 $> npm install
 ```
 
@@ -65,10 +65,10 @@ $> grunt default
 
 Example:
 
-![Alt text](/dist/screenshot.png?raw=true "Example")
+![Alt text](/dist/screenshot.png?raw=true "Example of usage")
 
 ```js
-var network = new D3PolytreeViewer({
+var network = new D3SimpleNetwork({
     "container": "body",
     "nodes": {
         "NODE_A": {
@@ -106,14 +106,20 @@ var network = new D3PolytreeViewer({
         },
         "NODE_A_TR_NODE_B": {
             "adjacencyList": {
-                "NODE_C": 1
+                "NODE_C": {
+                	color: "red",
+                  label: "to node C"
+                }
             },
             "label": "Node-A refinery + Node-B",
             "iconType": "storage",
             "attachedData": {
-                "Qg": ["n/a", "2.7"],
-                "Qo": ["n/a", "250"]
-            }
+                "Qg": ["2.6", "2.7"],
+                "Qo": ["245", "250"]
+            },
+            positionX: 780, 
+            positionY: 345,
+            overridePosition: true
         },
         "NODE_C": {
             "adjacencyList": null,
