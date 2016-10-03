@@ -15,7 +15,7 @@ $> bower install --save git://github.com/davcs86/d3-simple-networks
 import it with
 
 ```html
-<script src="bower_components/d3-simple-networks/dist/D3Polytree.min.js"></script>
+<script src="bower_components/d3-simple-networks/dist/d3-simple-networks.min.js"></script>
 ```
 
 - With npm
