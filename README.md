@@ -2,7 +2,7 @@
 
 Interactive [polytree](https://www.google.com/search?q=polytree) viewer based on D3js.
 
-Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/yywby23u/)
+Demo on [JSFiddle.Net](https://jsfiddle.net/yywby23u/1/)
 
 ## Install
 
@@ -54,12 +54,24 @@ $> cd d3-polytree-graph
 $> npm install
 ```
 
-Run the `default` task with grunt
+Run the `default` task with grunt to bundle the library
 
 ```shell
 $> grunt default
 ```
 
+
+### Known issue
+
+In a recent change, I added up the ability to "requiring" the SVG icons in a CommonJS way (see `./lib/icons/index.js`), 
+by using `xml2js` to parse and import the icons as re-usable def elements. Unfortunately, you have to do 2 minor changes to
+`xml2js` after running `npm install`, in order to bundle the library without problems.
+
+File: `./node_modules/xml2js/lib/xml2js.js`:
+
+Line 11:  `events = require('events/events');`
+
+Line 19:  `setImmediate = require('timers-browserify').setImmediate;`
 
 ## Usage
 
@@ -131,6 +143,14 @@ var network = new D3SimpleNetwork({
             }
         }
     },
-    "tableHeaders": ["Var", "Reported", "Fixed"]
+    "tableHeaders": ["Var", "Reported", "Fixed"],
+    floatingLabels: [{
+      id: '1',
+      label: "Arbitrary label",
+      x: 200,
+      y: 600,
+      'font-size': 30,
+      color: 'red'
+    }]
 });
 ```
