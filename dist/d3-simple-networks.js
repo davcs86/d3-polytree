@@ -782,6 +782,8 @@ SimpleNetwork.prototype.restart = function(recalculate){
         else that.selected_node = that.mousedown_node;
       })
       .on('drag', function(d){
+        d.px += d3js.event.dx;
+        d.py += d3js.event.dy;
         d.x += d3js.event.dx;
         d.y += d3js.event.dy;
         that.tick();

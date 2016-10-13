@@ -2,7 +2,7 @@
 
 Interactive [polytree](https://www.google.com/search?q=polytree) viewer based on D3js.
 
-Demo on [JSFiddle.Net](https://jsfiddle.net/yywby23u/1/)
+Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/yywby23u/2/)
 
 ## Install
 
@@ -147,8 +147,8 @@ var network = new D3SimpleNetwork({
     floatingLabels: [{
       id: '1',
       label: "Arbitrary label",
-      x: 200,
-      y: 600,
+      x: 150,
+      y: 70,
       'font-size': 30,
       color: 'red'
     }]
