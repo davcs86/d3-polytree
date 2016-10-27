@@ -9,25 +9,25 @@ Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/yywby23u/2/)
 - With bower
 
 ```shell
-$> bower install --save git://github.com/davcs86/d3-simple-networks
+$> bower install --save git://github.com/davcs86/d3-polytree-graph
 ```
 
 import it with
 
 ```html
-<script src="bower_components/d3-simple-networks/dist/d3-simple-networks.min.js"></script>
+<script src="bower_components/d3-polytree-graph/dist/d3-simple-networks.min.js"></script>
 ```
 
 - With npm
 
 ```shell
-$> npm install --save davcs86/d3-simple-networks
+$> npm install --save davcs86/d3-polytree-graph
 ```
 
 use it with
 
 ```js
-var d3sn = require('d3-simple-networks');
+var d3sn = require('d3-polytree-graph');
 ```
 
 - Old-school way
@@ -35,7 +35,7 @@ var d3sn = require('d3-simple-networks');
 Just download the master branch of this repo, then import it with 
 
 ```html
-<script src="<your-scripts-folder>/d3-simple-networks/dist/d3-simple-networks.min.js"></script>
+<script src="<your-scripts-folder>/d3-polytree-graph/dist/d3-simple-networks.min.js"></script>
 ```
 
 ## Bundle it
@@ -63,15 +63,15 @@ $> grunt default
 
 ### Known issue
 
-In a recent change, I added up the ability to "requiring" the SVG icons in a CommonJS way (see `./lib/icons/index.js`), 
-by using `xml2js` to parse and import the icons as re-usable def elements. Unfortunately, you have to do 2 minor changes to
-`xml2js` after running `npm install`, in order to bundle the library without problems.
-
-File: `./node_modules/xml2js/lib/xml2js.js`:
-
-Line 11:  `events = require('events/events');`
-
-Line 19:  `setImmediate = require('timers-browserify').setImmediate;`
+>In a recent change, I added up the ability to "requiring" the SVG icons in a CommonJS way (see `./lib/icons/index.js`), 
+>by using `xml2js` to parse and import the icons as re-usable def elements. Unfortunately, you have to do 2 minor changes to
+>`xml2js` after running `npm install`, in order to bundle the library without problems.
+>
+>File: `./node_modules/xml2js/lib/xml2js.js`:
+>
+>Line 11:  `events = require('events/events');`
+>
+>Line 19:  `setImmediate = require('timers-browserify').setImmediate;`
 
 ## Usage
 
