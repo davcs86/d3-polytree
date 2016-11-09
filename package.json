@@ -11,7 +11,8 @@
     ]
   },
   "scripts": {
-    "test": "echo 0"
+    "build": "webpack --progress --profile --colors --display-error-details",
+    "dev": "webpack-dev-server --progress --profile --colors --inline --hot --port 8083"
   },
   "repository": {
     "type": "git",
@@ -30,7 +31,7 @@
   "homepage": "https://github.com/davcs86/d3-polytree#readme",
   "dependencies": {
     "bootstrap-sass": "^3.3.6",
-    "d3": "^4.2.1",
+    "d3": "^3.5.17",
     "d3-canvas": "C:\\Users\\davcs861\\WebstormProjects\\Redes\\d3-canvas",
     "d3-tip": "^0.6.7",
     "lodash": "^4.11.1",
@@ -45,18 +46,27 @@
     "browserify-css": "^0.9.0",
     "browserify-derequire": "^0.9.4",
     "bundle-collapser": "^1.2.1",
+    "css-loader": "^0.25.0",
     "didi": "^0.1.1",
+    "eslint": "^3.9.1",
+    "eslint-loader": "^1.6.1",
     "grunt": "^0.4.5",
     "grunt-browserify": "^3.3.0",
     "grunt-contrib-jshint": "^0.12.0",
     "grunt-contrib-watch": "^0.6.1",
     "load-grunt-tasks": "^3.4.0",
     "q": "^1.4.1",
+    "sass-loader": "^4.0.2",
     "sassify": "^0.10.0",
     "source-map-concat": "^1.0.0",
     "stringify": "^3.2.0",
+    "style-loader": "^0.13.1",
     "svg-browserify": "0.0.2",
+    "svg-inline-loader": "^0.7.1",
+    "svgo-loader": "^1.1.2",
     "time-grunt": "^1.3.0",
-    "uglify-js": "^2.6.1"
+    "uglify-js": "^2.6.1",
+    "webpack": "^1.13.3",
+    "webpack-dev-server": "^1.16.2"
   }
 }

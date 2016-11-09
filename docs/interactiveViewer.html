@@ -1,0 +1,46 @@
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="text-align: center">
+<a href="index.html" title="Index">Index</a>
+<div id="d3Canvas" style="width: 800px; height: 400px; position: relative"></div>
+<script type="text/javascript" src="d3.v4.min.js" charset="utf-8"></script>
+<script type="text/javascript" src="D3P.Commons.js" charset="utf-8"></script>
+<script type="text/javascript" src="D3P.InteractiveViewer.js" charset="utf-8"></script>
+<script type="text/javascript">
+    window.onload = function (){
+        var diagram = new D3P.InteractiveViewer({
+            container: '#d3Canvas',
+            translateX: '0',
+            translateY: '0',
+            scale: '2'
+        });
+        diagram.importNodes({
+            A: {
+                label: 'A',
+                adjacencyList: {
+                    B: {
+                        label: 'A -> B'
+                    },
+                    C: {
+                        label: 'A -> C'
+                    }
+                }
+            },
+            B: {
+                label: 'B',
+                adjacencyList: {
+                    C: {
+                        label: 'B -> C'
+                    }
+                }
+            },
+            C: {
+                label: 'C'
+            }
+        });
+    };
+</script>
+</body>
+</html>
