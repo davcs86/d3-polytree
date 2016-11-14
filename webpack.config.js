@@ -4,8 +4,8 @@ var path = require("path");
 module.exports = {
   entry: {
     Viewer: ["./lib/Viewer"],
-    //InteractiveViewer: "./lib/InteractiveViewer",
-    //Editor: "./lib/Editor"
+    InteractiveViewer: ["./lib/InteractiveViewer"],
+    //Editor: ["./lib/Editor"]
   },
   devtool: process.env.WEBPACK_DEVTOOL || "source-map",
   output: {
@@ -24,7 +24,7 @@ module.exports = {
     loaders: [
       {
         test: /\.svg$/,
-        loader: 'svg-inline-loader!line-art-loader',
+        loader: 'svg-inline-loader!svgo-loader?useConfig=svgoConfig',
       },
       {test: /\.css$/, loader: "style-loader!css-loader"},
       {test: /\.scss$/, loader: "style-loader!css-loader!sass-loader"}
@@ -35,6 +35,13 @@ module.exports = {
         exclude: /(node_modules|bower_components)/,
         loaders: ["eslint-loader"]
       }
+    ]
+  },
+  svgoConfig: {
+    plugins: [
+      {removeTitle: true},
+      {convertColors: {shorthex: false}},
+      {convertPathData: false}
     ]
   },
   eslint: {
@@ -48,14 +55,7 @@ module.exports = {
     inline: true
   },
   plugins: [
+    new webpack.optimize.DedupePlugin(),
     //new webpack.optimize.UglifyJsPlugin(),
-    new webpack.ProvidePlugin({
-      d3: "d3"
-    }),
-    new webpack.optimize.CommonsChunkPlugin({
-      name: "commons",
-      filename: "D3P.Commons.js",
-      chunks: ["Viewer"]//, "InteractiveViewer", "Editor"]
-    })
   ]
 };
