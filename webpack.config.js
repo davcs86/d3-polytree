@@ -5,7 +5,7 @@ module.exports = {
   entry: {
     Viewer: ["./lib/Viewer"],
     InteractiveViewer: ["./lib/InteractiveViewer"],
-    //Editor: ["./lib/Editor"]
+    Editor: ["./lib/Editor"]
   },
   devtool: process.env.WEBPACK_DEVTOOL || "source-map",
   output: {
@@ -14,11 +14,11 @@ module.exports = {
     library: ["D3P"],
     libraryTarget: "umd"
   },
-  externals: {
-    d3: "d3"
-  },
   resolve: {
-    extensions: ["", ".js", ".css", ".scss", ".svg"]
+    extensions: ["", ".js", ".css", ".scss", ".svg"],
+    alias: {
+      d3: path.join(__dirname, '/docs/d3.v4.min')
+    }
   },
   module: {
     loaders: [
@@ -32,7 +32,7 @@ module.exports = {
     preLoaders: [
       {
         test: /\.js|\.es6?$/,
-        exclude: /(node_modules|bower_components)/,
+        exclude: /(node_modules|bower_components|docs)/,
         loaders: ["eslint-loader"]
       }
     ]
@@ -56,6 +56,10 @@ module.exports = {
   },
   plugins: [
     new webpack.optimize.DedupePlugin(),
-    //new webpack.optimize.UglifyJsPlugin(),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: "commons",
+      filename: "D3P.Commons.js",
+      chunks: ["Viewer", "InteractiveViewer", "Editor"]
+    })
   ]
 };
