@@ -13,31 +13,31 @@ return webpackJsonpD3P([1],{
 /***/ 0:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(794);
+	module.exports = __webpack_require__(759);
 
 
 /***/ },
 
-/***/ 792:
+/***/ 757:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'zoom' ],
-	  zoom: [ 'type', __webpack_require__(793) ]
+	  zoom: [ 'type', __webpack_require__(758) ]
 	};
 
 /***/ },
 
-/***/ 793:
+/***/ 758:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var d3js = __webpack_require__(545),
+	var d3 = __webpack_require__(545),
+	  isUndefined = __webpack_require__(547).isUndefined,
 	  _isZoomable = false,
-	  _canvas = null,
-	  _zoom = null,
-	  _gridLines = null;
+	  _zoom = null
+	  ;
 	
 	/**
 	 * The zoom functionality.
@@ -49,30 +49,42 @@ return webpackJsonpD3P([1],{
 	 * @param {Canvas} canvas
 	 * @param {GridLines} gridLines
 	 */
-	function Zoom(options, canvas, gridLines) {
-	  _canvas = canvas;
-	  _gridLines = gridLines;
+	function Zoom(options, canvas, eventBus) {
+	  this._canvas = canvas;
+	  this._eventBus = eventBus;
 	
-	  init.apply(this);
+	  init.apply(this, [options.translateX, options.translateY, options.scale]);
 	
 	  this.setZoomable(!!options.isZoomable);
-	  this.setZoom(options.translateX, options.translateY, options.scale);
+	  this.setZoom(options.translateX, options.translateY, options.scale, options.scale);
 	}
 	
-	Zoom.$inject = [ 'd3polytree.options', 'canvas', 'gridLines' ];
+	Zoom.$inject = [ 'd3polytree.options', 'canvas', 'eventBus' ];
 	
 	module.exports = Zoom;
 	
 	Zoom.prototype.setZoom = function(translateX, translateY, scale){
 	  if (_isZoomable === true) {
-	    // apply zoom
-	    _canvas
-	      .getDrawingLayer()
+	    console.log('setZoom');
+	    var currentTransform = this._canvas.getTransform(),
+	      deltaX,
+	      deltaY
+	      ;
+	
+	    translateX = !isUndefined(translateX) ? translateX : currentTransform.e;
+	
+	    translateY = !isUndefined(translateY) ? translateY : currentTransform.f;
+	
+	    scale = !isUndefined(scale) ? scale : currentTransform.a;
+	
+	    deltaX = translateX - currentTransform.e;
+	    deltaY = translateY - currentTransform.f;
+	
+	    // apply transform
+	    this._canvas.getDrawingLayer()
 	      .attr('transform', 'translate(' + translateX + ', ' + translateY + ') scale(' + scale + ')');
-	    if (_gridLines) {
-	      // re-draw grid lines
-	      _gridLines._draw();
-	    }
+	
+	    this._eventBus.fire('canvas.zoomed', deltaX, deltaY);
 	  }
 	};
 	
@@ -80,29 +92,49 @@ return webpackJsonpD3P([1],{
 	  _isZoomable = isZoomable;
 	};
 	
-	var init = function(){
-	  var drawingLayer = _canvas.getDrawingLayer();
+	var init = function(tX, tY, s){
+	  var drawingLayer = this._canvas.getDrawingLayer();
 	  var that = this;
-	  _zoom = d3js
+	  _zoom = d3
 	    .zoom()
 	    .scaleExtent([0.01, 10])
 	    .on('zoom', function(){
-	      if (!_isZoomable) return;
+	      if (!_isZoomable) return true;
 	      // on zoom event
-	      var trans = d3js.event.transform;
+	      var trans = d3.event.transform;
 	      that.setZoom(trans.x, trans.y, trans.k);
 	    });
 	
+	  // var drag = d3
+	  //   .drag()
+	  //   .on('drag', function(){
+	  //     if (!_isZoomable) return true;
+	  //     // on zoom event
+	  //     var trans = d3.event,
+	  //       svgTrans = that._canvas.getTransform();
+	  //     console.log('ondrag');
+	  //     drawingLayer
+	  //       .call(_zoom.transform, d3.zoomIdentity
+	  //         .translate(svgTrans.e + trans.dx, svgTrans.f + trans.dy)
+	  //         .scale(svgTrans.a));
+	  //     that._eventBus.fire('canvas.dragged');
+	  //   });
+	
 	  drawingLayer = drawingLayer
+	
 	    .call(_zoom)
+	    .call(_zoom.transform, d3.zoomIdentity
+	      .translate(tX, tY)
+	      .scale(s))
+	    //.call(drag)
 	    .append('g');
 	
-	  _canvas.setDrawingLayer(drawingLayer);
+	  this._canvas.setDrawingLayer(drawingLayer);
 	};
 
 /***/ },
 
-/***/ 794:
+/***/ 759:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -126,8 +158,8 @@ return webpackJsonpD3P([1],{
 	module.exports = {InteractiveViewer: InteractiveViewer};
 	
 	InteractiveViewer.prototype._interactionModules = [
-	  __webpack_require__(792),
-	  __webpack_require__(795)
+	  __webpack_require__(757),
+	  __webpack_require__(760)
 	];
 	
 	InteractiveViewer.prototype._modules = [].concat(
@@ -137,25 +169,25 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 795:
+/***/ 760:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'tooltip' ],
-	  tooltip: [ 'type', __webpack_require__(796) ]
+	  tooltip: [ 'type', __webpack_require__(761) ]
 	};
 
 /***/ },
 
-/***/ 796:
+/***/ 761:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var d3js = __webpack_require__(545),
-	  _d3tip = __webpack_require__(797),
+	  _d3tip = __webpack_require__(762),
 	  _tooltip = null,
-	  isEmpty = __webpack_require__(604).isEmpty;
+	  isEmpty = __webpack_require__(547).isEmpty;
 	
 	/**
 	 * The tooltip functionality.
@@ -173,7 +205,6 @@ return webpackJsonpD3P([1],{
 	      return v;
 	    };
 	  };
-	  //_tooltipHelper(d3js);
 	  _tooltip = _d3tip(d3js)
 	    .attr('class', 'd3-tip')
 	    .offset([-10, 0])
@@ -199,7 +230,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 797:
+/***/ 762:
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// d3.tip
