@@ -13,22 +13,22 @@ return webpackJsonpD3P([1],{
 /***/ 0:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(759);
+	module.exports = __webpack_require__(737);
 
 
 /***/ },
 
-/***/ 757:
+/***/ 735:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'zoom' ],
-	  zoom: [ 'type', __webpack_require__(758) ]
+	  zoom: [ 'type', __webpack_require__(736) ]
 	};
 
 /***/ },
 
-/***/ 758:
+/***/ 736:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -65,11 +65,8 @@ return webpackJsonpD3P([1],{
 	
 	Zoom.prototype.setZoom = function(translateX, translateY, scale){
 	  if (_isZoomable === true) {
-	    console.log('setZoom');
-	    var currentTransform = this._canvas.getTransform(),
-	      deltaX,
-	      deltaY
-	      ;
+	
+	    var currentTransform = this._canvas.getTransform();
 	
 	    translateX = !isUndefined(translateX) ? translateX : currentTransform.e;
 	
@@ -77,14 +74,11 @@ return webpackJsonpD3P([1],{
 	
 	    scale = !isUndefined(scale) ? scale : currentTransform.a;
 	
-	    deltaX = translateX - currentTransform.e;
-	    deltaY = translateY - currentTransform.f;
-	
 	    // apply transform
 	    this._canvas.getDrawingLayer()
 	      .attr('transform', 'translate(' + translateX + ', ' + translateY + ') scale(' + scale + ')');
 	
-	    this._eventBus.fire('canvas.zoomed', deltaX, deltaY);
+	    this._eventBus.emit('canvas.zoomed');
 	  }
 	};
 	
@@ -105,28 +99,11 @@ return webpackJsonpD3P([1],{
 	      that.setZoom(trans.x, trans.y, trans.k);
 	    });
 	
-	  // var drag = d3
-	  //   .drag()
-	  //   .on('drag', function(){
-	  //     if (!_isZoomable) return true;
-	  //     // on zoom event
-	  //     var trans = d3.event,
-	  //       svgTrans = that._canvas.getTransform();
-	  //     console.log('ondrag');
-	  //     drawingLayer
-	  //       .call(_zoom.transform, d3.zoomIdentity
-	  //         .translate(svgTrans.e + trans.dx, svgTrans.f + trans.dy)
-	  //         .scale(svgTrans.a));
-	  //     that._eventBus.fire('canvas.dragged');
-	  //   });
-	
 	  drawingLayer = drawingLayer
-	
 	    .call(_zoom)
 	    .call(_zoom.transform, d3.zoomIdentity
 	      .translate(tX, tY)
 	      .scale(s))
-	    //.call(drag)
 	    .append('g');
 	
 	  this._canvas.setDrawingLayer(drawingLayer);
@@ -134,7 +111,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 759:
+/***/ 737:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -158,8 +135,8 @@ return webpackJsonpD3P([1],{
 	module.exports = {InteractiveViewer: InteractiveViewer};
 	
 	InteractiveViewer.prototype._interactionModules = [
-	  __webpack_require__(757),
-	  __webpack_require__(760)
+	  __webpack_require__(735),
+	  __webpack_require__(738)
 	];
 	
 	InteractiveViewer.prototype._modules = [].concat(
@@ -169,23 +146,23 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 760:
+/***/ 738:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'tooltip' ],
-	  tooltip: [ 'type', __webpack_require__(761) ]
+	  tooltip: [ 'type', __webpack_require__(739) ]
 	};
 
 /***/ },
 
-/***/ 761:
+/***/ 739:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var d3js = __webpack_require__(545),
-	  _d3tip = __webpack_require__(762),
+	  _d3tip = __webpack_require__(740),
 	  _tooltip = null,
 	  isEmpty = __webpack_require__(547).isEmpty;
 	
@@ -230,7 +207,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 762:
+/***/ 740:
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// d3.tip
