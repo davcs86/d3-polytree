@@ -1,7 +1,7 @@
 {
   "name": "d3-polytree",
   "description": "Interactive polytree viewer based on D3.js",
-  "main": "dist/d3-polytree-viewer.js",
+  "main": "index.js",
   "authors": [
     "David Castillo"
   ],

@@ -15,17 +15,7 @@
             container: '#d3Canvas',
             translateX: '0',
             translateY: '0',
-            scale: '2.5',
-            groups: {
-                "1": {
-                    nodes: ['A', 'B'],
-                    label: 'Group # 1'
-                }
-            },
-            gridSize: 25,
-            gridLinesColor: '#ddd',
-            gridLinesWidth: 1,
-            showGridLines: true
+            scale: '2.5'
         });
         diagram.importNodes({
             A: {
@@ -50,6 +40,13 @@
             C: {
                 label: 'C'
             }
+        }).then(function(){
+          diagram.importGroups({
+            "1": {
+              nodes: ['A', 'B'],
+              label: 'Group # 1'
+            }
+          });
         });
     };
 </script>

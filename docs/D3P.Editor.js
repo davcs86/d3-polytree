@@ -135,7 +135,7 @@ return webpackJsonpD3P([0],{
 	  var that = this;
 	  _zoom = d3
 	    .zoom()
-	    .scaleExtent([0.01, 10])
+	    .scaleExtent([0.1, 15])
 	    .on('zoom', function(){
 	      if (!_isZoomable) return true;
 	      // on zoom event
