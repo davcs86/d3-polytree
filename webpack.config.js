@@ -5,7 +5,8 @@ module.exports = {
   entry: {
     Viewer: ["./lib/Viewer"],
     InteractiveViewer: ["./lib/InteractiveViewer"],
-    Editor: ["./lib/Editor"]
+    Editor: ["./lib/Editor"],
+    testModdle: ["./lib/testModdle"]
   },
   devtool: process.env.WEBPACK_DEVTOOL || "source-map",
   output: {
@@ -15,7 +16,7 @@ module.exports = {
     libraryTarget: "umd"
   },
   resolve: {
-    extensions: ["", ".js", ".css", ".scss", ".svg"],
+    extensions: ["", ".js", ".css", ".scss", ".svg", ".json"],
     alias: {
       d3: path.join(__dirname, '/d3/d3.min')
     }
@@ -25,6 +26,10 @@ module.exports = {
       {
         test: /\.svg$/,
         loader: 'svg-inline-loader!svgo-loader?useConfig=svgoConfig',
+      },
+      {
+        test: /\.json$/,
+        loader: 'json-loader',
       },
       {
         test: /\.css$/,
@@ -37,7 +42,7 @@ module.exports = {
     ],
     preLoaders: [
       {
-        test: /\.js|\.es6?$/,
+        test: /\.js$|\.es6$/,
         exclude: /(node_modules|bower_components|docs|d3)/,
         loaders: ["eslint-loader"]
       }

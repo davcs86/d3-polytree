@@ -46,7 +46,7 @@ return webpackJsonpD3P([0],{
 	};
 	
 	Editor.prototype._interactionModules = [
-	  __webpack_require__(735)
+	  __webpack_require__(436)
 	  //require('./features/tooltip')
 	];
 	
@@ -62,23 +62,23 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 735:
+/***/ 436:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'zoom' ],
-	  zoom: [ 'type', __webpack_require__(736) ]
+	  zoom: [ 'type', __webpack_require__(437) ]
 	};
 
 /***/ },
 
-/***/ 736:
+/***/ 437:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var d3 = __webpack_require__(545),
-	  isUndefined = __webpack_require__(547).isUndefined,
+	var d3 = __webpack_require__(313),
+	  isUndefined = __webpack_require__(255).isUndefined,
 	  _isZoomable = false,
 	  _zoom = null
 	  ;

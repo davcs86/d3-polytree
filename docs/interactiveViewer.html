@@ -9,15 +9,13 @@
 <!--<script type="text/javascript" src="d3.v4.min.js" charset="utf-8"></script>-->
 <script type="text/javascript" src="D3P.Commons.js" charset="utf-8"></script>
 <script type="text/javascript" src="D3P.InteractiveViewer.js" charset="utf-8"></script>
+<script type="text/javascript" src="D3P.testModdle.js" charset="utf-8"></script>
 <script type="text/javascript">
     window.onload = function (){
         var diagram = new D3P.InteractiveViewer({
-            container: '#d3Canvas',
-            translateX: '0',
-            translateY: '0',
-            scale: '2.5'
+            container: '#d3Canvas'
         });
-        diagram.importNodes({
+        diagram.importDiagram({
             A: {
                 label: 'A',
                 adjacencyList: {

@@ -12,18 +12,9 @@
 <script type="text/javascript">
     window.onload = function (){
         var diagram = new D3P.Viewer({
-            container: '#d3Canvas',
-            translateX: '0',
-            translateY: '0',
-            scale: '2.1',
-            groups: {
-                "1": {
-                    nodes: ['A', 'B'],
-                    label: 'Group # 1'
-                }
-            }
+            container: '#d3Canvas'
         });
-        diagram.importNodes({
+        diagram.importDiagram({
             A: {
                 label: 'A',
                 adjacencyList: {
