@@ -12,7 +12,28 @@
 /******/ 			installedChunks[chunkId] = 0;
 /******/ 		}
 /******/ 		for(moduleId in moreModules) {
-/******/ 			modules[moduleId] = moreModules[moduleId];
+/******/ 			var _m = moreModules[moduleId];
+/******/
+/******/ 			// Check if module is deduplicated
+/******/ 			switch(typeof _m) {
+/******/ 			case "object":
+/******/ 				// Module can be created from a template
+/******/ 				modules[moduleId] = (function(_m) {
+/******/ 					var args = _m.slice(1), templateId = _m[0];
+/******/ 					return function (a,b,c) {
+/******/ 						modules[templateId].apply(this, [a,b,c].concat(args));
+/******/ 					};
+/******/ 				}(_m));
+/******/ 				break;
+/******/ 			case "function":
+/******/ 				// Normal module
+/******/ 				modules[moduleId] = _m;
+/******/ 				break;
+/******/ 			default:
+/******/ 				// Module is a copy of another module
+/******/ 				modules[moduleId] = modules[_m];
+/******/ 				break;
+/******/ 			}
 /******/ 		}
 /******/ 		if(parentJsonpFunction) parentJsonpFunction(chunkIds, moreModules);
 /******/ 		while(callbacks.length)
@@ -30,7 +51,7 @@
 /******/ 	// "0" means "already loaded"
 /******/ 	// Array means "loading", array contains callbacks
 /******/ 	var installedChunks = {
-/******/ 		4:0
+/******/ 		3:0
 /******/ 	};
 /******/
 /******/ 	// The require function
@@ -91,7 +112,30 @@
 /******/ 	__webpack_require__.p = "";
 /******/ })
 /************************************************************************/
-/******/ ([
+/******/ ((function(modules) {
+	// Check all modules for deduplicated modules
+	for(var i in modules) {
+		if(Object.prototype.hasOwnProperty.call(modules, i)) {
+			switch(typeof modules[i]) {
+			case "function": break;
+			case "object":
+				// Module can be created from a template
+				modules[i] = (function(_m) {
+					var args = _m.slice(1), fn = modules[_m[0]];
+					return function (a,b,c) {
+						fn.apply(this, [a,b,c].concat(args));
+					};
+				}(modules[i]));
+				break;
+			default:
+				// Module is a copy of another module
+				modules[i] = modules[modules[i]];
+				break;
+			}
+		}
+	}
+	return modules;
+}([
 /* 0 */,
 /* 1 */,
 /* 2 */
@@ -135,6 +179,7 @@
 	  Graph = __webpack_require__(247),
 	  isString = __webpack_require__(255).isString,
 	  eventListener = __webpack_require__(315),
+	  PfdnModdle = __webpack_require__(316),
 	  //isNumber = require('lodash/lang').isNumber,
 	  DEFAULT_OPTIONS = {
 	    container: 'body'
@@ -175,8 +220,7 @@
 	  }
 	
 	  assign(parent.style, {
-	    position: 'relative'//,
-	    //backgroundColor: options.bgColor
+	    position: 'relative'
 	  });
 	
 	  options.container = this.container = parent;
@@ -200,7 +244,7 @@
 	
 	  // add self as an available service
 	  modules.unshift({
-	    polytree: [ 'value', this ]
+	    d3polytree: [ 'value', this ]
 	  });
 	
 	  options = omit(options, 'additionalModules');
@@ -265,10 +309,8 @@
 	    if (this.graph) {
 	      this.clear();
 	    }
-	
 	    // create the moddle
-	    //this.moddle = this._createModdle();
-	
+	    this.moddle = this._createModdle();
 	    // import the definitions
 	    this.moddle.fromXML(definitions, function(err, definitionsObj) {
 	      if (err){
@@ -333,11 +375,18 @@
 	};
 	
 	
+	Viewer.prototype._createModdle = function() {
+	  var moddleOptions = assign({}, this._moddleExtensions, this.options.moddleExtensions);
+	  return new PfdnModdle(moddleOptions);
+	};
+	
 	// modules the viewer is composed of
 	Viewer.prototype._modules = [
-	  __webpack_require__(316)
+	  __webpack_require__(433)
 	];
-
+	
+	// default moddle extensions the viewer is composed of
+	Viewer.prototype._moddleExtensions = {};
 
 /***/ },
 /* 4 */
@@ -14853,23 +14902,24 @@
 /* 316 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = {
-	  __depends__: [
-	    __webpack_require__(317),
-	    __webpack_require__(434)
-	  ]
-	};
+	module.exports = __webpack_require__(317);
 
 /***/ },
 /* 317 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = {
-	  __init__: [ 'groups' ],
-	  groups: [ 'type', __webpack_require__(318) ],
-	  __depends__: [
-	    __webpack_require__(319)
-	  ]
+	'use strict';
+	
+	var assign = __webpack_require__(318);
+	
+	var PfdnModdle = __webpack_require__(342);
+	
+	var packages = {
+	  pfdn: __webpack_require__(432),
+	};
+	
+	module.exports = function(additionalPackages, options) {
+	  return new PfdnModdle(assign({}, packages, additionalPackages), options);
 	};
 
 
@@ -14877,415 +14927,258 @@
 /* 318 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
-	
-	var /*d3 = require('d3'),*/
-	  //forIn = require('lodash/object').forIn,
-	  values = __webpack_require__(6).values,
-	  //isUndefined = require('lodash/lang').isUndefined,
-	  //_groupsArray = [],
-	  _groupContainer = null,
-	  _groupContainers = null
-	  ;
+	var assignWith = __webpack_require__(319),
+	    baseAssign = __webpack_require__(335),
+	    createAssigner = __webpack_require__(337);
 	
 	/**
-	 * The groups processing module.
+	 * Assigns own enumerable properties of source object(s) to the destination
+	 * object. Subsequent sources overwrite property assignments of previous sources.
+	 * If `customizer` is provided it's invoked to produce the assigned values.
+	 * The `customizer` is bound to `thisArg` and invoked with five arguments:
+	 * (objectValue, sourceValue, key, object, source).
 	 *
-	 * @class
-	 * @constructor
+	 * **Note:** This method mutates `object` and is based on
+	 * [`Object.assign`](http://ecma-international.org/ecma-262/6.0/#sec-object.assign).
 	 *
-	 * @param {Object} groupsDict
-	 * @param {Canvas} canvas
-	 * @param {EventBus} eventBus
-	 * @param {Nodes} nodes
+	 * @static
+	 * @memberOf _
+	 * @alias extend
+	 * @category Object
+	 * @param {Object} object The destination object.
+	 * @param {...Object} [sources] The source objects.
+	 * @param {Function} [customizer] The function to customize assigned values.
+	 * @param {*} [thisArg] The `this` binding of `customizer`.
+	 * @returns {Object} Returns `object`.
+	 * @example
+	 *
+	 * _.assign({ 'user': 'barney' }, { 'age': 40 }, { 'user': 'fred' });
+	 * // => { 'user': 'fred', 'age': 40 }
+	 *
+	 * // using a customizer callback
+	 * var defaults = _.partialRight(_.assign, function(value, other) {
+	 *   return _.isUndefined(value) ? other : value;
+	 * });
+	 *
+	 * defaults({ 'user': 'barney' }, { 'age': 36 }, { 'user': 'fred' });
+	 * // => { 'user': 'barney', 'age': 36 }
 	 */
-	function Groups(canvas, eventBus, nodes) {
-	  this._groups = {};
-	  this._canvas = canvas;
-	  this._eventBus = eventBus;
-	  this._nodes = nodes;
-	  this._init();
-	}
+	var assign = createAssigner(function(object, source, customizer) {
+	  return customizer
+	    ? assignWith(object, source, customizer)
+	    : baseAssign(object, source);
+	});
 	
-	Groups.$inject = [
-	  'canvas', 'eventBus', 'nodes'
-	];
-	
-	module.exports = Groups;
-	
-	Groups.prototype._init = function(){
-	  var that = this;
-	  this._eventBus.on('force.init', function(){
-	    that._draw();
-	  });
-	  this._eventBus.on('canvas.resized', function(){
-	    that._draw();
-	  });
-	};
-	
-	Groups.prototype._draw = function(){
-	  this._drawContainer();
-	  //this._drawGroups();
-	  //this._drawLabels();
-	};
-	
-	Groups.prototype._drawContainer = function(){
-	  if (_groupContainer){
-	    _groupContainer.remove();
-	  }
-	  _groupContainer = this._canvas
-	    .getDrawingLayer()
-	    .insert('g', ':first-child')
-	    .attr('class', 'groups');
-	  console.log(_groupContainer);
-	};
-	
-	Groups.prototype._drawGroups = function(groupsDict){
-	  var that = this;
-	
-	  if (groupsDict){
-	    this.groups = values(groupsDict);
-	  }
-	
-	  this.groups = _groupContainers
-	    .append('rect')
-	    .attr('coords', function(d) {
-	      d.coords = that._calculateGroupBoundaries(d.nodes, d.label);
-	      return 1;
-	    })
-	    .attr('x', function (d) {
-	      return d.coords.x;
-	    })
-	    .attr('y', function (d) {
-	      return d.coords.y;
-	    })
-	    .attr('width', function (d) {
-	      return d.coords.width;
-	    })
-	    .attr('height', function (d) {
-	      return d.coords.height;
-	    })
-	    .attr('rx', function () {
-	      return '5';
-	    })
-	    .style('fill', function(d){
-	      return d.color;
-	    })
-	    .style('stroke', function(d){
-	      return d.color;
-	    })
-	    .style('stroke-width', '2px')
-	    .style('fill-opacity', '0.3');
-	};
-	
-	// Groups.prototype._drawLabels = function(){
-	//   var that = this;
-	//   this.groupLabels = _groupContainers
-	//     .append('text')
-	//     .attr('x', function (d) {
-	//       return d.coords.x + 3;
-	//     })
-	//     .attr('y', function (d) {
-	//       return d.coords.y + 10;
-	//     })
-	//     .style('font-size', '8px')
-	//     .style('font-weight', 'bold')
-	//     .style('fill', function(d){
-	//       return d.color;
-	//     })
-	//     .text(function(d){
-	//       return isUndefined(d.label) ? null : d.label;
-	//     })
-	//     .on('mouseover', function(){
-	//       that._eventBus.emit('groupLabel.mouseover');
-	//     })
-	//     .on('mouseout', function(){
-	//       that._eventBus.emit('groupLabel.mouseout');
-	//     });
-	// };
-	//
-	// Groups.prototype._calculateGroupBoundaries = function(groupNodes, label){
-	//   var that = this,
-	//     xArr = [],
-	//     yArr = [],
-	//     hasLabel = !isUndefined(label);
-	//   forIn(groupNodes, function(n, k){
-	//     var pos = that._nodesDict[k].position;
-	//     if (isUndefined(pos)){
-	//       pos = {x: 0, y: 0};
-	//     }
-	//     xArr.push(pos.x);
-	//     yArr.push(pos.y);
-	//   });
-	//   var x = d3.min(xArr) - 32,
-	//     width = d3.max(xArr) - x + 32,
-	//     y = d3.min(yArr) - 32 - (hasLabel ? 6 : 0),
-	//     height = d3.max(yArr) - y + 42;
-	//   return {
-	//     x: x,
-	//     y: y,
-	//     width: width,
-	//     height: height
-	//   };
-	//};
+	module.exports = assign;
+
 
 /***/ },
 /* 319 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = {
-	  __init__: [ 'nodes' ],
-	  nodes: [ 'type', __webpack_require__(320) ],
-	  __depends__: [
-	    __webpack_require__(386),
-	    __webpack_require__(432)
-	  ]
-	};
+	var keys = __webpack_require__(320);
+	
+	/**
+	 * A specialized version of `_.assign` for customizing assigned values without
+	 * support for argument juggling, multiple sources, and `this` binding `customizer`
+	 * functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {Function} customizer The function to customize assigned values.
+	 * @returns {Object} Returns `object`.
+	 */
+	function assignWith(object, source, customizer) {
+	  var index = -1,
+	      props = keys(source),
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index],
+	        value = object[key],
+	        result = customizer(value, source[key], key, object, source);
+	
+	    if ((result === result ? (result !== value) : (value === value)) ||
+	        (value === undefined && !(key in object))) {
+	      object[key] = result;
+	    }
+	  }
+	  return object;
+	}
+	
+	module.exports = assignWith;
+
 
 /***/ },
 /* 320 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	var getNative = __webpack_require__(321),
+	    isArrayLike = __webpack_require__(326),
+	    isObject = __webpack_require__(324),
+	    shimKeys = __webpack_require__(330);
 	
-	var cloneDeep = __webpack_require__(255).cloneDeep,
-	  forIn = __webpack_require__(6).forIn,
-	  forEach = __webpack_require__(321).forEach,
-	  isUndefined = __webpack_require__(255).isUndefined,
-	  _nodes = null,
-	  _nodesContainer = null
-	  ;
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeKeys = getNative(Object, 'keys');
 	
 	/**
-	 * The node processing & drawing module.
+	 * Creates an array of the own enumerable property names of `object`.
 	 *
-	 * @class
-	 * @constructor
+	 * **Note:** Non-object values are coerced to objects. See the
+	 * [ES spec](http://ecma-international.org/ecma-262/6.0/#sec-object.keys)
+	 * for more details.
 	 *
-	 * @param {Object} nodesDict
-	 * @param {Canvas} canvas
-	 * @param {EventBus} eventBus
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keys(new Foo);
+	 * // => ['a', 'b'] (iteration order is not guaranteed)
+	 *
+	 * _.keys('hi');
+	 * // => ['0', '1']
 	 */
-	function Nodes(nodesDict, canvas, eventBus, iconLoader) {
-	  var that = this;
-	
-	  this._nodesDict = cloneDeep(nodesDict);
-	  this._nodes = [];
-	  this._links = [];
-	  this._canvas = canvas;
-	  this._eventBus = eventBus;
-	  this._iconLoader = iconLoader;
-	
-	  this._init();
-	  this._eventBus.on('force.init', function(){
-	    that._draw();
-	  });
-	  this._eventBus.on('canvas.resized', function(){
-	    that._draw();
-	  });
-	}
-	
-	Nodes.$inject = [ 'd3polytree.nodes', 'canvas', 'eventBus', 'iconLoader' ];
-	
-	module.exports = Nodes;
-	
-	Nodes.prototype._draw = function() {
-	  var that = this;
-	  if (_nodesContainer){
-	    // delete previous nodes
-	    _nodesContainer.remove();
+	var keys = !nativeKeys ? shimKeys : function(object) {
+	  var Ctor = object == null ? undefined : object.constructor;
+	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
+	      (typeof object != 'function' && isArrayLike(object))) {
+	    return shimKeys(object);
 	  }
-	  _nodesContainer = this._canvas.getDrawingLayer()
-	    .append('g')
-	    .attr('class', 'nodes');
-	  // draw the nodes wraps
-	  _nodes = _nodesContainer
-	    .selectAll('.node')
-	    .data(this._nodes)
-	    .enter()
-	    .append('g')
-	    .attr('class', 'node')
-	    .attr('node-id', function(d){
-	      return d.nodeId;
-	    })
-	    .attr('x', function(d){
-	      return !isUndefined(d.fx) ? d.fx : d.x;
-	    })
-	    .attr('y', function(d){
-	      return !isUndefined(d.fy) ? d.fy : d.y;
-	    })
-	    .attr('transform', function(d){
-	      return 'translate(' + d.x + ',' + d.y + ')';
-	    });
-	  _nodes.on('mouseover', function(){
-	    console.log('node mouseover');
-	  });
-	  // draw the nodes icons
-	  _nodes
-	    .append('svg')
-	    .attr('width', function(d){
-	      return !isUndefined(d.width) ? d.width : 50;
-	    })
-	    .attr('height', function(d){
-	      return !isUndefined(d.height) ? d.height : 50;
-	    })
-	    // .attr('x', function(d){
-	    //   return -1.0 * (!isUndefined(d.width) ? d.width : 50) / 2.0;
-	    // })
-	    // .attr('y', function(d){
-	    //   return -1.0 * (!isUndefined(d.height) ? d.height : 50) / 2.0;
-	    // })
-	    .attr('viewBox', function(d) {
-	      return (!isUndefined(that._iconLoader._processedIcons[d.iconType])) ? that._iconLoader._processedIcons[d.iconType] :
-	        that._iconLoader._processedIcons['default'];
-	    })
-	    .attr('preserveAspectRatio', 'xMaxYMax meet')
-	    .append('use')
-	    .attr('xlink:href', function(d) {
-	      return (!isUndefined(that._iconLoader._processedIcons[d.iconType])) ? '#'+d.iconType+'_icon_def' :
-	        '#default_icon_def';
-	    });
+	  return isObject(object) ? nativeKeys(object) : [];
 	};
 	
-	Nodes.prototype._init = function() {
-	  var that = this;
-	  forIn(this._nodesDict, function(n, k){
-	    // create the nodes
-	    var newNode = {
-	      id: k,
-	      nodeId: k,
-	      label: n.label,
-	      adjacencyList: n.adjacencyList,
-	      positionX: n.positionX,
-	      positionY: n.positionY,
-	      iconType: n.iconType || 'default'
-	    };
-	    if (!isUndefined(newNode.positionX) && !isUndefined(newNode.positionY)){
-	      newNode.fx = newNode.positionX;
-	      newNode.fy = newNode.positionY;
-	    }
-	    that._nodes.push(newNode);
-	    that._nodesDict[k] = newNode;
-	    // create the links
-	    forEach(newNode.adjacencyList, function(n, k){
-	      that._links.push({
-	        source: newNode.id,
-	        target: k,
-	        label: n.label
-	      });
-	    });
-	  });
-	};
+	module.exports = keys;
+
 
 /***/ },
 /* 321 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = {
-	  'countBy': __webpack_require__(322),
-	  'each': __webpack_require__(328),
-	  'eachRight': __webpack_require__(330),
-	  'every': __webpack_require__(334),
-	  'filter': __webpack_require__(337),
-	  'find': __webpack_require__(339),
-	  'findLast': __webpack_require__(343),
-	  'flatMap': __webpack_require__(345),
-	  'flatMapDeep': __webpack_require__(348),
-	  'flatMapDepth': __webpack_require__(349),
-	  'forEach': __webpack_require__(329),
-	  'forEachRight': __webpack_require__(331),
-	  'groupBy': __webpack_require__(350),
-	  'includes': __webpack_require__(351),
-	  'invokeMap': __webpack_require__(355),
-	  'keyBy': __webpack_require__(356),
-	  'map': __webpack_require__(346),
-	  'orderBy': __webpack_require__(357),
-	  'partition': __webpack_require__(362),
-	  'reduce': __webpack_require__(363),
-	  'reduceRight': __webpack_require__(365),
-	  'reject': __webpack_require__(367),
-	  'sample': __webpack_require__(368),
-	  'sampleSize': __webpack_require__(372),
-	  'shuffle': __webpack_require__(376),
-	  'size': __webpack_require__(379),
-	  'some': __webpack_require__(383),
-	  'sortBy': __webpack_require__(385)
-	};
+	var isNative = __webpack_require__(322);
+	
+	/**
+	 * Gets the native function at `key` of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {string} key The key of the method to get.
+	 * @returns {*} Returns the function if it's native, else `undefined`.
+	 */
+	function getNative(object, key) {
+	  var value = object == null ? undefined : object[key];
+	  return isNative(value) ? value : undefined;
+	}
+	
+	module.exports = getNative;
 
 
 /***/ },
 /* 322 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var baseAssignValue = __webpack_require__(9),
-	    createAggregator = __webpack_require__(323);
+	var isFunction = __webpack_require__(323),
+	    isObjectLike = __webpack_require__(325);
 	
-	/** Used for built-in method references. */
+	/** Used to detect host constructors (Safari > 5). */
+	var reIsHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/** Used for native method references. */
 	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
 	
 	/** Used to check objects for own properties. */
 	var hasOwnProperty = objectProto.hasOwnProperty;
 	
+	/** Used to detect if a method is native. */
+	var reIsNative = RegExp('^' +
+	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
 	/**
-	 * Creates an object composed of keys generated from the results of running
-	 * each element of `collection` thru `iteratee`. The corresponding value of
-	 * each key is the number of times the key was returned by `iteratee`. The
-	 * iteratee is invoked with one argument: (value).
+	 * Checks if `value` is a native function.
 	 *
 	 * @static
 	 * @memberOf _
-	 * @since 0.5.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The iteratee to transform keys.
-	 * @returns {Object} Returns the composed aggregate object.
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
 	 * @example
 	 *
-	 * _.countBy([6.1, 4.2, 6.3], Math.floor);
-	 * // => { '4': 1, '6': 2 }
+	 * _.isNative(Array.prototype.push);
+	 * // => true
 	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.countBy(['one', 'two', 'three'], 'length');
-	 * // => { '3': 2, '5': 1 }
+	 * _.isNative(_);
+	 * // => false
 	 */
-	var countBy = createAggregator(function(result, value, key) {
-	  if (hasOwnProperty.call(result, key)) {
-	    ++result[key];
-	  } else {
-	    baseAssignValue(result, key, 1);
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
 	  }
-	});
+	  if (isFunction(value)) {
+	    return reIsNative.test(fnToString.call(value));
+	  }
+	  return isObjectLike(value) && reIsHostCtor.test(value);
+	}
 	
-	module.exports = countBy;
+	module.exports = isNative;
 
 
 /***/ },
 /* 323 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var arrayAggregator = __webpack_require__(324),
-	    baseAggregator = __webpack_require__(325),
-	    baseIteratee = __webpack_require__(153),
-	    isArray = __webpack_require__(47);
+	var isObject = __webpack_require__(324);
+	
+	/** `Object#toString` result references. */
+	var funcTag = '[object Function]';
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
 	
 	/**
-	 * Creates a function like `_.groupBy`.
-	 *
-	 * @private
-	 * @param {Function} setter The function to set accumulator values.
-	 * @param {Function} [initializer] The accumulator object initializer.
-	 * @returns {Function} Returns the new aggregator function.
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
 	 */
-	function createAggregator(setter, initializer) {
-	  return function(collection, iteratee) {
-	    var func = isArray(collection) ? arrayAggregator : baseAggregator,
-	        accumulator = initializer ? initializer() : {};
+	var objToString = objectProto.toString;
 	
-	    return func(collection, setter, baseIteratee(iteratee, 2), accumulator);
-	  };
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in older versions of Chrome and Safari which return 'function' for regexes
+	  // and Safari 8 which returns 'object' for typed array constructors.
+	  return isObject(value) && objToString.call(value) == funcTag;
 	}
 	
-	module.exports = createAggregator;
+	module.exports = isFunction;
 
 
 /***/ },
@@ -15293,70 +15186,1085 @@
 /***/ function(module, exports) {
 
 	/**
-	 * A specialized version of `baseAggregator` for arrays.
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
 	 *
-	 * @private
-	 * @param {Array} [array] The array to iterate over.
-	 * @param {Function} setter The function to set `accumulator` values.
-	 * @param {Function} iteratee The iteratee to transform keys.
-	 * @param {Object} accumulator The initial aggregated object.
-	 * @returns {Function} Returns `accumulator`.
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
 	 */
-	function arrayAggregator(array, setter, iteratee, accumulator) {
-	  var index = -1,
-	      length = array == null ? 0 : array.length;
-	
-	  while (++index < length) {
-	    var value = array[index];
-	    setter(accumulator, value, iteratee(value), array);
-	  }
-	  return accumulator;
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
 	}
 	
-	module.exports = arrayAggregator;
+	module.exports = isObject;
 
 
 /***/ },
 /* 325 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	var baseEach = __webpack_require__(326);
-	
 	/**
-	 * Aggregates elements of `collection` on `accumulator` with keys transformed
-	 * by `iteratee` and values set by `setter`.
+	 * Checks if `value` is object-like.
 	 *
 	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} setter The function to set `accumulator` values.
-	 * @param {Function} iteratee The iteratee to transform keys.
-	 * @param {Object} accumulator The initial aggregated object.
-	 * @returns {Function} Returns `accumulator`.
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
 	 */
-	function baseAggregator(collection, setter, iteratee, accumulator) {
-	  baseEach(collection, function(value, key, collection) {
-	    setter(accumulator, value, iteratee(value), collection);
-	  });
-	  return accumulator;
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
 	}
 	
-	module.exports = baseAggregator;
+	module.exports = isObjectLike;
 
 
 /***/ },
 /* 326 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var baseForOwn = __webpack_require__(152),
-	    createBaseEach = __webpack_require__(327);
+	var getLength = __webpack_require__(327),
+	    isLength = __webpack_require__(329);
 	
 	/**
-	 * The base implementation of `_.forEach` without support for iteratee shorthands.
+	 * Checks if `value` is array-like.
 	 *
 	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+	
+	module.exports = isArrayLike;
+
+
+/***/ },
+/* 327 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseProperty = __webpack_require__(328);
+	
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+	
+	module.exports = getLength;
+
+
+/***/ },
+/* 328 */
+/***/ function(module, exports) {
+
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+	
+	module.exports = baseProperty;
+
+
+/***/ },
+/* 329 */
+/***/ function(module, exports) {
+
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	module.exports = isLength;
+
+
+/***/ },
+/* 330 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isArguments = __webpack_require__(331),
+	    isArray = __webpack_require__(332),
+	    isIndex = __webpack_require__(333),
+	    isLength = __webpack_require__(329),
+	    keysIn = __webpack_require__(334);
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * A fallback implementation of `Object.keys` which creates an array of the
+	 * own enumerable property names of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 */
+	function shimKeys(object) {
+	  var props = keysIn(object),
+	      propsLength = props.length,
+	      length = propsLength && object.length;
+	
+	  var allowIndexes = !!length && isLength(length) &&
+	    (isArray(object) || isArguments(object));
+	
+	  var index = -1,
+	      result = [];
+	
+	  while (++index < propsLength) {
+	    var key = props[index];
+	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = shimKeys;
+
+
+/***/ },
+/* 331 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isArrayLike = __webpack_require__(326),
+	    isObjectLike = __webpack_require__(325);
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/** Native method references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+	
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArguments(function() { return arguments; }());
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  return isObjectLike(value) && isArrayLike(value) &&
+	    hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
+	}
+	
+	module.exports = isArguments;
+
+
+/***/ },
+/* 332 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var getNative = __webpack_require__(321),
+	    isLength = __webpack_require__(329),
+	    isObjectLike = __webpack_require__(325);
+	
+	/** `Object#toString` result references. */
+	var arrayTag = '[object Array]';
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeIsArray = getNative(Array, 'isArray');
+	
+	/**
+	 * Checks if `value` is classified as an `Array` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArray([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArray(function() { return arguments; }());
+	 * // => false
+	 */
+	var isArray = nativeIsArray || function(value) {
+	  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
+	};
+	
+	module.exports = isArray;
+
+
+/***/ },
+/* 333 */
+/***/ function(module, exports) {
+
+	/** Used to detect unsigned integer values. */
+	var reIsUint = /^\d+$/;
+	
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	module.exports = isIndex;
+
+
+/***/ },
+/* 334 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isArguments = __webpack_require__(331),
+	    isArray = __webpack_require__(332),
+	    isIndex = __webpack_require__(333),
+	    isLength = __webpack_require__(329),
+	    isObject = __webpack_require__(324);
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Creates an array of the own and inherited enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keysIn(new Foo);
+	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+	 */
+	function keysIn(object) {
+	  if (object == null) {
+	    return [];
+	  }
+	  if (!isObject(object)) {
+	    object = Object(object);
+	  }
+	  var length = object.length;
+	  length = (length && isLength(length) &&
+	    (isArray(object) || isArguments(object)) && length) || 0;
+	
+	  var Ctor = object.constructor,
+	      index = -1,
+	      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
+	      result = Array(length),
+	      skipIndexes = length > 0;
+	
+	  while (++index < length) {
+	    result[index] = (index + '');
+	  }
+	  for (var key in object) {
+	    if (!(skipIndexes && isIndex(key, length)) &&
+	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = keysIn;
+
+
+/***/ },
+/* 335 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseCopy = __webpack_require__(336),
+	    keys = __webpack_require__(320);
+	
+	/**
+	 * The base implementation of `_.assign` without support for argument juggling,
+	 * multiple sources, and `customizer` functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseAssign(object, source) {
+	  return source == null
+	    ? object
+	    : baseCopy(source, keys(source), object);
+	}
+	
+	module.exports = baseAssign;
+
+
+/***/ },
+/* 336 */
+/***/ function(module, exports) {
+
+	/**
+	 * Copies properties of `source` to `object`.
+	 *
+	 * @private
+	 * @param {Object} source The object to copy properties from.
+	 * @param {Array} props The property names to copy.
+	 * @param {Object} [object={}] The object to copy properties to.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseCopy(source, props, object) {
+	  object || (object = {});
+	
+	  var index = -1,
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index];
+	    object[key] = source[key];
+	  }
+	  return object;
+	}
+	
+	module.exports = baseCopy;
+
+
+/***/ },
+/* 337 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var bindCallback = __webpack_require__(338),
+	    isIterateeCall = __webpack_require__(340),
+	    restParam = __webpack_require__(341);
+	
+	/**
+	 * Creates a `_.assign`, `_.defaults`, or `_.merge` function.
+	 *
+	 * @private
+	 * @param {Function} assigner The function to assign values.
+	 * @returns {Function} Returns the new assigner function.
+	 */
+	function createAssigner(assigner) {
+	  return restParam(function(object, sources) {
+	    var index = -1,
+	        length = object == null ? 0 : sources.length,
+	        customizer = length > 2 ? sources[length - 2] : undefined,
+	        guard = length > 2 ? sources[2] : undefined,
+	        thisArg = length > 1 ? sources[length - 1] : undefined;
+	
+	    if (typeof customizer == 'function') {
+	      customizer = bindCallback(customizer, thisArg, 5);
+	      length -= 2;
+	    } else {
+	      customizer = typeof thisArg == 'function' ? thisArg : undefined;
+	      length -= (customizer ? 1 : 0);
+	    }
+	    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+	      customizer = length < 3 ? undefined : customizer;
+	      length = 1;
+	    }
+	    while (++index < length) {
+	      var source = sources[index];
+	      if (source) {
+	        assigner(object, source, customizer);
+	      }
+	    }
+	    return object;
+	  });
+	}
+	
+	module.exports = createAssigner;
+
+
+/***/ },
+/* 338 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var identity = __webpack_require__(339);
+	
+	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (thisArg === undefined) {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
+	
+	module.exports = bindCallback;
+
+
+/***/ },
+/* 339 */
+/***/ function(module, exports) {
+
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 *
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = identity;
+
+
+/***/ },
+/* 340 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isArrayLike = __webpack_require__(326),
+	    isIndex = __webpack_require__(333),
+	    isObject = __webpack_require__(324);
+	
+	/**
+	 * Checks if the provided arguments are from an iteratee call.
+	 *
+	 * @private
+	 * @param {*} value The potential iteratee value argument.
+	 * @param {*} index The potential iteratee index or key argument.
+	 * @param {*} object The potential iteratee object argument.
+	 * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
+	 */
+	function isIterateeCall(value, index, object) {
+	  if (!isObject(object)) {
+	    return false;
+	  }
+	  var type = typeof index;
+	  if (type == 'number'
+	      ? (isArrayLike(object) && isIndex(index, object.length))
+	      : (type == 'string' && index in object)) {
+	    var other = object[index];
+	    return value === value ? (value === other) : (other !== other);
+	  }
+	  return false;
+	}
+	
+	module.exports = isIterateeCall;
+
+
+/***/ },
+/* 341 */
+/***/ function(module, exports) {
+
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+	
+	/**
+	 * Creates a function that invokes `func` with the `this` binding of the
+	 * created function and arguments from `start` and beyond provided as an array.
+	 *
+	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/Web/JavaScript/Reference/Functions/rest_parameters).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Function
+	 * @param {Function} func The function to apply a rest parameter to.
+	 * @param {number} [start=func.length-1] The start position of the rest parameter.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * var say = _.restParam(function(what, names) {
+	 *   return what + ' ' + _.initial(names).join(', ') +
+	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
+	 * });
+	 *
+	 * say('hello', 'fred', 'barney', 'pebbles');
+	 * // => 'hello fred, barney, & pebbles'
+	 */
+	function restParam(func, start) {
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
+	  return function() {
+	    var args = arguments,
+	        index = -1,
+	        length = nativeMax(args.length - start, 0),
+	        rest = Array(length);
+	
+	    while (++index < length) {
+	      rest[index] = args[start + index];
+	    }
+	    switch (start) {
+	      case 0: return func.call(this, rest);
+	      case 1: return func.call(this, args[0], rest);
+	      case 2: return func.call(this, args[0], args[1], rest);
+	    }
+	    var otherArgs = Array(start + 1);
+	    index = -1;
+	    while (++index < start) {
+	      otherArgs[index] = args[index];
+	    }
+	    otherArgs[start] = rest;
+	    return func.apply(this, otherArgs);
+	  };
+	}
+	
+	module.exports = restParam;
+
+
+/***/ },
+/* 342 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var isString = __webpack_require__(343),
+	  isFunction = __webpack_require__(323),
+	  assign = __webpack_require__(318);
+	
+	var Moddle = __webpack_require__(344),
+	  XmlReader = __webpack_require__(394),
+	  XmlWriter = __webpack_require__(425);
+	
+	/**
+	 * A sub class of {@link Moddle} with support for import and export of Process Flow Diagrams xml files.
+	 *
+	 * @class PfdnModdle
+	 * @extends Moddle
+	 *
+	 * @param {Object|Array} packages to use for instantiating the model
+	 * @param {Object} [options] additional options to pass over
+	 */
+	function PfdnModdle(packages, options) {
+	  Moddle.call(this, packages, options);
+	}
+	
+	PfdnModdle.prototype = Object.create(Moddle.prototype);
+	
+	module.exports = PfdnModdle;
+	
+	
+	/**
+	 * Instantiates a PFDN model tree from a given xml string.
+	 *
+	 * @param {String}   xmlStr
+	 * @param {String}   [typeName='pfdn:Diagram'] name of the root element
+	 * @param {Object}   [options]  options to pass to the underlying reader
+	 * @param {Function} done       callback that is invoked with (err, result, parseContext)
+	 *                              once the import completes
+	 */
+	PfdnModdle.prototype.fromXML = function(xmlStr, typeName, options, done) {
+	
+	  if (!isString(typeName)) {
+	    done = options;
+	    options = typeName;
+	    typeName = 'pfdn:Diagram';
+	  }
+	
+	  if (isFunction(options)) {
+	    done = options;
+	    options = {};
+	  }
+	
+	  var reader = new XmlReader(assign({ model: this, lax: true }, options));
+	  var rootHandler = reader.handler(typeName);
+	
+	  reader.fromXML(xmlStr, rootHandler, done);
+	};
+	
+	
+	/**
+	 * Serializes a PFDN object tree to XML.
+	 *
+	 * @param {String}   element    the root element, typically an instance of `pfdn:Diagram`
+	 * @param {Object}   [options]  to pass to the underlying writer
+	 * @param {Function} done       callback invoked with (err, xmlStr) once the import completes
+	 */
+	PfdnModdle.prototype.toXML = function(element, options, done) {
+	
+	  if (isFunction(options)) {
+	    done = options;
+	    options = {};
+	  }
+	
+	  var writer = new XmlWriter(options);
+	  try {
+	    var result = writer.toXML(element);
+	    done(null, result);
+	  } catch (e) {
+	    done(e);
+	  }
+	};
+
+
+/***/ },
+/* 343 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isObjectLike = __webpack_require__(325);
+	
+	/** `Object#toString` result references. */
+	var stringTag = '[object String]';
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * Checks if `value` is classified as a `String` primitive or object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isString('abc');
+	 * // => true
+	 *
+	 * _.isString(1);
+	 * // => false
+	 */
+	function isString(value) {
+	  return typeof value == 'string' || (isObjectLike(value) && objToString.call(value) == stringTag);
+	}
+	
+	module.exports = isString;
+
+
+/***/ },
+/* 344 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(345);
+
+/***/ },
+/* 345 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var isString = __webpack_require__(343),
+	    isObject = __webpack_require__(324),
+	    forEach = __webpack_require__(346),
+	    find = __webpack_require__(355);
+	
+	
+	var Factory = __webpack_require__(381),
+	    Registry = __webpack_require__(383),
+	    Properties = __webpack_require__(393);
+	
+	var parseNameNs = __webpack_require__(392).parseName;
+	
+	
+	//// Moddle implementation /////////////////////////////////////////////////
+	
+	/**
+	 * @class Moddle
+	 *
+	 * A model that can be used to create elements of a specific type.
+	 *
+	 * @example
+	 *
+	 * var Moddle = require('moddle');
+	 *
+	 * var pkg = {
+	 *   name: 'mypackage',
+	 *   prefix: 'my',
+	 *   types: [
+	 *     { name: 'Root' }
+	 *   ]
+	 * };
+	 *
+	 * var moddle = new Moddle([pkg]);
+	 *
+	 * @param {Array<Package>} packages the packages to contain
+	 */
+	function Moddle(packages) {
+	
+	  this.properties = new Properties(this);
+	
+	  this.factory = new Factory(this, this.properties);
+	  this.registry = new Registry(packages, this.properties);
+	
+	  this.typeCache = {};
+	}
+	
+	module.exports = Moddle;
+	
+	
+	/**
+	 * Create an instance of the specified type.
+	 *
+	 * @method Moddle#create
+	 *
+	 * @example
+	 *
+	 * var foo = moddle.create('my:Foo');
+	 * var bar = moddle.create('my:Bar', { id: 'BAR_1' });
+	 *
+	 * @param  {String|Object} descriptor the type descriptor or name know to the model
+	 * @param  {Object} attrs   a number of attributes to initialize the model instance with
+	 * @return {Object}         model instance
+	 */
+	Moddle.prototype.create = function(descriptor, attrs) {
+	  var Type = this.getType(descriptor);
+	
+	  if (!Type) {
+	    throw new Error('unknown type <' + descriptor + '>');
+	  }
+	
+	  return new Type(attrs);
+	};
+	
+	
+	/**
+	 * Returns the type representing a given descriptor
+	 *
+	 * @method Moddle#getType
+	 *
+	 * @example
+	 *
+	 * var Foo = moddle.getType('my:Foo');
+	 * var foo = new Foo({ 'id' : 'FOO_1' });
+	 *
+	 * @param  {String|Object} descriptor the type descriptor or name know to the model
+	 * @return {Object}         the type representing the descriptor
+	 */
+	Moddle.prototype.getType = function(descriptor) {
+	
+	  var cache = this.typeCache;
+	
+	  var name = isString(descriptor) ? descriptor : descriptor.ns.name;
+	
+	  var type = cache[name];
+	
+	  if (!type) {
+	    descriptor = this.registry.getEffectiveDescriptor(name);
+	    type = cache[name] = this.factory.createType(descriptor);
+	  }
+	
+	  return type;
+	};
+	
+	
+	/**
+	 * Creates an any-element type to be used within model instances.
+	 *
+	 * This can be used to create custom elements that lie outside the meta-model.
+	 * The created element contains all the meta-data required to serialize it
+	 * as part of meta-model elements.
+	 *
+	 * @method Moddle#createAny
+	 *
+	 * @example
+	 *
+	 * var foo = moddle.createAny('vendor:Foo', 'http://vendor', {
+	 *   value: 'bar'
+	 * });
+	 *
+	 * var container = moddle.create('my:Container', 'http://my', {
+	 *   any: [ foo ]
+	 * });
+	 *
+	 * // go ahead and serialize the stuff
+	 *
+	 *
+	 * @param  {String} name  the name of the element
+	 * @param  {String} nsUri the namespace uri of the element
+	 * @param  {Object} [properties] a map of properties to initialize the instance with
+	 * @return {Object} the any type instance
+	 */
+	Moddle.prototype.createAny = function(name, nsUri, properties) {
+	
+	  var nameNs = parseNameNs(name);
+	
+	  var element = {
+	    $type: name
+	  };
+	
+	  var descriptor = {
+	    name: name,
+	    isGeneric: true,
+	    ns: {
+	      prefix: nameNs.prefix,
+	      localName: nameNs.localName,
+	      uri: nsUri
+	    }
+	  };
+	
+	  this.properties.defineDescriptor(element, descriptor);
+	  this.properties.defineModel(element, this);
+	  this.properties.define(element, '$parent', { enumerable: false, writable: true });
+	
+	  forEach(properties, function(a, key) {
+	    if (isObject(a) && a.value !== undefined) {
+	      element[a.name] = a.value;
+	    } else {
+	      element[key] = a;
+	    }
+	  });
+	
+	  return element;
+	};
+	
+	/**
+	 * Returns a registered package by uri or prefix
+	 *
+	 * @return {Object} the package
+	 */
+	Moddle.prototype.getPackage = function(uriOrPrefix) {
+	  return this.registry.getPackage(uriOrPrefix);
+	};
+	
+	/**
+	 * Returns a snapshot of all known packages
+	 *
+	 * @return {Object} the package
+	 */
+	Moddle.prototype.getPackages = function() {
+	  return this.registry.getPackages();
+	};
+	
+	/**
+	 * Returns the descriptor for an element
+	 */
+	Moddle.prototype.getElementDescriptor = function(element) {
+	  return element.$descriptor;
+	};
+	
+	/**
+	 * Returns true if the given descriptor or instance
+	 * represents the given type.
+	 *
+	 * May be applied to this, if element is omitted.
+	 */
+	Moddle.prototype.hasType = function(element, type) {
+	  if (type === undefined) {
+	    type = element;
+	    element = this;
+	  }
+	
+	  var descriptor = element.$model.getElementDescriptor(element);
+	
+	  return !!find(descriptor.allTypes, function(t) {
+	    return t.name === type;
+	  });
+	};
+	
+	
+	/**
+	 * Returns the descriptor of an elements named property
+	 */
+	Moddle.prototype.getPropertyDescriptor = function(element, property) {
+	  return this.getElementDescriptor(element).propertiesByName[property];
+	};
+
+
+/***/ },
+/* 346 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayEach = __webpack_require__(347),
+	    baseEach = __webpack_require__(348),
+	    createForEach = __webpack_require__(354);
+	
+	/**
+	 * Iterates over elements of `collection` invoking `iteratee` for each element.
+	 * The `iteratee` is bound to `thisArg` and invoked with three arguments:
+	 * (value, index|key, collection). Iteratee functions may exit iteration early
+	 * by explicitly returning `false`.
+	 *
+	 * **Note:** As with other "Collections" methods, objects with a "length" property
+	 * are iterated like arrays. To avoid this behavior `_.forIn` or `_.forOwn`
+	 * may be used for object iteration.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @alias each
+	 * @category Collection
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @param {*} [thisArg] The `this` binding of `iteratee`.
+	 * @returns {Array|Object|string} Returns `collection`.
+	 * @example
+	 *
+	 * _([1, 2]).forEach(function(n) {
+	 *   console.log(n);
+	 * }).value();
+	 * // => logs each value from left to right and returns the array
+	 *
+	 * _.forEach({ 'a': 1, 'b': 2 }, function(n, key) {
+	 *   console.log(n, key);
+	 * });
+	 * // => logs each value-key pair and returns the object (iteration order is not guaranteed)
+	 */
+	var forEach = createForEach(arrayEach, baseEach);
+	
+	module.exports = forEach;
+
+
+/***/ },
+/* 347 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `_.forEach` for arrays without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
 	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array|Object} Returns `collection`.
+	 * @returns {Array} Returns `array`.
+	 */
+	function arrayEach(array, iteratee) {
+	  var index = -1,
+	      length = array.length;
+	
+	  while (++index < length) {
+	    if (iteratee(array[index], index, array) === false) {
+	      break;
+	    }
+	  }
+	  return array;
+	}
+	
+	module.exports = arrayEach;
+
+
+/***/ },
+/* 348 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseForOwn = __webpack_require__(349),
+	    createBaseEach = __webpack_require__(353);
+	
+	/**
+	 * The base implementation of `_.forEach` without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array|Object|string} Returns `collection`.
 	 */
 	var baseEach = createBaseEach(baseForOwn);
 	
@@ -15364,10 +16272,111 @@
 
 
 /***/ },
-/* 327 */
+/* 349 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isArrayLike = __webpack_require__(37);
+	var baseFor = __webpack_require__(350),
+	    keys = __webpack_require__(320);
+	
+	/**
+	 * The base implementation of `_.forOwn` without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Object} object The object to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseForOwn(object, iteratee) {
+	  return baseFor(object, iteratee, keys);
+	}
+	
+	module.exports = baseForOwn;
+
+
+/***/ },
+/* 350 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var createBaseFor = __webpack_require__(351);
+	
+	/**
+	 * The base implementation of `baseForIn` and `baseForOwn` which iterates
+	 * over `object` properties returned by `keysFunc` invoking `iteratee` for
+	 * each property. Iteratee functions may exit iteration early by explicitly
+	 * returning `false`.
+	 *
+	 * @private
+	 * @param {Object} object The object to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @param {Function} keysFunc The function to get the keys of `object`.
+	 * @returns {Object} Returns `object`.
+	 */
+	var baseFor = createBaseFor();
+	
+	module.exports = baseFor;
+
+
+/***/ },
+/* 351 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var toObject = __webpack_require__(352);
+	
+	/**
+	 * Creates a base function for `_.forIn` or `_.forInRight`.
+	 *
+	 * @private
+	 * @param {boolean} [fromRight] Specify iterating from right to left.
+	 * @returns {Function} Returns the new base function.
+	 */
+	function createBaseFor(fromRight) {
+	  return function(object, iteratee, keysFunc) {
+	    var iterable = toObject(object),
+	        props = keysFunc(object),
+	        length = props.length,
+	        index = fromRight ? length : -1;
+	
+	    while ((fromRight ? index-- : ++index < length)) {
+	      var key = props[index];
+	      if (iteratee(iterable[key], key, iterable) === false) {
+	        break;
+	      }
+	    }
+	    return object;
+	  };
+	}
+	
+	module.exports = createBaseFor;
+
+
+/***/ },
+/* 352 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isObject = __webpack_require__(324);
+	
+	/**
+	 * Converts `value` to an object if it's not one.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {Object} Returns the object.
+	 */
+	function toObject(value) {
+	  return isObject(value) ? value : Object(value);
+	}
+	
+	module.exports = toObject;
+
+
+/***/ },
+/* 353 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var getLength = __webpack_require__(327),
+	    isLength = __webpack_require__(329),
+	    toObject = __webpack_require__(352);
 	
 	/**
 	 * Creates a `baseEach` or `baseEachRight` function.
@@ -15379,15 +16388,12 @@
 	 */
 	function createBaseEach(eachFunc, fromRight) {
 	  return function(collection, iteratee) {
-	    if (collection == null) {
-	      return collection;
-	    }
-	    if (!isArrayLike(collection)) {
+	    var length = collection ? getLength(collection) : 0;
+	    if (!isLength(length)) {
 	      return eachFunc(collection, iteratee);
 	    }
-	    var length = collection.length,
-	        index = fromRight ? length : -1,
-	        iterable = Object(collection);
+	    var index = fromRight ? length : -1,
+	        iterable = toObject(collection);
 	
 	    while ((fromRight ? index-- : ++index < length)) {
 	      if (iteratee(iterable[index], index, iterable) === false) {
@@ -15402,368 +16408,62 @@
 
 
 /***/ },
-/* 328 */
+/* 354 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(329);
-
-
-/***/ },
-/* 329 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arrayEach = __webpack_require__(205),
-	    baseEach = __webpack_require__(326),
-	    castFunction = __webpack_require__(181),
-	    isArray = __webpack_require__(47);
+	var bindCallback = __webpack_require__(338),
+	    isArray = __webpack_require__(332);
 	
 	/**
-	 * Iterates over elements of `collection` and invokes `iteratee` for each element.
-	 * The iteratee is invoked with three arguments: (value, index|key, collection).
-	 * Iteratee functions may exit iteration early by explicitly returning `false`.
-	 *
-	 * **Note:** As with other "Collections" methods, objects with a "length"
-	 * property are iterated like arrays. To avoid this behavior use `_.forIn`
-	 * or `_.forOwn` for object iteration.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @alias each
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @returns {Array|Object} Returns `collection`.
-	 * @see _.forEachRight
-	 * @example
-	 *
-	 * _.forEach([1, 2], function(value) {
-	 *   console.log(value);
-	 * });
-	 * // => Logs `1` then `2`.
-	 *
-	 * _.forEach({ 'a': 1, 'b': 2 }, function(value, key) {
-	 *   console.log(key);
-	 * });
-	 * // => Logs 'a' then 'b' (iteration order is not guaranteed).
-	 */
-	function forEach(collection, iteratee) {
-	  var func = isArray(collection) ? arrayEach : baseEach;
-	  return func(collection, castFunction(iteratee));
-	}
-	
-	module.exports = forEach;
-
-
-/***/ },
-/* 330 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(331);
-
-
-/***/ },
-/* 331 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arrayEachRight = __webpack_require__(332),
-	    baseEachRight = __webpack_require__(333),
-	    castFunction = __webpack_require__(181),
-	    isArray = __webpack_require__(47);
-	
-	/**
-	 * This method is like `_.forEach` except that it iterates over elements of
-	 * `collection` from right to left.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 2.0.0
-	 * @alias eachRight
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @returns {Array|Object} Returns `collection`.
-	 * @see _.forEach
-	 * @example
-	 *
-	 * _.forEachRight([1, 2], function(value) {
-	 *   console.log(value);
-	 * });
-	 * // => Logs `2` then `1`.
-	 */
-	function forEachRight(collection, iteratee) {
-	  var func = isArray(collection) ? arrayEachRight : baseEachRight;
-	  return func(collection, castFunction(iteratee));
-	}
-	
-	module.exports = forEachRight;
-
-
-/***/ },
-/* 332 */
-/***/ function(module, exports) {
-
-	/**
-	 * A specialized version of `_.forEachRight` for arrays without support for
-	 * iteratee shorthands.
+	 * Creates a function for `_.forEach` or `_.forEachRight`.
 	 *
 	 * @private
-	 * @param {Array} [array] The array to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array} Returns `array`.
+	 * @param {Function} arrayFunc The function to iterate over an array.
+	 * @param {Function} eachFunc The function to iterate over a collection.
+	 * @returns {Function} Returns the new each function.
 	 */
-	function arrayEachRight(array, iteratee) {
-	  var length = array == null ? 0 : array.length;
-	
-	  while (length--) {
-	    if (iteratee(array[length], length, array) === false) {
-	      break;
-	    }
-	  }
-	  return array;
+	function createForEach(arrayFunc, eachFunc) {
+	  return function(collection, iteratee, thisArg) {
+	    return (typeof iteratee == 'function' && thisArg === undefined && isArray(collection))
+	      ? arrayFunc(collection, iteratee)
+	      : eachFunc(collection, bindCallback(iteratee, thisArg, 3));
+	  };
 	}
 	
-	module.exports = arrayEachRight;
+	module.exports = createForEach;
 
 
 /***/ },
-/* 333 */
+/* 355 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var baseForOwnRight = __webpack_require__(178),
-	    createBaseEach = __webpack_require__(327);
-	
-	/**
-	 * The base implementation of `_.forEachRight` without support for iteratee shorthands.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array|Object} Returns `collection`.
-	 */
-	var baseEachRight = createBaseEach(baseForOwnRight, true);
-	
-	module.exports = baseEachRight;
-
-
-/***/ },
-/* 334 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arrayEvery = __webpack_require__(335),
-	    baseEvery = __webpack_require__(336),
-	    baseIteratee = __webpack_require__(153),
-	    isArray = __webpack_require__(47),
-	    isIterateeCall = __webpack_require__(36);
-	
-	/**
-	 * Checks if `predicate` returns truthy for **all** elements of `collection`.
-	 * Iteration is stopped once `predicate` returns falsey. The predicate is
-	 * invoked with three arguments: (value, index|key, collection).
-	 *
-	 * **Note:** This method returns `true` for
-	 * [empty collections](https://en.wikipedia.org/wiki/Empty_set) because
-	 * [everything is true](https://en.wikipedia.org/wiki/Vacuous_truth) of
-	 * elements of empty collections.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
-	 * @returns {boolean} Returns `true` if all elements pass the predicate check,
-	 *  else `false`.
-	 * @example
-	 *
-	 * _.every([true, 1, null, 'yes'], Boolean);
-	 * // => false
-	 *
-	 * var users = [
-	 *   { 'user': 'barney', 'age': 36, 'active': false },
-	 *   { 'user': 'fred',   'age': 40, 'active': false }
-	 * ];
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.every(users, { 'user': 'barney', 'active': false });
-	 * // => false
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.every(users, ['active', false]);
-	 * // => true
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.every(users, 'active');
-	 * // => false
-	 */
-	function every(collection, predicate, guard) {
-	  var func = isArray(collection) ? arrayEvery : baseEvery;
-	  if (guard && isIterateeCall(collection, predicate, guard)) {
-	    predicate = undefined;
-	  }
-	  return func(collection, baseIteratee(predicate, 3));
-	}
-	
-	module.exports = every;
-
-
-/***/ },
-/* 335 */
-/***/ function(module, exports) {
-
-	/**
-	 * A specialized version of `_.every` for arrays without support for
-	 * iteratee shorthands.
-	 *
-	 * @private
-	 * @param {Array} [array] The array to iterate over.
-	 * @param {Function} predicate The function invoked per iteration.
-	 * @returns {boolean} Returns `true` if all elements pass the predicate check,
-	 *  else `false`.
-	 */
-	function arrayEvery(array, predicate) {
-	  var index = -1,
-	      length = array == null ? 0 : array.length;
-	
-	  while (++index < length) {
-	    if (!predicate(array[index], index, array)) {
-	      return false;
-	    }
-	  }
-	  return true;
-	}
-	
-	module.exports = arrayEvery;
-
-
-/***/ },
-/* 336 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseEach = __webpack_require__(326);
-	
-	/**
-	 * The base implementation of `_.every` without support for iteratee shorthands.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} predicate The function invoked per iteration.
-	 * @returns {boolean} Returns `true` if all elements pass the predicate check,
-	 *  else `false`
-	 */
-	function baseEvery(collection, predicate) {
-	  var result = true;
-	  baseEach(collection, function(value, index, collection) {
-	    result = !!predicate(value, index, collection);
-	    return result;
-	  });
-	  return result;
-	}
-	
-	module.exports = baseEvery;
-
-
-/***/ },
-/* 337 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arrayFilter = __webpack_require__(187),
-	    baseFilter = __webpack_require__(338),
-	    baseIteratee = __webpack_require__(153),
-	    isArray = __webpack_require__(47);
-	
-	/**
-	 * Iterates over elements of `collection`, returning an array of all elements
-	 * `predicate` returns truthy for. The predicate is invoked with three
-	 * arguments: (value, index|key, collection).
-	 *
-	 * **Note:** Unlike `_.remove`, this method returns a new array.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @returns {Array} Returns the new filtered array.
-	 * @see _.reject
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'barney', 'age': 36, 'active': true },
-	 *   { 'user': 'fred',   'age': 40, 'active': false }
-	 * ];
-	 *
-	 * _.filter(users, function(o) { return !o.active; });
-	 * // => objects for ['fred']
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.filter(users, { 'age': 36, 'active': true });
-	 * // => objects for ['barney']
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.filter(users, ['active', false]);
-	 * // => objects for ['fred']
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.filter(users, 'active');
-	 * // => objects for ['barney']
-	 */
-	function filter(collection, predicate) {
-	  var func = isArray(collection) ? arrayFilter : baseFilter;
-	  return func(collection, baseIteratee(predicate, 3));
-	}
-	
-	module.exports = filter;
-
-
-/***/ },
-/* 338 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseEach = __webpack_require__(326);
-	
-	/**
-	 * The base implementation of `_.filter` without support for iteratee shorthands.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} predicate The function invoked per iteration.
-	 * @returns {Array} Returns the new filtered array.
-	 */
-	function baseFilter(collection, predicate) {
-	  var result = [];
-	  baseEach(collection, function(value, index, collection) {
-	    if (predicate(value, index, collection)) {
-	      result.push(value);
-	    }
-	  });
-	  return result;
-	}
-	
-	module.exports = baseFilter;
-
-
-/***/ },
-/* 339 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var createFind = __webpack_require__(340),
-	    findIndex = __webpack_require__(341);
+	var baseEach = __webpack_require__(348),
+	    createFind = __webpack_require__(356);
 	
 	/**
 	 * Iterates over elements of `collection`, returning the first element
-	 * `predicate` returns truthy for. The predicate is invoked with three
-	 * arguments: (value, index|key, collection).
+	 * `predicate` returns truthy for. The predicate is bound to `thisArg` and
+	 * invoked with three arguments: (value, index|key, collection).
+	 *
+	 * If a property name is provided for `predicate` the created `_.property`
+	 * style callback returns the property value of the given element.
+	 *
+	 * If a value is also provided for `thisArg` the created `_.matchesProperty`
+	 * style callback returns `true` for elements that have a matching property
+	 * value, else `false`.
+	 *
+	 * If an object is provided for `predicate` the created `_.matches` style
+	 * callback returns `true` for elements that have the properties of the given
+	 * object, else `false`.
 	 *
 	 * @static
 	 * @memberOf _
-	 * @since 0.1.0
+	 * @alias detect
 	 * @category Collection
-	 * @param {Array|Object} collection The collection to inspect.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @param {number} [fromIndex=0] The index to search from.
+	 * @param {Array|Object|string} collection The collection to search.
+	 * @param {Function|Object|string} [predicate=_.identity] The function invoked
+	 *  per iteration.
+	 * @param {*} [thisArg] The `this` binding of `predicate`.
 	 * @returns {*} Returns the matched element, else `undefined`.
 	 * @example
 	 *
@@ -15773,51 +16473,53 @@
 	 *   { 'user': 'pebbles', 'age': 1,  'active': true }
 	 * ];
 	 *
-	 * _.find(users, function(o) { return o.age < 40; });
-	 * // => object for 'barney'
+	 * _.result(_.find(users, function(chr) {
+	 *   return chr.age < 40;
+	 * }), 'user');
+	 * // => 'barney'
 	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.find(users, { 'age': 1, 'active': true });
-	 * // => object for 'pebbles'
+	 * // using the `_.matches` callback shorthand
+	 * _.result(_.find(users, { 'age': 1, 'active': true }), 'user');
+	 * // => 'pebbles'
 	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.find(users, ['active', false]);
-	 * // => object for 'fred'
+	 * // using the `_.matchesProperty` callback shorthand
+	 * _.result(_.find(users, 'active', false), 'user');
+	 * // => 'fred'
 	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.find(users, 'active');
-	 * // => object for 'barney'
+	 * // using the `_.property` callback shorthand
+	 * _.result(_.find(users, 'active'), 'user');
+	 * // => 'barney'
 	 */
-	var find = createFind(findIndex);
+	var find = createFind(baseEach);
 	
 	module.exports = find;
 
 
 /***/ },
-/* 340 */
+/* 356 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var baseIteratee = __webpack_require__(153),
-	    isArrayLike = __webpack_require__(37),
-	    keys = __webpack_require__(41);
+	var baseCallback = __webpack_require__(357),
+	    baseFind = __webpack_require__(379),
+	    baseFindIndex = __webpack_require__(380),
+	    isArray = __webpack_require__(332);
 	
 	/**
 	 * Creates a `_.find` or `_.findLast` function.
 	 *
 	 * @private
-	 * @param {Function} findIndexFunc The function to find the collection index.
+	 * @param {Function} eachFunc The function to iterate over a collection.
+	 * @param {boolean} [fromRight] Specify iterating from right to left.
 	 * @returns {Function} Returns the new find function.
 	 */
-	function createFind(findIndexFunc) {
-	  return function(collection, predicate, fromIndex) {
-	    var iterable = Object(collection);
-	    if (!isArrayLike(collection)) {
-	      var iteratee = baseIteratee(predicate, 3);
-	      collection = keys(collection);
-	      predicate = function(key) { return iteratee(iterable[key], key, iterable); };
+	function createFind(eachFunc, fromRight) {
+	  return function(collection, predicate, thisArg) {
+	    predicate = baseCallback(predicate, thisArg, 3);
+	    if (isArray(collection)) {
+	      var index = baseFindIndex(collection, predicate, fromRight);
+	      return index > -1 ? collection[index] : undefined;
 	    }
-	    var index = findIndexFunc(collection, predicate, fromIndex);
-	    return index > -1 ? iterable[iteratee ? collection[index] : index] : undefined;
+	    return baseFind(collection, predicate, eachFunc);
 	  };
 	}
 	
@@ -15825,84 +16527,1008 @@
 
 
 /***/ },
-/* 341 */
+/* 357 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var baseFindIndex = __webpack_require__(342),
-	    baseIteratee = __webpack_require__(153),
-	    toInteger = __webpack_require__(280);
-	
-	/* Built-in method references for those with the same name as other `lodash` methods. */
-	var nativeMax = Math.max;
+	var baseMatches = __webpack_require__(358),
+	    baseMatchesProperty = __webpack_require__(370),
+	    bindCallback = __webpack_require__(338),
+	    identity = __webpack_require__(339),
+	    property = __webpack_require__(377);
 	
 	/**
-	 * This method is like `_.find` except that it returns the index of the first
-	 * element `predicate` returns truthy for instead of the element itself.
+	 * The base implementation of `_.callback` which supports specifying the
+	 * number of arguments to provide to `func`.
 	 *
-	 * @static
-	 * @memberOf _
-	 * @since 1.1.0
-	 * @category Array
-	 * @param {Array} array The array to inspect.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @param {number} [fromIndex=0] The index to search from.
-	 * @returns {number} Returns the index of the found element, else `-1`.
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'barney',  'active': false },
-	 *   { 'user': 'fred',    'active': false },
-	 *   { 'user': 'pebbles', 'active': true }
-	 * ];
-	 *
-	 * _.findIndex(users, function(o) { return o.user == 'barney'; });
-	 * // => 0
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.findIndex(users, { 'user': 'fred', 'active': false });
-	 * // => 1
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.findIndex(users, ['active', false]);
-	 * // => 0
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.findIndex(users, 'active');
-	 * // => 2
+	 * @private
+	 * @param {*} [func=_.identity] The value to convert to a callback.
+	 * @param {*} [thisArg] The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
 	 */
-	function findIndex(array, predicate, fromIndex) {
-	  var length = array == null ? 0 : array.length;
-	  if (!length) {
-	    return -1;
+	function baseCallback(func, thisArg, argCount) {
+	  var type = typeof func;
+	  if (type == 'function') {
+	    return thisArg === undefined
+	      ? func
+	      : bindCallback(func, thisArg, argCount);
 	  }
-	  var index = fromIndex == null ? 0 : toInteger(fromIndex);
-	  if (index < 0) {
-	    index = nativeMax(length + index, 0);
+	  if (func == null) {
+	    return identity;
 	  }
-	  return baseFindIndex(array, baseIteratee(predicate, 3), index);
+	  if (type == 'object') {
+	    return baseMatches(func);
+	  }
+	  return thisArg === undefined
+	    ? property(func)
+	    : baseMatchesProperty(func, thisArg);
 	}
 	
-	module.exports = findIndex;
+	module.exports = baseCallback;
 
 
 /***/ },
-/* 342 */
+/* 358 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseIsMatch = __webpack_require__(359),
+	    getMatchData = __webpack_require__(367),
+	    toObject = __webpack_require__(352);
+	
+	/**
+	 * The base implementation of `_.matches` which does not clone `source`.
+	 *
+	 * @private
+	 * @param {Object} source The object of property values to match.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseMatches(source) {
+	  var matchData = getMatchData(source);
+	  if (matchData.length == 1 && matchData[0][2]) {
+	    var key = matchData[0][0],
+	        value = matchData[0][1];
+	
+	    return function(object) {
+	      if (object == null) {
+	        return false;
+	      }
+	      return object[key] === value && (value !== undefined || (key in toObject(object)));
+	    };
+	  }
+	  return function(object) {
+	    return baseIsMatch(object, matchData);
+	  };
+	}
+	
+	module.exports = baseMatches;
+
+
+/***/ },
+/* 359 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseIsEqual = __webpack_require__(360),
+	    toObject = __webpack_require__(352);
+	
+	/**
+	 * The base implementation of `_.isMatch` without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Object} object The object to inspect.
+	 * @param {Array} matchData The propery names, values, and compare flags to match.
+	 * @param {Function} [customizer] The function to customize comparing objects.
+	 * @returns {boolean} Returns `true` if `object` is a match, else `false`.
+	 */
+	function baseIsMatch(object, matchData, customizer) {
+	  var index = matchData.length,
+	      length = index,
+	      noCustomizer = !customizer;
+	
+	  if (object == null) {
+	    return !length;
+	  }
+	  object = toObject(object);
+	  while (index--) {
+	    var data = matchData[index];
+	    if ((noCustomizer && data[2])
+	          ? data[1] !== object[data[0]]
+	          : !(data[0] in object)
+	        ) {
+	      return false;
+	    }
+	  }
+	  while (++index < length) {
+	    data = matchData[index];
+	    var key = data[0],
+	        objValue = object[key],
+	        srcValue = data[1];
+	
+	    if (noCustomizer && data[2]) {
+	      if (objValue === undefined && !(key in object)) {
+	        return false;
+	      }
+	    } else {
+	      var result = customizer ? customizer(objValue, srcValue, key) : undefined;
+	      if (!(result === undefined ? baseIsEqual(srcValue, objValue, customizer, true) : result)) {
+	        return false;
+	      }
+	    }
+	  }
+	  return true;
+	}
+	
+	module.exports = baseIsMatch;
+
+
+/***/ },
+/* 360 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseIsEqualDeep = __webpack_require__(361),
+	    isObject = __webpack_require__(324),
+	    isObjectLike = __webpack_require__(325);
+	
+	/**
+	 * The base implementation of `_.isEqual` without support for `this` binding
+	 * `customizer` functions.
+	 *
+	 * @private
+	 * @param {*} value The value to compare.
+	 * @param {*} other The other value to compare.
+	 * @param {Function} [customizer] The function to customize comparing values.
+	 * @param {boolean} [isLoose] Specify performing partial comparisons.
+	 * @param {Array} [stackA] Tracks traversed `value` objects.
+	 * @param {Array} [stackB] Tracks traversed `other` objects.
+	 * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+	 */
+	function baseIsEqual(value, other, customizer, isLoose, stackA, stackB) {
+	  if (value === other) {
+	    return true;
+	  }
+	  if (value == null || other == null || (!isObject(value) && !isObjectLike(other))) {
+	    return value !== value && other !== other;
+	  }
+	  return baseIsEqualDeep(value, other, baseIsEqual, customizer, isLoose, stackA, stackB);
+	}
+	
+	module.exports = baseIsEqual;
+
+
+/***/ },
+/* 361 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var equalArrays = __webpack_require__(362),
+	    equalByTag = __webpack_require__(364),
+	    equalObjects = __webpack_require__(365),
+	    isArray = __webpack_require__(332),
+	    isTypedArray = __webpack_require__(366);
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]',
+	    arrayTag = '[object Array]',
+	    objectTag = '[object Object]';
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * A specialized version of `baseIsEqual` for arrays and objects which performs
+	 * deep comparisons and tracks traversed objects enabling objects with circular
+	 * references to be compared.
+	 *
+	 * @private
+	 * @param {Object} object The object to compare.
+	 * @param {Object} other The other object to compare.
+	 * @param {Function} equalFunc The function to determine equivalents of values.
+	 * @param {Function} [customizer] The function to customize comparing objects.
+	 * @param {boolean} [isLoose] Specify performing partial comparisons.
+	 * @param {Array} [stackA=[]] Tracks traversed `value` objects.
+	 * @param {Array} [stackB=[]] Tracks traversed `other` objects.
+	 * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+	 */
+	function baseIsEqualDeep(object, other, equalFunc, customizer, isLoose, stackA, stackB) {
+	  var objIsArr = isArray(object),
+	      othIsArr = isArray(other),
+	      objTag = arrayTag,
+	      othTag = arrayTag;
+	
+	  if (!objIsArr) {
+	    objTag = objToString.call(object);
+	    if (objTag == argsTag) {
+	      objTag = objectTag;
+	    } else if (objTag != objectTag) {
+	      objIsArr = isTypedArray(object);
+	    }
+	  }
+	  if (!othIsArr) {
+	    othTag = objToString.call(other);
+	    if (othTag == argsTag) {
+	      othTag = objectTag;
+	    } else if (othTag != objectTag) {
+	      othIsArr = isTypedArray(other);
+	    }
+	  }
+	  var objIsObj = objTag == objectTag,
+	      othIsObj = othTag == objectTag,
+	      isSameTag = objTag == othTag;
+	
+	  if (isSameTag && !(objIsArr || objIsObj)) {
+	    return equalByTag(object, other, objTag);
+	  }
+	  if (!isLoose) {
+	    var objIsWrapped = objIsObj && hasOwnProperty.call(object, '__wrapped__'),
+	        othIsWrapped = othIsObj && hasOwnProperty.call(other, '__wrapped__');
+	
+	    if (objIsWrapped || othIsWrapped) {
+	      return equalFunc(objIsWrapped ? object.value() : object, othIsWrapped ? other.value() : other, customizer, isLoose, stackA, stackB);
+	    }
+	  }
+	  if (!isSameTag) {
+	    return false;
+	  }
+	  // Assume cyclic values are equal.
+	  // For more information on detecting circular references see https://es5.github.io/#JO.
+	  stackA || (stackA = []);
+	  stackB || (stackB = []);
+	
+	  var length = stackA.length;
+	  while (length--) {
+	    if (stackA[length] == object) {
+	      return stackB[length] == other;
+	    }
+	  }
+	  // Add `object` and `other` to the stack of traversed objects.
+	  stackA.push(object);
+	  stackB.push(other);
+	
+	  var result = (objIsArr ? equalArrays : equalObjects)(object, other, equalFunc, customizer, isLoose, stackA, stackB);
+	
+	  stackA.pop();
+	  stackB.pop();
+	
+	  return result;
+	}
+	
+	module.exports = baseIsEqualDeep;
+
+
+/***/ },
+/* 362 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arraySome = __webpack_require__(363);
+	
+	/**
+	 * A specialized version of `baseIsEqualDeep` for arrays with support for
+	 * partial deep comparisons.
+	 *
+	 * @private
+	 * @param {Array} array The array to compare.
+	 * @param {Array} other The other array to compare.
+	 * @param {Function} equalFunc The function to determine equivalents of values.
+	 * @param {Function} [customizer] The function to customize comparing arrays.
+	 * @param {boolean} [isLoose] Specify performing partial comparisons.
+	 * @param {Array} [stackA] Tracks traversed `value` objects.
+	 * @param {Array} [stackB] Tracks traversed `other` objects.
+	 * @returns {boolean} Returns `true` if the arrays are equivalent, else `false`.
+	 */
+	function equalArrays(array, other, equalFunc, customizer, isLoose, stackA, stackB) {
+	  var index = -1,
+	      arrLength = array.length,
+	      othLength = other.length;
+	
+	  if (arrLength != othLength && !(isLoose && othLength > arrLength)) {
+	    return false;
+	  }
+	  // Ignore non-index properties.
+	  while (++index < arrLength) {
+	    var arrValue = array[index],
+	        othValue = other[index],
+	        result = customizer ? customizer(isLoose ? othValue : arrValue, isLoose ? arrValue : othValue, index) : undefined;
+	
+	    if (result !== undefined) {
+	      if (result) {
+	        continue;
+	      }
+	      return false;
+	    }
+	    // Recursively compare arrays (susceptible to call stack limits).
+	    if (isLoose) {
+	      if (!arraySome(other, function(othValue) {
+	            return arrValue === othValue || equalFunc(arrValue, othValue, customizer, isLoose, stackA, stackB);
+	          })) {
+	        return false;
+	      }
+	    } else if (!(arrValue === othValue || equalFunc(arrValue, othValue, customizer, isLoose, stackA, stackB))) {
+	      return false;
+	    }
+	  }
+	  return true;
+	}
+	
+	module.exports = equalArrays;
+
+
+/***/ },
+/* 363 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `_.some` for arrays without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @returns {boolean} Returns `true` if any element passes the predicate check,
+	 *  else `false`.
+	 */
+	function arraySome(array, predicate) {
+	  var index = -1,
+	      length = array.length;
+	
+	  while (++index < length) {
+	    if (predicate(array[index], index, array)) {
+	      return true;
+	    }
+	  }
+	  return false;
+	}
+	
+	module.exports = arraySome;
+
+
+/***/ },
+/* 364 */
+/***/ function(module, exports) {
+
+	/** `Object#toString` result references. */
+	var boolTag = '[object Boolean]',
+	    dateTag = '[object Date]',
+	    errorTag = '[object Error]',
+	    numberTag = '[object Number]',
+	    regexpTag = '[object RegExp]',
+	    stringTag = '[object String]';
+	
+	/**
+	 * A specialized version of `baseIsEqualDeep` for comparing objects of
+	 * the same `toStringTag`.
+	 *
+	 * **Note:** This function only supports comparing values with tags of
+	 * `Boolean`, `Date`, `Error`, `Number`, `RegExp`, or `String`.
+	 *
+	 * @private
+	 * @param {Object} object The object to compare.
+	 * @param {Object} other The other object to compare.
+	 * @param {string} tag The `toStringTag` of the objects to compare.
+	 * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+	 */
+	function equalByTag(object, other, tag) {
+	  switch (tag) {
+	    case boolTag:
+	    case dateTag:
+	      // Coerce dates and booleans to numbers, dates to milliseconds and booleans
+	      // to `1` or `0` treating invalid dates coerced to `NaN` as not equal.
+	      return +object == +other;
+	
+	    case errorTag:
+	      return object.name == other.name && object.message == other.message;
+	
+	    case numberTag:
+	      // Treat `NaN` vs. `NaN` as equal.
+	      return (object != +object)
+	        ? other != +other
+	        : object == +other;
+	
+	    case regexpTag:
+	    case stringTag:
+	      // Coerce regexes to strings and treat strings primitives and string
+	      // objects as equal. See https://es5.github.io/#x15.10.6.4 for more details.
+	      return object == (other + '');
+	  }
+	  return false;
+	}
+	
+	module.exports = equalByTag;
+
+
+/***/ },
+/* 365 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var keys = __webpack_require__(320);
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * A specialized version of `baseIsEqualDeep` for objects with support for
+	 * partial deep comparisons.
+	 *
+	 * @private
+	 * @param {Object} object The object to compare.
+	 * @param {Object} other The other object to compare.
+	 * @param {Function} equalFunc The function to determine equivalents of values.
+	 * @param {Function} [customizer] The function to customize comparing values.
+	 * @param {boolean} [isLoose] Specify performing partial comparisons.
+	 * @param {Array} [stackA] Tracks traversed `value` objects.
+	 * @param {Array} [stackB] Tracks traversed `other` objects.
+	 * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+	 */
+	function equalObjects(object, other, equalFunc, customizer, isLoose, stackA, stackB) {
+	  var objProps = keys(object),
+	      objLength = objProps.length,
+	      othProps = keys(other),
+	      othLength = othProps.length;
+	
+	  if (objLength != othLength && !isLoose) {
+	    return false;
+	  }
+	  var index = objLength;
+	  while (index--) {
+	    var key = objProps[index];
+	    if (!(isLoose ? key in other : hasOwnProperty.call(other, key))) {
+	      return false;
+	    }
+	  }
+	  var skipCtor = isLoose;
+	  while (++index < objLength) {
+	    key = objProps[index];
+	    var objValue = object[key],
+	        othValue = other[key],
+	        result = customizer ? customizer(isLoose ? othValue : objValue, isLoose? objValue : othValue, key) : undefined;
+	
+	    // Recursively compare objects (susceptible to call stack limits).
+	    if (!(result === undefined ? equalFunc(objValue, othValue, customizer, isLoose, stackA, stackB) : result)) {
+	      return false;
+	    }
+	    skipCtor || (skipCtor = key == 'constructor');
+	  }
+	  if (!skipCtor) {
+	    var objCtor = object.constructor,
+	        othCtor = other.constructor;
+	
+	    // Non `Object` object instances with different constructors are not equal.
+	    if (objCtor != othCtor &&
+	        ('constructor' in object && 'constructor' in other) &&
+	        !(typeof objCtor == 'function' && objCtor instanceof objCtor &&
+	          typeof othCtor == 'function' && othCtor instanceof othCtor)) {
+	      return false;
+	    }
+	  }
+	  return true;
+	}
+	
+	module.exports = equalObjects;
+
+
+/***/ },
+/* 366 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isLength = __webpack_require__(329),
+	    isObjectLike = __webpack_require__(325);
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]',
+	    arrayTag = '[object Array]',
+	    boolTag = '[object Boolean]',
+	    dateTag = '[object Date]',
+	    errorTag = '[object Error]',
+	    funcTag = '[object Function]',
+	    mapTag = '[object Map]',
+	    numberTag = '[object Number]',
+	    objectTag = '[object Object]',
+	    regexpTag = '[object RegExp]',
+	    setTag = '[object Set]',
+	    stringTag = '[object String]',
+	    weakMapTag = '[object WeakMap]';
+	
+	var arrayBufferTag = '[object ArrayBuffer]',
+	    float32Tag = '[object Float32Array]',
+	    float64Tag = '[object Float64Array]',
+	    int8Tag = '[object Int8Array]',
+	    int16Tag = '[object Int16Array]',
+	    int32Tag = '[object Int32Array]',
+	    uint8Tag = '[object Uint8Array]',
+	    uint8ClampedTag = '[object Uint8ClampedArray]',
+	    uint16Tag = '[object Uint16Array]',
+	    uint32Tag = '[object Uint32Array]';
+	
+	/** Used to identify `toStringTag` values of typed arrays. */
+	var typedArrayTags = {};
+	typedArrayTags[float32Tag] = typedArrayTags[float64Tag] =
+	typedArrayTags[int8Tag] = typedArrayTags[int16Tag] =
+	typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] =
+	typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] =
+	typedArrayTags[uint32Tag] = true;
+	typedArrayTags[argsTag] = typedArrayTags[arrayTag] =
+	typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] =
+	typedArrayTags[dateTag] = typedArrayTags[errorTag] =
+	typedArrayTags[funcTag] = typedArrayTags[mapTag] =
+	typedArrayTags[numberTag] = typedArrayTags[objectTag] =
+	typedArrayTags[regexpTag] = typedArrayTags[setTag] =
+	typedArrayTags[stringTag] = typedArrayTags[weakMapTag] = false;
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * Checks if `value` is classified as a typed array.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isTypedArray(new Uint8Array);
+	 * // => true
+	 *
+	 * _.isTypedArray([]);
+	 * // => false
+	 */
+	function isTypedArray(value) {
+	  return isObjectLike(value) && isLength(value.length) && !!typedArrayTags[objToString.call(value)];
+	}
+	
+	module.exports = isTypedArray;
+
+
+/***/ },
+/* 367 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isStrictComparable = __webpack_require__(368),
+	    pairs = __webpack_require__(369);
+	
+	/**
+	 * Gets the propery names, values, and compare flags of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the match data of `object`.
+	 */
+	function getMatchData(object) {
+	  var result = pairs(object),
+	      length = result.length;
+	
+	  while (length--) {
+	    result[length][2] = isStrictComparable(result[length][1]);
+	  }
+	  return result;
+	}
+	
+	module.exports = getMatchData;
+
+
+/***/ },
+/* 368 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isObject = __webpack_require__(324);
+	
+	/**
+	 * Checks if `value` is suitable for strict equality comparisons, i.e. `===`.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` if suitable for strict
+	 *  equality comparisons, else `false`.
+	 */
+	function isStrictComparable(value) {
+	  return value === value && !isObject(value);
+	}
+	
+	module.exports = isStrictComparable;
+
+
+/***/ },
+/* 369 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var keys = __webpack_require__(320),
+	    toObject = __webpack_require__(352);
+	
+	/**
+	 * Creates a two dimensional array of the key-value pairs for `object`,
+	 * e.g. `[[key1, value1], [key2, value2]]`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the new array of key-value pairs.
+	 * @example
+	 *
+	 * _.pairs({ 'barney': 36, 'fred': 40 });
+	 * // => [['barney', 36], ['fred', 40]] (iteration order is not guaranteed)
+	 */
+	function pairs(object) {
+	  object = toObject(object);
+	
+	  var index = -1,
+	      props = keys(object),
+	      length = props.length,
+	      result = Array(length);
+	
+	  while (++index < length) {
+	    var key = props[index];
+	    result[index] = [key, object[key]];
+	  }
+	  return result;
+	}
+	
+	module.exports = pairs;
+
+
+/***/ },
+/* 370 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseGet = __webpack_require__(371),
+	    baseIsEqual = __webpack_require__(360),
+	    baseSlice = __webpack_require__(372),
+	    isArray = __webpack_require__(332),
+	    isKey = __webpack_require__(373),
+	    isStrictComparable = __webpack_require__(368),
+	    last = __webpack_require__(374),
+	    toObject = __webpack_require__(352),
+	    toPath = __webpack_require__(375);
+	
+	/**
+	 * The base implementation of `_.matchesProperty` which does not clone `srcValue`.
+	 *
+	 * @private
+	 * @param {string} path The path of the property to get.
+	 * @param {*} srcValue The value to compare.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseMatchesProperty(path, srcValue) {
+	  var isArr = isArray(path),
+	      isCommon = isKey(path) && isStrictComparable(srcValue),
+	      pathKey = (path + '');
+	
+	  path = toPath(path);
+	  return function(object) {
+	    if (object == null) {
+	      return false;
+	    }
+	    var key = pathKey;
+	    object = toObject(object);
+	    if ((isArr || !isCommon) && !(key in object)) {
+	      object = path.length == 1 ? object : baseGet(object, baseSlice(path, 0, -1));
+	      if (object == null) {
+	        return false;
+	      }
+	      key = last(path);
+	      object = toObject(object);
+	    }
+	    return object[key] === srcValue
+	      ? (srcValue !== undefined || (key in object))
+	      : baseIsEqual(srcValue, object[key], undefined, true);
+	  };
+	}
+	
+	module.exports = baseMatchesProperty;
+
+
+/***/ },
+/* 371 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var toObject = __webpack_require__(352);
+	
+	/**
+	 * The base implementation of `get` without support for string paths
+	 * and default values.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {Array} path The path of the property to get.
+	 * @param {string} [pathKey] The key representation of path.
+	 * @returns {*} Returns the resolved value.
+	 */
+	function baseGet(object, path, pathKey) {
+	  if (object == null) {
+	    return;
+	  }
+	  if (pathKey !== undefined && pathKey in toObject(object)) {
+	    path = [pathKey];
+	  }
+	  var index = 0,
+	      length = path.length;
+	
+	  while (object != null && index < length) {
+	    object = object[path[index++]];
+	  }
+	  return (index && index == length) ? object : undefined;
+	}
+	
+	module.exports = baseGet;
+
+
+/***/ },
+/* 372 */
+/***/ function(module, exports) {
+
+	/**
+	 * The base implementation of `_.slice` without an iteratee call guard.
+	 *
+	 * @private
+	 * @param {Array} array The array to slice.
+	 * @param {number} [start=0] The start position.
+	 * @param {number} [end=array.length] The end position.
+	 * @returns {Array} Returns the slice of `array`.
+	 */
+	function baseSlice(array, start, end) {
+	  var index = -1,
+	      length = array.length;
+	
+	  start = start == null ? 0 : (+start || 0);
+	  if (start < 0) {
+	    start = -start > length ? 0 : (length + start);
+	  }
+	  end = (end === undefined || end > length) ? length : (+end || 0);
+	  if (end < 0) {
+	    end += length;
+	  }
+	  length = start > end ? 0 : ((end - start) >>> 0);
+	  start >>>= 0;
+	
+	  var result = Array(length);
+	  while (++index < length) {
+	    result[index] = array[index + start];
+	  }
+	  return result;
+	}
+	
+	module.exports = baseSlice;
+
+
+/***/ },
+/* 373 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isArray = __webpack_require__(332),
+	    toObject = __webpack_require__(352);
+	
+	/** Used to match property names within property paths. */
+	var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\n\\]|\\.)*?\1)\]/,
+	    reIsPlainProp = /^\w*$/;
+	
+	/**
+	 * Checks if `value` is a property name and not a property path.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {Object} [object] The object to query keys on.
+	 * @returns {boolean} Returns `true` if `value` is a property name, else `false`.
+	 */
+	function isKey(value, object) {
+	  var type = typeof value;
+	  if ((type == 'string' && reIsPlainProp.test(value)) || type == 'number') {
+	    return true;
+	  }
+	  if (isArray(value)) {
+	    return false;
+	  }
+	  var result = !reIsDeepProp.test(value);
+	  return result || (object != null && value in toObject(object));
+	}
+	
+	module.exports = isKey;
+
+
+/***/ },
+/* 374 */
+/***/ function(module, exports) {
+
+	/**
+	 * Gets the last element of `array`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Array
+	 * @param {Array} array The array to query.
+	 * @returns {*} Returns the last element of `array`.
+	 * @example
+	 *
+	 * _.last([1, 2, 3]);
+	 * // => 3
+	 */
+	function last(array) {
+	  var length = array ? array.length : 0;
+	  return length ? array[length - 1] : undefined;
+	}
+	
+	module.exports = last;
+
+
+/***/ },
+/* 375 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseToString = __webpack_require__(376),
+	    isArray = __webpack_require__(332);
+	
+	/** Used to match property names within property paths. */
+	var rePropName = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\n\\]|\\.)*?)\2)\]/g;
+	
+	/** Used to match backslashes in property paths. */
+	var reEscapeChar = /\\(\\)?/g;
+	
+	/**
+	 * Converts `value` to property path array if it's not one.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {Array} Returns the property path array.
+	 */
+	function toPath(value) {
+	  if (isArray(value)) {
+	    return value;
+	  }
+	  var result = [];
+	  baseToString(value).replace(rePropName, function(match, number, quote, string) {
+	    result.push(quote ? string.replace(reEscapeChar, '$1') : (number || match));
+	  });
+	  return result;
+	}
+	
+	module.exports = toPath;
+
+
+/***/ },
+/* 376 */
+/***/ function(module, exports) {
+
+	/**
+	 * Converts `value` to a string if it's not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  return value == null ? '' : (value + '');
+	}
+	
+	module.exports = baseToString;
+
+
+/***/ },
+/* 377 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseProperty = __webpack_require__(328),
+	    basePropertyDeep = __webpack_require__(378),
+	    isKey = __webpack_require__(373);
+	
+	/**
+	 * Creates a function that returns the property value at `path` on a
+	 * given object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {Array|string} path The path of the property to get.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * var objects = [
+	 *   { 'a': { 'b': { 'c': 2 } } },
+	 *   { 'a': { 'b': { 'c': 1 } } }
+	 * ];
+	 *
+	 * _.map(objects, _.property('a.b.c'));
+	 * // => [2, 1]
+	 *
+	 * _.pluck(_.sortBy(objects, _.property(['a', 'b', 'c'])), 'a.b.c');
+	 * // => [1, 2]
+	 */
+	function property(path) {
+	  return isKey(path) ? baseProperty(path) : basePropertyDeep(path);
+	}
+	
+	module.exports = property;
+
+
+/***/ },
+/* 378 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseGet = __webpack_require__(371),
+	    toPath = __webpack_require__(375);
+	
+	/**
+	 * A specialized version of `baseProperty` which supports deep paths.
+	 *
+	 * @private
+	 * @param {Array|string} path The path of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function basePropertyDeep(path) {
+	  var pathKey = (path + '');
+	  path = toPath(path);
+	  return function(object) {
+	    return baseGet(object, path, pathKey);
+	  };
+	}
+	
+	module.exports = basePropertyDeep;
+
+
+/***/ },
+/* 379 */
+/***/ function(module, exports) {
+
+	/**
+	 * The base implementation of `_.find`, `_.findLast`, `_.findKey`, and `_.findLastKey`,
+	 * without support for callback shorthands and `this` binding, which iterates
+	 * over `collection` using the provided `eachFunc`.
+	 *
+	 * @private
+	 * @param {Array|Object|string} collection The collection to search.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @param {Function} eachFunc The function to iterate over `collection`.
+	 * @param {boolean} [retKey] Specify returning the key of the found element
+	 *  instead of the element itself.
+	 * @returns {*} Returns the found element or its key, else `undefined`.
+	 */
+	function baseFind(collection, predicate, eachFunc, retKey) {
+	  var result;
+	  eachFunc(collection, function(value, key, collection) {
+	    if (predicate(value, key, collection)) {
+	      result = retKey ? key : value;
+	      return false;
+	    }
+	  });
+	  return result;
+	}
+	
+	module.exports = baseFind;
+
+
+/***/ },
+/* 380 */
 /***/ function(module, exports) {
 
 	/**
 	 * The base implementation of `_.findIndex` and `_.findLastIndex` without
-	 * support for iteratee shorthands.
+	 * support for callback shorthands and `this` binding.
 	 *
 	 * @private
-	 * @param {Array} array The array to inspect.
+	 * @param {Array} array The array to search.
 	 * @param {Function} predicate The function invoked per iteration.
-	 * @param {number} fromIndex The index to search from.
 	 * @param {boolean} [fromRight] Specify iterating from right to left.
 	 * @returns {number} Returns the index of the matched value, else `-1`.
 	 */
-	function baseFindIndex(array, predicate, fromIndex, fromRight) {
+	function baseFindIndex(array, predicate, fromRight) {
 	  var length = array.length,
-	      index = fromIndex + (fromRight ? 1 : -1);
+	      index = fromRight ? length : -1;
 	
 	  while ((fromRight ? index-- : ++index < length)) {
 	    if (predicate(array[index], index, array)) {
@@ -15916,909 +17542,1771 @@
 
 
 /***/ },
-/* 343 */
+/* 381 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var createFind = __webpack_require__(340),
-	    findLastIndex = __webpack_require__(344);
+	'use strict';
 	
-	/**
-	 * This method is like `_.find` except that it iterates over elements of
-	 * `collection` from right to left.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 2.0.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to inspect.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @param {number} [fromIndex=collection.length-1] The index to search from.
-	 * @returns {*} Returns the matched element, else `undefined`.
-	 * @example
-	 *
-	 * _.findLast([1, 2, 3, 4], function(n) {
-	 *   return n % 2 == 1;
-	 * });
-	 * // => 3
-	 */
-	var findLast = createFind(findLastIndex);
+	var forEach = __webpack_require__(346);
 	
-	module.exports = findLast;
-
-
-/***/ },
-/* 344 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseFindIndex = __webpack_require__(342),
-	    baseIteratee = __webpack_require__(153),
-	    toInteger = __webpack_require__(280);
+	var Base = __webpack_require__(382);
 	
-	/* Built-in method references for those with the same name as other `lodash` methods. */
-	var nativeMax = Math.max,
-	    nativeMin = Math.min;
 	
-	/**
-	 * This method is like `_.findIndex` except that it iterates over elements
-	 * of `collection` from right to left.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 2.0.0
-	 * @category Array
-	 * @param {Array} array The array to inspect.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @param {number} [fromIndex=array.length-1] The index to search from.
-	 * @returns {number} Returns the index of the found element, else `-1`.
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'barney',  'active': true },
-	 *   { 'user': 'fred',    'active': false },
-	 *   { 'user': 'pebbles', 'active': false }
-	 * ];
-	 *
-	 * _.findLastIndex(users, function(o) { return o.user == 'pebbles'; });
-	 * // => 2
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.findLastIndex(users, { 'user': 'barney', 'active': true });
-	 * // => 0
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.findLastIndex(users, ['active', false]);
-	 * // => 2
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.findLastIndex(users, 'active');
-	 * // => 0
-	 */
-	function findLastIndex(array, predicate, fromIndex) {
-	  var length = array == null ? 0 : array.length;
-	  if (!length) {
-	    return -1;
-	  }
-	  var index = length - 1;
-	  if (fromIndex !== undefined) {
-	    index = toInteger(fromIndex);
-	    index = fromIndex < 0
-	      ? nativeMax(length + index, 0)
-	      : nativeMin(index, length - 1);
-	  }
-	  return baseFindIndex(array, baseIteratee(predicate, 3), index, true);
+	function Factory(model, properties) {
+	  this.model = model;
+	  this.properties = properties;
 	}
 	
-	module.exports = findLastIndex;
-
-
-/***/ },
-/* 345 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseFlatten = __webpack_require__(103),
-	    map = __webpack_require__(346);
+	module.exports = Factory;
 	
-	/**
-	 * Creates a flattened array of values by running each element in `collection`
-	 * thru `iteratee` and flattening the mapped results. The iteratee is invoked
-	 * with three arguments: (value, index|key, collection).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @returns {Array} Returns the new flattened array.
-	 * @example
-	 *
-	 * function duplicate(n) {
-	 *   return [n, n];
-	 * }
-	 *
-	 * _.flatMap([1, 2], duplicate);
-	 * // => [1, 1, 2, 2]
-	 */
-	function flatMap(collection, iteratee) {
-	  return baseFlatten(map(collection, iteratee), 1);
-	}
 	
-	module.exports = flatMap;
-
-
-/***/ },
-/* 346 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arrayMap = __webpack_require__(99),
-	    baseIteratee = __webpack_require__(153),
-	    baseMap = __webpack_require__(347),
-	    isArray = __webpack_require__(47);
+	Factory.prototype.createType = function(descriptor) {
 	
-	/**
-	 * Creates an array of values by running each element in `collection` thru
-	 * `iteratee`. The iteratee is invoked with three arguments:
-	 * (value, index|key, collection).
-	 *
-	 * Many lodash methods are guarded to work as iteratees for methods like
-	 * `_.every`, `_.filter`, `_.map`, `_.mapValues`, `_.reject`, and `_.some`.
-	 *
-	 * The guarded methods are:
-	 * `ary`, `chunk`, `curry`, `curryRight`, `drop`, `dropRight`, `every`,
-	 * `fill`, `invert`, `parseInt`, `random`, `range`, `rangeRight`, `repeat`,
-	 * `sampleSize`, `slice`, `some`, `sortBy`, `split`, `take`, `takeRight`,
-	 * `template`, `trim`, `trimEnd`, `trimStart`, and `words`
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @returns {Array} Returns the new mapped array.
-	 * @example
-	 *
-	 * function square(n) {
-	 *   return n * n;
-	 * }
-	 *
-	 * _.map([4, 8], square);
-	 * // => [16, 64]
-	 *
-	 * _.map({ 'a': 4, 'b': 8 }, square);
-	 * // => [16, 64] (iteration order is not guaranteed)
-	 *
-	 * var users = [
-	 *   { 'user': 'barney' },
-	 *   { 'user': 'fred' }
-	 * ];
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.map(users, 'user');
-	 * // => ['barney', 'fred']
-	 */
-	function map(collection, iteratee) {
-	  var func = isArray(collection) ? arrayMap : baseMap;
-	  return func(collection, baseIteratee(iteratee, 3));
-	}
+	  var model = this.model;
 	
-	module.exports = map;
-
-
-/***/ },
-/* 347 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseEach = __webpack_require__(326),
-	    isArrayLike = __webpack_require__(37);
+	  var props = this.properties,
+	      prototype = Object.create(Base.prototype);
 	
-	/**
-	 * The base implementation of `_.map` without support for iteratee shorthands.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array} Returns the new mapped array.
-	 */
-	function baseMap(collection, iteratee) {
-	  var index = -1,
-	      result = isArrayLike(collection) ? Array(collection.length) : [];
-	
-	  baseEach(collection, function(value, key, collection) {
-	    result[++index] = iteratee(value, key, collection);
+	  // initialize default values
+	  forEach(descriptor.properties, function(p) {
+	    if (!p.isMany && p.default !== undefined) {
+	      prototype[p.name] = p.default;
+	    }
 	  });
-	  return result;
-	}
 	
-	module.exports = baseMap;
-
-
-/***/ },
-/* 348 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseFlatten = __webpack_require__(103),
-	    map = __webpack_require__(346);
+	  props.defineModel(prototype, model);
+	  props.defineDescriptor(prototype, descriptor);
 	
-	/** Used as references for various `Number` constants. */
-	var INFINITY = 1 / 0;
+	  var name = descriptor.ns.name;
 	
-	/**
-	 * This method is like `_.flatMap` except that it recursively flattens the
-	 * mapped results.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.7.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @returns {Array} Returns the new flattened array.
-	 * @example
-	 *
-	 * function duplicate(n) {
-	 *   return [[[n, n]]];
-	 * }
-	 *
-	 * _.flatMapDeep([1, 2], duplicate);
-	 * // => [1, 1, 2, 2]
-	 */
-	function flatMapDeep(collection, iteratee) {
-	  return baseFlatten(map(collection, iteratee), INFINITY);
-	}
+	  /**
+	   * The new type constructor
+	   */
+	  function ModdleElement(attrs) {
+	    props.define(this, '$type', { value: name, enumerable: true });
+	    props.define(this, '$attrs', { value: {} });
+	    props.define(this, '$parent', { writable: true });
 	
-	module.exports = flatMapDeep;
-
-
-/***/ },
-/* 349 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseFlatten = __webpack_require__(103),
-	    map = __webpack_require__(346),
-	    toInteger = __webpack_require__(280);
-	
-	/**
-	 * This method is like `_.flatMap` except that it recursively flattens the
-	 * mapped results up to `depth` times.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.7.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @param {number} [depth=1] The maximum recursion depth.
-	 * @returns {Array} Returns the new flattened array.
-	 * @example
-	 *
-	 * function duplicate(n) {
-	 *   return [[[n, n]]];
-	 * }
-	 *
-	 * _.flatMapDepth([1, 2], duplicate, 2);
-	 * // => [[1, 1], [2, 2]]
-	 */
-	function flatMapDepth(collection, iteratee, depth) {
-	  depth = depth === undefined ? 1 : toInteger(depth);
-	  return baseFlatten(map(collection, iteratee), depth);
-	}
-	
-	module.exports = flatMapDepth;
-
-
-/***/ },
-/* 350 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseAssignValue = __webpack_require__(9),
-	    createAggregator = __webpack_require__(323);
-	
-	/** Used for built-in method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/**
-	 * Creates an object composed of keys generated from the results of running
-	 * each element of `collection` thru `iteratee`. The order of grouped values
-	 * is determined by the order they occur in `collection`. The corresponding
-	 * value of each key is an array of elements responsible for generating the
-	 * key. The iteratee is invoked with one argument: (value).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The iteratee to transform keys.
-	 * @returns {Object} Returns the composed aggregate object.
-	 * @example
-	 *
-	 * _.groupBy([6.1, 4.2, 6.3], Math.floor);
-	 * // => { '4': [4.2], '6': [6.1, 6.3] }
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.groupBy(['one', 'two', 'three'], 'length');
-	 * // => { '3': ['one', 'two'], '5': ['three'] }
-	 */
-	var groupBy = createAggregator(function(result, value, key) {
-	  if (hasOwnProperty.call(result, key)) {
-	    result[key].push(value);
-	  } else {
-	    baseAssignValue(result, key, [value]);
+	    forEach(attrs, function(val, key) {
+	      this.set(key, val);
+	    }, this);
 	  }
+	
+	  ModdleElement.prototype = prototype;
+	
+	  ModdleElement.hasType = prototype.$instanceOf = this.model.hasType;
+	
+	  // static links
+	  props.defineModel(ModdleElement, model);
+	  props.defineDescriptor(ModdleElement, descriptor);
+	
+	  return ModdleElement;
+	};
+
+/***/ },
+/* 382 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	function Base() { }
+	
+	Base.prototype.get = function(name) {
+	  return this.$model.properties.get(this, name);
+	};
+	
+	Base.prototype.set = function(name, value) {
+	  this.$model.properties.set(this, name, value);
+	};
+	
+	
+	module.exports = Base;
+
+/***/ },
+/* 383 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var assign = __webpack_require__(318),
+	    forEach = __webpack_require__(346);
+	
+	var Types = __webpack_require__(384),
+	    DescriptorBuilder = __webpack_require__(385);
+	
+	var parseNameNs = __webpack_require__(392).parseName,
+	    isBuiltInType = Types.isBuiltIn;
+	
+	
+	function Registry(packages, properties) {
+	  this.packageMap = {};
+	  this.typeMap = {};
+	
+	  this.packages = [];
+	
+	  this.properties = properties;
+	
+	  forEach(packages, this.registerPackage, this);
+	}
+	
+	module.exports = Registry;
+	
+	
+	Registry.prototype.getPackage = function(uriOrPrefix) {
+	  return this.packageMap[uriOrPrefix];
+	};
+	
+	Registry.prototype.getPackages = function() {
+	  return this.packages;
+	};
+	
+	
+	Registry.prototype.registerPackage = function(pkg) {
+	
+	  // copy package
+	  pkg = assign({}, pkg);
+	
+	  // register types
+	  forEach(pkg.types, function(descriptor) {
+	    this.registerType(descriptor, pkg);
+	  }, this);
+	
+	  this.packageMap[pkg.uri] = this.packageMap[pkg.prefix] = pkg;
+	  this.packages.push(pkg);
+	};
+	
+	
+	/**
+	 * Register a type from a specific package with us
+	 */
+	Registry.prototype.registerType = function(type, pkg) {
+	
+	  type = assign({}, type, {
+	    superClass: (type.superClass || []).slice(),
+	    extends: (type.extends || []).slice(),
+	    properties: (type.properties || []).slice()
+	  });
+	
+	  var ns = parseNameNs(type.name, pkg.prefix),
+	      name = ns.name,
+	      propertiesByName = {};
+	
+	  // parse properties
+	  forEach(type.properties, function(p) {
+	
+	    // namespace property names
+	    var propertyNs = parseNameNs(p.name, ns.prefix),
+	        propertyName = propertyNs.name;
+	
+	    // namespace property types
+	    if (!isBuiltInType(p.type)) {
+	      p.type = parseNameNs(p.type, propertyNs.prefix).name;
+	    }
+	
+	    assign(p, {
+	      ns: propertyNs,
+	      name: propertyName
+	    });
+	
+	    propertiesByName[propertyName] = p;
+	  });
+	
+	  // update ns + name
+	  assign(type, {
+	    ns: ns,
+	    name: name,
+	    propertiesByName: propertiesByName
+	  });
+	
+	  forEach(type.extends, function(extendsName) {
+	    var extended = this.typeMap[extendsName];
+	
+	    extended.traits = extended.traits || [];
+	    extended.traits.push(name);
+	  }, this);
+	
+	  // link to package
+	  this.definePackage(type, pkg);
+	
+	  // register
+	  this.typeMap[name] = type;
+	};
+	
+	
+	/**
+	 * Traverse the type hierarchy from bottom to top,
+	 * calling iterator with (type, inherited) for all elements in
+	 * the inheritance chain.
+	 *
+	 * @param {Object} nsName
+	 * @param {Function} iterator
+	 * @param {Boolean} [trait=false]
+	 */
+	Registry.prototype.mapTypes = function(nsName, iterator, trait) {
+	
+	  var type = isBuiltInType(nsName.name) ? { name: nsName.name } : this.typeMap[nsName.name];
+	
+	  var self = this;
+	
+	  /**
+	   * Traverse the selected trait.
+	   *
+	   * @param {String} cls
+	   */
+	  function traverseTrait(cls) {
+	    return traverseSuper(cls, true);
+	  }
+	
+	  /**
+	   * Traverse the selected super type or trait
+	   *
+	   * @param {String} cls
+	   * @param {Boolean} [trait=false]
+	   */
+	  function traverseSuper(cls, trait) {
+	    var parentNs = parseNameNs(cls, isBuiltInType(cls) ? '' : nsName.prefix);
+	    self.mapTypes(parentNs, iterator, trait);
+	  }
+	
+	  if (!type) {
+	    throw new Error('unknown type <' + nsName.name + '>');
+	  }
+	
+	  forEach(type.superClass, trait ? traverseTrait : traverseSuper);
+	
+	  // call iterator with (type, inherited=!trait)
+	  iterator(type, !trait);
+	
+	  forEach(type.traits, traverseTrait);
+	};
+	
+	
+	/**
+	 * Returns the effective descriptor for a type.
+	 *
+	 * @param  {String} type the namespaced name (ns:localName) of the type
+	 *
+	 * @return {Descriptor} the resulting effective descriptor
+	 */
+	Registry.prototype.getEffectiveDescriptor = function(name) {
+	
+	  var nsName = parseNameNs(name);
+	
+	  var builder = new DescriptorBuilder(nsName);
+	
+	  this.mapTypes(nsName, function(type, inherited) {
+	    builder.addTrait(type, inherited);
+	  });
+	
+	  var descriptor = builder.build();
+	
+	  // define package link
+	  this.definePackage(descriptor, descriptor.allTypes[descriptor.allTypes.length - 1].$pkg);
+	
+	  return descriptor;
+	};
+	
+	
+	Registry.prototype.definePackage = function(target, pkg) {
+	  this.properties.define(target, '$pkg', { value: pkg });
+	};
+
+/***/ },
+/* 384 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	/**
+	 * Built-in moddle types
+	 */
+	var BUILTINS = {
+	  String: true,
+	  Boolean: true,
+	  Integer: true,
+	  Real: true,
+	  Element: true
+	};
+	
+	/**
+	 * Converters for built in types from string representations
+	 */
+	var TYPE_CONVERTERS = {
+	  String: function(s) { return s; },
+	  Boolean: function(s) { return s === 'true'; },
+	  Integer: function(s) { return parseInt(s, 10); },
+	  Real: function(s) { return parseFloat(s, 10); }
+	};
+	
+	/**
+	 * Convert a type to its real representation
+	 */
+	module.exports.coerceType = function(type, value) {
+	
+	  var converter = TYPE_CONVERTERS[type];
+	
+	  if (converter) {
+	    return converter(value);
+	  } else {
+	    return value;
+	  }
+	};
+	
+	/**
+	 * Return whether the given type is built-in
+	 */
+	module.exports.isBuiltIn = function(type) {
+	  return !!BUILTINS[type];
+	};
+	
+	/**
+	 * Return whether the given type is simple
+	 */
+	module.exports.isSimple = function(type) {
+	  return !!TYPE_CONVERTERS[type];
+	};
+
+/***/ },
+/* 385 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var pick = __webpack_require__(386),
+	    assign = __webpack_require__(318),
+	    forEach = __webpack_require__(346);
+	
+	var parseNameNs = __webpack_require__(392).parseName;
+	
+	
+	function DescriptorBuilder(nameNs) {
+	  this.ns = nameNs;
+	  this.name = nameNs.name;
+	  this.allTypes = [];
+	  this.properties = [];
+	  this.propertiesByName = {};
+	}
+	
+	module.exports = DescriptorBuilder;
+	
+	
+	DescriptorBuilder.prototype.build = function() {
+	  return pick(this, [
+	    'ns',
+	    'name',
+	    'allTypes',
+	    'properties',
+	    'propertiesByName',
+	    'bodyProperty',
+	    'idProperty'
+	  ]);
+	};
+	
+	/**
+	 * Add property at given index.
+	 *
+	 * @param {Object} p
+	 * @param {Number} [idx]
+	 * @param {Boolean} [validate=true]
+	 */
+	DescriptorBuilder.prototype.addProperty = function(p, idx, validate) {
+	
+	  if (typeof idx === 'boolean') {
+	    validate = idx;
+	    idx = undefined;
+	  }
+	
+	  this.addNamedProperty(p, validate !== false);
+	
+	  var properties = this.properties;
+	
+	  if (idx !== undefined) {
+	    properties.splice(idx, 0, p);
+	  } else {
+	    properties.push(p);
+	  }
+	};
+	
+	
+	DescriptorBuilder.prototype.replaceProperty = function(oldProperty, newProperty, replace) {
+	  var oldNameNs = oldProperty.ns;
+	
+	  var props = this.properties,
+	      propertiesByName = this.propertiesByName,
+	      rename = oldProperty.name !== newProperty.name;
+	
+	  if (oldProperty.isId) {
+	    if (!newProperty.isId) {
+	      throw new Error(
+	        'property <' + newProperty.ns.name + '> must be id property ' +
+	        'to refine <' + oldProperty.ns.name + '>');
+	    }
+	
+	    this.setIdProperty(newProperty, false);
+	  }
+	
+	  if (oldProperty.isBody) {
+	
+	    if (!newProperty.isBody) {
+	      throw new Error(
+	        'property <' + newProperty.ns.name + '> must be body property ' +
+	        'to refine <' + oldProperty.ns.name + '>');
+	    }
+	
+	    // TODO: Check compatibility
+	    this.setBodyProperty(newProperty, false);
+	  }
+	
+	  // validate existence and get location of old property
+	  var idx = props.indexOf(oldProperty);
+	  if (idx === -1) {
+	    throw new Error('property <' + oldNameNs.name + '> not found in property list');
+	  }
+	
+	  // remove old property
+	  props.splice(idx, 1);
+	
+	  // replacing the named property is intentional
+	  //
+	  //  * validate only if this is a "rename" operation
+	  //  * add at specific index unless we "replace"
+	  //
+	  this.addProperty(newProperty, replace ? undefined : idx, rename);
+	
+	  // make new property available under old name
+	  propertiesByName[oldNameNs.name] = propertiesByName[oldNameNs.localName] = newProperty;
+	};
+	
+	
+	DescriptorBuilder.prototype.redefineProperty = function(p, targetPropertyName, replace) {
+	
+	  var nsPrefix = p.ns.prefix;
+	  var parts = targetPropertyName.split('#');
+	
+	  var name = parseNameNs(parts[0], nsPrefix);
+	  var attrName = parseNameNs(parts[1], name.prefix).name;
+	
+	  var redefinedProperty = this.propertiesByName[attrName];
+	  if (!redefinedProperty) {
+	    throw new Error('refined property <' + attrName + '> not found');
+	  } else {
+	    this.replaceProperty(redefinedProperty, p, replace);
+	  }
+	
+	  delete p.redefines;
+	};
+	
+	DescriptorBuilder.prototype.addNamedProperty = function(p, validate) {
+	  var ns = p.ns,
+	      propsByName = this.propertiesByName;
+	
+	  if (validate) {
+	    this.assertNotDefined(p, ns.name);
+	    this.assertNotDefined(p, ns.localName);
+	  }
+	
+	  propsByName[ns.name] = propsByName[ns.localName] = p;
+	};
+	
+	DescriptorBuilder.prototype.removeNamedProperty = function(p) {
+	  var ns = p.ns,
+	      propsByName = this.propertiesByName;
+	
+	  delete propsByName[ns.name];
+	  delete propsByName[ns.localName];
+	};
+	
+	DescriptorBuilder.prototype.setBodyProperty = function(p, validate) {
+	
+	  if (validate && this.bodyProperty) {
+	    throw new Error(
+	      'body property defined multiple times ' +
+	      '(<' + this.bodyProperty.ns.name + '>, <' + p.ns.name + '>)');
+	  }
+	
+	  this.bodyProperty = p;
+	};
+	
+	DescriptorBuilder.prototype.setIdProperty = function(p, validate) {
+	
+	  if (validate && this.idProperty) {
+	    throw new Error(
+	      'id property defined multiple times ' +
+	      '(<' + this.idProperty.ns.name + '>, <' + p.ns.name + '>)');
+	  }
+	
+	  this.idProperty = p;
+	};
+	
+	DescriptorBuilder.prototype.assertNotDefined = function(p, name) {
+	  var propertyName = p.name,
+	      definedProperty = this.propertiesByName[propertyName];
+	
+	  if (definedProperty) {
+	    throw new Error(
+	      'property <' + propertyName + '> already defined; ' +
+	      'override of <' + definedProperty.definedBy.ns.name + '#' + definedProperty.ns.name + '> by ' +
+	      '<' + p.definedBy.ns.name + '#' + p.ns.name + '> not allowed without redefines');
+	  }
+	};
+	
+	DescriptorBuilder.prototype.hasProperty = function(name) {
+	  return this.propertiesByName[name];
+	};
+	
+	DescriptorBuilder.prototype.addTrait = function(t, inherited) {
+	
+	  var allTypes = this.allTypes;
+	
+	  if (allTypes.indexOf(t) !== -1) {
+	    return;
+	  }
+	
+	  forEach(t.properties, function(p) {
+	
+	    // clone property to allow extensions
+	    p = assign({}, p, {
+	      name: p.ns.localName,
+	      inherited: inherited
+	    });
+	
+	    Object.defineProperty(p, 'definedBy', {
+	      value: t
+	    });
+	
+	    var replaces = p.replaces,
+	        redefines = p.redefines;
+	
+	    // add replace/redefine support
+	    if (replaces || redefines) {
+	      this.redefineProperty(p, replaces || redefines, replaces);
+	    } else {
+	      if (p.isBody) {
+	        this.setBodyProperty(p);
+	      }
+	      if (p.isId) {
+	        this.setIdProperty(p);
+	      }
+	      this.addProperty(p);
+	    }
+	  }, this);
+	
+	  allTypes.push(t);
+	};
+
+
+/***/ },
+/* 386 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseFlatten = __webpack_require__(387),
+	    bindCallback = __webpack_require__(338),
+	    pickByArray = __webpack_require__(389),
+	    pickByCallback = __webpack_require__(390),
+	    restParam = __webpack_require__(341);
+	
+	/**
+	 * Creates an object composed of the picked `object` properties. Property
+	 * names may be specified as individual arguments or as arrays of property
+	 * names. If `predicate` is provided it's invoked for each property of `object`
+	 * picking the properties `predicate` returns truthy for. The predicate is
+	 * bound to `thisArg` and invoked with three arguments: (value, key, object).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The source object.
+	 * @param {Function|...(string|string[])} [predicate] The function invoked per
+	 *  iteration or property names to pick, specified as individual property
+	 *  names or arrays of property names.
+	 * @param {*} [thisArg] The `this` binding of `predicate`.
+	 * @returns {Object} Returns the new object.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred', 'age': 40 };
+	 *
+	 * _.pick(object, 'user');
+	 * // => { 'user': 'fred' }
+	 *
+	 * _.pick(object, _.isString);
+	 * // => { 'user': 'fred' }
+	 */
+	var pick = restParam(function(object, props) {
+	  if (object == null) {
+	    return {};
+	  }
+	  return typeof props[0] == 'function'
+	    ? pickByCallback(object, bindCallback(props[0], props[1], 3))
+	    : pickByArray(object, baseFlatten(props));
 	});
 	
-	module.exports = groupBy;
+	module.exports = pick;
 
 
 /***/ },
-/* 351 */
+/* 387 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var baseIndexOf = __webpack_require__(352),
-	    isArrayLike = __webpack_require__(37),
-	    isString = __webpack_require__(297),
-	    toInteger = __webpack_require__(280),
-	    values = __webpack_require__(241);
-	
-	/* Built-in method references for those with the same name as other `lodash` methods. */
-	var nativeMax = Math.max;
+	var arrayPush = __webpack_require__(388),
+	    isArguments = __webpack_require__(331),
+	    isArray = __webpack_require__(332),
+	    isArrayLike = __webpack_require__(326),
+	    isObjectLike = __webpack_require__(325);
 	
 	/**
-	 * Checks if `value` is in `collection`. If `collection` is a string, it's
-	 * checked for a substring of `value`, otherwise
-	 * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
-	 * is used for equality comparisons. If `fromIndex` is negative, it's used as
-	 * the offset from the end of `collection`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object|string} collection The collection to inspect.
-	 * @param {*} value The value to search for.
-	 * @param {number} [fromIndex=0] The index to search from.
-	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.reduce`.
-	 * @returns {boolean} Returns `true` if `value` is found, else `false`.
-	 * @example
-	 *
-	 * _.includes([1, 2, 3], 1);
-	 * // => true
-	 *
-	 * _.includes([1, 2, 3], 1, 2);
-	 * // => false
-	 *
-	 * _.includes({ 'a': 1, 'b': 2 }, 1);
-	 * // => true
-	 *
-	 * _.includes('abcd', 'bc');
-	 * // => true
-	 */
-	function includes(collection, value, fromIndex, guard) {
-	  collection = isArrayLike(collection) ? collection : values(collection);
-	  fromIndex = (fromIndex && !guard) ? toInteger(fromIndex) : 0;
-	
-	  var length = collection.length;
-	  if (fromIndex < 0) {
-	    fromIndex = nativeMax(length + fromIndex, 0);
-	  }
-	  return isString(collection)
-	    ? (fromIndex <= length && collection.indexOf(value, fromIndex) > -1)
-	    : (!!length && baseIndexOf(collection, value, fromIndex) > -1);
-	}
-	
-	module.exports = includes;
-
-
-/***/ },
-/* 352 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseFindIndex = __webpack_require__(342),
-	    baseIsNaN = __webpack_require__(353),
-	    strictIndexOf = __webpack_require__(354);
-	
-	/**
-	 * The base implementation of `_.indexOf` without `fromIndex` bounds checks.
+	 * The base implementation of `_.flatten` with added support for restricting
+	 * flattening and specifying the start index.
 	 *
 	 * @private
-	 * @param {Array} array The array to inspect.
-	 * @param {*} value The value to search for.
-	 * @param {number} fromIndex The index to search from.
-	 * @returns {number} Returns the index of the matched value, else `-1`.
+	 * @param {Array} array The array to flatten.
+	 * @param {boolean} [isDeep] Specify a deep flatten.
+	 * @param {boolean} [isStrict] Restrict flattening to arrays-like objects.
+	 * @param {Array} [result=[]] The initial result value.
+	 * @returns {Array} Returns the new flattened array.
 	 */
-	function baseIndexOf(array, value, fromIndex) {
-	  return value === value
-	    ? strictIndexOf(array, value, fromIndex)
-	    : baseFindIndex(array, baseIsNaN, fromIndex);
-	}
+	function baseFlatten(array, isDeep, isStrict, result) {
+	  result || (result = []);
 	
-	module.exports = baseIndexOf;
-
-
-/***/ },
-/* 353 */
-/***/ function(module, exports) {
-
-	/**
-	 * The base implementation of `_.isNaN` without support for number objects.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
-	 */
-	function baseIsNaN(value) {
-	  return value !== value;
-	}
-	
-	module.exports = baseIsNaN;
-
-
-/***/ },
-/* 354 */
-/***/ function(module, exports) {
-
-	/**
-	 * A specialized version of `_.indexOf` which performs strict equality
-	 * comparisons of values, i.e. `===`.
-	 *
-	 * @private
-	 * @param {Array} array The array to inspect.
-	 * @param {*} value The value to search for.
-	 * @param {number} fromIndex The index to search from.
-	 * @returns {number} Returns the index of the matched value, else `-1`.
-	 */
-	function strictIndexOf(array, value, fromIndex) {
-	  var index = fromIndex - 1,
+	  var index = -1,
 	      length = array.length;
 	
 	  while (++index < length) {
-	    if (array[index] === value) {
-	      return index;
+	    var value = array[index];
+	    if (isObjectLike(value) && isArrayLike(value) &&
+	        (isStrict || isArray(value) || isArguments(value))) {
+	      if (isDeep) {
+	        // Recursively flatten arrays (susceptible to call stack limits).
+	        baseFlatten(value, isDeep, isStrict, result);
+	      } else {
+	        arrayPush(result, value);
+	      }
+	    } else if (!isStrict) {
+	      result[result.length] = value;
 	    }
 	  }
-	  return -1;
-	}
-	
-	module.exports = strictIndexOf;
-
-
-/***/ },
-/* 355 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var apply = __webpack_require__(31),
-	    baseEach = __webpack_require__(326),
-	    baseInvoke = __webpack_require__(196),
-	    baseRest = __webpack_require__(28),
-	    isArrayLike = __webpack_require__(37);
-	
-	/**
-	 * Invokes the method at `path` of each element in `collection`, returning
-	 * an array of the results of each invoked method. Any additional arguments
-	 * are provided to each invoked method. If `path` is a function, it's invoked
-	 * for, and `this` bound to, each element in `collection`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Array|Function|string} path The path of the method to invoke or
-	 *  the function invoked per iteration.
-	 * @param {...*} [args] The arguments to invoke each method with.
-	 * @returns {Array} Returns the array of results.
-	 * @example
-	 *
-	 * _.invokeMap([[5, 1, 7], [3, 2, 1]], 'sort');
-	 * // => [[1, 5, 7], [1, 2, 3]]
-	 *
-	 * _.invokeMap([123, 456], String.prototype.split, '');
-	 * // => [['1', '2', '3'], ['4', '5', '6']]
-	 */
-	var invokeMap = baseRest(function(collection, path, args) {
-	  var index = -1,
-	      isFunc = typeof path == 'function',
-	      result = isArrayLike(collection) ? Array(collection.length) : [];
-	
-	  baseEach(collection, function(value) {
-	    result[++index] = isFunc ? apply(path, value, args) : baseInvoke(value, path, args);
-	  });
 	  return result;
-	});
-	
-	module.exports = invokeMap;
-
-
-/***/ },
-/* 356 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseAssignValue = __webpack_require__(9),
-	    createAggregator = __webpack_require__(323);
-	
-	/**
-	 * Creates an object composed of keys generated from the results of running
-	 * each element of `collection` thru `iteratee`. The corresponding value of
-	 * each key is the last element responsible for generating the key. The
-	 * iteratee is invoked with one argument: (value).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The iteratee to transform keys.
-	 * @returns {Object} Returns the composed aggregate object.
-	 * @example
-	 *
-	 * var array = [
-	 *   { 'dir': 'left', 'code': 97 },
-	 *   { 'dir': 'right', 'code': 100 }
-	 * ];
-	 *
-	 * _.keyBy(array, function(o) {
-	 *   return String.fromCharCode(o.code);
-	 * });
-	 * // => { 'a': { 'dir': 'left', 'code': 97 }, 'd': { 'dir': 'right', 'code': 100 } }
-	 *
-	 * _.keyBy(array, 'dir');
-	 * // => { 'left': { 'dir': 'left', 'code': 97 }, 'right': { 'dir': 'right', 'code': 100 } }
-	 */
-	var keyBy = createAggregator(function(result, value, key) {
-	  baseAssignValue(result, key, value);
-	});
-	
-	module.exports = keyBy;
-
-
-/***/ },
-/* 357 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseOrderBy = __webpack_require__(358),
-	    isArray = __webpack_require__(47);
-	
-	/**
-	 * This method is like `_.sortBy` except that it allows specifying the sort
-	 * orders of the iteratees to sort by. If `orders` is unspecified, all values
-	 * are sorted in ascending order. Otherwise, specify an order of "desc" for
-	 * descending or "asc" for ascending sort order of corresponding values.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Array[]|Function[]|Object[]|string[]} [iteratees=[_.identity]]
-	 *  The iteratees to sort by.
-	 * @param {string[]} [orders] The sort orders of `iteratees`.
-	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.reduce`.
-	 * @returns {Array} Returns the new sorted array.
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'fred',   'age': 48 },
-	 *   { 'user': 'barney', 'age': 34 },
-	 *   { 'user': 'fred',   'age': 40 },
-	 *   { 'user': 'barney', 'age': 36 }
-	 * ];
-	 *
-	 * // Sort by `user` in ascending order and by `age` in descending order.
-	 * _.orderBy(users, ['user', 'age'], ['asc', 'desc']);
-	 * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
-	 */
-	function orderBy(collection, iteratees, orders, guard) {
-	  if (collection == null) {
-	    return [];
-	  }
-	  if (!isArray(iteratees)) {
-	    iteratees = iteratees == null ? [] : [iteratees];
-	  }
-	  orders = guard ? undefined : orders;
-	  if (!isArray(orders)) {
-	    orders = orders == null ? [] : [orders];
-	  }
-	  return baseOrderBy(collection, iteratees, orders);
 	}
 	
-	module.exports = orderBy;
+	module.exports = baseFlatten;
 
 
 /***/ },
-/* 358 */
+/* 388 */
+104,
+/* 389 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var arrayMap = __webpack_require__(99),
-	    baseIteratee = __webpack_require__(153),
-	    baseMap = __webpack_require__(347),
-	    baseSortBy = __webpack_require__(359),
-	    baseUnary = __webpack_require__(53),
-	    compareMultiple = __webpack_require__(360),
-	    identity = __webpack_require__(29);
+	var toObject = __webpack_require__(352);
 	
 	/**
-	 * The base implementation of `_.orderBy` without param guards.
+	 * A specialized version of `_.pick` which picks `object` properties specified
+	 * by `props`.
 	 *
 	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function[]|Object[]|string[]} iteratees The iteratees to sort by.
-	 * @param {string[]} orders The sort orders of `iteratees`.
-	 * @returns {Array} Returns the new sorted array.
+	 * @param {Object} object The source object.
+	 * @param {string[]} props The property names to pick.
+	 * @returns {Object} Returns the new object.
 	 */
-	function baseOrderBy(collection, iteratees, orders) {
-	  var index = -1;
-	  iteratees = arrayMap(iteratees.length ? iteratees : [identity], baseUnary(baseIteratee));
+	function pickByArray(object, props) {
+	  object = toObject(object);
 	
-	  var result = baseMap(collection, function(value, key, collection) {
-	    var criteria = arrayMap(iteratees, function(iteratee) {
-	      return iteratee(value);
-	    });
-	    return { 'criteria': criteria, 'index': ++index, 'value': value };
-	  });
-	
-	  return baseSortBy(result, function(object, other) {
-	    return compareMultiple(object, other, orders);
-	  });
-	}
-	
-	module.exports = baseOrderBy;
-
-
-/***/ },
-/* 359 */
-/***/ function(module, exports) {
-
-	/**
-	 * The base implementation of `_.sortBy` which uses `comparer` to define the
-	 * sort order of `array` and replaces criteria objects with their corresponding
-	 * values.
-	 *
-	 * @private
-	 * @param {Array} array The array to sort.
-	 * @param {Function} comparer The function to define sort order.
-	 * @returns {Array} Returns `array`.
-	 */
-	function baseSortBy(array, comparer) {
-	  var length = array.length;
-	
-	  array.sort(comparer);
-	  while (length--) {
-	    array[length] = array[length].value;
-	  }
-	  return array;
-	}
-	
-	module.exports = baseSortBy;
-
-
-/***/ },
-/* 360 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var compareAscending = __webpack_require__(361);
-	
-	/**
-	 * Used by `_.orderBy` to compare multiple properties of a value to another
-	 * and stable sort them.
-	 *
-	 * If `orders` is unspecified, all values are sorted in ascending order. Otherwise,
-	 * specify an order of "desc" for descending or "asc" for ascending sort order
-	 * of corresponding values.
-	 *
-	 * @private
-	 * @param {Object} object The object to compare.
-	 * @param {Object} other The other object to compare.
-	 * @param {boolean[]|string[]} orders The order to sort by for each property.
-	 * @returns {number} Returns the sort order indicator for `object`.
-	 */
-	function compareMultiple(object, other, orders) {
 	  var index = -1,
-	      objCriteria = object.criteria,
-	      othCriteria = other.criteria,
-	      length = objCriteria.length,
-	      ordersLength = orders.length;
+	      length = props.length,
+	      result = {};
 	
 	  while (++index < length) {
-	    var result = compareAscending(objCriteria[index], othCriteria[index]);
-	    if (result) {
-	      if (index >= ordersLength) {
-	        return result;
-	      }
-	      var order = orders[index];
-	      return result * (order == 'desc' ? -1 : 1);
+	    var key = props[index];
+	    if (key in object) {
+	      result[key] = object[key];
 	    }
 	  }
-	  // Fixes an `Array#sort` bug in the JS engine embedded in Adobe applications
-	  // that causes it, under certain circumstances, to provide the same value for
-	  // `object` and `other`. See https://github.com/jashkenas/underscore/pull/1247
-	  // for more details.
-	  //
-	  // This also ensures a stable sort in V8 and other engines.
-	  // See https://bugs.chromium.org/p/v8/issues/detail?id=90 for more details.
-	  return object.index - other.index;
+	  return result;
 	}
 	
-	module.exports = compareMultiple;
+	module.exports = pickByArray;
 
 
 /***/ },
-/* 361 */
+/* 390 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isSymbol = __webpack_require__(70);
+	var baseForIn = __webpack_require__(391);
 	
 	/**
-	 * Compares values to sort them in ascending order.
+	 * A specialized version of `_.pick` which picks `object` properties `predicate`
+	 * returns truthy for.
 	 *
 	 * @private
-	 * @param {*} value The value to compare.
-	 * @param {*} other The other value to compare.
-	 * @returns {number} Returns the sort order indicator for `value`.
+	 * @param {Object} object The source object.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @returns {Object} Returns the new object.
 	 */
-	function compareAscending(value, other) {
-	  if (value !== other) {
-	    var valIsDefined = value !== undefined,
-	        valIsNull = value === null,
-	        valIsReflexive = value === value,
-	        valIsSymbol = isSymbol(value);
-	
-	    var othIsDefined = other !== undefined,
-	        othIsNull = other === null,
-	        othIsReflexive = other === other,
-	        othIsSymbol = isSymbol(other);
-	
-	    if ((!othIsNull && !othIsSymbol && !valIsSymbol && value > other) ||
-	        (valIsSymbol && othIsDefined && othIsReflexive && !othIsNull && !othIsSymbol) ||
-	        (valIsNull && othIsDefined && othIsReflexive) ||
-	        (!valIsDefined && othIsReflexive) ||
-	        !valIsReflexive) {
-	      return 1;
+	function pickByCallback(object, predicate) {
+	  var result = {};
+	  baseForIn(object, function(value, key, object) {
+	    if (predicate(value, key, object)) {
+	      result[key] = value;
 	    }
-	    if ((!valIsNull && !valIsSymbol && !othIsSymbol && value < other) ||
-	        (othIsSymbol && valIsDefined && valIsReflexive && !valIsNull && !valIsSymbol) ||
-	        (othIsNull && valIsDefined && valIsReflexive) ||
-	        (!othIsDefined && valIsReflexive) ||
-	        !othIsReflexive) {
-	      return -1;
-	    }
-	  }
-	  return 0;
+	  });
+	  return result;
 	}
 	
-	module.exports = compareAscending;
+	module.exports = pickByCallback;
 
 
 /***/ },
-/* 362 */
+/* 391 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var createAggregator = __webpack_require__(323);
+	var baseFor = __webpack_require__(350),
+	    keysIn = __webpack_require__(334);
 	
 	/**
-	 * Creates an array of elements split into two groups, the first of which
-	 * contains elements `predicate` returns truthy for, the second of which
-	 * contains elements `predicate` returns falsey for. The predicate is
-	 * invoked with one argument: (value).
+	 * The base implementation of `_.forIn` without support for callback
+	 * shorthands and `this` binding.
 	 *
-	 * @static
-	 * @memberOf _
-	 * @since 3.0.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @returns {Array} Returns the array of grouped elements.
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'barney',  'age': 36, 'active': false },
-	 *   { 'user': 'fred',    'age': 40, 'active': true },
-	 *   { 'user': 'pebbles', 'age': 1,  'active': false }
-	 * ];
-	 *
-	 * _.partition(users, function(o) { return o.active; });
-	 * // => objects for [['fred'], ['barney', 'pebbles']]
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.partition(users, { 'age': 1, 'active': false });
-	 * // => objects for [['pebbles'], ['barney', 'fred']]
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.partition(users, ['active', false]);
-	 * // => objects for [['barney', 'pebbles'], ['fred']]
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.partition(users, 'active');
-	 * // => objects for [['fred'], ['barney', 'pebbles']]
+	 * @private
+	 * @param {Object} object The object to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Object} Returns `object`.
 	 */
-	var partition = createAggregator(function(result, value, key) {
-	  result[key ? 0 : 1].push(value);
-	}, function() { return [[], []]; });
+	function baseForIn(object, iteratee) {
+	  return baseFor(object, iteratee, keysIn);
+	}
 	
-	module.exports = partition;
+	module.exports = baseForIn;
 
 
 /***/ },
-/* 363 */
+/* 392 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	/**
+	 * Parses a namespaced attribute name of the form (ns:)localName to an object,
+	 * given a default prefix to assume in case no explicit namespace is given.
+	 *
+	 * @param {String} name
+	 * @param {String} [defaultPrefix] the default prefix to take, if none is present.
+	 *
+	 * @return {Object} the parsed name
+	 */
+	module.exports.parseName = function(name, defaultPrefix) {
+	  var parts = name.split(/:/),
+	      localName, prefix;
+	
+	  // no prefix (i.e. only local name)
+	  if (parts.length === 1) {
+	    localName = name;
+	    prefix = defaultPrefix;
+	  } else
+	  // prefix + local name
+	  if (parts.length === 2) {
+	    localName = parts[1];
+	    prefix = parts[0];
+	  } else {
+	    throw new Error('expected <prefix:localName> or <localName>, got ' + name);
+	  }
+	
+	  name = (prefix ? prefix + ':' : '') + localName;
+	
+	  return {
+	    name: name,
+	    prefix: prefix,
+	    localName: localName
+	  };
+	};
+
+/***/ },
+/* 393 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	
+	/**
+	 * A utility that gets and sets properties of model elements.
+	 *
+	 * @param {Model} model
+	 */
+	function Properties(model) {
+	  this.model = model;
+	}
+	
+	module.exports = Properties;
+	
+	
+	/**
+	 * Sets a named property on the target element.
+	 * If the value is undefined, the property gets deleted.
+	 *
+	 * @param {Object} target
+	 * @param {String} name
+	 * @param {Object} value
+	 */
+	Properties.prototype.set = function(target, name, value) {
+	
+	  var property = this.model.getPropertyDescriptor(target, name);
+	
+	  var propertyName = property && property.name;
+	
+	  if (isUndefined(value)) {
+	    // unset the property, if the specified value is undefined;
+	    // delete from $attrs (for extensions) or the target itself
+	    if (property) {
+	      delete target[propertyName];
+	    } else {
+	      delete target.$attrs[name];
+	    }
+	  } else {
+	    // set the property, defining well defined properties on the fly
+	    // or simply updating them in target.$attrs (for extensions)
+	    if (property) {
+	      if (propertyName in target) {
+	        target[propertyName] = value;
+	      } else {
+	        defineProperty(target, property, value);
+	      }
+	    } else {
+	      target.$attrs[name] = value;
+	    }
+	  }
+	};
+	
+	/**
+	 * Returns the named property of the given element
+	 *
+	 * @param  {Object} target
+	 * @param  {String} name
+	 *
+	 * @return {Object}
+	 */
+	Properties.prototype.get = function(target, name) {
+	
+	  var property = this.model.getPropertyDescriptor(target, name);
+	
+	  if (!property) {
+	    return target.$attrs[name];
+	  }
+	
+	  var propertyName = property.name;
+	
+	  // check if access to collection property and lazily initialize it
+	  if (!target[propertyName] && property.isMany) {
+	    defineProperty(target, property, []);
+	  }
+	
+	  return target[propertyName];
+	};
+	
+	
+	/**
+	 * Define a property on the target element
+	 *
+	 * @param  {Object} target
+	 * @param  {String} name
+	 * @param  {Object} options
+	 */
+	Properties.prototype.define = function(target, name, options) {
+	  Object.defineProperty(target, name, options);
+	};
+	
+	
+	/**
+	 * Define the descriptor for an element
+	 */
+	Properties.prototype.defineDescriptor = function(target, descriptor) {
+	  this.define(target, '$descriptor', { value: descriptor });
+	};
+	
+	/**
+	 * Define the model for an element
+	 */
+	Properties.prototype.defineModel = function(target, model) {
+	  this.define(target, '$model', { value: model });
+	};
+	
+	
+	function isUndefined(val) {
+	  return typeof val === 'undefined';
+	}
+	
+	function defineProperty(target, property, value) {
+	  Object.defineProperty(target, property.name, {
+	    enumerable: !property.isReference,
+	    writable: true,
+	    value: value,
+	    configurable: true
+	  });
+	}
+
+/***/ },
+/* 394 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var arrayReduce = __webpack_require__(220),
-	    baseEach = __webpack_require__(326),
-	    baseIteratee = __webpack_require__(153),
-	    baseReduce = __webpack_require__(364),
-	    isArray = __webpack_require__(47);
+	'use strict';
+	
+	var reduce = __webpack_require__(395),
+	    forEach = __webpack_require__(346),
+	    find = __webpack_require__(355),
+	    assign = __webpack_require__(318),
+	    defer = __webpack_require__(399);
+	
+	var Stack = __webpack_require__(401),
+	    SaxParser = __webpack_require__(402).parser,
+	    Moddle = __webpack_require__(344),
+	    parseNameNs = __webpack_require__(392).parseName,
+	    Types = __webpack_require__(384),
+	    coerceType = Types.coerceType,
+	    isSimpleType = Types.isSimple,
+	    common = __webpack_require__(424),
+	    XSI_TYPE = common.XSI_TYPE,
+	    XSI_URI = common.DEFAULT_NS_MAP.xsi,
+	    serializeAsType = common.serializeAsType,
+	    aliasToName = common.aliasToName;
+	
+	function parseNodeAttributes(node) {
+	  var nodeAttrs = node.attributes;
+	
+	  return reduce(nodeAttrs, function(result, v, k) {
+	    var name, ns;
+	
+	    if (!v.local) {
+	      name = v.prefix;
+	    } else {
+	      ns = parseNameNs(v.name, v.prefix);
+	      name = ns.name;
+	    }
+	
+	    result[name] = v.value;
+	    return result;
+	  }, {});
+	}
+	
+	function normalizeType(node, attr, model) {
+	  var nameNs = parseNameNs(attr.value);
+	
+	  var uri = node.ns[nameNs.prefix || ''],
+	      localName = nameNs.localName,
+	      pkg = uri && model.getPackage(uri),
+	      typePrefix;
+	
+	  if (pkg) {
+	    typePrefix = pkg.xml && pkg.xml.typePrefix;
+	
+	    if (typePrefix && localName.indexOf(typePrefix) === 0) {
+	      localName = localName.slice(typePrefix.length);
+	    }
+	
+	    attr.value = pkg.prefix + ':' + localName;
+	  }
+	}
+	
+	/**
+	 * Normalizes namespaces for a node given an optional default namespace and a
+	 * number of mappings from uris to default prefixes.
+	 *
+	 * @param  {XmlNode} node
+	 * @param  {Model} model the model containing all registered namespaces
+	 * @param  {Uri} defaultNsUri
+	 */
+	function normalizeNamespaces(node, model, defaultNsUri) {
+	  var uri, prefix;
+	
+	  uri = node.uri || defaultNsUri;
+	
+	  if (uri) {
+	    var pkg = model.getPackage(uri);
+	
+	    if (pkg) {
+	      prefix = pkg.prefix;
+	    } else {
+	      prefix = node.prefix;
+	    }
+	
+	    node.prefix = prefix;
+	    node.uri = uri;
+	  }
+	
+	  forEach(node.attributes, function(attr) {
+	
+	    // normalize xsi:type attributes because the
+	    // assigned type may or may not be namespace prefixed
+	    if (attr.uri === XSI_URI && attr.local === 'type') {
+	      normalizeType(node, attr, model);
+	    }
+	
+	    normalizeNamespaces(attr, model, null);
+	  });
+	}
+	
+	
+	function error(message) {
+	  return new Error(message);
+	}
+	
+	/**
+	 * Get the moddle descriptor for a given instance or type.
+	 *
+	 * @param  {ModdleElement|Function} element
+	 *
+	 * @return {Object} the moddle descriptor
+	 */
+	function getModdleDescriptor(element) {
+	  return element.$descriptor;
+	}
+	
+	/**
+	 * A parse context.
+	 *
+	 * @class
+	 *
+	 * @param {Object} options
+	 * @param {ElementHandler} options.rootHandler the root handler for parsing a document
+	 * @param {boolean} [options.lax=false] whether or not to ignore invalid elements
+	 */
+	function Context(options) {
+	
+	  /**
+	   * @property {ElementHandler} rootHandler
+	   */
+	
+	  /**
+	   * @property {Boolean} lax
+	   */
+	
+	  assign(this, options);
+	
+	  this.elementsById = {};
+	  this.references = [];
+	  this.warnings = [];
+	
+	  /**
+	   * Add an unresolved reference.
+	   *
+	   * @param {Object} reference
+	   */
+	  this.addReference = function(reference) {
+	    this.references.push(reference);
+	  };
+	
+	  /**
+	   * Add a processed element.
+	   *
+	   * @param {ModdleElement} element
+	   */
+	  this.addElement = function(element) {
+	
+	    if (!element) {
+	      throw error('expected element');
+	    }
+	
+	    var elementsById = this.elementsById;
+	
+	    var descriptor = getModdleDescriptor(element);
+	
+	    var idProperty = descriptor.idProperty,
+	        id;
+	
+	    if (idProperty) {
+	      id = element.get(idProperty.name);
+	
+	      if (id) {
+	
+	        if (elementsById[id]) {
+	          throw error('duplicate ID <' + id + '>');
+	        }
+	
+	        elementsById[id] = element;
+	      }
+	    }
+	  };
+	
+	  /**
+	   * Add an import warning.
+	   *
+	   * @param {Object} warning
+	   * @param {String} warning.message
+	   * @param {Error} [warning.error]
+	   */
+	  this.addWarning = function(warning) {
+	    this.warnings.push(warning);
+	  };
+	}
+	
+	function BaseHandler() {}
+	
+	BaseHandler.prototype.handleEnd = function() {};
+	BaseHandler.prototype.handleText = function() {};
+	BaseHandler.prototype.handleNode = function() {};
+	
+	
+	/**
+	 * A simple pass through handler that does nothing except for
+	 * ignoring all input it receives.
+	 *
+	 * This is used to ignore unknown elements and
+	 * attributes.
+	 */
+	function NoopHandler() { }
+	
+	NoopHandler.prototype = new BaseHandler();
+	
+	NoopHandler.prototype.handleNode = function() {
+	  return this;
+	};
+	
+	function BodyHandler() {}
+	
+	BodyHandler.prototype = new BaseHandler();
+	
+	BodyHandler.prototype.handleText = function(text) {
+	  this.body = (this.body || '') + text;
+	};
+	
+	function ReferenceHandler(property, context) {
+	  this.property = property;
+	  this.context = context;
+	}
+	
+	ReferenceHandler.prototype = new BodyHandler();
+	
+	ReferenceHandler.prototype.handleNode = function(node) {
+	
+	  if (this.element) {
+	    throw error('expected no sub nodes');
+	  } else {
+	    this.element = this.createReference(node);
+	  }
+	
+	  return this;
+	};
+	
+	ReferenceHandler.prototype.handleEnd = function() {
+	  this.element.id = this.body;
+	};
+	
+	ReferenceHandler.prototype.createReference = function(node) {
+	  return {
+	    property: this.property.ns.name,
+	    id: ''
+	  };
+	};
+	
+	function ValueHandler(propertyDesc, element) {
+	  this.element = element;
+	  this.propertyDesc = propertyDesc;
+	}
+	
+	ValueHandler.prototype = new BodyHandler();
+	
+	ValueHandler.prototype.handleEnd = function() {
+	
+	  var value = this.body,
+	      element = this.element,
+	      propertyDesc = this.propertyDesc;
+	
+	  value = coerceType(propertyDesc.type, value);
+	
+	  if (propertyDesc.isMany) {
+	    element.get(propertyDesc.name).push(value);
+	  } else {
+	    element.set(propertyDesc.name, value);
+	  }
+	};
+	
+	
+	function BaseElementHandler() {}
+	
+	BaseElementHandler.prototype = Object.create(BodyHandler.prototype);
+	
+	BaseElementHandler.prototype.handleNode = function(node) {
+	  var parser = this,
+	      element = this.element;
+	
+	  if (!element) {
+	    element = this.element = this.createElement(node);
+	
+	    this.context.addElement(element);
+	  } else {
+	    parser = this.handleChild(node);
+	  }
+	
+	  return parser;
+	};
+	
+	/**
+	 * @class XMLReader.ElementHandler
+	 *
+	 */
+	function ElementHandler(model, type, context) {
+	  this.model = model;
+	  this.type = model.getType(type);
+	  this.context = context;
+	}
+	
+	ElementHandler.prototype = new BaseElementHandler();
+	
+	ElementHandler.prototype.addReference = function(reference) {
+	  this.context.addReference(reference);
+	};
+	
+	ElementHandler.prototype.handleEnd = function() {
+	
+	  var value = this.body,
+	      element = this.element,
+	      descriptor = getModdleDescriptor(element),
+	      bodyProperty = descriptor.bodyProperty;
+	
+	  if (bodyProperty && value !== undefined) {
+	    value = coerceType(bodyProperty.type, value);
+	    element.set(bodyProperty.name, value);
+	  }
+	};
+	
+	/**
+	 * Create an instance of the model from the given node.
+	 *
+	 * @param  {Element} node the xml node
+	 */
+	ElementHandler.prototype.createElement = function(node) {
+	  var attributes = parseNodeAttributes(node),
+	      Type = this.type,
+	      descriptor = getModdleDescriptor(Type),
+	      context = this.context,
+	      instance = new Type({});
+	
+	  forEach(attributes, function(value, name) {
+	
+	    var prop = descriptor.propertiesByName[name],
+	        values;
+	
+	    if (prop && prop.isReference) {
+	
+	      if (!prop.isMany) {
+	        context.addReference({
+	          element: instance,
+	          property: prop.ns.name,
+	          id: value
+	        });
+	      } else {
+	        // IDREFS: parse references as whitespace-separated list
+	        values = value.split(' ');
+	
+	        forEach(values, function(v) {
+	          context.addReference({
+	            element: instance,
+	            property: prop.ns.name,
+	            id: v
+	          });
+	        });
+	      }
+	
+	    } else {
+	      if (prop) {
+	        value = coerceType(prop.type, value);
+	      }
+	
+	      instance.set(name, value);
+	    }
+	  });
+	
+	  return instance;
+	};
+	
+	ElementHandler.prototype.getPropertyForNode = function(node) {
+	
+	  var nameNs = parseNameNs(node.local, node.prefix);
+	
+	  var type = this.type,
+	      model = this.model,
+	      descriptor = getModdleDescriptor(type);
+	
+	  var propertyName = nameNs.name,
+	      property = descriptor.propertiesByName[propertyName],
+	      elementTypeName,
+	      elementType,
+	      typeAnnotation;
+	
+	  // search for properties by name first
+	
+	  if (property) {
+	
+	    if (serializeAsType(property)) {
+	      typeAnnotation = node.attributes[XSI_TYPE];
+	
+	      // xsi type is optional, if it does not exists the
+	      // default type is assumed
+	      if (typeAnnotation) {
+	
+	        elementTypeName = typeAnnotation.value;
+	
+	        // TODO: extract real name from attribute
+	        elementType = model.getType(elementTypeName);
+	
+	        return assign({}, property, { effectiveType: getModdleDescriptor(elementType).name });
+	      }
+	    }
+	
+	    // search for properties by name first
+	    return property;
+	  }
+	
+	
+	  var pkg = model.getPackage(nameNs.prefix);
+	
+	  if (pkg) {
+	    elementTypeName = nameNs.prefix + ':' + aliasToName(nameNs.localName, descriptor.$pkg);
+	    elementType = model.getType(elementTypeName);
+	
+	    // search for collection members later
+	    property = find(descriptor.properties, function(p) {
+	      return !p.isVirtual && !p.isReference && !p.isAttribute && elementType.hasType(p.type);
+	    });
+	
+	    if (property) {
+	      return assign({}, property, { effectiveType: getModdleDescriptor(elementType).name });
+	    }
+	  } else {
+	    // parse unknown element (maybe extension)
+	    property = find(descriptor.properties, function(p) {
+	      return !p.isReference && !p.isAttribute && p.type === 'Element';
+	    });
+	
+	    if (property) {
+	      return property;
+	    }
+	  }
+	
+	  throw error('unrecognized element <' + nameNs.name + '>');
+	};
+	
+	ElementHandler.prototype.toString = function() {
+	  return 'ElementDescriptor[' + getModdleDescriptor(this.type).name + ']';
+	};
+	
+	ElementHandler.prototype.valueHandler = function(propertyDesc, element) {
+	  return new ValueHandler(propertyDesc, element);
+	};
+	
+	ElementHandler.prototype.referenceHandler = function(propertyDesc) {
+	  return new ReferenceHandler(propertyDesc, this.context);
+	};
+	
+	ElementHandler.prototype.handler = function(type) {
+	  if (type === 'Element') {
+	    return new GenericElementHandler(this.model, type, this.context);
+	  } else {
+	    return new ElementHandler(this.model, type, this.context);
+	  }
+	};
+	
+	/**
+	 * Handle the child element parsing
+	 *
+	 * @param  {Element} node the xml node
+	 */
+	ElementHandler.prototype.handleChild = function(node) {
+	  var propertyDesc, type, element, childHandler;
+	
+	  propertyDesc = this.getPropertyForNode(node);
+	  element = this.element;
+	
+	  type = propertyDesc.effectiveType || propertyDesc.type;
+	
+	  if (isSimpleType(type)) {
+	    return this.valueHandler(propertyDesc, element);
+	  }
+	
+	  if (propertyDesc.isReference) {
+	    childHandler = this.referenceHandler(propertyDesc).handleNode(node);
+	  } else {
+	    childHandler = this.handler(type).handleNode(node);
+	  }
+	
+	  var newElement = childHandler.element;
+	
+	  // child handles may decide to skip elements
+	  // by not returning anything
+	  if (newElement !== undefined) {
+	
+	    if (propertyDesc.isMany) {
+	      element.get(propertyDesc.name).push(newElement);
+	    } else {
+	      element.set(propertyDesc.name, newElement);
+	    }
+	
+	    if (propertyDesc.isReference) {
+	      assign(newElement, {
+	        element: element
+	      });
+	
+	      this.context.addReference(newElement);
+	    } else {
+	      // establish child -> parent relationship
+	      newElement.$parent = element;
+	    }
+	  }
+	
+	  return childHandler;
+	};
+	
+	
+	function GenericElementHandler(model, type, context) {
+	  this.model = model;
+	  this.context = context;
+	}
+	
+	GenericElementHandler.prototype = Object.create(BaseElementHandler.prototype);
+	
+	GenericElementHandler.prototype.createElement = function(node) {
+	
+	  var name = node.name,
+	      prefix = node.prefix,
+	      uri = node.ns[prefix],
+	      attributes = node.attributes;
+	
+	  return this.model.createAny(name, uri, attributes);
+	};
+	
+	GenericElementHandler.prototype.handleChild = function(node) {
+	
+	  var handler = new GenericElementHandler(this.model, 'Element', this.context).handleNode(node),
+	      element = this.element;
+	
+	  var newElement = handler.element,
+	      children;
+	
+	  if (newElement !== undefined) {
+	    children = element.$children = element.$children || [];
+	    children.push(newElement);
+	
+	    // establish child -> parent relationship
+	    newElement.$parent = element;
+	  }
+	
+	  return handler;
+	};
+	
+	GenericElementHandler.prototype.handleText = function(text) {
+	  this.body = this.body || '' + text;
+	};
+	
+	GenericElementHandler.prototype.handleEnd = function() {
+	  if (this.body) {
+	    this.element.$body = this.body;
+	  }
+	};
+	
+	/**
+	 * A reader for a meta-model
+	 *
+	 * @param {Object} options
+	 * @param {Model} options.model used to read xml files
+	 * @param {Boolean} options.lax whether to make parse errors warnings
+	 */
+	function XMLReader(options) {
+	
+	  if (options instanceof Moddle) {
+	    options = {
+	      model: options
+	    };
+	  }
+	
+	  assign(this, { lax: false }, options);
+	}
+	
+	
+	/**
+	 * Parse the given XML into a moddle document tree.
+	 *
+	 * @param {String} xml
+	 * @param {ElementHandler|Object} options or rootHandler
+	 * @param  {Function} done
+	 */
+	XMLReader.prototype.fromXML = function(xml, options, done) {
+	
+	  var rootHandler = options.rootHandler;
+	
+	  if (options instanceof ElementHandler) {
+	    // root handler passed via (xml, { rootHandler: ElementHandler }, ...)
+	    rootHandler = options;
+	    options = {};
+	  } else {
+	    if (typeof options === 'string') {
+	      // rootHandler passed via (xml, 'someString', ...)
+	      rootHandler = this.handler(options);
+	      options = {};
+	    } else if (typeof rootHandler === 'string') {
+	      // rootHandler passed via (xml, { rootHandler: 'someString' }, ...)
+	      rootHandler = this.handler(rootHandler);
+	    }
+	  }
+	
+	  var model = this.model,
+	      lax = this.lax;
+	
+	  var context = new Context(assign({}, options, { rootHandler: rootHandler })),
+	      parser = new SaxParser(true, { xmlns: true, trim: true }),
+	      stack = new Stack();
+	
+	  rootHandler.context = context;
+	
+	  // push root handler
+	  stack.push(rootHandler);
+	
+	
+	  function resolveReferences() {
+	
+	    var elementsById = context.elementsById;
+	    var references = context.references;
+	
+	    var i, r;
+	
+	    for (i = 0; !!(r = references[i]); i++) {
+	      var element = r.element;
+	      var reference = elementsById[r.id];
+	      var property = getModdleDescriptor(element).propertiesByName[r.property];
+	
+	      if (!reference) {
+	        context.addWarning({
+	          message: 'unresolved reference <' + r.id + '>',
+	          element: r.element,
+	          property: r.property,
+	          value: r.id
+	        });
+	      }
+	
+	      if (property.isMany) {
+	        var collection = element.get(property.name),
+	            idx = collection.indexOf(r);
+	
+	        // we replace an existing place holder (idx != -1) or
+	        // append to the collection instead
+	        if (idx === -1) {
+	          idx = collection.length;
+	        }
+	
+	        if (!reference) {
+	          // remove unresolvable reference
+	          collection.splice(idx, 1);
+	        } else {
+	          // add or update reference in collection
+	          collection[idx] = reference;
+	        }
+	      } else {
+	        element.set(property.name, reference);
+	      }
+	    }
+	  }
+	
+	  function handleClose(tagName) {
+	    stack.pop().handleEnd();
+	  }
+	
+	  function handleOpen(node) {
+	    var handler = stack.peek();
+	
+	    normalizeNamespaces(node, model);
+	
+	    try {
+	      stack.push(handler.handleNode(node));
+	    } catch (e) {
+	
+	      var line = this.line,
+	          column = this.column;
+	
+	      var message =
+	        'unparsable content <' + node.name + '> detected\n\t' +
+	          'line: ' + line + '\n\t' +
+	          'column: ' + column + '\n\t' +
+	          'nested error: ' + e.message;
+	
+	      if (lax) {
+	        context.addWarning({
+	          message: message,
+	          error: e
+	        });
+	
+	        console.warn('could not parse node');
+	        console.warn(e);
+	
+	        stack.push(new NoopHandler());
+	      } else {
+	        console.error('could not parse document');
+	        console.error(e);
+	
+	        throw error(message);
+	      }
+	    }
+	  }
+	
+	  function handleText(text) {
+	    stack.peek().handleText(text);
+	  }
+	
+	  parser.onopentag = handleOpen;
+	  parser.oncdata = parser.ontext = handleText;
+	  parser.onclosetag = handleClose;
+	  parser.onend = resolveReferences;
+	
+	  // deferred parse XML to make loading really ascnchronous
+	  // this ensures the execution environment (node or browser)
+	  // is kept responsive and that certain optimization strategies
+	  // can kick in
+	  defer(function() {
+	    var error;
+	
+	    try {
+	      parser.write(xml).close();
+	    } catch (e) {
+	      error = e;
+	    }
+	
+	    done(error, error ? undefined : rootHandler.element, context);
+	  });
+	};
+	
+	XMLReader.prototype.handler = function(name) {
+	  return new ElementHandler(this.model, name);
+	};
+	
+	module.exports = XMLReader;
+	module.exports.ElementHandler = ElementHandler;
+
+/***/ },
+/* 395 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayReduce = __webpack_require__(396),
+	    baseEach = __webpack_require__(348),
+	    createReduce = __webpack_require__(397);
 	
 	/**
 	 * Reduces `collection` to a value which is the accumulated result of running
-	 * each element in `collection` thru `iteratee`, where each successive
+	 * each element in `collection` through `iteratee`, where each successive
 	 * invocation is supplied the return value of the previous. If `accumulator`
-	 * is not given, the first element of `collection` is used as the initial
-	 * value. The iteratee is invoked with four arguments:
+	 * is not provided the first element of `collection` is used as the initial
+	 * value. The `iteratee` is bound to `thisArg` and invoked with four arguments:
 	 * (accumulator, value, index|key, collection).
 	 *
 	 * Many lodash methods are guarded to work as iteratees for methods like
 	 * `_.reduce`, `_.reduceRight`, and `_.transform`.
 	 *
 	 * The guarded methods are:
-	 * `assign`, `defaults`, `defaultsDeep`, `includes`, `merge`, `orderBy`,
-	 * and `sortBy`
+	 * `assign`, `defaults`, `defaultsDeep`, `includes`, `merge`, `sortByAll`,
+	 * and `sortByOrder`
 	 *
 	 * @static
 	 * @memberOf _
-	 * @since 0.1.0
+	 * @alias foldl, inject
 	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Array|Object|string} collection The collection to iterate over.
 	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
 	 * @param {*} [accumulator] The initial value.
+	 * @param {*} [thisArg] The `this` binding of `iteratee`.
 	 * @returns {*} Returns the accumulated value.
-	 * @see _.reduceRight
 	 * @example
 	 *
-	 * _.reduce([1, 2], function(sum, n) {
-	 *   return sum + n;
-	 * }, 0);
+	 * _.reduce([1, 2], function(total, n) {
+	 *   return total + n;
+	 * });
 	 * // => 3
 	 *
-	 * _.reduce({ 'a': 1, 'b': 2, 'c': 1 }, function(result, value, key) {
-	 *   (result[value] || (result[value] = [])).push(key);
+	 * _.reduce({ 'a': 1, 'b': 2 }, function(result, n, key) {
+	 *   result[key] = n * 3;
 	 *   return result;
 	 * }, {});
-	 * // => { '1': ['a', 'c'], '2': ['b'] } (iteration order is not guaranteed)
+	 * // => { 'a': 3, 'b': 6 } (iteration order is not guaranteed)
 	 */
-	function reduce(collection, iteratee, accumulator) {
-	  var func = isArray(collection) ? arrayReduce : baseReduce,
-	      initAccum = arguments.length < 3;
-	
-	  return func(collection, baseIteratee(iteratee, 4), accumulator, initAccum, baseEach);
-	}
+	var reduce = createReduce(arrayReduce, baseEach);
 	
 	module.exports = reduce;
 
 
 /***/ },
-/* 364 */
+/* 396 */
 /***/ function(module, exports) {
 
 	/**
-	 * The base implementation of `_.reduce` and `_.reduceRight`, without support
-	 * for iteratee shorthands, which iterates over `collection` using `eachFunc`.
+	 * A specialized version of `_.reduce` for arrays without support for callback
+	 * shorthands and `this` binding.
 	 *
 	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @param {*} [accumulator] The initial value.
+	 * @param {boolean} [initFromArray] Specify using the first element of `array`
+	 *  as the initial value.
+	 * @returns {*} Returns the accumulated value.
+	 */
+	function arrayReduce(array, iteratee, accumulator, initFromArray) {
+	  var index = -1,
+	      length = array.length;
+	
+	  if (initFromArray && length) {
+	    accumulator = array[++index];
+	  }
+	  while (++index < length) {
+	    accumulator = iteratee(accumulator, array[index], index, array);
+	  }
+	  return accumulator;
+	}
+	
+	module.exports = arrayReduce;
+
+
+/***/ },
+/* 397 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseCallback = __webpack_require__(357),
+	    baseReduce = __webpack_require__(398),
+	    isArray = __webpack_require__(332);
+	
+	/**
+	 * Creates a function for `_.reduce` or `_.reduceRight`.
+	 *
+	 * @private
+	 * @param {Function} arrayFunc The function to iterate over an array.
+	 * @param {Function} eachFunc The function to iterate over a collection.
+	 * @returns {Function} Returns the new each function.
+	 */
+	function createReduce(arrayFunc, eachFunc) {
+	  return function(collection, iteratee, accumulator, thisArg) {
+	    var initFromArray = arguments.length < 3;
+	    return (typeof iteratee == 'function' && thisArg === undefined && isArray(collection))
+	      ? arrayFunc(collection, iteratee, accumulator, initFromArray)
+	      : baseReduce(collection, baseCallback(iteratee, thisArg, 4), accumulator, initFromArray, eachFunc);
+	  };
+	}
+	
+	module.exports = createReduce;
+
+
+/***/ },
+/* 398 */
+/***/ function(module, exports) {
+
+	/**
+	 * The base implementation of `_.reduce` and `_.reduceRight` without support
+	 * for callback shorthands and `this` binding, which iterates over `collection`
+	 * using the provided `eachFunc`.
+	 *
+	 * @private
+	 * @param {Array|Object|string} collection The collection to iterate over.
 	 * @param {Function} iteratee The function invoked per iteration.
 	 * @param {*} accumulator The initial value.
-	 * @param {boolean} initAccum Specify using the first or last element of
-	 *  `collection` as the initial value.
+	 * @param {boolean} initFromCollection Specify using the first or last element
+	 *  of `collection` as the initial value.
 	 * @param {Function} eachFunc The function to iterate over `collection`.
 	 * @returns {*} Returns the accumulated value.
 	 */
-	function baseReduce(collection, iteratee, accumulator, initAccum, eachFunc) {
+	function baseReduce(collection, iteratee, accumulator, initFromCollection, eachFunc) {
 	  eachFunc(collection, function(value, index, collection) {
-	    accumulator = initAccum
-	      ? (initAccum = false, value)
+	    accumulator = initFromCollection
+	      ? (initFromCollection = false, value)
 	      : iteratee(accumulator, value, index, collection);
 	  });
 	  return accumulator;
@@ -16828,2937 +19316,1603 @@
 
 
 /***/ },
-/* 365 */
+/* 399 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var arrayReduceRight = __webpack_require__(366),
-	    baseEachRight = __webpack_require__(333),
-	    baseIteratee = __webpack_require__(153),
-	    baseReduce = __webpack_require__(364),
-	    isArray = __webpack_require__(47);
+	var baseDelay = __webpack_require__(400),
+	    restParam = __webpack_require__(341);
 	
 	/**
-	 * This method is like `_.reduce` except that it iterates over elements of
-	 * `collection` from right to left.
+	 * Defers invoking the `func` until the current call stack has cleared. Any
+	 * additional arguments are provided to `func` when it's invoked.
 	 *
 	 * @static
 	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @param {*} [accumulator] The initial value.
-	 * @returns {*} Returns the accumulated value.
-	 * @see _.reduce
+	 * @category Function
+	 * @param {Function} func The function to defer.
+	 * @param {...*} [args] The arguments to invoke the function with.
+	 * @returns {number} Returns the timer id.
 	 * @example
 	 *
-	 * var array = [[0, 1], [2, 3], [4, 5]];
-	 *
-	 * _.reduceRight(array, function(flattened, other) {
-	 *   return flattened.concat(other);
-	 * }, []);
-	 * // => [4, 5, 2, 3, 0, 1]
+	 * _.defer(function(text) {
+	 *   console.log(text);
+	 * }, 'deferred');
+	 * // logs 'deferred' after one or more milliseconds
 	 */
-	function reduceRight(collection, iteratee, accumulator) {
-	  var func = isArray(collection) ? arrayReduceRight : baseReduce,
-	      initAccum = arguments.length < 3;
-	
-	  return func(collection, baseIteratee(iteratee, 4), accumulator, initAccum, baseEachRight);
-	}
-	
-	module.exports = reduceRight;
-
-
-/***/ },
-/* 366 */
-/***/ function(module, exports) {
-
-	/**
-	 * A specialized version of `_.reduceRight` for arrays without support for
-	 * iteratee shorthands.
-	 *
-	 * @private
-	 * @param {Array} [array] The array to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @param {*} [accumulator] The initial value.
-	 * @param {boolean} [initAccum] Specify using the last element of `array` as
-	 *  the initial value.
-	 * @returns {*} Returns the accumulated value.
-	 */
-	function arrayReduceRight(array, iteratee, accumulator, initAccum) {
-	  var length = array == null ? 0 : array.length;
-	  if (initAccum && length) {
-	    accumulator = array[--length];
-	  }
-	  while (length--) {
-	    accumulator = iteratee(accumulator, array[length], length, array);
-	  }
-	  return accumulator;
-	}
-	
-	module.exports = arrayReduceRight;
-
-
-/***/ },
-/* 367 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arrayFilter = __webpack_require__(187),
-	    baseFilter = __webpack_require__(338),
-	    baseIteratee = __webpack_require__(153),
-	    isArray = __webpack_require__(47),
-	    negate = __webpack_require__(227);
-	
-	/**
-	 * The opposite of `_.filter`; this method returns the elements of `collection`
-	 * that `predicate` does **not** return truthy for.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @returns {Array} Returns the new filtered array.
-	 * @see _.filter
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'barney', 'age': 36, 'active': false },
-	 *   { 'user': 'fred',   'age': 40, 'active': true }
-	 * ];
-	 *
-	 * _.reject(users, function(o) { return !o.active; });
-	 * // => objects for ['fred']
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.reject(users, { 'age': 40, 'active': true });
-	 * // => objects for ['barney']
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.reject(users, ['active', false]);
-	 * // => objects for ['fred']
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.reject(users, 'active');
-	 * // => objects for ['barney']
-	 */
-	function reject(collection, predicate) {
-	  var func = isArray(collection) ? arrayFilter : baseFilter;
-	  return func(collection, negate(baseIteratee(predicate, 3)));
-	}
-	
-	module.exports = reject;
-
-
-/***/ },
-/* 368 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arraySample = __webpack_require__(369),
-	    baseSample = __webpack_require__(371),
-	    isArray = __webpack_require__(47);
-	
-	/**
-	 * Gets a random element from `collection`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 2.0.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to sample.
-	 * @returns {*} Returns the random element.
-	 * @example
-	 *
-	 * _.sample([1, 2, 3, 4]);
-	 * // => 2
-	 */
-	function sample(collection) {
-	  var func = isArray(collection) ? arraySample : baseSample;
-	  return func(collection);
-	}
-	
-	module.exports = sample;
-
-
-/***/ },
-/* 369 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseRandom = __webpack_require__(370);
-	
-	/**
-	 * A specialized version of `_.sample` for arrays.
-	 *
-	 * @private
-	 * @param {Array} array The array to sample.
-	 * @returns {*} Returns the random element.
-	 */
-	function arraySample(array) {
-	  var length = array.length;
-	  return length ? array[baseRandom(0, length - 1)] : undefined;
-	}
-	
-	module.exports = arraySample;
-
-
-/***/ },
-/* 370 */
-/***/ function(module, exports) {
-
-	/* Built-in method references for those with the same name as other `lodash` methods. */
-	var nativeFloor = Math.floor,
-	    nativeRandom = Math.random;
-	
-	/**
-	 * The base implementation of `_.random` without support for returning
-	 * floating-point numbers.
-	 *
-	 * @private
-	 * @param {number} lower The lower bound.
-	 * @param {number} upper The upper bound.
-	 * @returns {number} Returns the random number.
-	 */
-	function baseRandom(lower, upper) {
-	  return lower + nativeFloor(nativeRandom() * (upper - lower + 1));
-	}
-	
-	module.exports = baseRandom;
-
-
-/***/ },
-/* 371 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arraySample = __webpack_require__(369),
-	    values = __webpack_require__(241);
-	
-	/**
-	 * The base implementation of `_.sample`.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to sample.
-	 * @returns {*} Returns the random element.
-	 */
-	function baseSample(collection) {
-	  return arraySample(values(collection));
-	}
-	
-	module.exports = baseSample;
-
-
-/***/ },
-/* 372 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arraySampleSize = __webpack_require__(373),
-	    baseSampleSize = __webpack_require__(375),
-	    isArray = __webpack_require__(47),
-	    isIterateeCall = __webpack_require__(36),
-	    toInteger = __webpack_require__(280);
-	
-	/**
-	 * Gets `n` random elements at unique keys from `collection` up to the
-	 * size of `collection`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to sample.
-	 * @param {number} [n=1] The number of elements to sample.
-	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
-	 * @returns {Array} Returns the random elements.
-	 * @example
-	 *
-	 * _.sampleSize([1, 2, 3], 2);
-	 * // => [3, 1]
-	 *
-	 * _.sampleSize([1, 2, 3], 4);
-	 * // => [2, 3, 1]
-	 */
-	function sampleSize(collection, n, guard) {
-	  if ((guard ? isIterateeCall(collection, n, guard) : n === undefined)) {
-	    n = 1;
-	  } else {
-	    n = toInteger(n);
-	  }
-	  var func = isArray(collection) ? arraySampleSize : baseSampleSize;
-	  return func(collection, n);
-	}
-	
-	module.exports = sampleSize;
-
-
-/***/ },
-/* 373 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseClamp = __webpack_require__(311),
-	    copyArray = __webpack_require__(128),
-	    shuffleSelf = __webpack_require__(374);
-	
-	/**
-	 * A specialized version of `_.sampleSize` for arrays.
-	 *
-	 * @private
-	 * @param {Array} array The array to sample.
-	 * @param {number} n The number of elements to sample.
-	 * @returns {Array} Returns the random elements.
-	 */
-	function arraySampleSize(array, n) {
-	  return shuffleSelf(copyArray(array), baseClamp(n, 0, array.length));
-	}
-	
-	module.exports = arraySampleSize;
-
-
-/***/ },
-/* 374 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseRandom = __webpack_require__(370);
-	
-	/**
-	 * A specialized version of `_.shuffle` which mutates and sets the size of `array`.
-	 *
-	 * @private
-	 * @param {Array} array The array to shuffle.
-	 * @param {number} [size=array.length] The size of `array`.
-	 * @returns {Array} Returns `array`.
-	 */
-	function shuffleSelf(array, size) {
-	  var index = -1,
-	      length = array.length,
-	      lastIndex = length - 1;
-	
-	  size = size === undefined ? length : size;
-	  while (++index < size) {
-	    var rand = baseRandom(index, lastIndex),
-	        value = array[rand];
-	
-	    array[rand] = array[index];
-	    array[index] = value;
-	  }
-	  array.length = size;
-	  return array;
-	}
-	
-	module.exports = shuffleSelf;
-
-
-/***/ },
-/* 375 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseClamp = __webpack_require__(311),
-	    shuffleSelf = __webpack_require__(374),
-	    values = __webpack_require__(241);
-	
-	/**
-	 * The base implementation of `_.sampleSize` without param guards.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to sample.
-	 * @param {number} n The number of elements to sample.
-	 * @returns {Array} Returns the random elements.
-	 */
-	function baseSampleSize(collection, n) {
-	  var array = values(collection);
-	  return shuffleSelf(array, baseClamp(n, 0, array.length));
-	}
-	
-	module.exports = baseSampleSize;
-
-
-/***/ },
-/* 376 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arrayShuffle = __webpack_require__(377),
-	    baseShuffle = __webpack_require__(378),
-	    isArray = __webpack_require__(47);
-	
-	/**
-	 * Creates an array of shuffled values, using a version of the
-	 * [Fisher-Yates shuffle](https://en.wikipedia.org/wiki/Fisher-Yates_shuffle).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to shuffle.
-	 * @returns {Array} Returns the new shuffled array.
-	 * @example
-	 *
-	 * _.shuffle([1, 2, 3, 4]);
-	 * // => [4, 1, 3, 2]
-	 */
-	function shuffle(collection) {
-	  var func = isArray(collection) ? arrayShuffle : baseShuffle;
-	  return func(collection);
-	}
-	
-	module.exports = shuffle;
-
-
-/***/ },
-/* 377 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var copyArray = __webpack_require__(128),
-	    shuffleSelf = __webpack_require__(374);
-	
-	/**
-	 * A specialized version of `_.shuffle` for arrays.
-	 *
-	 * @private
-	 * @param {Array} array The array to shuffle.
-	 * @returns {Array} Returns the new shuffled array.
-	 */
-	function arrayShuffle(array) {
-	  return shuffleSelf(copyArray(array));
-	}
-	
-	module.exports = arrayShuffle;
-
-
-/***/ },
-/* 378 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var shuffleSelf = __webpack_require__(374),
-	    values = __webpack_require__(241);
-	
-	/**
-	 * The base implementation of `_.shuffle`.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to shuffle.
-	 * @returns {Array} Returns the new shuffled array.
-	 */
-	function baseShuffle(collection) {
-	  return shuffleSelf(values(collection));
-	}
-	
-	module.exports = baseShuffle;
-
-
-/***/ },
-/* 379 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseKeys = __webpack_require__(55),
-	    getTag = __webpack_require__(139),
-	    isArrayLike = __webpack_require__(37),
-	    isString = __webpack_require__(297),
-	    stringSize = __webpack_require__(380);
-	
-	/** `Object#toString` result references. */
-	var mapTag = '[object Map]',
-	    setTag = '[object Set]';
-	
-	/**
-	 * Gets the size of `collection` by returning its length for array-like
-	 * values or the number of own enumerable string keyed properties for objects.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object|string} collection The collection to inspect.
-	 * @returns {number} Returns the collection size.
-	 * @example
-	 *
-	 * _.size([1, 2, 3]);
-	 * // => 3
-	 *
-	 * _.size({ 'a': 1, 'b': 2 });
-	 * // => 2
-	 *
-	 * _.size('pebbles');
-	 * // => 7
-	 */
-	function size(collection) {
-	  if (collection == null) {
-	    return 0;
-	  }
-	  if (isArrayLike(collection)) {
-	    return isString(collection) ? stringSize(collection) : collection.length;
-	  }
-	  var tag = getTag(collection);
-	  if (tag == mapTag || tag == setTag) {
-	    return collection.size;
-	  }
-	  return baseKeys(collection).length;
-	}
-	
-	module.exports = size;
-
-
-/***/ },
-/* 380 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var asciiSize = __webpack_require__(381),
-	    hasUnicode = __webpack_require__(308),
-	    unicodeSize = __webpack_require__(382);
-	
-	/**
-	 * Gets the number of symbols in `string`.
-	 *
-	 * @private
-	 * @param {string} string The string to inspect.
-	 * @returns {number} Returns the string size.
-	 */
-	function stringSize(string) {
-	  return hasUnicode(string)
-	    ? unicodeSize(string)
-	    : asciiSize(string);
-	}
-	
-	module.exports = stringSize;
-
-
-/***/ },
-/* 381 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseProperty = __webpack_require__(175);
-	
-	/**
-	 * Gets the size of an ASCII `string`.
-	 *
-	 * @private
-	 * @param {string} string The string inspect.
-	 * @returns {number} Returns the string size.
-	 */
-	var asciiSize = baseProperty('length');
-	
-	module.exports = asciiSize;
-
-
-/***/ },
-/* 382 */
-/***/ function(module, exports) {
-
-	/** Used to compose unicode character classes. */
-	var rsAstralRange = '\\ud800-\\udfff',
-	    rsComboMarksRange = '\\u0300-\\u036f',
-	    reComboHalfMarksRange = '\\ufe20-\\ufe2f',
-	    rsComboSymbolsRange = '\\u20d0-\\u20ff',
-	    rsComboRange = rsComboMarksRange + reComboHalfMarksRange + rsComboSymbolsRange,
-	    rsVarRange = '\\ufe0e\\ufe0f';
-	
-	/** Used to compose unicode capture groups. */
-	var rsAstral = '[' + rsAstralRange + ']',
-	    rsCombo = '[' + rsComboRange + ']',
-	    rsFitz = '\\ud83c[\\udffb-\\udfff]',
-	    rsModifier = '(?:' + rsCombo + '|' + rsFitz + ')',
-	    rsNonAstral = '[^' + rsAstralRange + ']',
-	    rsRegional = '(?:\\ud83c[\\udde6-\\uddff]){2}',
-	    rsSurrPair = '[\\ud800-\\udbff][\\udc00-\\udfff]',
-	    rsZWJ = '\\u200d';
-	
-	/** Used to compose unicode regexes. */
-	var reOptMod = rsModifier + '?',
-	    rsOptVar = '[' + rsVarRange + ']?',
-	    rsOptJoin = '(?:' + rsZWJ + '(?:' + [rsNonAstral, rsRegional, rsSurrPair].join('|') + ')' + rsOptVar + reOptMod + ')*',
-	    rsSeq = rsOptVar + reOptMod + rsOptJoin,
-	    rsSymbol = '(?:' + [rsNonAstral + rsCombo + '?', rsCombo, rsRegional, rsSurrPair, rsAstral].join('|') + ')';
-	
-	/** Used to match [string symbols](https://mathiasbynens.be/notes/javascript-unicode). */
-	var reUnicode = RegExp(rsFitz + '(?=' + rsFitz + ')|' + rsSymbol + rsSeq, 'g');
-	
-	/**
-	 * Gets the size of a Unicode `string`.
-	 *
-	 * @private
-	 * @param {string} string The string inspect.
-	 * @returns {number} Returns the string size.
-	 */
-	function unicodeSize(string) {
-	  var result = reUnicode.lastIndex = 0;
-	  while (reUnicode.test(string)) {
-	    ++result;
-	  }
-	  return result;
-	}
-	
-	module.exports = unicodeSize;
-
-
-/***/ },
-/* 383 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var arraySome = __webpack_require__(162),
-	    baseIteratee = __webpack_require__(153),
-	    baseSome = __webpack_require__(384),
-	    isArray = __webpack_require__(47),
-	    isIterateeCall = __webpack_require__(36);
-	
-	/**
-	 * Checks if `predicate` returns truthy for **any** element of `collection`.
-	 * Iteration is stopped once `predicate` returns truthy. The predicate is
-	 * invoked with three arguments: (value, index|key, collection).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
-	 * @returns {boolean} Returns `true` if any element passes the predicate check,
-	 *  else `false`.
-	 * @example
-	 *
-	 * _.some([null, 0, 'yes', false], Boolean);
-	 * // => true
-	 *
-	 * var users = [
-	 *   { 'user': 'barney', 'active': true },
-	 *   { 'user': 'fred',   'active': false }
-	 * ];
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.some(users, { 'user': 'barney', 'active': false });
-	 * // => false
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.some(users, ['active', false]);
-	 * // => true
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.some(users, 'active');
-	 * // => true
-	 */
-	function some(collection, predicate, guard) {
-	  var func = isArray(collection) ? arraySome : baseSome;
-	  if (guard && isIterateeCall(collection, predicate, guard)) {
-	    predicate = undefined;
-	  }
-	  return func(collection, baseIteratee(predicate, 3));
-	}
-	
-	module.exports = some;
-
-
-/***/ },
-/* 384 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseEach = __webpack_require__(326);
-	
-	/**
-	 * The base implementation of `_.some` without support for iteratee shorthands.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function} predicate The function invoked per iteration.
-	 * @returns {boolean} Returns `true` if any element passes the predicate check,
-	 *  else `false`.
-	 */
-	function baseSome(collection, predicate) {
-	  var result;
-	
-	  baseEach(collection, function(value, index, collection) {
-	    result = predicate(value, index, collection);
-	    return !result;
-	  });
-	  return !!result;
-	}
-	
-	module.exports = baseSome;
-
-
-/***/ },
-/* 385 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var baseFlatten = __webpack_require__(103),
-	    baseOrderBy = __webpack_require__(358),
-	    baseRest = __webpack_require__(28),
-	    isIterateeCall = __webpack_require__(36);
-	
-	/**
-	 * Creates an array of elements, sorted in ascending order by the results of
-	 * running each element in a collection thru each iteratee. This method
-	 * performs a stable sort, that is, it preserves the original sort order of
-	 * equal elements. The iteratees are invoked with one argument: (value).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {...(Function|Function[])} [iteratees=[_.identity]]
-	 *  The iteratees to sort by.
-	 * @returns {Array} Returns the new sorted array.
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'fred',   'age': 48 },
-	 *   { 'user': 'barney', 'age': 36 },
-	 *   { 'user': 'fred',   'age': 40 },
-	 *   { 'user': 'barney', 'age': 34 }
-	 * ];
-	 *
-	 * _.sortBy(users, [function(o) { return o.user; }]);
-	 * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
-	 *
-	 * _.sortBy(users, ['user', 'age']);
-	 * // => objects for [['barney', 34], ['barney', 36], ['fred', 40], ['fred', 48]]
-	 */
-	var sortBy = baseRest(function(collection, iteratees) {
-	  if (collection == null) {
-	    return [];
-	  }
-	  var length = iteratees.length;
-	  if (length > 1 && isIterateeCall(collection, iteratees[0], iteratees[1])) {
-	    iteratees = [];
-	  } else if (length > 2 && isIterateeCall(iteratees[0], iteratees[1], iteratees[2])) {
-	    iteratees = [iteratees[0]];
-	  }
-	  return baseOrderBy(collection, baseFlatten(iteratees, 1), []);
+	var defer = restParam(function(func, args) {
+	  return baseDelay(func, 1, args);
 	});
 	
-	module.exports = sortBy;
+	module.exports = defer;
 
 
 /***/ },
-/* 386 */
-/***/ function(module, exports, __webpack_require__) {
+/* 400 */
+/***/ function(module, exports) {
 
-	module.exports = {
-	  __init__: [ 'iconLoader' ],
-	  iconLoader: [ 'type', __webpack_require__(387) ],
-	  __depends__: [
-	    __webpack_require__(429)
-	  ]
-	};
-
-/***/ },
-/* 387 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var forIn = __webpack_require__(6).forIn,
-	  xml2js = __webpack_require__(388),
-	  isUndefined = __webpack_require__(255).isUndefined
-	  ;
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
 	
 	/**
-	 * The icon loader module.
+	 * The base implementation of `_.delay` and `_.defer` which accepts an index
+	 * of where to slice the arguments to provide to `func`.
 	 *
-	 * @class
-	 * @constructor
-	 *
-	 * @param {Icons} icons
-	 * @param {Canvas} canvas
+	 * @private
+	 * @param {Function} func The function to delay.
+	 * @param {number} wait The number of milliseconds to delay invocation.
+	 * @param {Object} args The arguments provide to `func`.
+	 * @returns {number} Returns the timer id.
 	 */
-	function IconLoader(icons, canvas) {
-	  this._icons = icons;
-	  this._canvas = canvas;
-	  this._processedIcons = {};
-	
-	  this._init();
+	function baseDelay(func, wait, args) {
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+	  return setTimeout(function() { func.apply(undefined, args); }, wait);
 	}
 	
-	IconLoader.$inject = [ 'icons', 'canvas' ];
-	
-	module.exports = IconLoader;
-	
-	IconLoader.prototype._createNode = function(iconKey, defsNode, parentNode, nodeObj, nodeType) {
-	  var that = this,
-	    attrs = nodeObj.$ || {},
-	    thisNode = {};
-	
-	  if (isUndefined(attrs.id)) {
-	    thisNode = parentNode.append(nodeType);
-	    forIn(attrs, function(n, k){
-	      thisNode.attr(k, n);
-	    });
-	  } else {
-	    thisNode = defsNode.append(nodeType);
-	    forIn(attrs, function(n, k){
-	      thisNode.attr(k, n);
-	    });
-	    thisNode.attr('id', iconKey + '_' + attrs.id);
-	  }
-	  if (!isUndefined(attrs['xlink:href'])) {
-	    thisNode.attr('xlink:href', attrs['xlink:href'].replace('#','#'+iconKey+'_'));
-	  }
-	  if (!isUndefined(attrs['clip-path'])) {
-	    thisNode.attr('clip-path', attrs['clip-path'].replace('#','#'+iconKey+'_'));
-	  }
-	
-	  forIn(nodeObj.$$, function(node){
-	    if (node['#name']=='defs'){
-	      forIn(node.$$, function (nodeDef){
-	        that._createNode(iconKey, defsNode, defsNode, nodeDef, nodeDef['#name']);
-	      });
-	    } else {
-	      that._createNode(iconKey, defsNode, thisNode, node, node['#name']);
-	    }
-	  });
-	  return thisNode;
-	};
-	
-	IconLoader.prototype._init = function() {
-	  var svg = this._canvas.getSVG(),
-	    iconObj = svg.append('defs'),
-	    that = this;
-	
-	  // create the icons definitions
-	  forIn(this._icons, function(icon, iconKey){
-	    var parser = new xml2js.Parser({normalizeTags: true, preserveChildrenOrder: true, explicitChildren: true });
-	    parser.parseString(icon, function (err, result) {
-	      if (!err){
-	        var iconNode = that._createNode(iconKey, iconObj, iconObj, result.svg, 'symbol');
-	        iconNode.attr('id', iconKey + '_icon_def');
-	        that._processedIcons[iconKey] = result.svg.$.viewBox || '';
-	      }
-	    });
-	  });
-	};
-
-/***/ },
-/* 388 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// Generated by CoffeeScript 1.10.0
-	(function() {
-	  "use strict";
-	  var bom, builder, escapeCDATA, events, isEmpty, processName, processors, requiresCDATA, sax, setImmediate, wrapCDATA,
-	    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-	    hasProp = {}.hasOwnProperty,
-	    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-	
-	  sax = __webpack_require__(389);
-	
-	  events = __webpack_require__(395);
-	
-	  builder = __webpack_require__(410);
-	
-	  bom = __webpack_require__(427);
-	
-	  processors = __webpack_require__(428);
-	
-	  setImmediate = __webpack_require__(246).setImmediate;
-	
-	  isEmpty = function(thing) {
-	    return typeof thing === "object" && (thing != null) && Object.keys(thing).length === 0;
-	  };
-	
-	  processName = function(processors, processedName) {
-	    var i, len, process;
-	    for (i = 0, len = processors.length; i < len; i++) {
-	      process = processors[i];
-	      processedName = process(processedName);
-	    }
-	    return processedName;
-	  };
-	
-	  requiresCDATA = function(entry) {
-	    return entry.indexOf('&') >= 0 || entry.indexOf('>') >= 0 || entry.indexOf('<') >= 0;
-	  };
-	
-	  wrapCDATA = function(entry) {
-	    return "<![CDATA[" + (escapeCDATA(entry)) + "]]>";
-	  };
-	
-	  escapeCDATA = function(entry) {
-	    return entry.replace(']]>', ']]]]><![CDATA[>');
-	  };
-	
-	  exports.processors = processors;
-	
-	  exports.defaults = {
-	    "0.1": {
-	      explicitCharkey: false,
-	      trim: true,
-	      normalize: true,
-	      normalizeTags: false,
-	      attrkey: "@",
-	      charkey: "#",
-	      explicitArray: false,
-	      ignoreAttrs: false,
-	      mergeAttrs: false,
-	      explicitRoot: false,
-	      validator: null,
-	      xmlns: false,
-	      explicitChildren: false,
-	      childkey: '@@',
-	      charsAsChildren: false,
-	      includeWhiteChars: false,
-	      async: false,
-	      strict: true,
-	      attrNameProcessors: null,
-	      attrValueProcessors: null,
-	      tagNameProcessors: null,
-	      valueProcessors: null,
-	      emptyTag: ''
-	    },
-	    "0.2": {
-	      explicitCharkey: false,
-	      trim: false,
-	      normalize: false,
-	      normalizeTags: false,
-	      attrkey: "$",
-	      charkey: "_",
-	      explicitArray: true,
-	      ignoreAttrs: false,
-	      mergeAttrs: false,
-	      explicitRoot: true,
-	      validator: null,
-	      xmlns: false,
-	      explicitChildren: false,
-	      preserveChildrenOrder: false,
-	      childkey: '$$',
-	      charsAsChildren: false,
-	      includeWhiteChars: false,
-	      async: false,
-	      strict: true,
-	      attrNameProcessors: null,
-	      attrValueProcessors: null,
-	      tagNameProcessors: null,
-	      valueProcessors: null,
-	      rootName: 'root',
-	      xmldec: {
-	        'version': '1.0',
-	        'encoding': 'UTF-8',
-	        'standalone': true
-	      },
-	      doctype: null,
-	      renderOpts: {
-	        'pretty': true,
-	        'indent': '  ',
-	        'newline': '\n'
-	      },
-	      headless: false,
-	      chunkSize: 10000,
-	      emptyTag: '',
-	      cdata: false
-	    }
-	  };
-	
-	  exports.ValidationError = (function(superClass) {
-	    extend(ValidationError, superClass);
-	
-	    function ValidationError(message) {
-	      this.message = message;
-	    }
-	
-	    return ValidationError;
-	
-	  })(Error);
-	
-	  exports.Builder = (function() {
-	    function Builder(opts) {
-	      var key, ref, value;
-	      this.options = {};
-	      ref = exports.defaults["0.2"];
-	      for (key in ref) {
-	        if (!hasProp.call(ref, key)) continue;
-	        value = ref[key];
-	        this.options[key] = value;
-	      }
-	      for (key in opts) {
-	        if (!hasProp.call(opts, key)) continue;
-	        value = opts[key];
-	        this.options[key] = value;
-	      }
-	    }
-	
-	    Builder.prototype.buildObject = function(rootObj) {
-	      var attrkey, charkey, render, rootElement, rootName;
-	      attrkey = this.options.attrkey;
-	      charkey = this.options.charkey;
-	      if ((Object.keys(rootObj).length === 1) && (this.options.rootName === exports.defaults['0.2'].rootName)) {
-	        rootName = Object.keys(rootObj)[0];
-	        rootObj = rootObj[rootName];
-	      } else {
-	        rootName = this.options.rootName;
-	      }
-	      render = (function(_this) {
-	        return function(element, obj) {
-	          var attr, child, entry, index, key, value;
-	          if (typeof obj !== 'object') {
-	            if (_this.options.cdata && requiresCDATA(obj)) {
-	              element.raw(wrapCDATA(obj));
-	            } else {
-	              element.txt(obj);
-	            }
-	          } else {
-	            for (key in obj) {
-	              if (!hasProp.call(obj, key)) continue;
-	              child = obj[key];
-	              if (key === attrkey) {
-	                if (typeof child === "object") {
-	                  for (attr in child) {
-	                    value = child[attr];
-	                    element = element.att(attr, value);
-	                  }
-	                }
-	              } else if (key === charkey) {
-	                if (_this.options.cdata && requiresCDATA(child)) {
-	                  element = element.raw(wrapCDATA(child));
-	                } else {
-	                  element = element.txt(child);
-	                }
-	              } else if (Array.isArray(child)) {
-	                for (index in child) {
-	                  if (!hasProp.call(child, index)) continue;
-	                  entry = child[index];
-	                  if (typeof entry === 'string') {
-	                    if (_this.options.cdata && requiresCDATA(entry)) {
-	                      element = element.ele(key).raw(wrapCDATA(entry)).up();
-	                    } else {
-	                      element = element.ele(key, entry).up();
-	                    }
-	                  } else {
-	                    element = render(element.ele(key), entry).up();
-	                  }
-	                }
-	              } else if (typeof child === "object") {
-	                element = render(element.ele(key), child).up();
-	              } else {
-	                if (typeof child === 'string' && _this.options.cdata && requiresCDATA(child)) {
-	                  element = element.ele(key).raw(wrapCDATA(child)).up();
-	                } else {
-	                  if (child == null) {
-	                    child = '';
-	                  }
-	                  element = element.ele(key, child.toString()).up();
-	                }
-	              }
-	            }
-	          }
-	          return element;
-	        };
-	      })(this);
-	      rootElement = builder.create(rootName, this.options.xmldec, this.options.doctype, {
-	        headless: this.options.headless,
-	        allowSurrogateChars: this.options.allowSurrogateChars
-	      });
-	      return render(rootElement, rootObj).end(this.options.renderOpts);
-	    };
-	
-	    return Builder;
-	
-	  })();
-	
-	  exports.Parser = (function(superClass) {
-	    extend(Parser, superClass);
-	
-	    function Parser(opts) {
-	      this.parseString = bind(this.parseString, this);
-	      this.reset = bind(this.reset, this);
-	      this.assignOrPush = bind(this.assignOrPush, this);
-	      this.processAsync = bind(this.processAsync, this);
-	      var key, ref, value;
-	      if (!(this instanceof exports.Parser)) {
-	        return new exports.Parser(opts);
-	      }
-	      this.options = {};
-	      ref = exports.defaults["0.2"];
-	      for (key in ref) {
-	        if (!hasProp.call(ref, key)) continue;
-	        value = ref[key];
-	        this.options[key] = value;
-	      }
-	      for (key in opts) {
-	        if (!hasProp.call(opts, key)) continue;
-	        value = opts[key];
-	        this.options[key] = value;
-	      }
-	      if (this.options.xmlns) {
-	        this.options.xmlnskey = this.options.attrkey + "ns";
-	      }
-	      if (this.options.normalizeTags) {
-	        if (!this.options.tagNameProcessors) {
-	          this.options.tagNameProcessors = [];
-	        }
-	        this.options.tagNameProcessors.unshift(processors.normalize);
-	      }
-	      this.reset();
-	    }
-	
-	    Parser.prototype.processAsync = function() {
-	      var chunk, err, error1;
-	      try {
-	        if (this.remaining.length <= this.options.chunkSize) {
-	          chunk = this.remaining;
-	          this.remaining = '';
-	          this.saxParser = this.saxParser.write(chunk);
-	          return this.saxParser.close();
-	        } else {
-	          chunk = this.remaining.substr(0, this.options.chunkSize);
-	          this.remaining = this.remaining.substr(this.options.chunkSize, this.remaining.length);
-	          this.saxParser = this.saxParser.write(chunk);
-	          return setImmediate(this.processAsync);
-	        }
-	      } catch (error1) {
-	        err = error1;
-	        if (!this.saxParser.errThrown) {
-	          this.saxParser.errThrown = true;
-	          return this.emit(err);
-	        }
-	      }
-	    };
-	
-	    Parser.prototype.assignOrPush = function(obj, key, newValue) {
-	      if (!(key in obj)) {
-	        if (!this.options.explicitArray) {
-	          return obj[key] = newValue;
-	        } else {
-	          return obj[key] = [newValue];
-	        }
-	      } else {
-	        if (!(obj[key] instanceof Array)) {
-	          obj[key] = [obj[key]];
-	        }
-	        return obj[key].push(newValue);
-	      }
-	    };
-	
-	    Parser.prototype.reset = function() {
-	      var attrkey, charkey, ontext, stack;
-	      this.removeAllListeners();
-	      this.saxParser = sax.parser(this.options.strict, {
-	        trim: false,
-	        normalize: false,
-	        xmlns: this.options.xmlns
-	      });
-	      this.saxParser.errThrown = false;
-	      this.saxParser.onerror = (function(_this) {
-	        return function(error) {
-	          _this.saxParser.resume();
-	          if (!_this.saxParser.errThrown) {
-	            _this.saxParser.errThrown = true;
-	            return _this.emit("error", error);
-	          }
-	        };
-	      })(this);
-	      this.saxParser.onend = (function(_this) {
-	        return function() {
-	          if (!_this.saxParser.ended) {
-	            _this.saxParser.ended = true;
-	            return _this.emit("end", _this.resultObject);
-	          }
-	        };
-	      })(this);
-	      this.saxParser.ended = false;
-	      this.EXPLICIT_CHARKEY = this.options.explicitCharkey;
-	      this.resultObject = null;
-	      stack = [];
-	      attrkey = this.options.attrkey;
-	      charkey = this.options.charkey;
-	      this.saxParser.onopentag = (function(_this) {
-	        return function(node) {
-	          var key, newValue, obj, processedKey, ref;
-	          obj = {};
-	          obj[charkey] = "";
-	          if (!_this.options.ignoreAttrs) {
-	            ref = node.attributes;
-	            for (key in ref) {
-	              if (!hasProp.call(ref, key)) continue;
-	              if (!(attrkey in obj) && !_this.options.mergeAttrs) {
-	                obj[attrkey] = {};
-	              }
-	              newValue = _this.options.attrValueProcessors ? processName(_this.options.attrValueProcessors, node.attributes[key]) : node.attributes[key];
-	              processedKey = _this.options.attrNameProcessors ? processName(_this.options.attrNameProcessors, key) : key;
-	              if (_this.options.mergeAttrs) {
-	                _this.assignOrPush(obj, processedKey, newValue);
-	              } else {
-	                obj[attrkey][processedKey] = newValue;
-	              }
-	            }
-	          }
-	          obj["#name"] = _this.options.tagNameProcessors ? processName(_this.options.tagNameProcessors, node.name) : node.name;
-	          if (_this.options.xmlns) {
-	            obj[_this.options.xmlnskey] = {
-	              uri: node.uri,
-	              local: node.local
-	            };
-	          }
-	          return stack.push(obj);
-	        };
-	      })(this);
-	      this.saxParser.onclosetag = (function(_this) {
-	        return function() {
-	          var cdata, emptyStr, err, error1, key, node, nodeName, obj, objClone, old, s, xpath;
-	          obj = stack.pop();
-	          nodeName = obj["#name"];
-	          if (!_this.options.explicitChildren || !_this.options.preserveChildrenOrder) {
-	            delete obj["#name"];
-	          }
-	          if (obj.cdata === true) {
-	            cdata = obj.cdata;
-	            delete obj.cdata;
-	          }
-	          s = stack[stack.length - 1];
-	          if (obj[charkey].match(/^\s*$/) && !cdata) {
-	            emptyStr = obj[charkey];
-	            delete obj[charkey];
-	          } else {
-	            if (_this.options.trim) {
-	              obj[charkey] = obj[charkey].trim();
-	            }
-	            if (_this.options.normalize) {
-	              obj[charkey] = obj[charkey].replace(/\s{2,}/g, " ").trim();
-	            }
-	            obj[charkey] = _this.options.valueProcessors ? processName(_this.options.valueProcessors, obj[charkey]) : obj[charkey];
-	            if (Object.keys(obj).length === 1 && charkey in obj && !_this.EXPLICIT_CHARKEY) {
-	              obj = obj[charkey];
-	            }
-	          }
-	          if (isEmpty(obj)) {
-	            obj = _this.options.emptyTag !== '' ? _this.options.emptyTag : emptyStr;
-	          }
-	          if (_this.options.validator != null) {
-	            xpath = "/" + ((function() {
-	              var i, len, results;
-	              results = [];
-	              for (i = 0, len = stack.length; i < len; i++) {
-	                node = stack[i];
-	                results.push(node["#name"]);
-	              }
-	              return results;
-	            })()).concat(nodeName).join("/");
-	            try {
-	              obj = _this.options.validator(xpath, s && s[nodeName], obj);
-	            } catch (error1) {
-	              err = error1;
-	              _this.emit("error", err);
-	            }
-	          }
-	          if (_this.options.explicitChildren && !_this.options.mergeAttrs && typeof obj === 'object') {
-	            if (!_this.options.preserveChildrenOrder) {
-	              node = {};
-	              if (_this.options.attrkey in obj) {
-	                node[_this.options.attrkey] = obj[_this.options.attrkey];
-	                delete obj[_this.options.attrkey];
-	              }
-	              if (!_this.options.charsAsChildren && _this.options.charkey in obj) {
-	                node[_this.options.charkey] = obj[_this.options.charkey];
-	                delete obj[_this.options.charkey];
-	              }
-	              if (Object.getOwnPropertyNames(obj).length > 0) {
-	                node[_this.options.childkey] = obj;
-	              }
-	              obj = node;
-	            } else if (s) {
-	              s[_this.options.childkey] = s[_this.options.childkey] || [];
-	              objClone = {};
-	              for (key in obj) {
-	                if (!hasProp.call(obj, key)) continue;
-	                objClone[key] = obj[key];
-	              }
-	              s[_this.options.childkey].push(objClone);
-	              delete obj["#name"];
-	              if (Object.keys(obj).length === 1 && charkey in obj && !_this.EXPLICIT_CHARKEY) {
-	                obj = obj[charkey];
-	              }
-	            }
-	          }
-	          if (stack.length > 0) {
-	            return _this.assignOrPush(s, nodeName, obj);
-	          } else {
-	            if (_this.options.explicitRoot) {
-	              old = obj;
-	              obj = {};
-	              obj[nodeName] = old;
-	            }
-	            _this.resultObject = obj;
-	            _this.saxParser.ended = true;
-	            return _this.emit("end", _this.resultObject);
-	          }
-	        };
-	      })(this);
-	      ontext = (function(_this) {
-	        return function(text) {
-	          var charChild, s;
-	          s = stack[stack.length - 1];
-	          if (s) {
-	            s[charkey] += text;
-	            if (_this.options.explicitChildren && _this.options.preserveChildrenOrder && _this.options.charsAsChildren && (_this.options.includeWhiteChars || text.replace(/\\n/g, '').trim() !== '')) {
-	              s[_this.options.childkey] = s[_this.options.childkey] || [];
-	              charChild = {
-	                '#name': '__text__'
-	              };
-	              charChild[charkey] = text;
-	              if (_this.options.normalize) {
-	                charChild[charkey] = charChild[charkey].replace(/\s{2,}/g, " ").trim();
-	              }
-	              s[_this.options.childkey].push(charChild);
-	            }
-	            return s;
-	          }
-	        };
-	      })(this);
-	      this.saxParser.ontext = ontext;
-	      return this.saxParser.oncdata = (function(_this) {
-	        return function(text) {
-	          var s;
-	          s = ontext(text);
-	          if (s) {
-	            return s.cdata = true;
-	          }
-	        };
-	      })(this);
-	    };
-	
-	    Parser.prototype.parseString = function(str, cb) {
-	      var err, error1;
-	      if ((cb != null) && typeof cb === "function") {
-	        this.on("end", function(result) {
-	          this.reset();
-	          return cb(null, result);
-	        });
-	        this.on("error", function(err) {
-	          this.reset();
-	          return cb(err);
-	        });
-	      }
-	      try {
-	        str = str.toString();
-	        if (str.trim() === '') {
-	          this.emit("end", null);
-	          return true;
-	        }
-	        str = bom.stripBOM(str);
-	        if (this.options.async) {
-	          this.remaining = str;
-	          setImmediate(this.processAsync);
-	          return this.saxParser;
-	        }
-	        return this.saxParser.write(str).close();
-	      } catch (error1) {
-	        err = error1;
-	        if (!(this.saxParser.errThrown || this.saxParser.ended)) {
-	          this.emit('error', err);
-	          return this.saxParser.errThrown = true;
-	        } else if (this.saxParser.ended) {
-	          throw err;
-	        }
-	      }
-	    };
-	
-	    return Parser;
-	
-	  })(events.EventEmitter);
-	
-	  exports.parseString = function(str, a, b) {
-	    var cb, options, parser;
-	    if (b != null) {
-	      if (typeof b === 'function') {
-	        cb = b;
-	      }
-	      if (typeof a === 'object') {
-	        options = a;
-	      }
-	    } else {
-	      if (typeof a === 'function') {
-	        cb = a;
-	      }
-	      options = {};
-	    }
-	    parser = new exports.Parser(options);
-	    return parser.parseString(str, cb);
-	  };
-	
-	}).call(this);
+	module.exports = baseDelay;
 
 
 /***/ },
-/* 389 */
+/* 401 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(Buffer) {;(function (sax) { // wrapper for non-node envs
-	  sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
-	  sax.SAXParser = SAXParser
-	  sax.SAXStream = SAXStream
-	  sax.createStream = createStream
+	/**
+	 * Tiny stack for browser or server
+	 *
+	 * @author Jason Mulligan <jason.mulligan@avoidwork.com>
+	 * @copyright 2014 Jason Mulligan
+	 * @license BSD-3 <https://raw.github.com/avoidwork/tiny-stack/master/LICENSE>
+	 * @link http://avoidwork.github.io/tiny-stack
+	 * @module tiny-stack
+	 * @version 0.1.0
+	 */
 	
-	  // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
-	  // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
-	  // since that's the earliest that a buffer overrun could occur.  This way, checks are
-	  // as rare as required, but as often as necessary to ensure never crossing this bound.
-	  // Furthermore, buffers are only tested at most once per write(), so passing a very
-	  // large string into write() might have undesirable effects, but this is manageable by
-	  // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
-	  // edge case, result in creating at most one complete copy of the string passed in.
-	  // Set to Infinity to have unlimited buffers.
-	  sax.MAX_BUFFER_LENGTH = 64 * 1024
+	( function ( global ) {
 	
-	  var buffers = [
-	    'comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype',
-	    'procInstName', 'procInstBody', 'entity', 'attribName',
-	    'attribValue', 'cdata', 'script'
+	"use strict";
+	
+	/**
+	 * TinyStack
+	 *
+	 * @constructor
+	 */
+	function TinyStack () {
+		this.data = [null];
+		this.top  = 0;
+	}
+	
+	/**
+	 * Clears the stack
+	 *
+	 * @method clear
+	 * @memberOf TinyStack
+	 * @return {Object} {@link TinyStack}
+	 */
+	TinyStack.prototype.clear = function clear () {
+		this.data = [null];
+		this.top  = 0;
+	
+		return this;
+	};
+	
+	/**
+	 * Gets the size of the stack
+	 *
+	 * @method length
+	 * @memberOf TinyStack
+	 * @return {Number} Size of stack
+	 */
+	TinyStack.prototype.length = function length () {
+		return this.top;
+	};
+	
+	/**
+	 * Gets the item at the top of the stack
+	 *
+	 * @method peek
+	 * @memberOf TinyStack
+	 * @return {Mixed} Item at the top of the stack
+	 */
+	TinyStack.prototype.peek = function peek () {
+		return this.data[this.top];
+	};
+	
+	/**
+	 * Gets & removes the item at the top of the stack
+	 *
+	 * @method pop
+	 * @memberOf TinyStack
+	 * @return {Mixed} Item at the top of the stack
+	 */
+	TinyStack.prototype.pop = function pop () {
+		if ( this.top > 0 ) {
+			this.top--;
+	
+			return this.data.pop();
+		}
+		else {
+			return undefined;
+		}
+	};
+	
+	/**
+	 * Pushes an item onto the stack
+	 *
+	 * @method push
+	 * @memberOf TinyStack
+	 * @return {Object} {@link TinyStack}
+	 */
+	TinyStack.prototype.push = function push ( arg ) {
+		this.data[++this.top] = arg;
+	
+		return this;
+	};
+	
+	/**
+	 * TinyStack factory
+	 *
+	 * @method factory
+	 * @return {Object} {@link TinyStack}
+	 */
+	function factory () {
+		return new TinyStack();
+	}
+	
+	// Node, AMD & window supported
+	if ( true ) {
+		module.exports = factory;
+	}
+	else if ( typeof define == "function" ) {
+		define( function () {
+			return factory;
+		} );
+	}
+	else {
+		global.stack = factory;
+	}
+	} )( this );
+
+
+/***/ },
+/* 402 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(Buffer) {// wrapper for non-node envs
+	;(function (sax) {
+	
+	sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
+	sax.SAXParser = SAXParser
+	sax.SAXStream = SAXStream
+	sax.createStream = createStream
+	
+	// When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
+	// When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
+	// since that's the earliest that a buffer overrun could occur.  This way, checks are
+	// as rare as required, but as often as necessary to ensure never crossing this bound.
+	// Furthermore, buffers are only tested at most once per write(), so passing a very
+	// large string into write() might have undesirable effects, but this is manageable by
+	// the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
+	// edge case, result in creating at most one complete copy of the string passed in.
+	// Set to Infinity to have unlimited buffers.
+	sax.MAX_BUFFER_LENGTH = 64 * 1024
+	
+	var buffers = [
+	  "comment", "sgmlDecl", "textNode", "tagName", "doctype",
+	  "procInstName", "procInstBody", "entity", "attribName",
+	  "attribValue", "cdata", "script"
+	]
+	
+	sax.EVENTS = // for discoverability.
+	  [ "text"
+	  , "processinginstruction"
+	  , "sgmldeclaration"
+	  , "doctype"
+	  , "comment"
+	  , "attribute"
+	  , "opentag"
+	  , "closetag"
+	  , "opencdata"
+	  , "cdata"
+	  , "closecdata"
+	  , "error"
+	  , "end"
+	  , "ready"
+	  , "script"
+	  , "opennamespace"
+	  , "closenamespace"
 	  ]
 	
-	  sax.EVENTS = [
-	    'text',
-	    'processinginstruction',
-	    'sgmldeclaration',
-	    'doctype',
-	    'comment',
-	    'opentagstart',
-	    'attribute',
-	    'opentag',
-	    'closetag',
-	    'opencdata',
-	    'cdata',
-	    'closecdata',
-	    'error',
-	    'end',
-	    'ready',
-	    'script',
-	    'opennamespace',
-	    'closenamespace'
-	  ]
+	function SAXParser (strict, opt) {
+	  if (!(this instanceof SAXParser)) return new SAXParser(strict, opt)
 	
-	  function SAXParser (strict, opt) {
-	    if (!(this instanceof SAXParser)) {
-	      return new SAXParser(strict, opt)
-	    }
+	  var parser = this
+	  clearBuffers(parser)
+	  parser.q = parser.c = ""
+	  parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
+	  parser.opt = opt || {}
+	  parser.opt.lowercase = parser.opt.lowercase || parser.opt.lowercasetags
+	  parser.looseCase = parser.opt.lowercase ? "toLowerCase" : "toUpperCase"
+	  parser.tags = []
+	  parser.closed = parser.closedRoot = parser.sawRoot = false
+	  parser.tag = parser.error = null
+	  parser.strict = !!strict
+	  parser.noscript = !!(strict || parser.opt.noscript)
+	  parser.state = S.BEGIN
+	  parser.ENTITIES = Object.create(sax.ENTITIES)
+	  parser.attribList = []
 	
-	    var parser = this
-	    clearBuffers(parser)
-	    parser.q = parser.c = ''
-	    parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
-	    parser.opt = opt || {}
-	    parser.opt.lowercase = parser.opt.lowercase || parser.opt.lowercasetags
-	    parser.looseCase = parser.opt.lowercase ? 'toLowerCase' : 'toUpperCase'
-	    parser.tags = []
-	    parser.closed = parser.closedRoot = parser.sawRoot = false
-	    parser.tag = parser.error = null
-	    parser.strict = !!strict
-	    parser.noscript = !!(strict || parser.opt.noscript)
-	    parser.state = S.BEGIN
-	    parser.strictEntities = parser.opt.strictEntities
-	    parser.ENTITIES = parser.strictEntities ? Object.create(sax.XML_ENTITIES) : Object.create(sax.ENTITIES)
-	    parser.attribList = []
+	  // namespaces form a prototype chain.
+	  // it always points at the current tag,
+	  // which protos to its parent tag.
+	  if (parser.opt.xmlns) parser.ns = Object.create(rootNS)
 	
-	    // namespaces form a prototype chain.
-	    // it always points at the current tag,
-	    // which protos to its parent tag.
-	    if (parser.opt.xmlns) {
-	      parser.ns = Object.create(rootNS)
-	    }
-	
-	    // mostly just for error reporting
-	    parser.trackPosition = parser.opt.position !== false
-	    if (parser.trackPosition) {
-	      parser.position = parser.line = parser.column = 0
-	    }
-	    emit(parser, 'onready')
+	  // mostly just for error reporting
+	  parser.trackPosition = parser.opt.position !== false
+	  if (parser.trackPosition) {
+	    parser.position = parser.line = parser.column = 0
 	  }
+	  emit(parser, "onready")
+	}
 	
-	  if (!Object.create) {
-	    Object.create = function (o) {
-	      function F () {}
-	      F.prototype = o
-	      var newf = new F()
-	      return newf
-	    }
-	  }
+	if (!Object.create) Object.create = function (o) {
+	  function f () { this.__proto__ = o }
+	  f.prototype = o
+	  return new f
+	}
 	
-	  if (!Object.keys) {
-	    Object.keys = function (o) {
-	      var a = []
-	      for (var i in o) if (o.hasOwnProperty(i)) a.push(i)
-	      return a
-	    }
-	  }
+	if (!Object.getPrototypeOf) Object.getPrototypeOf = function (o) {
+	  return o.__proto__
+	}
 	
-	  function checkBufferLength (parser) {
-	    var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
-	    var maxActual = 0
-	    for (var i = 0, l = buffers.length; i < l; i++) {
-	      var len = parser[buffers[i]].length
-	      if (len > maxAllowed) {
-	        // Text/cdata nodes can get big, and since they're buffered,
-	        // we can get here under normal conditions.
-	        // Avoid issues by emitting the text node now,
-	        // so at least it won't get any bigger.
-	        switch (buffers[i]) {
-	          case 'textNode':
-	            closeText(parser)
-	            break
+	if (!Object.keys) Object.keys = function (o) {
+	  var a = []
+	  for (var i in o) if (o.hasOwnProperty(i)) a.push(i)
+	  return a
+	}
 	
-	          case 'cdata':
-	            emitNode(parser, 'oncdata', parser.cdata)
-	            parser.cdata = ''
-	            break
+	function checkBufferLength (parser) {
+	  var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
+	    , maxActual = 0
+	  for (var i = 0, l = buffers.length; i < l; i ++) {
+	    var len = parser[buffers[i]].length
+	    if (len > maxAllowed) {
+	      // Text/cdata nodes can get big, and since they're buffered,
+	      // we can get here under normal conditions.
+	      // Avoid issues by emitting the text node now,
+	      // so at least it won't get any bigger.
+	      switch (buffers[i]) {
+	        case "textNode":
+	          closeText(parser)
+	        break
 	
-	          case 'script':
-	            emitNode(parser, 'onscript', parser.script)
-	            parser.script = ''
-	            break
+	        case "cdata":
+	          emitNode(parser, "oncdata", parser.cdata)
+	          parser.cdata = ""
+	        break
 	
-	          default:
-	            error(parser, 'Max buffer length exceeded: ' + buffers[i])
-	        }
+	        case "script":
+	          emitNode(parser, "onscript", parser.script)
+	          parser.script = ""
+	        break
+	
+	        default:
+	          error(parser, "Max buffer length exceeded: "+buffers[i])
 	      }
-	      maxActual = Math.max(maxActual, len)
 	    }
-	    // schedule the next check for the earliest possible buffer overrun.
-	    var m = sax.MAX_BUFFER_LENGTH - maxActual
-	    parser.bufferCheckPosition = m + parser.position
+	    maxActual = Math.max(maxActual, len)
+	  }
+	  // schedule the next check for the earliest possible buffer overrun.
+	  parser.bufferCheckPosition = (sax.MAX_BUFFER_LENGTH - maxActual)
+	                             + parser.position
+	}
+	
+	function clearBuffers (parser) {
+	  for (var i = 0, l = buffers.length; i < l; i ++) {
+	    parser[buffers[i]] = ""
+	  }
+	}
+	
+	function flushBuffers (parser) {
+	  closeText(parser)
+	  if (parser.cdata !== "") {
+	    emitNode(parser, "oncdata", parser.cdata)
+	    parser.cdata = ""
+	  }
+	  if (parser.script !== "") {
+	    emitNode(parser, "onscript", parser.script)
+	    parser.script = ""
+	  }
+	}
+	
+	SAXParser.prototype =
+	  { end: function () { end(this) }
+	  , write: write
+	  , resume: function () { this.error = null; return this }
+	  , close: function () { return this.write(null) }
+	  , flush: function () { flushBuffers(this) }
 	  }
 	
-	  function clearBuffers (parser) {
-	    for (var i = 0, l = buffers.length; i < l; i++) {
-	      parser[buffers[i]] = ''
-	    }
+	try {
+	  var Stream = __webpack_require__(407).Stream
+	} catch (ex) {
+	  var Stream = function () {}
+	}
+	
+	
+	var streamWraps = sax.EVENTS.filter(function (ev) {
+	  return ev !== "error" && ev !== "end"
+	})
+	
+	function createStream (strict, opt) {
+	  return new SAXStream(strict, opt)
+	}
+	
+	function SAXStream (strict, opt) {
+	  if (!(this instanceof SAXStream)) return new SAXStream(strict, opt)
+	
+	  Stream.apply(this)
+	
+	  this._parser = new SAXParser(strict, opt)
+	  this.writable = true
+	  this.readable = true
+	
+	
+	  var me = this
+	
+	  this._parser.onend = function () {
+	    me.emit("end")
 	  }
 	
-	  function flushBuffers (parser) {
-	    closeText(parser)
-	    if (parser.cdata !== '') {
-	      emitNode(parser, 'oncdata', parser.cdata)
-	      parser.cdata = ''
-	    }
-	    if (parser.script !== '') {
-	      emitNode(parser, 'onscript', parser.script)
-	      parser.script = ''
-	    }
+	  this._parser.onerror = function (er) {
+	    me.emit("error", er)
+	
+	    // if didn't throw, then means error was handled.
+	    // go ahead and clear error, so we can write again.
+	    me._parser.error = null
 	  }
 	
-	  SAXParser.prototype = {
-	    end: function () { end(this) },
-	    write: write,
-	    resume: function () { this.error = null; return this },
-	    close: function () { return this.write(null) },
-	    flush: function () { flushBuffers(this) }
-	  }
+	  this._decoder = null;
 	
-	  var Stream
-	  try {
-	    Stream = __webpack_require__(394).Stream
-	  } catch (ex) {
-	    Stream = function () {}
-	  }
-	
-	  var streamWraps = sax.EVENTS.filter(function (ev) {
-	    return ev !== 'error' && ev !== 'end'
-	  })
-	
-	  function createStream (strict, opt) {
-	    return new SAXStream(strict, opt)
-	  }
-	
-	  function SAXStream (strict, opt) {
-	    if (!(this instanceof SAXStream)) {
-	      return new SAXStream(strict, opt)
-	    }
-	
-	    Stream.apply(this)
-	
-	    this._parser = new SAXParser(strict, opt)
-	    this.writable = true
-	    this.readable = true
-	
-	    var me = this
-	
-	    this._parser.onend = function () {
-	      me.emit('end')
-	    }
-	
-	    this._parser.onerror = function (er) {
-	      me.emit('error', er)
-	
-	      // if didn't throw, then means error was handled.
-	      // go ahead and clear error, so we can write again.
-	      me._parser.error = null
-	    }
-	
-	    this._decoder = null
-	
-	    streamWraps.forEach(function (ev) {
-	      Object.defineProperty(me, 'on' + ev, {
-	        get: function () {
-	          return me._parser['on' + ev]
-	        },
-	        set: function (h) {
-	          if (!h) {
-	            me.removeAllListeners(ev)
-	            me._parser['on' + ev] = h
-	            return h
-	          }
-	          me.on(ev, h)
-	        },
-	        enumerable: true,
-	        configurable: false
-	      })
+	  streamWraps.forEach(function (ev) {
+	    Object.defineProperty(me, "on" + ev, {
+	      get: function () { return me._parser["on" + ev] },
+	      set: function (h) {
+	        if (!h) {
+	          me.removeAllListeners(ev)
+	          return me._parser["on"+ev] = h
+	        }
+	        me.on(ev, h)
+	      },
+	      enumerable: true,
+	      configurable: false
 	    })
-	  }
-	
-	  SAXStream.prototype = Object.create(Stream.prototype, {
-	    constructor: {
-	      value: SAXStream
-	    }
 	  })
+	}
 	
-	  SAXStream.prototype.write = function (data) {
-	    if (typeof Buffer === 'function' &&
+	SAXStream.prototype = Object.create(Stream.prototype,
+	  { constructor: { value: SAXStream } })
+	
+	SAXStream.prototype.write = function (data) {
+	  if (typeof Buffer === 'function' &&
 	      typeof Buffer.isBuffer === 'function' &&
 	      Buffer.isBuffer(data)) {
-	      if (!this._decoder) {
-	        var SD = __webpack_require__(403).StringDecoder
-	        this._decoder = new SD('utf8')
-	      }
-	      data = this._decoder.write(data)
+	    if (!this._decoder) {
+	      var SD = __webpack_require__(423).StringDecoder
+	      this._decoder = new SD('utf8')
 	    }
-	
-	    this._parser.write(data.toString())
-	    this.emit('data', data)
-	    return true
+	    data = this._decoder.write(data);
 	  }
 	
-	  SAXStream.prototype.end = function (chunk) {
-	    if (chunk && chunk.length) {
-	      this.write(chunk)
+	  this._parser.write(data.toString())
+	  this.emit("data", data)
+	  return true
+	}
+	
+	SAXStream.prototype.end = function (chunk) {
+	  if (chunk && chunk.length) this.write(chunk)
+	  this._parser.end()
+	  return true
+	}
+	
+	SAXStream.prototype.on = function (ev, handler) {
+	  var me = this
+	  if (!me._parser["on"+ev] && streamWraps.indexOf(ev) !== -1) {
+	    me._parser["on"+ev] = function () {
+	      var args = arguments.length === 1 ? [arguments[0]]
+	               : Array.apply(null, arguments)
+	      args.splice(0, 0, ev)
+	      me.emit.apply(me, args)
 	    }
-	    this._parser.end()
-	    return true
 	  }
 	
-	  SAXStream.prototype.on = function (ev, handler) {
-	    var me = this
-	    if (!me._parser['on' + ev] && streamWraps.indexOf(ev) !== -1) {
-	      me._parser['on' + ev] = function () {
-	        var args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
-	        args.splice(0, 0, ev)
-	        me.emit.apply(me, args)
-	      }
-	    }
+	  return Stream.prototype.on.call(me, ev, handler)
+	}
 	
-	    return Stream.prototype.on.call(me, ev, handler)
-	  }
 	
-	  // character classes and tokens
-	  var whitespace = '\r\n\t '
 	
+	// character classes and tokens
+	var whitespace = "\r\n\t "
 	  // this really needs to be replaced with character classes.
 	  // XML allows all manner of ridiculous numbers and digits.
-	  var number = '0124356789'
-	  var letter = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-	
+	  , number = "0124356789"
+	  , letter = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	  // (Letter | "_" | ":")
-	  var quote = '\'"'
-	  var attribEnd = whitespace + '>'
-	  var CDATA = '[CDATA['
-	  var DOCTYPE = 'DOCTYPE'
-	  var XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace'
-	  var XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/'
-	  var rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE }
+	  , quote = "'\""
+	  , entity = number+letter+"#"
+	  , attribEnd = whitespace + ">"
+	  , CDATA = "[CDATA["
+	  , DOCTYPE = "DOCTYPE"
+	  , XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace"
+	  , XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/"
+	  , rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE }
 	
-	  // turn all the string character sets into character class objects.
-	  whitespace = charClass(whitespace)
-	  number = charClass(number)
-	  letter = charClass(letter)
+	// turn all the string character sets into character class objects.
+	whitespace = charClass(whitespace)
+	number = charClass(number)
+	letter = charClass(letter)
 	
-	  // http://www.w3.org/TR/REC-xml/#NT-NameStartChar
-	  // This implementation works on strings, a single character at a time
-	  // as such, it cannot ever support astral-plane characters (10000-EFFFF)
-	  // without a significant breaking change to either this  parser, or the
-	  // JavaScript language.  Implementation of an emoji-capable xml parser
-	  // is left as an exercise for the reader.
-	  var nameStart = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
+	// http://www.w3.org/TR/REC-xml/#NT-NameStartChar
+	// This implementation works on strings, a single character at a time
+	// as such, it cannot ever support astral-plane characters (10000-EFFFF)
+	// without a significant breaking change to either this  parser, or the
+	// JavaScript language.  Implementation of an emoji-capable xml parser
+	// is left as an exercise for the reader.
+	var nameStart = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
 	
-	  var nameBody = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040\.\d-]/
+	var nameBody = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040\.\d-]/
 	
-	  var entityStart = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
-	  var entityBody = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040\.\d-]/
+	quote = charClass(quote)
+	entity = charClass(entity)
+	attribEnd = charClass(attribEnd)
 	
-	  quote = charClass(quote)
-	  attribEnd = charClass(attribEnd)
+	function charClass (str) {
+	  return str.split("").reduce(function (s, c) {
+	    s[c] = true
+	    return s
+	  }, {})
+	}
 	
-	  function charClass (str) {
-	    return str.split('').reduce(function (s, c) {
-	      s[c] = true
-	      return s
-	    }, {})
-	  }
+	function isRegExp (c) {
+	  return Object.prototype.toString.call(c) === '[object RegExp]'
+	}
 	
-	  function isRegExp (c) {
-	    return Object.prototype.toString.call(c) === '[object RegExp]'
-	  }
+	function is (charclass, c) {
+	  return isRegExp(charclass) ? !!c.match(charclass) : charclass[c]
+	}
 	
-	  function is (charclass, c) {
-	    return isRegExp(charclass) ? !!c.match(charclass) : charclass[c]
-	  }
+	function not (charclass, c) {
+	  return !is(charclass, c)
+	}
 	
-	  function not (charclass, c) {
-	    return !is(charclass, c)
-	  }
+	var S = 0
+	sax.STATE =
+	{ BEGIN                     : S++
+	, TEXT                      : S++ // general stuff
+	, TEXT_ENTITY               : S++ // &amp and such.
+	, OPEN_WAKA                 : S++ // <
+	, SGML_DECL                 : S++ // <!BLARG
+	, SGML_DECL_QUOTED          : S++ // <!BLARG foo "bar
+	, DOCTYPE                   : S++ // <!DOCTYPE
+	, DOCTYPE_QUOTED            : S++ // <!DOCTYPE "//blah
+	, DOCTYPE_DTD               : S++ // <!DOCTYPE "//blah" [ ...
+	, DOCTYPE_DTD_QUOTED        : S++ // <!DOCTYPE "//blah" [ "foo
+	, COMMENT_STARTING          : S++ // <!-
+	, COMMENT                   : S++ // <!--
+	, COMMENT_ENDING            : S++ // <!-- blah -
+	, COMMENT_ENDED             : S++ // <!-- blah --
+	, CDATA                     : S++ // <![CDATA[ something
+	, CDATA_ENDING              : S++ // ]
+	, CDATA_ENDING_2            : S++ // ]]
+	, PROC_INST                 : S++ // <?hi
+	, PROC_INST_BODY            : S++ // <?hi there
+	, PROC_INST_ENDING          : S++ // <?hi "there" ?
+	, OPEN_TAG                  : S++ // <strong
+	, OPEN_TAG_SLASH            : S++ // <strong /
+	, ATTRIB                    : S++ // <a
+	, ATTRIB_NAME               : S++ // <a foo
+	, ATTRIB_NAME_SAW_WHITE     : S++ // <a foo _
+	, ATTRIB_VALUE              : S++ // <a foo=
+	, ATTRIB_VALUE_QUOTED       : S++ // <a foo="bar
+	, ATTRIB_VALUE_CLOSED       : S++ // <a foo="bar"
+	, ATTRIB_VALUE_UNQUOTED     : S++ // <a foo=bar
+	, ATTRIB_VALUE_ENTITY_Q     : S++ // <foo bar="&quot;"
+	, ATTRIB_VALUE_ENTITY_U     : S++ // <foo bar=&quot;
+	, CLOSE_TAG                 : S++ // </a
+	, CLOSE_TAG_SAW_WHITE       : S++ // </a   >
+	, SCRIPT                    : S++ // <script> ...
+	, SCRIPT_ENDING             : S++ // <script> ... <
+	}
 	
-	  var S = 0
-	  sax.STATE = {
-	    BEGIN: S++, // leading byte order mark or whitespace
-	    BEGIN_WHITESPACE: S++, // leading whitespace
-	    TEXT: S++, // general stuff
-	    TEXT_ENTITY: S++, // &amp and such.
-	    OPEN_WAKA: S++, // <
-	    SGML_DECL: S++, // <!BLARG
-	    SGML_DECL_QUOTED: S++, // <!BLARG foo "bar
-	    DOCTYPE: S++, // <!DOCTYPE
-	    DOCTYPE_QUOTED: S++, // <!DOCTYPE "//blah
-	    DOCTYPE_DTD: S++, // <!DOCTYPE "//blah" [ ...
-	    DOCTYPE_DTD_QUOTED: S++, // <!DOCTYPE "//blah" [ "foo
-	    COMMENT_STARTING: S++, // <!-
-	    COMMENT: S++, // <!--
-	    COMMENT_ENDING: S++, // <!-- blah -
-	    COMMENT_ENDED: S++, // <!-- blah --
-	    CDATA: S++, // <![CDATA[ something
-	    CDATA_ENDING: S++, // ]
-	    CDATA_ENDING_2: S++, // ]]
-	    PROC_INST: S++, // <?hi
-	    PROC_INST_BODY: S++, // <?hi there
-	    PROC_INST_ENDING: S++, // <?hi "there" ?
-	    OPEN_TAG: S++, // <strong
-	    OPEN_TAG_SLASH: S++, // <strong /
-	    ATTRIB: S++, // <a
-	    ATTRIB_NAME: S++, // <a foo
-	    ATTRIB_NAME_SAW_WHITE: S++, // <a foo _
-	    ATTRIB_VALUE: S++, // <a foo=
-	    ATTRIB_VALUE_QUOTED: S++, // <a foo="bar
-	    ATTRIB_VALUE_CLOSED: S++, // <a foo="bar"
-	    ATTRIB_VALUE_UNQUOTED: S++, // <a foo=bar
-	    ATTRIB_VALUE_ENTITY_Q: S++, // <foo bar="&quot;"
-	    ATTRIB_VALUE_ENTITY_U: S++, // <foo bar=&quot
-	    CLOSE_TAG: S++, // </a
-	    CLOSE_TAG_SAW_WHITE: S++, // </a   >
-	    SCRIPT: S++, // <script> ...
-	    SCRIPT_ENDING: S++ // <script> ... <
-	  }
+	sax.ENTITIES =
+	{ "amp" : "&"
+	, "gt" : ">"
+	, "lt" : "<"
+	, "quot" : "\""
+	, "apos" : "'"
+	, "AElig" : 198
+	, "Aacute" : 193
+	, "Acirc" : 194
+	, "Agrave" : 192
+	, "Aring" : 197
+	, "Atilde" : 195
+	, "Auml" : 196
+	, "Ccedil" : 199
+	, "ETH" : 208
+	, "Eacute" : 201
+	, "Ecirc" : 202
+	, "Egrave" : 200
+	, "Euml" : 203
+	, "Iacute" : 205
+	, "Icirc" : 206
+	, "Igrave" : 204
+	, "Iuml" : 207
+	, "Ntilde" : 209
+	, "Oacute" : 211
+	, "Ocirc" : 212
+	, "Ograve" : 210
+	, "Oslash" : 216
+	, "Otilde" : 213
+	, "Ouml" : 214
+	, "THORN" : 222
+	, "Uacute" : 218
+	, "Ucirc" : 219
+	, "Ugrave" : 217
+	, "Uuml" : 220
+	, "Yacute" : 221
+	, "aacute" : 225
+	, "acirc" : 226
+	, "aelig" : 230
+	, "agrave" : 224
+	, "aring" : 229
+	, "atilde" : 227
+	, "auml" : 228
+	, "ccedil" : 231
+	, "eacute" : 233
+	, "ecirc" : 234
+	, "egrave" : 232
+	, "eth" : 240
+	, "euml" : 235
+	, "iacute" : 237
+	, "icirc" : 238
+	, "igrave" : 236
+	, "iuml" : 239
+	, "ntilde" : 241
+	, "oacute" : 243
+	, "ocirc" : 244
+	, "ograve" : 242
+	, "oslash" : 248
+	, "otilde" : 245
+	, "ouml" : 246
+	, "szlig" : 223
+	, "thorn" : 254
+	, "uacute" : 250
+	, "ucirc" : 251
+	, "ugrave" : 249
+	, "uuml" : 252
+	, "yacute" : 253
+	, "yuml" : 255
+	, "copy" : 169
+	, "reg" : 174
+	, "nbsp" : 160
+	, "iexcl" : 161
+	, "cent" : 162
+	, "pound" : 163
+	, "curren" : 164
+	, "yen" : 165
+	, "brvbar" : 166
+	, "sect" : 167
+	, "uml" : 168
+	, "ordf" : 170
+	, "laquo" : 171
+	, "not" : 172
+	, "shy" : 173
+	, "macr" : 175
+	, "deg" : 176
+	, "plusmn" : 177
+	, "sup1" : 185
+	, "sup2" : 178
+	, "sup3" : 179
+	, "acute" : 180
+	, "micro" : 181
+	, "para" : 182
+	, "middot" : 183
+	, "cedil" : 184
+	, "ordm" : 186
+	, "raquo" : 187
+	, "frac14" : 188
+	, "frac12" : 189
+	, "frac34" : 190
+	, "iquest" : 191
+	, "times" : 215
+	, "divide" : 247
+	, "OElig" : 338
+	, "oelig" : 339
+	, "Scaron" : 352
+	, "scaron" : 353
+	, "Yuml" : 376
+	, "fnof" : 402
+	, "circ" : 710
+	, "tilde" : 732
+	, "Alpha" : 913
+	, "Beta" : 914
+	, "Gamma" : 915
+	, "Delta" : 916
+	, "Epsilon" : 917
+	, "Zeta" : 918
+	, "Eta" : 919
+	, "Theta" : 920
+	, "Iota" : 921
+	, "Kappa" : 922
+	, "Lambda" : 923
+	, "Mu" : 924
+	, "Nu" : 925
+	, "Xi" : 926
+	, "Omicron" : 927
+	, "Pi" : 928
+	, "Rho" : 929
+	, "Sigma" : 931
+	, "Tau" : 932
+	, "Upsilon" : 933
+	, "Phi" : 934
+	, "Chi" : 935
+	, "Psi" : 936
+	, "Omega" : 937
+	, "alpha" : 945
+	, "beta" : 946
+	, "gamma" : 947
+	, "delta" : 948
+	, "epsilon" : 949
+	, "zeta" : 950
+	, "eta" : 951
+	, "theta" : 952
+	, "iota" : 953
+	, "kappa" : 954
+	, "lambda" : 955
+	, "mu" : 956
+	, "nu" : 957
+	, "xi" : 958
+	, "omicron" : 959
+	, "pi" : 960
+	, "rho" : 961
+	, "sigmaf" : 962
+	, "sigma" : 963
+	, "tau" : 964
+	, "upsilon" : 965
+	, "phi" : 966
+	, "chi" : 967
+	, "psi" : 968
+	, "omega" : 969
+	, "thetasym" : 977
+	, "upsih" : 978
+	, "piv" : 982
+	, "ensp" : 8194
+	, "emsp" : 8195
+	, "thinsp" : 8201
+	, "zwnj" : 8204
+	, "zwj" : 8205
+	, "lrm" : 8206
+	, "rlm" : 8207
+	, "ndash" : 8211
+	, "mdash" : 8212
+	, "lsquo" : 8216
+	, "rsquo" : 8217
+	, "sbquo" : 8218
+	, "ldquo" : 8220
+	, "rdquo" : 8221
+	, "bdquo" : 8222
+	, "dagger" : 8224
+	, "Dagger" : 8225
+	, "bull" : 8226
+	, "hellip" : 8230
+	, "permil" : 8240
+	, "prime" : 8242
+	, "Prime" : 8243
+	, "lsaquo" : 8249
+	, "rsaquo" : 8250
+	, "oline" : 8254
+	, "frasl" : 8260
+	, "euro" : 8364
+	, "image" : 8465
+	, "weierp" : 8472
+	, "real" : 8476
+	, "trade" : 8482
+	, "alefsym" : 8501
+	, "larr" : 8592
+	, "uarr" : 8593
+	, "rarr" : 8594
+	, "darr" : 8595
+	, "harr" : 8596
+	, "crarr" : 8629
+	, "lArr" : 8656
+	, "uArr" : 8657
+	, "rArr" : 8658
+	, "dArr" : 8659
+	, "hArr" : 8660
+	, "forall" : 8704
+	, "part" : 8706
+	, "exist" : 8707
+	, "empty" : 8709
+	, "nabla" : 8711
+	, "isin" : 8712
+	, "notin" : 8713
+	, "ni" : 8715
+	, "prod" : 8719
+	, "sum" : 8721
+	, "minus" : 8722
+	, "lowast" : 8727
+	, "radic" : 8730
+	, "prop" : 8733
+	, "infin" : 8734
+	, "ang" : 8736
+	, "and" : 8743
+	, "or" : 8744
+	, "cap" : 8745
+	, "cup" : 8746
+	, "int" : 8747
+	, "there4" : 8756
+	, "sim" : 8764
+	, "cong" : 8773
+	, "asymp" : 8776
+	, "ne" : 8800
+	, "equiv" : 8801
+	, "le" : 8804
+	, "ge" : 8805
+	, "sub" : 8834
+	, "sup" : 8835
+	, "nsub" : 8836
+	, "sube" : 8838
+	, "supe" : 8839
+	, "oplus" : 8853
+	, "otimes" : 8855
+	, "perp" : 8869
+	, "sdot" : 8901
+	, "lceil" : 8968
+	, "rceil" : 8969
+	, "lfloor" : 8970
+	, "rfloor" : 8971
+	, "lang" : 9001
+	, "rang" : 9002
+	, "loz" : 9674
+	, "spades" : 9824
+	, "clubs" : 9827
+	, "hearts" : 9829
+	, "diams" : 9830
+	}
 	
-	  sax.XML_ENTITIES = {
-	    'amp': '&',
-	    'gt': '>',
-	    'lt': '<',
-	    'quot': '"',
-	    'apos': "'"
-	  }
-	
-	  sax.ENTITIES = {
-	    'amp': '&',
-	    'gt': '>',
-	    'lt': '<',
-	    'quot': '"',
-	    'apos': "'",
-	    'AElig': 198,
-	    'Aacute': 193,
-	    'Acirc': 194,
-	    'Agrave': 192,
-	    'Aring': 197,
-	    'Atilde': 195,
-	    'Auml': 196,
-	    'Ccedil': 199,
-	    'ETH': 208,
-	    'Eacute': 201,
-	    'Ecirc': 202,
-	    'Egrave': 200,
-	    'Euml': 203,
-	    'Iacute': 205,
-	    'Icirc': 206,
-	    'Igrave': 204,
-	    'Iuml': 207,
-	    'Ntilde': 209,
-	    'Oacute': 211,
-	    'Ocirc': 212,
-	    'Ograve': 210,
-	    'Oslash': 216,
-	    'Otilde': 213,
-	    'Ouml': 214,
-	    'THORN': 222,
-	    'Uacute': 218,
-	    'Ucirc': 219,
-	    'Ugrave': 217,
-	    'Uuml': 220,
-	    'Yacute': 221,
-	    'aacute': 225,
-	    'acirc': 226,
-	    'aelig': 230,
-	    'agrave': 224,
-	    'aring': 229,
-	    'atilde': 227,
-	    'auml': 228,
-	    'ccedil': 231,
-	    'eacute': 233,
-	    'ecirc': 234,
-	    'egrave': 232,
-	    'eth': 240,
-	    'euml': 235,
-	    'iacute': 237,
-	    'icirc': 238,
-	    'igrave': 236,
-	    'iuml': 239,
-	    'ntilde': 241,
-	    'oacute': 243,
-	    'ocirc': 244,
-	    'ograve': 242,
-	    'oslash': 248,
-	    'otilde': 245,
-	    'ouml': 246,
-	    'szlig': 223,
-	    'thorn': 254,
-	    'uacute': 250,
-	    'ucirc': 251,
-	    'ugrave': 249,
-	    'uuml': 252,
-	    'yacute': 253,
-	    'yuml': 255,
-	    'copy': 169,
-	    'reg': 174,
-	    'nbsp': 160,
-	    'iexcl': 161,
-	    'cent': 162,
-	    'pound': 163,
-	    'curren': 164,
-	    'yen': 165,
-	    'brvbar': 166,
-	    'sect': 167,
-	    'uml': 168,
-	    'ordf': 170,
-	    'laquo': 171,
-	    'not': 172,
-	    'shy': 173,
-	    'macr': 175,
-	    'deg': 176,
-	    'plusmn': 177,
-	    'sup1': 185,
-	    'sup2': 178,
-	    'sup3': 179,
-	    'acute': 180,
-	    'micro': 181,
-	    'para': 182,
-	    'middot': 183,
-	    'cedil': 184,
-	    'ordm': 186,
-	    'raquo': 187,
-	    'frac14': 188,
-	    'frac12': 189,
-	    'frac34': 190,
-	    'iquest': 191,
-	    'times': 215,
-	    'divide': 247,
-	    'OElig': 338,
-	    'oelig': 339,
-	    'Scaron': 352,
-	    'scaron': 353,
-	    'Yuml': 376,
-	    'fnof': 402,
-	    'circ': 710,
-	    'tilde': 732,
-	    'Alpha': 913,
-	    'Beta': 914,
-	    'Gamma': 915,
-	    'Delta': 916,
-	    'Epsilon': 917,
-	    'Zeta': 918,
-	    'Eta': 919,
-	    'Theta': 920,
-	    'Iota': 921,
-	    'Kappa': 922,
-	    'Lambda': 923,
-	    'Mu': 924,
-	    'Nu': 925,
-	    'Xi': 926,
-	    'Omicron': 927,
-	    'Pi': 928,
-	    'Rho': 929,
-	    'Sigma': 931,
-	    'Tau': 932,
-	    'Upsilon': 933,
-	    'Phi': 934,
-	    'Chi': 935,
-	    'Psi': 936,
-	    'Omega': 937,
-	    'alpha': 945,
-	    'beta': 946,
-	    'gamma': 947,
-	    'delta': 948,
-	    'epsilon': 949,
-	    'zeta': 950,
-	    'eta': 951,
-	    'theta': 952,
-	    'iota': 953,
-	    'kappa': 954,
-	    'lambda': 955,
-	    'mu': 956,
-	    'nu': 957,
-	    'xi': 958,
-	    'omicron': 959,
-	    'pi': 960,
-	    'rho': 961,
-	    'sigmaf': 962,
-	    'sigma': 963,
-	    'tau': 964,
-	    'upsilon': 965,
-	    'phi': 966,
-	    'chi': 967,
-	    'psi': 968,
-	    'omega': 969,
-	    'thetasym': 977,
-	    'upsih': 978,
-	    'piv': 982,
-	    'ensp': 8194,
-	    'emsp': 8195,
-	    'thinsp': 8201,
-	    'zwnj': 8204,
-	    'zwj': 8205,
-	    'lrm': 8206,
-	    'rlm': 8207,
-	    'ndash': 8211,
-	    'mdash': 8212,
-	    'lsquo': 8216,
-	    'rsquo': 8217,
-	    'sbquo': 8218,
-	    'ldquo': 8220,
-	    'rdquo': 8221,
-	    'bdquo': 8222,
-	    'dagger': 8224,
-	    'Dagger': 8225,
-	    'bull': 8226,
-	    'hellip': 8230,
-	    'permil': 8240,
-	    'prime': 8242,
-	    'Prime': 8243,
-	    'lsaquo': 8249,
-	    'rsaquo': 8250,
-	    'oline': 8254,
-	    'frasl': 8260,
-	    'euro': 8364,
-	    'image': 8465,
-	    'weierp': 8472,
-	    'real': 8476,
-	    'trade': 8482,
-	    'alefsym': 8501,
-	    'larr': 8592,
-	    'uarr': 8593,
-	    'rarr': 8594,
-	    'darr': 8595,
-	    'harr': 8596,
-	    'crarr': 8629,
-	    'lArr': 8656,
-	    'uArr': 8657,
-	    'rArr': 8658,
-	    'dArr': 8659,
-	    'hArr': 8660,
-	    'forall': 8704,
-	    'part': 8706,
-	    'exist': 8707,
-	    'empty': 8709,
-	    'nabla': 8711,
-	    'isin': 8712,
-	    'notin': 8713,
-	    'ni': 8715,
-	    'prod': 8719,
-	    'sum': 8721,
-	    'minus': 8722,
-	    'lowast': 8727,
-	    'radic': 8730,
-	    'prop': 8733,
-	    'infin': 8734,
-	    'ang': 8736,
-	    'and': 8743,
-	    'or': 8744,
-	    'cap': 8745,
-	    'cup': 8746,
-	    'int': 8747,
-	    'there4': 8756,
-	    'sim': 8764,
-	    'cong': 8773,
-	    'asymp': 8776,
-	    'ne': 8800,
-	    'equiv': 8801,
-	    'le': 8804,
-	    'ge': 8805,
-	    'sub': 8834,
-	    'sup': 8835,
-	    'nsub': 8836,
-	    'sube': 8838,
-	    'supe': 8839,
-	    'oplus': 8853,
-	    'otimes': 8855,
-	    'perp': 8869,
-	    'sdot': 8901,
-	    'lceil': 8968,
-	    'rceil': 8969,
-	    'lfloor': 8970,
-	    'rfloor': 8971,
-	    'lang': 9001,
-	    'rang': 9002,
-	    'loz': 9674,
-	    'spades': 9824,
-	    'clubs': 9827,
-	    'hearts': 9829,
-	    'diams': 9830
-	  }
-	
-	  Object.keys(sax.ENTITIES).forEach(function (key) {
+	Object.keys(sax.ENTITIES).forEach(function (key) {
 	    var e = sax.ENTITIES[key]
 	    var s = typeof e === 'number' ? String.fromCharCode(e) : e
 	    sax.ENTITIES[key] = s
-	  })
+	})
 	
-	  for (var s in sax.STATE) {
-	    sax.STATE[sax.STATE[s]] = s
+	for (var S in sax.STATE) sax.STATE[sax.STATE[S]] = S
+	
+	// shorthand
+	S = sax.STATE
+	
+	function emit (parser, event, data) {
+	  parser[event] && parser[event](data)
+	}
+	
+	function emitNode (parser, nodeType, data) {
+	  if (parser.textNode) closeText(parser)
+	  emit(parser, nodeType, data)
+	}
+	
+	function closeText (parser) {
+	  parser.textNode = textopts(parser.opt, parser.textNode)
+	  if (parser.textNode) emit(parser, "ontext", parser.textNode)
+	  parser.textNode = ""
+	}
+	
+	function textopts (opt, text) {
+	  if (opt.trim) text = text.trim()
+	  if (opt.normalize) text = text.replace(/\s+/g, " ")
+	  return text
+	}
+	
+	function error (parser, er) {
+	  closeText(parser)
+	  if (parser.trackPosition) {
+	    er += "\nLine: "+parser.line+
+	          "\nColumn: "+parser.column+
+	          "\nChar: "+parser.c
+	  }
+	  er = new Error(er)
+	  parser.error = er
+	  emit(parser, "onerror", er)
+	  return parser
+	}
+	
+	function end (parser) {
+	  if (!parser.closedRoot) strictFail(parser, "Unclosed root tag")
+	  if ((parser.state !== S.BEGIN) && (parser.state !== S.TEXT)) error(parser, "Unexpected end")
+	  closeText(parser)
+	  parser.c = ""
+	  parser.closed = true
+	  emit(parser, "onend")
+	  SAXParser.call(parser, parser.strict, parser.opt)
+	  return parser
+	}
+	
+	function strictFail (parser, message) {
+	  if (typeof parser !== 'object' || !(parser instanceof SAXParser))
+	    throw new Error('bad call to strictFail');
+	  if (parser.strict) error(parser, message)
+	}
+	
+	function newTag (parser) {
+	  if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]()
+	  var parent = parser.tags[parser.tags.length - 1] || parser
+	    , tag = parser.tag = { name : parser.tagName, attributes : {} }
+	
+	  // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
+	  if (parser.opt.xmlns) tag.ns = parent.ns
+	  parser.attribList.length = 0
+	}
+	
+	function qname (name, attribute) {
+	  var i = name.indexOf(":")
+	    , qualName = i < 0 ? [ "", name ] : name.split(":")
+	    , prefix = qualName[0]
+	    , local = qualName[1]
+	
+	  // <x "xmlns"="http://foo">
+	  if (attribute && name === "xmlns") {
+	    prefix = "xmlns"
+	    local = ""
 	  }
 	
-	  // shorthand
-	  S = sax.STATE
+	  return { prefix: prefix, local: local }
+	}
 	
-	  function emit (parser, event, data) {
-	    parser[event] && parser[event](data)
-	  }
+	function attrib (parser) {
+	  if (!parser.strict) parser.attribName = parser.attribName[parser.looseCase]()
 	
-	  function emitNode (parser, nodeType, data) {
-	    if (parser.textNode) closeText(parser)
-	    emit(parser, nodeType, data)
-	  }
-	
-	  function closeText (parser) {
-	    parser.textNode = textopts(parser.opt, parser.textNode)
-	    if (parser.textNode) emit(parser, 'ontext', parser.textNode)
-	    parser.textNode = ''
-	  }
-	
-	  function textopts (opt, text) {
-	    if (opt.trim) text = text.trim()
-	    if (opt.normalize) text = text.replace(/\s+/g, ' ')
-	    return text
-	  }
-	
-	  function error (parser, er) {
-	    closeText(parser)
-	    if (parser.trackPosition) {
-	      er += '\nLine: ' + parser.line +
-	        '\nColumn: ' + parser.column +
-	        '\nChar: ' + parser.c
-	    }
-	    er = new Error(er)
-	    parser.error = er
-	    emit(parser, 'onerror', er)
-	    return parser
-	  }
-	
-	  function end (parser) {
-	    if (parser.sawRoot && !parser.closedRoot) strictFail(parser, 'Unclosed root tag')
-	    if ((parser.state !== S.BEGIN) &&
-	      (parser.state !== S.BEGIN_WHITESPACE) &&
-	      (parser.state !== S.TEXT)) {
-	      error(parser, 'Unexpected end')
-	    }
-	    closeText(parser)
-	    parser.c = ''
-	    parser.closed = true
-	    emit(parser, 'onend')
-	    SAXParser.call(parser, parser.strict, parser.opt)
-	    return parser
-	  }
-	
-	  function strictFail (parser, message) {
-	    if (typeof parser !== 'object' || !(parser instanceof SAXParser)) {
-	      throw new Error('bad call to strictFail')
-	    }
-	    if (parser.strict) {
-	      error(parser, message)
-	    }
-	  }
-	
-	  function newTag (parser) {
-	    if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]()
-	    var parent = parser.tags[parser.tags.length - 1] || parser
-	    var tag = parser.tag = { name: parser.tagName, attributes: {} }
-	
-	    // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
-	    if (parser.opt.xmlns) {
-	      tag.ns = parent.ns
-	    }
-	    parser.attribList.length = 0
-	    emitNode(parser, 'onopentagstart', tag)
-	  }
-	
-	  function qname (name, attribute) {
-	    var i = name.indexOf(':')
-	    var qualName = i < 0 ? [ '', name ] : name.split(':')
-	    var prefix = qualName[0]
-	    var local = qualName[1]
-	
-	    // <x "xmlns"="http://foo">
-	    if (attribute && name === 'xmlns') {
-	      prefix = 'xmlns'
-	      local = ''
-	    }
-	
-	    return { prefix: prefix, local: local }
-	  }
-	
-	  function attrib (parser) {
-	    if (!parser.strict) {
-	      parser.attribName = parser.attribName[parser.looseCase]()
-	    }
-	
-	    if (parser.attribList.indexOf(parser.attribName) !== -1 ||
+	  if (parser.attribList.indexOf(parser.attribName) !== -1 ||
 	      parser.tag.attributes.hasOwnProperty(parser.attribName)) {
-	      parser.attribName = parser.attribValue = ''
-	      return
+	    return parser.attribName = parser.attribValue = ""
+	  }
+	
+	  if (parser.opt.xmlns) {
+	    var qn = qname(parser.attribName, true)
+	      , prefix = qn.prefix
+	      , local = qn.local
+	
+	    if (prefix === "xmlns") {
+	      // namespace binding attribute; push the binding into scope
+	      if (local === "xml" && parser.attribValue !== XML_NAMESPACE) {
+	        strictFail( parser
+	                  , "xml: prefix must be bound to " + XML_NAMESPACE + "\n"
+	                  + "Actual: " + parser.attribValue )
+	      } else if (local === "xmlns" && parser.attribValue !== XMLNS_NAMESPACE) {
+	        strictFail( parser
+	                  , "xmlns: prefix must be bound to " + XMLNS_NAMESPACE + "\n"
+	                  + "Actual: " + parser.attribValue )
+	      } else {
+	        var tag = parser.tag
+	          , parent = parser.tags[parser.tags.length - 1] || parser
+	        if (tag.ns === parent.ns) {
+	          tag.ns = Object.create(parent.ns)
+	        }
+	        tag.ns[local] = parser.attribValue
+	      }
 	    }
 	
-	    if (parser.opt.xmlns) {
-	      var qn = qname(parser.attribName, true)
-	      var prefix = qn.prefix
-	      var local = qn.local
+	    // defer onattribute events until all attributes have been seen
+	    // so any new bindings can take effect; preserve attribute order
+	    // so deferred events can be emitted in document order
+	    parser.attribList.push([parser.attribName, parser.attribValue])
+	  } else {
+	    // in non-xmlns mode, we can emit the event right away
+	    parser.tag.attributes[parser.attribName] = parser.attribValue
+	    emitNode( parser
+	            , "onattribute"
+	            , { name: parser.attribName
+	              , value: parser.attribValue } )
+	  }
 	
-	      if (prefix === 'xmlns') {
-	        // namespace binding attribute. push the binding into scope
-	        if (local === 'xml' && parser.attribValue !== XML_NAMESPACE) {
-	          strictFail(parser,
-	            'xml: prefix must be bound to ' + XML_NAMESPACE + '\n' +
-	            'Actual: ' + parser.attribValue)
-	        } else if (local === 'xmlns' && parser.attribValue !== XMLNS_NAMESPACE) {
-	          strictFail(parser,
-	            'xmlns: prefix must be bound to ' + XMLNS_NAMESPACE + '\n' +
-	            'Actual: ' + parser.attribValue)
-	        } else {
-	          var tag = parser.tag
-	          var parent = parser.tags[parser.tags.length - 1] || parser
-	          if (tag.ns === parent.ns) {
-	            tag.ns = Object.create(parent.ns)
-	          }
-	          tag.ns[local] = parser.attribValue
-	        }
-	      }
+	  parser.attribName = parser.attribValue = ""
+	}
 	
-	      // defer onattribute events until all attributes have been seen
-	      // so any new bindings can take effect. preserve attribute order
-	      // so deferred events can be emitted in document order
-	      parser.attribList.push([parser.attribName, parser.attribValue])
-	    } else {
-	      // in non-xmlns mode, we can emit the event right away
-	      parser.tag.attributes[parser.attribName] = parser.attribValue
-	      emitNode(parser, 'onattribute', {
-	        name: parser.attribName,
-	        value: parser.attribValue
+	function openTag (parser, selfClosing) {
+	  if (parser.opt.xmlns) {
+	    // emit namespace binding events
+	    var tag = parser.tag
+	
+	    // add namespace info to tag
+	    var qn = qname(parser.tagName)
+	    tag.prefix = qn.prefix
+	    tag.local = qn.local
+	    tag.uri = tag.ns[qn.prefix] || ""
+	
+	    if (tag.prefix && !tag.uri) {
+	      strictFail(parser, "Unbound namespace prefix: "
+	                       + JSON.stringify(parser.tagName))
+	      tag.uri = qn.prefix
+	    }
+	
+	    var parent = parser.tags[parser.tags.length - 1] || parser
+	    if (tag.ns && parent.ns !== tag.ns) {
+	      Object.keys(tag.ns).forEach(function (p) {
+	        emitNode( parser
+	                , "onopennamespace"
+	                , { prefix: p , uri: tag.ns[p] } )
 	      })
 	    }
 	
-	    parser.attribName = parser.attribValue = ''
-	  }
+	    // handle deferred onattribute events
+	    // Note: do not apply default ns to attributes:
+	    //   http://www.w3.org/TR/REC-xml-names/#defaulting
+	    for (var i = 0, l = parser.attribList.length; i < l; i ++) {
+	      var nv = parser.attribList[i]
+	      var name = nv[0]
+	        , value = nv[1]
+	        , qualName = qname(name, true)
+	        , prefix = qualName.prefix
+	        , local = qualName.local
+	        , uri = prefix == "" ? "" : (tag.ns[prefix] || "")
+	        , a = { name: name
+	              , value: value
+	              , prefix: prefix
+	              , local: local
+	              , uri: uri
+	              }
 	
-	  function openTag (parser, selfClosing) {
-	    if (parser.opt.xmlns) {
-	      // emit namespace binding events
-	      var tag = parser.tag
-	
-	      // add namespace info to tag
-	      var qn = qname(parser.tagName)
-	      tag.prefix = qn.prefix
-	      tag.local = qn.local
-	      tag.uri = tag.ns[qn.prefix] || ''
-	
-	      if (tag.prefix && !tag.uri) {
-	        strictFail(parser, 'Unbound namespace prefix: ' +
-	          JSON.stringify(parser.tagName))
-	        tag.uri = qn.prefix
+	      // if there's any attributes with an undefined namespace,
+	      // then fail on them now.
+	      if (prefix && prefix != "xmlns" && !uri) {
+	        strictFail(parser, "Unbound namespace prefix: "
+	                         + JSON.stringify(prefix))
+	        a.uri = prefix
 	      }
-	
-	      var parent = parser.tags[parser.tags.length - 1] || parser
-	      if (tag.ns && parent.ns !== tag.ns) {
-	        Object.keys(tag.ns).forEach(function (p) {
-	          emitNode(parser, 'onopennamespace', {
-	            prefix: p,
-	            uri: tag.ns[p]
-	          })
-	        })
-	      }
-	
-	      // handle deferred onattribute events
-	      // Note: do not apply default ns to attributes:
-	      //   http://www.w3.org/TR/REC-xml-names/#defaulting
-	      for (var i = 0, l = parser.attribList.length; i < l; i++) {
-	        var nv = parser.attribList[i]
-	        var name = nv[0]
-	        var value = nv[1]
-	        var qualName = qname(name, true)
-	        var prefix = qualName.prefix
-	        var local = qualName.local
-	        var uri = prefix === '' ? '' : (tag.ns[prefix] || '')
-	        var a = {
-	          name: name,
-	          value: value,
-	          prefix: prefix,
-	          local: local,
-	          uri: uri
-	        }
-	
-	        // if there's any attributes with an undefined namespace,
-	        // then fail on them now.
-	        if (prefix && prefix !== 'xmlns' && !uri) {
-	          strictFail(parser, 'Unbound namespace prefix: ' +
-	            JSON.stringify(prefix))
-	          a.uri = prefix
-	        }
-	        parser.tag.attributes[name] = a
-	        emitNode(parser, 'onattribute', a)
-	      }
-	      parser.attribList.length = 0
+	      parser.tag.attributes[name] = a
+	      emitNode(parser, "onattribute", a)
 	    }
-	
-	    parser.tag.isSelfClosing = !!selfClosing
-	
-	    // process the tag
-	    parser.sawRoot = true
-	    parser.tags.push(parser.tag)
-	    emitNode(parser, 'onopentag', parser.tag)
-	    if (!selfClosing) {
-	      // special case for <script> in non-strict mode.
-	      if (!parser.noscript && parser.tagName.toLowerCase() === 'script') {
-	        parser.state = S.SCRIPT
-	      } else {
-	        parser.state = S.TEXT
-	      }
-	      parser.tag = null
-	      parser.tagName = ''
-	    }
-	    parser.attribName = parser.attribValue = ''
 	    parser.attribList.length = 0
 	  }
 	
-	  function closeTag (parser) {
-	    if (!parser.tagName) {
-	      strictFail(parser, 'Weird empty close tag.')
-	      parser.textNode += '</>'
+	  parser.tag.isSelfClosing = !!selfClosing
+	
+	  // process the tag
+	  parser.sawRoot = true
+	  parser.tags.push(parser.tag)
+	  emitNode(parser, "onopentag", parser.tag)
+	  if (!selfClosing) {
+	    // special case for <script> in non-strict mode.
+	    if (!parser.noscript && parser.tagName.toLowerCase() === "script") {
+	      parser.state = S.SCRIPT
+	    } else {
 	      parser.state = S.TEXT
-	      return
 	    }
+	    parser.tag = null
+	    parser.tagName = ""
+	  }
+	  parser.attribName = parser.attribValue = ""
+	  parser.attribList.length = 0
+	}
 	
-	    if (parser.script) {
-	      if (parser.tagName !== 'script') {
-	        parser.script += '</' + parser.tagName + '>'
-	        parser.tagName = ''
-	        parser.state = S.SCRIPT
-	        return
-	      }
-	      emitNode(parser, 'onscript', parser.script)
-	      parser.script = ''
-	    }
-	
-	    // first make sure that the closing tag actually exists.
-	    // <a><b></c></b></a> will close everything, otherwise.
-	    var t = parser.tags.length
-	    var tagName = parser.tagName
-	    if (!parser.strict) {
-	      tagName = tagName[parser.looseCase]()
-	    }
-	    var closeTo = tagName
-	    while (t--) {
-	      var close = parser.tags[t]
-	      if (close.name !== closeTo) {
-	        // fail the first time in strict mode
-	        strictFail(parser, 'Unexpected close tag')
-	      } else {
-	        break
-	      }
-	    }
-	
-	    // didn't find it.  we already failed for strict, so just abort.
-	    if (t < 0) {
-	      strictFail(parser, 'Unmatched closing tag: ' + parser.tagName)
-	      parser.textNode += '</' + parser.tagName + '>'
-	      parser.state = S.TEXT
-	      return
-	    }
-	    parser.tagName = tagName
-	    var s = parser.tags.length
-	    while (s-- > t) {
-	      var tag = parser.tag = parser.tags.pop()
-	      parser.tagName = parser.tag.name
-	      emitNode(parser, 'onclosetag', parser.tagName)
-	
-	      var x = {}
-	      for (var i in tag.ns) {
-	        x[i] = tag.ns[i]
-	      }
-	
-	      var parent = parser.tags[parser.tags.length - 1] || parser
-	      if (parser.opt.xmlns && tag.ns !== parent.ns) {
-	        // remove namespace bindings introduced by tag
-	        Object.keys(tag.ns).forEach(function (p) {
-	          var n = tag.ns[p]
-	          emitNode(parser, 'onclosenamespace', { prefix: p, uri: n })
-	        })
-	      }
-	    }
-	    if (t === 0) parser.closedRoot = true
-	    parser.tagName = parser.attribValue = parser.attribName = ''
-	    parser.attribList.length = 0
+	function closeTag (parser) {
+	  if (!parser.tagName) {
+	    strictFail(parser, "Weird empty close tag.")
+	    parser.textNode += "</>"
 	    parser.state = S.TEXT
+	    return
 	  }
 	
-	  function parseEntity (parser) {
-	    var entity = parser.entity
-	    var entityLC = entity.toLowerCase()
-	    var num
-	    var numStr = ''
-	
-	    if (parser.ENTITIES[entity]) {
-	      return parser.ENTITIES[entity]
+	  if (parser.script) {
+	    if (parser.tagName !== "script") {
+	      parser.script += "</" + parser.tagName + ">"
+	      parser.tagName = ""
+	      parser.state = S.SCRIPT
+	      return
 	    }
-	    if (parser.ENTITIES[entityLC]) {
-	      return parser.ENTITIES[entityLC]
-	    }
-	    entity = entityLC
-	    if (entity.charAt(0) === '#') {
-	      if (entity.charAt(1) === 'x') {
-	        entity = entity.slice(2)
-	        num = parseInt(entity, 16)
-	        numStr = num.toString(16)
-	      } else {
-	        entity = entity.slice(1)
-	        num = parseInt(entity, 10)
-	        numStr = num.toString(10)
-	      }
-	    }
-	    entity = entity.replace(/^0+/, '')
-	    if (numStr.toLowerCase() !== entity) {
-	      strictFail(parser, 'Invalid character entity')
-	      return '&' + parser.entity + ';'
-	    }
-	
-	    return String.fromCodePoint(num)
+	    emitNode(parser, "onscript", parser.script)
+	    parser.script = ""
 	  }
 	
-	  function beginWhiteSpace (parser, c) {
-	    if (c === '<') {
-	      parser.state = S.OPEN_WAKA
-	      parser.startTagPosition = parser.position
-	    } else if (not(whitespace, c)) {
-	      // have to process this as a text node.
-	      // weird, but happens.
-	      strictFail(parser, 'Non-whitespace before first tag.')
-	      parser.textNode = c
-	      parser.state = S.TEXT
-	    }
+	  // first make sure that the closing tag actually exists.
+	  // <a><b></c></b></a> will close everything, otherwise.
+	  var t = parser.tags.length
+	  var tagName = parser.tagName
+	  if (!parser.strict) tagName = tagName[parser.looseCase]()
+	  var closeTo = tagName
+	  while (t --) {
+	    var close = parser.tags[t]
+	    if (close.name !== closeTo) {
+	      // fail the first time in strict mode
+	      strictFail(parser, "Unexpected close tag")
+	    } else break
 	  }
 	
-	  function charAt (chunk, i) {
-	    var result = ''
-	    if (i < chunk.length) {
-	      result = chunk.charAt(i)
+	  // didn't find it.  we already failed for strict, so just abort.
+	  if (t < 0) {
+	    strictFail(parser, "Unmatched closing tag: "+parser.tagName)
+	    parser.textNode += "</" + parser.tagName + ">"
+	    parser.state = S.TEXT
+	    return
+	  }
+	  parser.tagName = tagName
+	  var s = parser.tags.length
+	  while (s --> t) {
+	    var tag = parser.tag = parser.tags.pop()
+	    parser.tagName = parser.tag.name
+	    emitNode(parser, "onclosetag", parser.tagName)
+	
+	    var x = {}
+	    for (var i in tag.ns) x[i] = tag.ns[i]
+	
+	    var parent = parser.tags[parser.tags.length - 1] || parser
+	    if (parser.opt.xmlns && tag.ns !== parent.ns) {
+	      // remove namespace bindings introduced by tag
+	      Object.keys(tag.ns).forEach(function (p) {
+	        var n = tag.ns[p]
+	        emitNode(parser, "onclosenamespace", { prefix: p, uri: n })
+	      })
 	    }
-	    return result
+	  }
+	  if (t === 0) parser.closedRoot = true
+	  parser.tagName = parser.attribValue = parser.attribName = ""
+	  parser.attribList.length = 0
+	  parser.state = S.TEXT
+	}
+	
+	function parseEntity (parser) {
+	  var entity = parser.entity
+	    , entityLC = entity.toLowerCase()
+	    , num
+	    , numStr = ""
+	  if (parser.ENTITIES[entity])
+	    return parser.ENTITIES[entity]
+	  if (parser.ENTITIES[entityLC])
+	    return parser.ENTITIES[entityLC]
+	  entity = entityLC
+	  if (entity.charAt(0) === "#") {
+	    if (entity.charAt(1) === "x") {
+	      entity = entity.slice(2)
+	      num = parseInt(entity, 16)
+	      numStr = num.toString(16)
+	    } else {
+	      entity = entity.slice(1)
+	      num = parseInt(entity, 10)
+	      numStr = num.toString(10)
+	    }
+	  }
+	  entity = entity.replace(/^0+/, "")
+	  if (numStr.toLowerCase() !== entity) {
+	    strictFail(parser, "Invalid character entity")
+	    return "&"+parser.entity + ";"
 	  }
 	
-	  function write (chunk) {
-	    var parser = this
-	    if (this.error) {
-	      throw this.error
+	  return String.fromCodePoint(num)
+	}
+	
+	function write (chunk) {
+	  var parser = this
+	  if (this.error) throw this.error
+	  if (parser.closed) return error(parser,
+	    "Cannot write after close. Assign an onready handler.")
+	  if (chunk === null) return end(parser)
+	  var i = 0, c = ""
+	  while (parser.c = c = chunk.charAt(i++)) {
+	    if (parser.trackPosition) {
+	      parser.position ++
+	      if (c === "\n") {
+	        parser.line ++
+	        parser.column = 0
+	      } else parser.column ++
 	    }
-	    if (parser.closed) {
-	      return error(parser,
-	        'Cannot write after close. Assign an onready handler.')
-	    }
-	    if (chunk === null) {
-	      return end(parser)
-	    }
-	    if (typeof chunk === 'object') {
-	      chunk = chunk.toString()
-	    }
-	    var i = 0
-	    var c = ''
-	    while (true) {
-	      c = charAt(chunk, i++)
-	      parser.c = c
-	      if (!c) {
-	        break
-	      }
-	      if (parser.trackPosition) {
-	        parser.position++
-	        if (c === '\n') {
-	          parser.line++
-	          parser.column = 0
+	    switch (parser.state) {
+	
+	      case S.BEGIN:
+	        if (c === "<") {
+	          parser.state = S.OPEN_WAKA
+	          parser.startTagPosition = parser.position
+	        } else if (not(whitespace,c)) {
+	          // have to process this as a text node.
+	          // weird, but happens.
+	          strictFail(parser, "Non-whitespace before first tag.")
+	          parser.textNode = c
+	          parser.state = S.TEXT
+	        }
+	      continue
+	
+	      case S.TEXT:
+	        if (parser.sawRoot && !parser.closedRoot) {
+	          var starti = i-1
+	          while (c && c!=="<" && c!=="&") {
+	            c = chunk.charAt(i++)
+	            if (c && parser.trackPosition) {
+	              parser.position ++
+	              if (c === "\n") {
+	                parser.line ++
+	                parser.column = 0
+	              } else parser.column ++
+	            }
+	          }
+	          parser.textNode += chunk.substring(starti, i-1)
+	        }
+	        if (c === "<") {
+	          parser.state = S.OPEN_WAKA
+	          parser.startTagPosition = parser.position
 	        } else {
-	          parser.column++
+	          if (not(whitespace, c) && (!parser.sawRoot || parser.closedRoot))
+	            strictFail(parser, "Text data outside of root node.")
+	          if (c === "&") parser.state = S.TEXT_ENTITY
+	          else parser.textNode += c
 	        }
-	      }
-	      switch (parser.state) {
-	        case S.BEGIN:
-	          parser.state = S.BEGIN_WHITESPACE
-	          if (c === '\uFEFF') {
-	            continue
-	          }
-	          beginWhiteSpace(parser, c)
-	          continue
+	      continue
 	
-	        case S.BEGIN_WHITESPACE:
-	          beginWhiteSpace(parser, c)
-	          continue
+	      case S.SCRIPT:
+	        // only non-strict
+	        if (c === "<") {
+	          parser.state = S.SCRIPT_ENDING
+	        } else parser.script += c
+	      continue
 	
-	        case S.TEXT:
-	          if (parser.sawRoot && !parser.closedRoot) {
-	            var starti = i - 1
-	            while (c && c !== '<' && c !== '&') {
-	              c = charAt(chunk, i++)
-	              if (c && parser.trackPosition) {
-	                parser.position++
-	                if (c === '\n') {
-	                  parser.line++
-	                  parser.column = 0
-	                } else {
-	                  parser.column++
-	                }
-	              }
-	            }
-	            parser.textNode += chunk.substring(starti, i - 1)
-	          }
-	          if (c === '<' && !(parser.sawRoot && parser.closedRoot && !parser.strict)) {
-	            parser.state = S.OPEN_WAKA
-	            parser.startTagPosition = parser.position
-	          } else {
-	            if (not(whitespace, c) && (!parser.sawRoot || parser.closedRoot)) {
-	              strictFail(parser, 'Text data outside of root node.')
-	            }
-	            if (c === '&') {
-	              parser.state = S.TEXT_ENTITY
-	            } else {
-	              parser.textNode += c
-	            }
-	          }
-	          continue
+	      case S.SCRIPT_ENDING:
+	        if (c === "/") {
+	          parser.state = S.CLOSE_TAG
+	        } else {
+	          parser.script += "<" + c
+	          parser.state = S.SCRIPT
+	        }
+	      continue
 	
-	        case S.SCRIPT:
-	          // only non-strict
-	          if (c === '<') {
-	            parser.state = S.SCRIPT_ENDING
-	          } else {
-	            parser.script += c
+	      case S.OPEN_WAKA:
+	        // either a /, ?, !, or text is coming next.
+	        if (c === "!") {
+	          parser.state = S.SGML_DECL
+	          parser.sgmlDecl = ""
+	        } else if (is(whitespace, c)) {
+	          // wait for it...
+	        } else if (is(nameStart,c)) {
+	          parser.state = S.OPEN_TAG
+	          parser.tagName = c
+	        } else if (c === "/") {
+	          parser.state = S.CLOSE_TAG
+	          parser.tagName = ""
+	        } else if (c === "?") {
+	          parser.state = S.PROC_INST
+	          parser.procInstName = parser.procInstBody = ""
+	        } else {
+	          strictFail(parser, "Unencoded <")
+	          // if there was some whitespace, then add that in.
+	          if (parser.startTagPosition + 1 < parser.position) {
+	            var pad = parser.position - parser.startTagPosition
+	            c = new Array(pad).join(" ") + c
 	          }
-	          continue
+	          parser.textNode += "<" + c
+	          parser.state = S.TEXT
+	        }
+	      continue
 	
-	        case S.SCRIPT_ENDING:
-	          if (c === '/') {
-	            parser.state = S.CLOSE_TAG
-	          } else {
-	            parser.script += '<' + c
-	            parser.state = S.SCRIPT
-	          }
-	          continue
-	
-	        case S.OPEN_WAKA:
-	          // either a /, ?, !, or text is coming next.
-	          if (c === '!') {
-	            parser.state = S.SGML_DECL
-	            parser.sgmlDecl = ''
-	          } else if (is(whitespace, c)) {
-	            // wait for it...
-	          } else if (is(nameStart, c)) {
-	            parser.state = S.OPEN_TAG
-	            parser.tagName = c
-	          } else if (c === '/') {
-	            parser.state = S.CLOSE_TAG
-	            parser.tagName = ''
-	          } else if (c === '?') {
-	            parser.state = S.PROC_INST
-	            parser.procInstName = parser.procInstBody = ''
-	          } else {
-	            strictFail(parser, 'Unencoded <')
-	            // if there was some whitespace, then add that in.
-	            if (parser.startTagPosition + 1 < parser.position) {
-	              var pad = parser.position - parser.startTagPosition
-	              c = new Array(pad).join(' ') + c
-	            }
-	            parser.textNode += '<' + c
-	            parser.state = S.TEXT
-	          }
-	          continue
-	
-	        case S.SGML_DECL:
-	          if ((parser.sgmlDecl + c).toUpperCase() === CDATA) {
-	            emitNode(parser, 'onopencdata')
-	            parser.state = S.CDATA
-	            parser.sgmlDecl = ''
-	            parser.cdata = ''
-	          } else if (parser.sgmlDecl + c === '--') {
-	            parser.state = S.COMMENT
-	            parser.comment = ''
-	            parser.sgmlDecl = ''
-	          } else if ((parser.sgmlDecl + c).toUpperCase() === DOCTYPE) {
-	            parser.state = S.DOCTYPE
-	            if (parser.doctype || parser.sawRoot) {
-	              strictFail(parser,
-	                'Inappropriately located doctype declaration')
-	            }
-	            parser.doctype = ''
-	            parser.sgmlDecl = ''
-	          } else if (c === '>') {
-	            emitNode(parser, 'onsgmldeclaration', parser.sgmlDecl)
-	            parser.sgmlDecl = ''
-	            parser.state = S.TEXT
-	          } else if (is(quote, c)) {
-	            parser.state = S.SGML_DECL_QUOTED
-	            parser.sgmlDecl += c
-	          } else {
-	            parser.sgmlDecl += c
-	          }
-	          continue
-	
-	        case S.SGML_DECL_QUOTED:
-	          if (c === parser.q) {
-	            parser.state = S.SGML_DECL
-	            parser.q = ''
-	          }
+	      case S.SGML_DECL:
+	        if ((parser.sgmlDecl+c).toUpperCase() === CDATA) {
+	          emitNode(parser, "onopencdata")
+	          parser.state = S.CDATA
+	          parser.sgmlDecl = ""
+	          parser.cdata = ""
+	        } else if (parser.sgmlDecl+c === "--") {
+	          parser.state = S.COMMENT
+	          parser.comment = ""
+	          parser.sgmlDecl = ""
+	        } else if ((parser.sgmlDecl+c).toUpperCase() === DOCTYPE) {
+	          parser.state = S.DOCTYPE
+	          if (parser.doctype || parser.sawRoot) strictFail(parser,
+	            "Inappropriately located doctype declaration")
+	          parser.doctype = ""
+	          parser.sgmlDecl = ""
+	        } else if (c === ">") {
+	          emitNode(parser, "onsgmldeclaration", parser.sgmlDecl)
+	          parser.sgmlDecl = ""
+	          parser.state = S.TEXT
+	        } else if (is(quote, c)) {
+	          parser.state = S.SGML_DECL_QUOTED
 	          parser.sgmlDecl += c
-	          continue
+	        } else parser.sgmlDecl += c
+	      continue
 	
-	        case S.DOCTYPE:
-	          if (c === '>') {
-	            parser.state = S.TEXT
-	            emitNode(parser, 'ondoctype', parser.doctype)
-	            parser.doctype = true // just remember that we saw it.
-	          } else {
-	            parser.doctype += c
-	            if (c === '[') {
-	              parser.state = S.DOCTYPE_DTD
-	            } else if (is(quote, c)) {
-	              parser.state = S.DOCTYPE_QUOTED
-	              parser.q = c
-	            }
-	          }
-	          continue
+	      case S.SGML_DECL_QUOTED:
+	        if (c === parser.q) {
+	          parser.state = S.SGML_DECL
+	          parser.q = ""
+	        }
+	        parser.sgmlDecl += c
+	      continue
 	
-	        case S.DOCTYPE_QUOTED:
+	      case S.DOCTYPE:
+	        if (c === ">") {
+	          parser.state = S.TEXT
+	          emitNode(parser, "ondoctype", parser.doctype)
+	          parser.doctype = true // just remember that we saw it.
+	        } else {
 	          parser.doctype += c
-	          if (c === parser.q) {
-	            parser.q = ''
-	            parser.state = S.DOCTYPE
-	          }
-	          continue
-	
-	        case S.DOCTYPE_DTD:
-	          parser.doctype += c
-	          if (c === ']') {
-	            parser.state = S.DOCTYPE
-	          } else if (is(quote, c)) {
-	            parser.state = S.DOCTYPE_DTD_QUOTED
+	          if (c === "[") parser.state = S.DOCTYPE_DTD
+	          else if (is(quote, c)) {
+	            parser.state = S.DOCTYPE_QUOTED
 	            parser.q = c
 	          }
-	          continue
+	        }
+	      continue
 	
-	        case S.DOCTYPE_DTD_QUOTED:
-	          parser.doctype += c
-	          if (c === parser.q) {
-	            parser.state = S.DOCTYPE_DTD
-	            parser.q = ''
-	          }
-	          continue
+	      case S.DOCTYPE_QUOTED:
+	        parser.doctype += c
+	        if (c === parser.q) {
+	          parser.q = ""
+	          parser.state = S.DOCTYPE
+	        }
+	      continue
 	
-	        case S.COMMENT:
-	          if (c === '-') {
-	            parser.state = S.COMMENT_ENDING
-	          } else {
-	            parser.comment += c
-	          }
-	          continue
+	      case S.DOCTYPE_DTD:
+	        parser.doctype += c
+	        if (c === "]") parser.state = S.DOCTYPE
+	        else if (is(quote,c)) {
+	          parser.state = S.DOCTYPE_DTD_QUOTED
+	          parser.q = c
+	        }
+	      continue
 	
-	        case S.COMMENT_ENDING:
-	          if (c === '-') {
-	            parser.state = S.COMMENT_ENDED
-	            parser.comment = textopts(parser.opt, parser.comment)
-	            if (parser.comment) {
-	              emitNode(parser, 'oncomment', parser.comment)
-	            }
-	            parser.comment = ''
-	          } else {
-	            parser.comment += '-' + c
-	            parser.state = S.COMMENT
-	          }
-	          continue
+	      case S.DOCTYPE_DTD_QUOTED:
+	        parser.doctype += c
+	        if (c === parser.q) {
+	          parser.state = S.DOCTYPE_DTD
+	          parser.q = ""
+	        }
+	      continue
 	
-	        case S.COMMENT_ENDED:
-	          if (c !== '>') {
-	            strictFail(parser, 'Malformed comment')
-	            // allow <!-- blah -- bloo --> in non-strict mode,
-	            // which is a comment of " blah -- bloo "
-	            parser.comment += '--' + c
-	            parser.state = S.COMMENT
-	          } else {
-	            parser.state = S.TEXT
-	          }
-	          continue
+	      case S.COMMENT:
+	        if (c === "-") parser.state = S.COMMENT_ENDING
+	        else parser.comment += c
+	      continue
 	
-	        case S.CDATA:
-	          if (c === ']') {
-	            parser.state = S.CDATA_ENDING
-	          } else {
-	            parser.cdata += c
-	          }
-	          continue
+	      case S.COMMENT_ENDING:
+	        if (c === "-") {
+	          parser.state = S.COMMENT_ENDED
+	          parser.comment = textopts(parser.opt, parser.comment)
+	          if (parser.comment) emitNode(parser, "oncomment", parser.comment)
+	          parser.comment = ""
+	        } else {
+	          parser.comment += "-" + c
+	          parser.state = S.COMMENT
+	        }
+	      continue
 	
-	        case S.CDATA_ENDING:
-	          if (c === ']') {
-	            parser.state = S.CDATA_ENDING_2
-	          } else {
-	            parser.cdata += ']' + c
-	            parser.state = S.CDATA
-	          }
-	          continue
+	      case S.COMMENT_ENDED:
+	        if (c !== ">") {
+	          strictFail(parser, "Malformed comment")
+	          // allow <!-- blah -- bloo --> in non-strict mode,
+	          // which is a comment of " blah -- bloo "
+	          parser.comment += "--" + c
+	          parser.state = S.COMMENT
+	        } else parser.state = S.TEXT
+	      continue
 	
-	        case S.CDATA_ENDING_2:
-	          if (c === '>') {
-	            if (parser.cdata) {
-	              emitNode(parser, 'oncdata', parser.cdata)
-	            }
-	            emitNode(parser, 'onclosecdata')
-	            parser.cdata = ''
-	            parser.state = S.TEXT
-	          } else if (c === ']') {
-	            parser.cdata += ']'
-	          } else {
-	            parser.cdata += ']]' + c
-	            parser.state = S.CDATA
-	          }
-	          continue
+	      case S.CDATA:
+	        if (c === "]") parser.state = S.CDATA_ENDING
+	        else parser.cdata += c
+	      continue
 	
-	        case S.PROC_INST:
-	          if (c === '?') {
-	            parser.state = S.PROC_INST_ENDING
-	          } else if (is(whitespace, c)) {
-	            parser.state = S.PROC_INST_BODY
-	          } else {
-	            parser.procInstName += c
-	          }
-	          continue
+	      case S.CDATA_ENDING:
+	        if (c === "]") parser.state = S.CDATA_ENDING_2
+	        else {
+	          parser.cdata += "]" + c
+	          parser.state = S.CDATA
+	        }
+	      continue
 	
-	        case S.PROC_INST_BODY:
-	          if (!parser.procInstBody && is(whitespace, c)) {
-	            continue
-	          } else if (c === '?') {
-	            parser.state = S.PROC_INST_ENDING
-	          } else {
-	            parser.procInstBody += c
-	          }
-	          continue
+	      case S.CDATA_ENDING_2:
+	        if (c === ">") {
+	          if (parser.cdata) emitNode(parser, "oncdata", parser.cdata)
+	          emitNode(parser, "onclosecdata")
+	          parser.cdata = ""
+	          parser.state = S.TEXT
+	        } else if (c === "]") {
+	          parser.cdata += "]"
+	        } else {
+	          parser.cdata += "]]" + c
+	          parser.state = S.CDATA
+	        }
+	      continue
 	
-	        case S.PROC_INST_ENDING:
-	          if (c === '>') {
-	            emitNode(parser, 'onprocessinginstruction', {
-	              name: parser.procInstName,
-	              body: parser.procInstBody
-	            })
-	            parser.procInstName = parser.procInstBody = ''
-	            parser.state = S.TEXT
-	          } else {
-	            parser.procInstBody += '?' + c
-	            parser.state = S.PROC_INST_BODY
-	          }
-	          continue
+	      case S.PROC_INST:
+	        if (c === "?") parser.state = S.PROC_INST_ENDING
+	        else if (is(whitespace, c)) parser.state = S.PROC_INST_BODY
+	        else parser.procInstName += c
+	      continue
 	
-	        case S.OPEN_TAG:
-	          if (is(nameBody, c)) {
-	            parser.tagName += c
-	          } else {
-	            newTag(parser)
-	            if (c === '>') {
-	              openTag(parser)
-	            } else if (c === '/') {
-	              parser.state = S.OPEN_TAG_SLASH
-	            } else {
-	              if (not(whitespace, c)) {
-	                strictFail(parser, 'Invalid character in tag name')
-	              }
-	              parser.state = S.ATTRIB
-	            }
-	          }
-	          continue
+	      case S.PROC_INST_BODY:
+	        if (!parser.procInstBody && is(whitespace, c)) continue
+	        else if (c === "?") parser.state = S.PROC_INST_ENDING
+	        else parser.procInstBody += c
+	      continue
 	
-	        case S.OPEN_TAG_SLASH:
-	          if (c === '>') {
-	            openTag(parser, true)
-	            closeTag(parser)
-	          } else {
-	            strictFail(parser, 'Forward-slash in opening tag not followed by >')
+	      case S.PROC_INST_ENDING:
+	        if (c === ">") {
+	          emitNode(parser, "onprocessinginstruction", {
+	            name : parser.procInstName,
+	            body : parser.procInstBody
+	          })
+	          parser.procInstName = parser.procInstBody = ""
+	          parser.state = S.TEXT
+	        } else {
+	          parser.procInstBody += "?" + c
+	          parser.state = S.PROC_INST_BODY
+	        }
+	      continue
+	
+	      case S.OPEN_TAG:
+	        if (is(nameBody, c)) parser.tagName += c
+	        else {
+	          newTag(parser)
+	          if (c === ">") openTag(parser)
+	          else if (c === "/") parser.state = S.OPEN_TAG_SLASH
+	          else {
+	            if (not(whitespace, c)) strictFail(
+	              parser, "Invalid character in tag name")
 	            parser.state = S.ATTRIB
 	          }
-	          continue
+	        }
+	      continue
 	
-	        case S.ATTRIB:
-	          // haven't read the attribute name yet.
-	          if (is(whitespace, c)) {
-	            continue
-	          } else if (c === '>') {
-	            openTag(parser)
-	          } else if (c === '/') {
-	            parser.state = S.OPEN_TAG_SLASH
-	          } else if (is(nameStart, c)) {
+	      case S.OPEN_TAG_SLASH:
+	        if (c === ">") {
+	          openTag(parser, true)
+	          closeTag(parser)
+	        } else {
+	          strictFail(parser, "Forward-slash in opening tag not followed by >")
+	          parser.state = S.ATTRIB
+	        }
+	      continue
+	
+	      case S.ATTRIB:
+	        // haven't read the attribute name yet.
+	        if (is(whitespace, c)) continue
+	        else if (c === ">") openTag(parser)
+	        else if (c === "/") parser.state = S.OPEN_TAG_SLASH
+	        else if (is(nameStart, c)) {
+	          parser.attribName = c
+	          parser.attribValue = ""
+	          parser.state = S.ATTRIB_NAME
+	        } else strictFail(parser, "Invalid attribute name")
+	      continue
+	
+	      case S.ATTRIB_NAME:
+	        if (c === "=") parser.state = S.ATTRIB_VALUE
+	        else if (c === ">") {
+	          strictFail(parser, "Attribute without value")
+	          parser.attribValue = parser.attribName
+	          attrib(parser)
+	          openTag(parser)
+	        }
+	        else if (is(whitespace, c)) parser.state = S.ATTRIB_NAME_SAW_WHITE
+	        else if (is(nameBody, c)) parser.attribName += c
+	        else strictFail(parser, "Invalid attribute name")
+	      continue
+	
+	      case S.ATTRIB_NAME_SAW_WHITE:
+	        if (c === "=") parser.state = S.ATTRIB_VALUE
+	        else if (is(whitespace, c)) continue
+	        else {
+	          strictFail(parser, "Attribute without value")
+	          parser.tag.attributes[parser.attribName] = ""
+	          parser.attribValue = ""
+	          emitNode(parser, "onattribute",
+	                   { name : parser.attribName, value : "" })
+	          parser.attribName = ""
+	          if (c === ">") openTag(parser)
+	          else if (is(nameStart, c)) {
 	            parser.attribName = c
-	            parser.attribValue = ''
 	            parser.state = S.ATTRIB_NAME
 	          } else {
-	            strictFail(parser, 'Invalid attribute name')
-	          }
-	          continue
-	
-	        case S.ATTRIB_NAME:
-	          if (c === '=') {
-	            parser.state = S.ATTRIB_VALUE
-	          } else if (c === '>') {
-	            strictFail(parser, 'Attribute without value')
-	            parser.attribValue = parser.attribName
-	            attrib(parser)
-	            openTag(parser)
-	          } else if (is(whitespace, c)) {
-	            parser.state = S.ATTRIB_NAME_SAW_WHITE
-	          } else if (is(nameBody, c)) {
-	            parser.attribName += c
-	          } else {
-	            strictFail(parser, 'Invalid attribute name')
-	          }
-	          continue
-	
-	        case S.ATTRIB_NAME_SAW_WHITE:
-	          if (c === '=') {
-	            parser.state = S.ATTRIB_VALUE
-	          } else if (is(whitespace, c)) {
-	            continue
-	          } else {
-	            strictFail(parser, 'Attribute without value')
-	            parser.tag.attributes[parser.attribName] = ''
-	            parser.attribValue = ''
-	            emitNode(parser, 'onattribute', {
-	              name: parser.attribName,
-	              value: ''
-	            })
-	            parser.attribName = ''
-	            if (c === '>') {
-	              openTag(parser)
-	            } else if (is(nameStart, c)) {
-	              parser.attribName = c
-	              parser.state = S.ATTRIB_NAME
-	            } else {
-	              strictFail(parser, 'Invalid attribute name')
-	              parser.state = S.ATTRIB
-	            }
-	          }
-	          continue
-	
-	        case S.ATTRIB_VALUE:
-	          if (is(whitespace, c)) {
-	            continue
-	          } else if (is(quote, c)) {
-	            parser.q = c
-	            parser.state = S.ATTRIB_VALUE_QUOTED
-	          } else {
-	            strictFail(parser, 'Unquoted attribute value')
-	            parser.state = S.ATTRIB_VALUE_UNQUOTED
-	            parser.attribValue = c
-	          }
-	          continue
-	
-	        case S.ATTRIB_VALUE_QUOTED:
-	          if (c !== parser.q) {
-	            if (c === '&') {
-	              parser.state = S.ATTRIB_VALUE_ENTITY_Q
-	            } else {
-	              parser.attribValue += c
-	            }
-	            continue
-	          }
-	          attrib(parser)
-	          parser.q = ''
-	          parser.state = S.ATTRIB_VALUE_CLOSED
-	          continue
-	
-	        case S.ATTRIB_VALUE_CLOSED:
-	          if (is(whitespace, c)) {
-	            parser.state = S.ATTRIB
-	          } else if (c === '>') {
-	            openTag(parser)
-	          } else if (c === '/') {
-	            parser.state = S.OPEN_TAG_SLASH
-	          } else if (is(nameStart, c)) {
-	            strictFail(parser, 'No whitespace between attributes')
-	            parser.attribName = c
-	            parser.attribValue = ''
-	            parser.state = S.ATTRIB_NAME
-	          } else {
-	            strictFail(parser, 'Invalid attribute name')
-	          }
-	          continue
-	
-	        case S.ATTRIB_VALUE_UNQUOTED:
-	          if (not(attribEnd, c)) {
-	            if (c === '&') {
-	              parser.state = S.ATTRIB_VALUE_ENTITY_U
-	            } else {
-	              parser.attribValue += c
-	            }
-	            continue
-	          }
-	          attrib(parser)
-	          if (c === '>') {
-	            openTag(parser)
-	          } else {
+	            strictFail(parser, "Invalid attribute name")
 	            parser.state = S.ATTRIB
 	          }
-	          continue
+	        }
+	      continue
 	
-	        case S.CLOSE_TAG:
-	          if (!parser.tagName) {
-	            if (is(whitespace, c)) {
-	              continue
-	            } else if (not(nameStart, c)) {
-	              if (parser.script) {
-	                parser.script += '</' + c
-	                parser.state = S.SCRIPT
-	              } else {
-	                strictFail(parser, 'Invalid tagname in closing tag.')
-	              }
+	      case S.ATTRIB_VALUE:
+	        if (is(whitespace, c)) continue
+	        else if (is(quote, c)) {
+	          parser.q = c
+	          parser.state = S.ATTRIB_VALUE_QUOTED
+	        } else {
+	          strictFail(parser, "Unquoted attribute value")
+	          parser.state = S.ATTRIB_VALUE_UNQUOTED
+	          parser.attribValue = c
+	        }
+	      continue
+	
+	      case S.ATTRIB_VALUE_QUOTED:
+	        if (c !== parser.q) {
+	          if (c === "&") parser.state = S.ATTRIB_VALUE_ENTITY_Q
+	          else parser.attribValue += c
+	          continue
+	        }
+	        attrib(parser)
+	        parser.q = ""
+	        parser.state = S.ATTRIB_VALUE_CLOSED
+	      continue
+	
+	      case S.ATTRIB_VALUE_CLOSED:
+	        if (is(whitespace, c)) {
+	          parser.state = S.ATTRIB
+	        } else if (c === ">") openTag(parser)
+	        else if (c === "/") parser.state = S.OPEN_TAG_SLASH
+	        else if (is(nameStart, c)) {
+	          strictFail(parser, "No whitespace between attributes")
+	          parser.attribName = c
+	          parser.attribValue = ""
+	          parser.state = S.ATTRIB_NAME
+	        } else strictFail(parser, "Invalid attribute name")
+	      continue
+	
+	      case S.ATTRIB_VALUE_UNQUOTED:
+	        if (not(attribEnd,c)) {
+	          if (c === "&") parser.state = S.ATTRIB_VALUE_ENTITY_U
+	          else parser.attribValue += c
+	          continue
+	        }
+	        attrib(parser)
+	        if (c === ">") openTag(parser)
+	        else parser.state = S.ATTRIB
+	      continue
+	
+	      case S.CLOSE_TAG:
+	        if (!parser.tagName) {
+	          if (is(whitespace, c)) continue
+	          else if (not(nameStart, c)) {
+	            if (parser.script) {
+	              parser.script += "</" + c
+	              parser.state = S.SCRIPT
 	            } else {
-	              parser.tagName = c
+	              strictFail(parser, "Invalid tagname in closing tag.")
 	            }
-	          } else if (c === '>') {
-	            closeTag(parser)
-	          } else if (is(nameBody, c)) {
-	            parser.tagName += c
-	          } else if (parser.script) {
-	            parser.script += '</' + parser.tagName
-	            parser.tagName = ''
-	            parser.state = S.SCRIPT
-	          } else {
-	            if (not(whitespace, c)) {
-	              strictFail(parser, 'Invalid tagname in closing tag')
-	            }
-	            parser.state = S.CLOSE_TAG_SAW_WHITE
-	          }
-	          continue
+	          } else parser.tagName = c
+	        }
+	        else if (c === ">") closeTag(parser)
+	        else if (is(nameBody, c)) parser.tagName += c
+	        else if (parser.script) {
+	          parser.script += "</" + parser.tagName
+	          parser.tagName = ""
+	          parser.state = S.SCRIPT
+	        } else {
+	          if (not(whitespace, c)) strictFail(parser,
+	            "Invalid tagname in closing tag")
+	          parser.state = S.CLOSE_TAG_SAW_WHITE
+	        }
+	      continue
 	
-	        case S.CLOSE_TAG_SAW_WHITE:
-	          if (is(whitespace, c)) {
-	            continue
-	          }
-	          if (c === '>') {
-	            closeTag(parser)
-	          } else {
-	            strictFail(parser, 'Invalid characters in closing tag')
-	          }
-	          continue
+	      case S.CLOSE_TAG_SAW_WHITE:
+	        if (is(whitespace, c)) continue
+	        if (c === ">") closeTag(parser)
+	        else strictFail(parser, "Invalid characters in closing tag")
+	      continue
 	
-	        case S.TEXT_ENTITY:
-	        case S.ATTRIB_VALUE_ENTITY_Q:
-	        case S.ATTRIB_VALUE_ENTITY_U:
-	          var returnState
-	          var buffer
-	          switch (parser.state) {
-	            case S.TEXT_ENTITY:
-	              returnState = S.TEXT
-	              buffer = 'textNode'
-	              break
+	      case S.TEXT_ENTITY:
+	      case S.ATTRIB_VALUE_ENTITY_Q:
+	      case S.ATTRIB_VALUE_ENTITY_U:
+	        switch(parser.state) {
+	          case S.TEXT_ENTITY:
+	            var returnState = S.TEXT, buffer = "textNode"
+	          break
 	
-	            case S.ATTRIB_VALUE_ENTITY_Q:
-	              returnState = S.ATTRIB_VALUE_QUOTED
-	              buffer = 'attribValue'
-	              break
+	          case S.ATTRIB_VALUE_ENTITY_Q:
+	            var returnState = S.ATTRIB_VALUE_QUOTED, buffer = "attribValue"
+	          break
 	
-	            case S.ATTRIB_VALUE_ENTITY_U:
-	              returnState = S.ATTRIB_VALUE_UNQUOTED
-	              buffer = 'attribValue'
-	              break
-	          }
+	          case S.ATTRIB_VALUE_ENTITY_U:
+	            var returnState = S.ATTRIB_VALUE_UNQUOTED, buffer = "attribValue"
+	          break
+	        }
+	        if (c === ";") {
+	          parser[buffer] += parseEntity(parser)
+	          parser.entity = ""
+	          parser.state = returnState
+	        }
+	        else if (is(entity, c)) parser.entity += c
+	        else {
+	          strictFail(parser, "Invalid character entity")
+	          parser[buffer] += "&" + parser.entity + c
+	          parser.entity = ""
+	          parser.state = returnState
+	        }
+	      continue
 	
-	          if (c === ';') {
-	            parser[buffer] += parseEntity(parser)
-	            parser.entity = ''
-	            parser.state = returnState
-	          } else if (is(parser.entity.length ? entityBody : entityStart, c)) {
-	            parser.entity += c
-	          } else {
-	            strictFail(parser, 'Invalid character in entity name')
-	            parser[buffer] += '&' + parser.entity + c
-	            parser.entity = ''
-	            parser.state = returnState
-	          }
-	
-	          continue
-	
-	        default:
-	          throw new Error(parser, 'Unknown state: ' + parser.state)
-	      }
-	    } // while
-	
-	    if (parser.position >= parser.bufferCheckPosition) {
-	      checkBufferLength(parser)
+	      default:
+	        throw new Error(parser, "Unknown state: " + parser.state)
 	    }
-	    return parser
-	  }
+	  } // while
+	  // cdata blocks can get very big under normal conditions. emit and move on.
+	  // if (parser.state === S.CDATA && parser.cdata) {
+	  //   emitNode(parser, "oncdata", parser.cdata)
+	  //   parser.cdata = ""
+	  // }
+	  if (parser.position >= parser.bufferCheckPosition) checkBufferLength(parser)
+	  return parser
+	}
 	
-	  /*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
-	  if (!String.fromCodePoint) {
-	    (function () {
-	      var stringFromCharCode = String.fromCharCode
-	      var floor = Math.floor
-	      var fromCodePoint = function () {
-	        var MAX_SIZE = 0x4000
-	        var codeUnits = []
-	        var highSurrogate
-	        var lowSurrogate
-	        var index = -1
-	        var length = arguments.length
-	        if (!length) {
-	          return ''
-	        }
-	        var result = ''
-	        while (++index < length) {
-	          var codePoint = Number(arguments[index])
-	          if (
-	            !isFinite(codePoint) || // `NaN`, `+Infinity`, or `-Infinity`
-	            codePoint < 0 || // not a valid Unicode code point
-	            codePoint > 0x10FFFF || // not a valid Unicode code point
-	            floor(codePoint) !== codePoint // not an integer
-	          ) {
-	            throw RangeError('Invalid code point: ' + codePoint)
-	          }
-	          if (codePoint <= 0xFFFF) { // BMP code point
-	            codeUnits.push(codePoint)
-	          } else { // Astral code point; split in surrogate halves
-	            // http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
-	            codePoint -= 0x10000
-	            highSurrogate = (codePoint >> 10) + 0xD800
-	            lowSurrogate = (codePoint % 0x400) + 0xDC00
-	            codeUnits.push(highSurrogate, lowSurrogate)
-	          }
-	          if (index + 1 === length || codeUnits.length > MAX_SIZE) {
-	            result += stringFromCharCode.apply(null, codeUnits)
-	            codeUnits.length = 0
-	          }
-	        }
-	        return result
-	      }
-	      if (Object.defineProperty) {
-	        Object.defineProperty(String, 'fromCodePoint', {
-	          value: fromCodePoint,
-	          configurable: true,
-	          writable: true
-	        })
-	      } else {
-	        String.fromCodePoint = fromCodePoint
-	      }
-	    }())
-	  }
-	})( false ? this.sax = {} : exports)
+	/*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
+	if (!String.fromCodePoint) {
+	        (function() {
+	                var stringFromCharCode = String.fromCharCode;
+	                var floor = Math.floor;
+	                var fromCodePoint = function() {
+	                        var MAX_SIZE = 0x4000;
+	                        var codeUnits = [];
+	                        var highSurrogate;
+	                        var lowSurrogate;
+	                        var index = -1;
+	                        var length = arguments.length;
+	                        if (!length) {
+	                                return '';
+	                        }
+	                        var result = '';
+	                        while (++index < length) {
+	                                var codePoint = Number(arguments[index]);
+	                                if (
+	                                        !isFinite(codePoint) || // `NaN`, `+Infinity`, or `-Infinity`
+	                                        codePoint < 0 || // not a valid Unicode code point
+	                                        codePoint > 0x10FFFF || // not a valid Unicode code point
+	                                        floor(codePoint) != codePoint // not an integer
+	                                ) {
+	                                        throw RangeError('Invalid code point: ' + codePoint);
+	                                }
+	                                if (codePoint <= 0xFFFF) { // BMP code point
+	                                        codeUnits.push(codePoint);
+	                                } else { // Astral code point; split in surrogate halves
+	                                        // http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+	                                        codePoint -= 0x10000;
+	                                        highSurrogate = (codePoint >> 10) + 0xD800;
+	                                        lowSurrogate = (codePoint % 0x400) + 0xDC00;
+	                                        codeUnits.push(highSurrogate, lowSurrogate);
+	                                }
+	                                if (index + 1 == length || codeUnits.length > MAX_SIZE) {
+	                                        result += stringFromCharCode.apply(null, codeUnits);
+	                                        codeUnits.length = 0;
+	                                }
+	                        }
+	                        return result;
+	                };
+	                if (Object.defineProperty) {
+	                        Object.defineProperty(String, 'fromCodePoint', {
+	                                'value': fromCodePoint,
+	                                'configurable': true,
+	                                'writable': true
+	                        });
+	                } else {
+	                        String.fromCodePoint = fromCodePoint;
+	                }
+	        }());
+	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(390).Buffer))
+	})( false ? sax = {} : exports);
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(403).Buffer))
 
 /***/ },
-/* 390 */
+/* 403 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
@@ -19771,9 +20925,9 @@
 	
 	'use strict'
 	
-	var base64 = __webpack_require__(391)
-	var ieee754 = __webpack_require__(392)
-	var isArray = __webpack_require__(393)
+	var base64 = __webpack_require__(404)
+	var ieee754 = __webpack_require__(405)
+	var isArray = __webpack_require__(406)
 	
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -21551,10 +22705,10 @@
 	  return val !== val // eslint-disable-line no-self-compare
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(390).Buffer, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(403).Buffer, (function() { return this; }())))
 
 /***/ },
-/* 391 */
+/* 404 */
 /***/ function(module, exports) {
 
 	'use strict'
@@ -21674,7 +22828,7 @@
 
 
 /***/ },
-/* 392 */
+/* 405 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -21764,7 +22918,7 @@
 
 
 /***/ },
-/* 393 */
+/* 406 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -21775,7 +22929,7 @@
 
 
 /***/ },
-/* 394 */
+/* 407 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -21801,15 +22955,15 @@
 	
 	module.exports = Stream;
 	
-	var EE = __webpack_require__(395).EventEmitter;
+	var EE = __webpack_require__(408).EventEmitter;
 	var inherits = __webpack_require__(2);
 	
 	inherits(Stream, EE);
-	Stream.Readable = __webpack_require__(396);
-	Stream.Writable = __webpack_require__(406);
-	Stream.Duplex = __webpack_require__(407);
-	Stream.Transform = __webpack_require__(408);
-	Stream.PassThrough = __webpack_require__(409);
+	Stream.Readable = __webpack_require__(409);
+	Stream.Writable = __webpack_require__(419);
+	Stream.Duplex = __webpack_require__(420);
+	Stream.Transform = __webpack_require__(421);
+	Stream.PassThrough = __webpack_require__(422);
 	
 	// Backwards-compat with node 0.4.x
 	Stream.Stream = Stream;
@@ -21908,7 +23062,7 @@
 
 
 /***/ },
-/* 395 */
+/* 408 */
 /***/ function(module, exports) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -22216,24 +23370,24 @@
 
 
 /***/ },
-/* 396 */
+/* 409 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(process) {exports = module.exports = __webpack_require__(397);
-	exports.Stream = __webpack_require__(394);
+	/* WEBPACK VAR INJECTION */(function(process) {exports = module.exports = __webpack_require__(410);
+	exports.Stream = __webpack_require__(407);
 	exports.Readable = exports;
-	exports.Writable = __webpack_require__(402);
-	exports.Duplex = __webpack_require__(401);
-	exports.Transform = __webpack_require__(404);
-	exports.PassThrough = __webpack_require__(405);
+	exports.Writable = __webpack_require__(415);
+	exports.Duplex = __webpack_require__(414);
+	exports.Transform = __webpack_require__(417);
+	exports.PassThrough = __webpack_require__(418);
 	if (!process.browser && process.env.READABLE_STREAM === 'disable') {
-	  module.exports = __webpack_require__(394);
+	  module.exports = __webpack_require__(407);
 	}
 	
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(245)))
 
 /***/ },
-/* 397 */
+/* 410 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -22260,17 +23414,17 @@
 	module.exports = Readable;
 	
 	/*<replacement>*/
-	var isArray = __webpack_require__(398);
+	var isArray = __webpack_require__(411);
 	/*</replacement>*/
 	
 	
 	/*<replacement>*/
-	var Buffer = __webpack_require__(390).Buffer;
+	var Buffer = __webpack_require__(403).Buffer;
 	/*</replacement>*/
 	
 	Readable.ReadableState = ReadableState;
 	
-	var EE = __webpack_require__(395).EventEmitter;
+	var EE = __webpack_require__(408).EventEmitter;
 	
 	/*<replacement>*/
 	if (!EE.listenerCount) EE.listenerCount = function(emitter, type) {
@@ -22278,10 +23432,10 @@
 	};
 	/*</replacement>*/
 	
-	var Stream = __webpack_require__(394);
+	var Stream = __webpack_require__(407);
 	
 	/*<replacement>*/
-	var util = __webpack_require__(399);
+	var util = __webpack_require__(412);
 	util.inherits = __webpack_require__(2);
 	/*</replacement>*/
 	
@@ -22289,7 +23443,7 @@
 	
 	
 	/*<replacement>*/
-	var debug = __webpack_require__(400);
+	var debug = __webpack_require__(413);
 	if (debug && debug.debuglog) {
 	  debug = debug.debuglog('stream');
 	} else {
@@ -22301,7 +23455,7 @@
 	util.inherits(Readable, Stream);
 	
 	function ReadableState(options, stream) {
-	  var Duplex = __webpack_require__(401);
+	  var Duplex = __webpack_require__(414);
 	
 	  options = options || {};
 	
@@ -22362,14 +23516,14 @@
 	  this.encoding = null;
 	  if (options.encoding) {
 	    if (!StringDecoder)
-	      StringDecoder = __webpack_require__(403).StringDecoder;
+	      StringDecoder = __webpack_require__(416).StringDecoder;
 	    this.decoder = new StringDecoder(options.encoding);
 	    this.encoding = options.encoding;
 	  }
 	}
 	
 	function Readable(options) {
-	  var Duplex = __webpack_require__(401);
+	  var Duplex = __webpack_require__(414);
 	
 	  if (!(this instanceof Readable))
 	    return new Readable(options);
@@ -22472,7 +23626,7 @@
 	// backwards compatibility.
 	Readable.prototype.setEncoding = function(enc) {
 	  if (!StringDecoder)
-	    StringDecoder = __webpack_require__(403).StringDecoder;
+	    StringDecoder = __webpack_require__(416).StringDecoder;
 	  this._readableState.decoder = new StringDecoder(enc);
 	  this._readableState.encoding = enc;
 	  return this;
@@ -23191,7 +24345,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(245)))
 
 /***/ },
-/* 398 */
+/* 411 */
 /***/ function(module, exports) {
 
 	module.exports = Array.isArray || function (arr) {
@@ -23200,7 +24354,7 @@
 
 
 /***/ },
-/* 399 */
+/* 412 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {// Copyright Joyent, Inc. and other Node contributors.
@@ -23311,16 +24465,16 @@
 	  return Object.prototype.toString.call(o);
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(390).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(403).Buffer))
 
 /***/ },
-/* 400 */
+/* 413 */
 /***/ function(module, exports) {
 
 	/* (ignored) */
 
 /***/ },
-/* 401 */
+/* 414 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -23361,12 +24515,12 @@
 	
 	
 	/*<replacement>*/
-	var util = __webpack_require__(399);
+	var util = __webpack_require__(412);
 	util.inherits = __webpack_require__(2);
 	/*</replacement>*/
 	
-	var Readable = __webpack_require__(397);
-	var Writable = __webpack_require__(402);
+	var Readable = __webpack_require__(410);
+	var Writable = __webpack_require__(415);
 	
 	util.inherits(Duplex, Readable);
 	
@@ -23416,7 +24570,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(245)))
 
 /***/ },
-/* 402 */
+/* 415 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -23447,18 +24601,18 @@
 	module.exports = Writable;
 	
 	/*<replacement>*/
-	var Buffer = __webpack_require__(390).Buffer;
+	var Buffer = __webpack_require__(403).Buffer;
 	/*</replacement>*/
 	
 	Writable.WritableState = WritableState;
 	
 	
 	/*<replacement>*/
-	var util = __webpack_require__(399);
+	var util = __webpack_require__(412);
 	util.inherits = __webpack_require__(2);
 	/*</replacement>*/
 	
-	var Stream = __webpack_require__(394);
+	var Stream = __webpack_require__(407);
 	
 	util.inherits(Writable, Stream);
 	
@@ -23469,7 +24623,7 @@
 	}
 	
 	function WritableState(options, stream) {
-	  var Duplex = __webpack_require__(401);
+	  var Duplex = __webpack_require__(414);
 	
 	  options = options || {};
 	
@@ -23557,7 +24711,7 @@
 	}
 	
 	function Writable(options) {
-	  var Duplex = __webpack_require__(401);
+	  var Duplex = __webpack_require__(414);
 	
 	  // Writable ctor is applied to Duplexes, though they're not
 	  // instanceof Writable, they're instanceof Readable.
@@ -23900,7 +25054,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(245)))
 
 /***/ },
-/* 403 */
+/* 416 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -23924,7 +25078,7 @@
 	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 	// USE OR OTHER DEALINGS IN THE SOFTWARE.
 	
-	var Buffer = __webpack_require__(390).Buffer;
+	var Buffer = __webpack_require__(403).Buffer;
 	
 	var isBufferEncoding = Buffer.isEncoding
 	  || function(encoding) {
@@ -24127,7 +25281,7 @@
 
 
 /***/ },
-/* 404 */
+/* 417 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -24196,10 +25350,10 @@
 	
 	module.exports = Transform;
 	
-	var Duplex = __webpack_require__(401);
+	var Duplex = __webpack_require__(414);
 	
 	/*<replacement>*/
-	var util = __webpack_require__(399);
+	var util = __webpack_require__(412);
 	util.inherits = __webpack_require__(2);
 	/*</replacement>*/
 	
@@ -24342,7 +25496,7 @@
 
 
 /***/ },
-/* 405 */
+/* 418 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -24372,10 +25526,10 @@
 	
 	module.exports = PassThrough;
 	
-	var Transform = __webpack_require__(404);
+	var Transform = __webpack_require__(417);
 	
 	/*<replacement>*/
-	var util = __webpack_require__(399);
+	var util = __webpack_require__(412);
 	util.inherits = __webpack_require__(2);
 	/*</replacement>*/
 	
@@ -24394,35 +25548,6066 @@
 
 
 /***/ },
-/* 406 */
+/* 419 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(402)
+	module.exports = __webpack_require__(415)
 
 
 /***/ },
-/* 407 */
+/* 420 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(401)
+	module.exports = __webpack_require__(414)
 
 
 /***/ },
-/* 408 */
+/* 421 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(404)
+	module.exports = __webpack_require__(417)
 
 
 /***/ },
-/* 409 */
+/* 422 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(405)
+	module.exports = __webpack_require__(418)
 
 
 /***/ },
-/* 410 */
+/* 423 */
+416,
+/* 424 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	function capitalize(string) {
+	  return string.charAt(0).toUpperCase() + string.slice(1);
+	}
+	
+	function lower(string) {
+	  return string.charAt(0).toLowerCase() + string.slice(1);
+	}
+	
+	function hasLowerCaseAlias(pkg) {
+	  return pkg.xml && pkg.xml.tagAlias === 'lowerCase';
+	}
+	
+	
+	module.exports.aliasToName = function(alias, pkg) {
+	  if (hasLowerCaseAlias(pkg)) {
+	    return capitalize(alias);
+	  } else {
+	    return alias;
+	  }
+	};
+	
+	module.exports.nameToAlias = function(name, pkg) {
+	  if (hasLowerCaseAlias(pkg)) {
+	    return lower(name);
+	  } else {
+	    return name;
+	  }
+	};
+	
+	module.exports.DEFAULT_NS_MAP = {
+	  'xsi': 'http://www.w3.org/2001/XMLSchema-instance'
+	};
+	
+	var XSI_TYPE = module.exports.XSI_TYPE = 'xsi:type';
+	
+	function serializeFormat(element) {
+	  return element.xml && element.xml.serialize;
+	}
+	
+	module.exports.serializeAsType = function(element) {
+	  return serializeFormat(element) === XSI_TYPE;
+	};
+	
+	module.exports.serializeAsProperty = function(element) {
+	  return serializeFormat(element) === 'property';
+	};
+
+/***/ },
+/* 425 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var map = __webpack_require__(426),
+	    forEach = __webpack_require__(346),
+	    isString = __webpack_require__(343),
+	    filter = __webpack_require__(429),
+	    assign = __webpack_require__(318);
+	
+	var Types = __webpack_require__(384),
+	    parseNameNs = __webpack_require__(392).parseName,
+	    common = __webpack_require__(424),
+	    nameToAlias = common.nameToAlias,
+	    serializeAsType = common.serializeAsType,
+	    serializeAsProperty = common.serializeAsProperty;
+	
+	var XML_PREAMBLE = '<?xml version="1.0" encoding="UTF-8"?>\n',
+	    ESCAPE_CHARS = /(<|>|'|"|&|\n\r|\n)/g,
+	    DEFAULT_NS_MAP = common.DEFAULT_NS_MAP,
+	    XSI_TYPE = common.XSI_TYPE;
+	
+	
+	function nsName(ns) {
+	  if (isString(ns)) {
+	    return ns;
+	  } else {
+	    return (ns.prefix ? ns.prefix + ':' : '') + ns.localName;
+	  }
+	}
+	
+	function getNsAttrs(namespaces) {
+	
+	  function isUsed(ns) {
+	    return namespaces.used[ns.uri];
+	  }
+	
+	  function toAttr(ns) {
+	    var name = 'xmlns' + (ns.prefix ? ':' + ns.prefix : '');
+	    return { name: name, value: ns.uri };
+	  }
+	
+	  var allNs = [].concat(namespaces.wellknown, namespaces.custom);
+	
+	  return map(filter(allNs, isUsed), toAttr);
+	}
+	
+	function getElementNs(ns, descriptor) {
+	  if (descriptor.isGeneric) {
+	    return descriptor.name;
+	  } else {
+	    return assign({ localName: nameToAlias(descriptor.ns.localName, descriptor.$pkg) }, ns);
+	  }
+	}
+	
+	function getPropertyNs(ns, descriptor) {
+	  return assign({ localName: descriptor.ns.localName }, ns);
+	}
+	
+	function getSerializableProperties(element) {
+	  var descriptor = element.$descriptor;
+	
+	  return filter(descriptor.properties, function(p) {
+	    var name = p.name;
+	
+	    if (p.isVirtual) {
+	      return false;
+	    }
+	
+	    // do not serialize defaults
+	    if (!element.hasOwnProperty(name)) {
+	      return false;
+	    }
+	
+	    var value = element[name];
+	
+	    // do not serialize default equals
+	    if (value === p.default) {
+	      return false;
+	    }
+	
+	    // do not serialize null properties
+	    if (value === null) {
+	      return false;
+	    }
+	
+	    return p.isMany ? value.length : true;
+	  });
+	}
+	
+	var ESCAPE_MAP = {
+	  '\n': '10',
+	  '\n\r': '10',
+	  '"': '34',
+	  '\'': '39',
+	  '<': '60',
+	  '>': '62',
+	  '&': '38'
+	};
+	
+	/**
+	 * Escape a string attribute to not contain any bad values (line breaks, '"', ...)
+	 *
+	 * @param {String} str the string to escape
+	 * @return {String} the escaped string
+	 */
+	function escapeAttr(str) {
+	
+	  // ensure we are handling strings here
+	  str = isString(str) ? str : '' + str;
+	
+	  return str.replace(ESCAPE_CHARS, function(str) {
+	    return '&#' + ESCAPE_MAP[str] + ';';
+	  });
+	}
+	
+	function filterAttributes(props) {
+	  return filter(props, function(p) { return p.isAttr; });
+	}
+	
+	function filterContained(props) {
+	  return filter(props, function(p) { return !p.isAttr; });
+	}
+	
+	
+	function ReferenceSerializer(parent, ns) {
+	  this.ns = ns;
+	}
+	
+	ReferenceSerializer.prototype.build = function(element) {
+	  this.element = element;
+	  return this;
+	};
+	
+	ReferenceSerializer.prototype.serializeTo = function(writer) {
+	  writer
+	    .appendIndent()
+	    .append('<' + nsName(this.ns) + '>' + this.element.id + '</' + nsName(this.ns) + '>')
+	    .appendNewLine();
+	};
+	
+	function BodySerializer() {}
+	
+	BodySerializer.prototype.serializeValue = BodySerializer.prototype.serializeTo = function(writer) {
+	  var escape = this.escape;
+	
+	  if (escape) {
+	    writer.append('<![CDATA[');
+	  }
+	
+	  writer.append(this.value);
+	
+	  if (escape) {
+	    writer.append(']]>');
+	  }
+	};
+	
+	BodySerializer.prototype.build = function(prop, value) {
+	  this.value = value;
+	
+	  if (prop.type === 'String' && value.search(ESCAPE_CHARS) !== -1) {
+	    this.escape = true;
+	  }
+	
+	  return this;
+	};
+	
+	function ValueSerializer(ns) {
+	  this.ns = ns;
+	}
+	
+	ValueSerializer.prototype = new BodySerializer();
+	
+	ValueSerializer.prototype.serializeTo = function(writer) {
+	
+	  writer
+	    .appendIndent()
+	    .append('<' + nsName(this.ns) + '>');
+	
+	  this.serializeValue(writer);
+	
+	  writer
+	    .append( '</' + nsName(this.ns) + '>')
+	    .appendNewLine();
+	};
+	
+	function ElementSerializer(parent, ns) {
+	  this.body = [];
+	  this.attrs = [];
+	
+	  this.parent = parent;
+	  this.ns = ns;
+	}
+	
+	ElementSerializer.prototype.build = function(element) {
+	  this.element = element;
+	
+	  var otherAttrs = this.parseNsAttributes(element);
+	
+	  if (!this.ns) {
+	    this.ns = this.nsTagName(element.$descriptor);
+	  }
+	
+	  if (element.$descriptor.isGeneric) {
+	    this.parseGeneric(element);
+	  } else {
+	    var properties = getSerializableProperties(element);
+	
+	    this.parseAttributes(filterAttributes(properties));
+	    this.parseContainments(filterContained(properties));
+	
+	    this.parseGenericAttributes(element, otherAttrs);
+	  }
+	
+	  return this;
+	};
+	
+	ElementSerializer.prototype.nsTagName = function(descriptor) {
+	  var effectiveNs = this.logNamespaceUsed(descriptor.ns);
+	  return getElementNs(effectiveNs, descriptor);
+	};
+	
+	ElementSerializer.prototype.nsPropertyTagName = function(descriptor) {
+	  var effectiveNs = this.logNamespaceUsed(descriptor.ns);
+	  return getPropertyNs(effectiveNs, descriptor);
+	};
+	
+	ElementSerializer.prototype.isLocalNs = function(ns) {
+	  return ns.uri === this.ns.uri;
+	};
+	
+	/**
+	 * Get the actual ns attribute name for the given element.
+	 *
+	 * @param {Object} element
+	 * @param {Boolean} [inherited=false]
+	 *
+	 * @return {Object} nsName
+	 */
+	ElementSerializer.prototype.nsAttributeName = function(element) {
+	
+	  var ns;
+	
+	  if (isString(element)) {
+	    ns = parseNameNs(element);
+	  } else {
+	    ns = element.ns;
+	  }
+	
+	  // return just local name for inherited attributes
+	  if (element.inherited) {
+	    return { localName: ns.localName };
+	  }
+	
+	  // parse + log effective ns
+	  var effectiveNs = this.logNamespaceUsed(ns);
+	
+	  // strip prefix if same namespace like parent
+	  if (this.isLocalNs(effectiveNs)) {
+	    return { localName: ns.localName };
+	  } else {
+	    return assign({ localName: ns.localName }, effectiveNs);
+	  }
+	};
+	
+	ElementSerializer.prototype.parseGeneric = function(element) {
+	
+	  var self = this,
+	      body = this.body,
+	      attrs = this.attrs;
+	
+	  forEach(element, function(val, key) {
+	
+	    if (key === '$body') {
+	      body.push(new BodySerializer().build({ type: 'String' }, val));
+	    } else
+	    if (key === '$children') {
+	      forEach(val, function(child) {
+	        body.push(new ElementSerializer(self).build(child));
+	      });
+	    } else
+	    if (key.indexOf('$') !== 0) {
+	      attrs.push({ name: key, value: escapeAttr(val) });
+	    }
+	  });
+	};
+	
+	/**
+	 * Parse namespaces and return a list of left over generic attributes
+	 *
+	 * @param  {Object} element
+	 * @return {Array<Object>}
+	 */
+	ElementSerializer.prototype.parseNsAttributes = function(element) {
+	  var self = this;
+	
+	  var genericAttrs = element.$attrs;
+	
+	  var model = element.$model;
+	
+	  var attributes = [];
+	
+	  // parse namespace attributes first
+	  // and log them. push non namespace attributes to a list
+	  // and process them later
+	  forEach(genericAttrs, function(value, name) {
+	    var nameNs = parseNameNs(name);
+	
+	    var ns;
+	
+	    // parse xmlns:foo="http://foo.bar"
+	    if (nameNs.prefix === 'xmlns') {
+	      ns = { prefix: nameNs.localName, uri: value };
+	    }
+	
+	    // parse xmlns="http://foo.bar"
+	    if (!nameNs.prefix && nameNs.localName === 'xmlns') {
+	      ns = { uri: value };
+	    }
+	
+	    if (ns) {
+	      if (model.getPackage(value)) {
+	        // register well known namespace
+	        self.logNamespace(ns, true);
+	      } else {
+	        // log custom namespace directly as used
+	        self.logNamespaceUsed(ns);
+	      }
+	    } else {
+	      attributes.push({ name: name, value: value });
+	    }
+	  });
+	
+	  return attributes;
+	};
+	
+	ElementSerializer.prototype.parseGenericAttributes = function(element, attributes) {
+	
+	  var self = this;
+	
+	  forEach(attributes, function(attr) {
+	
+	    // do not serialize xsi:type attribute
+	    // it is set manually based on the actual implementation type
+	    if (attr.name === XSI_TYPE) {
+	      return;
+	    }
+	
+	    try {
+	      self.addAttribute(self.nsAttributeName(attr.name), attr.value);
+	    } catch (e) {
+	      console.warn(
+	        'missing namespace information for ',
+	        attr.name, '=', attr.value, 'on', element,
+	        e);
+	    }
+	  });
+	};
+	
+	ElementSerializer.prototype.parseContainments = function(properties) {
+	
+	  var self = this,
+	      body = this.body,
+	      element = this.element;
+	
+	  forEach(properties, function(p) {
+	    var value = element.get(p.name),
+	        isReference = p.isReference,
+	        isMany = p.isMany;
+	
+	    var ns = self.nsPropertyTagName(p);
+	
+	    if (!isMany) {
+	      value = [ value ];
+	    }
+	
+	    if (p.isBody) {
+	      body.push(new BodySerializer().build(p, value[0]));
+	    } else
+	    if (Types.isSimple(p.type)) {
+	      forEach(value, function(v) {
+	        body.push(new ValueSerializer(ns).build(p, v));
+	      });
+	    } else
+	    if (isReference) {
+	      forEach(value, function(v) {
+	        body.push(new ReferenceSerializer(self, ns).build(v));
+	      });
+	    } else {
+	      // allow serialization via type
+	      // rather than element name
+	      var asType = serializeAsType(p),
+	          asProperty = serializeAsProperty(p);
+	
+	      forEach(value, function(v) {
+	        var serializer;
+	
+	        if (asType) {
+	          serializer = new TypeSerializer(self, ns);
+	        } else
+	        if (asProperty) {
+	          serializer = new ElementSerializer(self, ns);
+	        } else {
+	          serializer = new ElementSerializer(self);
+	        }
+	
+	        body.push(serializer.build(v));
+	      });
+	    }
+	  });
+	};
+	
+	ElementSerializer.prototype.getNamespaces = function() {
+	
+	  var namespaces = this.namespaces,
+	      parent = this.parent;
+	
+	  if (!namespaces) {
+	    namespaces = this.namespaces = parent ? parent.getNamespaces() : {
+	      prefixMap: {},
+	      uriMap: {},
+	      used: {},
+	      wellknown: [],
+	      custom: []
+	    };
+	  }
+	
+	  return namespaces;
+	};
+	
+	ElementSerializer.prototype.logNamespace = function(ns, wellknown) {
+	  var namespaces = this.getNamespaces();
+	
+	  var nsUri = ns.uri;
+	
+	  var existing = namespaces.uriMap[nsUri];
+	
+	  if (!existing) {
+	    namespaces.uriMap[nsUri] = ns;
+	
+	    if (wellknown) {
+	      namespaces.wellknown.push(ns);
+	    } else {
+	      namespaces.custom.push(ns);
+	    }
+	  }
+	
+	  namespaces.prefixMap[ns.prefix] = nsUri;
+	
+	  return ns;
+	};
+	
+	ElementSerializer.prototype.logNamespaceUsed = function(ns) {
+	  var element = this.element,
+	      model = element.$model,
+	      namespaces = this.getNamespaces();
+	
+	  // ns may be
+	  //
+	  //   * prefix only
+	  //   * prefix:uri
+	
+	  var prefix = ns.prefix;
+	
+	  var wellknownUri = DEFAULT_NS_MAP[prefix] || model && (model.getPackage(prefix) || {}).uri;
+	
+	  var uri = ns.uri || namespaces.prefixMap[prefix] || wellknownUri;
+	
+	  if (!uri) {
+	    throw new Error('no namespace uri given for prefix <' + ns.prefix + '>');
+	  }
+	
+	  ns = namespaces.uriMap[uri];
+	
+	  if (!ns) {
+	    ns = this.logNamespace({ prefix: prefix, uri: uri }, wellknownUri);
+	  }
+	
+	  if (!namespaces.used[ns.uri]) {
+	    namespaces.used[ns.uri] = ns;
+	  }
+	
+	  return ns;
+	};
+	
+	ElementSerializer.prototype.parseAttributes = function(properties) {
+	  var self = this,
+	      element = this.element;
+	
+	  forEach(properties, function(p) {
+	
+	    var value = element.get(p.name);
+	
+	    if (p.isReference) {
+	
+	      if (!p.isMany) {
+	        value = value.id;
+	      }
+	      else {
+	        var values = [];
+	        forEach(value, function(v) {
+	          values.push(v.id);
+	        });
+	        // IDREFS is a whitespace-separated list of references.
+	        value = values.join(' ');
+	      }
+	
+	    }
+	
+	    self.addAttribute(self.nsAttributeName(p), value);
+	  });
+	};
+	
+	ElementSerializer.prototype.addAttribute = function(name, value) {
+	  var attrs = this.attrs;
+	
+	  if (isString(value)) {
+	    value = escapeAttr(value);
+	  }
+	
+	  attrs.push({ name: name, value: value });
+	};
+	
+	ElementSerializer.prototype.serializeAttributes = function(writer) {
+	  var attrs = this.attrs,
+	      root = !this.parent;
+	
+	  if (root) {
+	    attrs = getNsAttrs(this.namespaces).concat(attrs);
+	  }
+	
+	  forEach(attrs, function(a) {
+	    writer
+	      .append(' ')
+	      .append(nsName(a.name)).append('="').append(a.value).append('"');
+	  });
+	};
+	
+	ElementSerializer.prototype.serializeTo = function(writer) {
+	  var hasBody = this.body.length,
+	      indent = !(this.body.length === 1 && this.body[0] instanceof BodySerializer);
+	
+	  writer
+	    .appendIndent()
+	    .append('<' + nsName(this.ns));
+	
+	  this.serializeAttributes(writer);
+	
+	  writer.append(hasBody ? '>' : ' />');
+	
+	  if (hasBody) {
+	
+	    if (indent) {
+	      writer
+	        .appendNewLine()
+	        .indent();
+	    }
+	
+	    forEach(this.body, function(b) {
+	      b.serializeTo(writer);
+	    });
+	
+	    if (indent) {
+	      writer
+	        .unindent()
+	        .appendIndent();
+	    }
+	
+	    writer.append('</' + nsName(this.ns) + '>');
+	  }
+	
+	  writer.appendNewLine();
+	};
+	
+	/**
+	 * A serializer for types that handles serialization of data types
+	 */
+	function TypeSerializer(parent, ns) {
+	  ElementSerializer.call(this, parent, ns);
+	}
+	
+	TypeSerializer.prototype = new ElementSerializer();
+	
+	TypeSerializer.prototype.build = function(element) {
+	  var descriptor = element.$descriptor;
+	
+	  this.element = element;
+	
+	  this.typeNs = this.nsTagName(descriptor);
+	
+	  // add xsi:type attribute to represent the elements
+	  // actual type
+	
+	  var typeNs = this.typeNs,
+	      pkg = element.$model.getPackage(typeNs.uri),
+	      typePrefix = (pkg.xml && pkg.xml.typePrefix) || '';
+	
+	  this.addAttribute(this.nsAttributeName(XSI_TYPE),
+	    (typeNs.prefix ? typeNs.prefix + ':' : '') +
+	    typePrefix + descriptor.ns.localName);
+	
+	  // do the usual stuff
+	  return ElementSerializer.prototype.build.call(this, element);
+	};
+	
+	TypeSerializer.prototype.isLocalNs = function(ns) {
+	  return ns.uri === this.typeNs.uri;
+	};
+	
+	function SavingWriter() {
+	  this.value = '';
+	
+	  this.write = function(str) {
+	    this.value += str;
+	  };
+	}
+	
+	function FormatingWriter(out, format) {
+	
+	  var indent = [''];
+	
+	  this.append = function(str) {
+	    out.write(str);
+	
+	    return this;
+	  };
+	
+	  this.appendNewLine = function() {
+	    if (format) {
+	      out.write('\n');
+	    }
+	
+	    return this;
+	  };
+	
+	  this.appendIndent = function() {
+	    if (format) {
+	      out.write(indent.join('  '));
+	    }
+	
+	    return this;
+	  };
+	
+	  this.indent = function() {
+	    indent.push('');
+	    return this;
+	  };
+	
+	  this.unindent = function() {
+	    indent.pop();
+	    return this;
+	  };
+	}
+	
+	/**
+	 * A writer for meta-model backed document trees
+	 *
+	 * @param {Object} options output options to pass into the writer
+	 */
+	function XMLWriter(options) {
+	
+	  options = assign({ format: false, preamble: true }, options || {});
+	
+	  function toXML(tree, writer) {
+	    var internalWriter = writer || new SavingWriter();
+	    var formatingWriter = new FormatingWriter(internalWriter, options.format);
+	
+	    if (options.preamble) {
+	      formatingWriter.append(XML_PREAMBLE);
+	    }
+	
+	    new ElementSerializer().build(tree).serializeTo(formatingWriter);
+	
+	    if (!writer) {
+	      return internalWriter.value;
+	    }
+	  }
+	
+	  return {
+	    toXML: toXML
+	  };
+	}
+	
+	module.exports = XMLWriter;
+
+
+/***/ },
+/* 426 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayMap = __webpack_require__(427),
+	    baseCallback = __webpack_require__(357),
+	    baseMap = __webpack_require__(428),
+	    isArray = __webpack_require__(332);
+	
+	/**
+	 * Creates an array of values by running each element in `collection` through
+	 * `iteratee`. The `iteratee` is bound to `thisArg` and invoked with three
+	 * arguments: (value, index|key, collection).
+	 *
+	 * If a property name is provided for `iteratee` the created `_.property`
+	 * style callback returns the property value of the given element.
+	 *
+	 * If a value is also provided for `thisArg` the created `_.matchesProperty`
+	 * style callback returns `true` for elements that have a matching property
+	 * value, else `false`.
+	 *
+	 * If an object is provided for `iteratee` the created `_.matches` style
+	 * callback returns `true` for elements that have the properties of the given
+	 * object, else `false`.
+	 *
+	 * Many lodash methods are guarded to work as iteratees for methods like
+	 * `_.every`, `_.filter`, `_.map`, `_.mapValues`, `_.reject`, and `_.some`.
+	 *
+	 * The guarded methods are:
+	 * `ary`, `callback`, `chunk`, `clone`, `create`, `curry`, `curryRight`,
+	 * `drop`, `dropRight`, `every`, `fill`, `flatten`, `invert`, `max`, `min`,
+	 * `parseInt`, `slice`, `sortBy`, `take`, `takeRight`, `template`, `trim`,
+	 * `trimLeft`, `trimRight`, `trunc`, `random`, `range`, `sample`, `some`,
+	 * `sum`, `uniq`, and `words`
+	 *
+	 * @static
+	 * @memberOf _
+	 * @alias collect
+	 * @category Collection
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {Function|Object|string} [iteratee=_.identity] The function invoked
+	 *  per iteration.
+	 * @param {*} [thisArg] The `this` binding of `iteratee`.
+	 * @returns {Array} Returns the new mapped array.
+	 * @example
+	 *
+	 * function timesThree(n) {
+	 *   return n * 3;
+	 * }
+	 *
+	 * _.map([1, 2], timesThree);
+	 * // => [3, 6]
+	 *
+	 * _.map({ 'a': 1, 'b': 2 }, timesThree);
+	 * // => [3, 6] (iteration order is not guaranteed)
+	 *
+	 * var users = [
+	 *   { 'user': 'barney' },
+	 *   { 'user': 'fred' }
+	 * ];
+	 *
+	 * // using the `_.property` callback shorthand
+	 * _.map(users, 'user');
+	 * // => ['barney', 'fred']
+	 */
+	function map(collection, iteratee, thisArg) {
+	  var func = isArray(collection) ? arrayMap : baseMap;
+	  iteratee = baseCallback(iteratee, thisArg, 3);
+	  return func(collection, iteratee);
+	}
+	
+	module.exports = map;
+
+
+/***/ },
+/* 427 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `_.map` for arrays without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns the new mapped array.
+	 */
+	function arrayMap(array, iteratee) {
+	  var index = -1,
+	      length = array.length,
+	      result = Array(length);
+	
+	  while (++index < length) {
+	    result[index] = iteratee(array[index], index, array);
+	  }
+	  return result;
+	}
+	
+	module.exports = arrayMap;
+
+
+/***/ },
+/* 428 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseEach = __webpack_require__(348),
+	    isArrayLike = __webpack_require__(326);
+	
+	/**
+	 * The base implementation of `_.map` without support for callback shorthands
+	 * and `this` binding.
+	 *
+	 * @private
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns the new mapped array.
+	 */
+	function baseMap(collection, iteratee) {
+	  var index = -1,
+	      result = isArrayLike(collection) ? Array(collection.length) : [];
+	
+	  baseEach(collection, function(value, key, collection) {
+	    result[++index] = iteratee(value, key, collection);
+	  });
+	  return result;
+	}
+	
+	module.exports = baseMap;
+
+
+/***/ },
+/* 429 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayFilter = __webpack_require__(430),
+	    baseCallback = __webpack_require__(357),
+	    baseFilter = __webpack_require__(431),
+	    isArray = __webpack_require__(332);
+	
+	/**
+	 * Iterates over elements of `collection`, returning an array of all elements
+	 * `predicate` returns truthy for. The predicate is bound to `thisArg` and
+	 * invoked with three arguments: (value, index|key, collection).
+	 *
+	 * If a property name is provided for `predicate` the created `_.property`
+	 * style callback returns the property value of the given element.
+	 *
+	 * If a value is also provided for `thisArg` the created `_.matchesProperty`
+	 * style callback returns `true` for elements that have a matching property
+	 * value, else `false`.
+	 *
+	 * If an object is provided for `predicate` the created `_.matches` style
+	 * callback returns `true` for elements that have the properties of the given
+	 * object, else `false`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @alias select
+	 * @category Collection
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {Function|Object|string} [predicate=_.identity] The function invoked
+	 *  per iteration.
+	 * @param {*} [thisArg] The `this` binding of `predicate`.
+	 * @returns {Array} Returns the new filtered array.
+	 * @example
+	 *
+	 * _.filter([4, 5, 6], function(n) {
+	 *   return n % 2 == 0;
+	 * });
+	 * // => [4, 6]
+	 *
+	 * var users = [
+	 *   { 'user': 'barney', 'age': 36, 'active': true },
+	 *   { 'user': 'fred',   'age': 40, 'active': false }
+	 * ];
+	 *
+	 * // using the `_.matches` callback shorthand
+	 * _.pluck(_.filter(users, { 'age': 36, 'active': true }), 'user');
+	 * // => ['barney']
+	 *
+	 * // using the `_.matchesProperty` callback shorthand
+	 * _.pluck(_.filter(users, 'active', false), 'user');
+	 * // => ['fred']
+	 *
+	 * // using the `_.property` callback shorthand
+	 * _.pluck(_.filter(users, 'active'), 'user');
+	 * // => ['barney']
+	 */
+	function filter(collection, predicate, thisArg) {
+	  var func = isArray(collection) ? arrayFilter : baseFilter;
+	  predicate = baseCallback(predicate, thisArg, 3);
+	  return func(collection, predicate);
+	}
+	
+	module.exports = filter;
+
+
+/***/ },
+/* 430 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `_.filter` for arrays without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @returns {Array} Returns the new filtered array.
+	 */
+	function arrayFilter(array, predicate) {
+	  var index = -1,
+	      length = array.length,
+	      resIndex = -1,
+	      result = [];
+	
+	  while (++index < length) {
+	    var value = array[index];
+	    if (predicate(value, index, array)) {
+	      result[++resIndex] = value;
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = arrayFilter;
+
+
+/***/ },
+/* 431 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseEach = __webpack_require__(348);
+	
+	/**
+	 * The base implementation of `_.filter` without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @returns {Array} Returns the new filtered array.
+	 */
+	function baseFilter(collection, predicate) {
+	  var result = [];
+	  baseEach(collection, function(value, index, collection) {
+	    if (predicate(value, index, collection)) {
+	      result.push(value);
+	    }
+	  });
+	  return result;
+	}
+	
+	module.exports = baseFilter;
+
+
+/***/ },
+/* 432 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		"name": "Process Flow Diagram Definition",
+		"uri": "http://pfdn",
+		"associations": [],
+		"types": [
+			{
+				"name": "Base",
+				"isAbstract": true,
+				"properties": [
+					{
+						"name": "id",
+						"type": "String",
+						"isAttr": true,
+						"isId": true
+					}
+				]
+			},
+			{
+				"name": "Coordinates",
+				"properties": [
+					{
+						"name": "x",
+						"type": "Real",
+						"isAttr": true,
+						"default": 0
+					},
+					{
+						"name": "y",
+						"type": "Real",
+						"isAttr": true,
+						"default": 0
+					}
+				]
+			},
+			{
+				"name": "Zoom",
+				"properties": [
+					{
+						"name": "offset",
+						"type": "Coordinates",
+						"default": {
+							"x": 0,
+							"y": 0,
+							"scale": 2
+						}
+					},
+					{
+						"name": "scale",
+						"type": "Real",
+						"default": 1
+					}
+				]
+			},
+			{
+				"name": "Grid",
+				"properties": [
+					{
+						"name": "show",
+						"type": "Boolean",
+						"isAttr": true,
+						"default": true
+					},
+					{
+						"name": "color",
+						"type": "String",
+						"isAttr": true,
+						"default": "#ddd"
+					},
+					{
+						"name": "size",
+						"type": "Real",
+						"isAttr": true,
+						"default": 25
+					},
+					{
+						"name": "lineWidth",
+						"type": "Real",
+						"isAttr": true,
+						"default": 1
+					}
+				]
+			},
+			{
+				"name": "Settings",
+				"properties": [
+					{
+						"name": "name",
+						"type": "String",
+						"default": "No Name"
+					},
+					{
+						"name": "author",
+						"type": "String",
+						"default": "No Author"
+					},
+					{
+						"name": "backgroundColor",
+						"type": "String",
+						"default": "transparent"
+					},
+					{
+						"name": "zoom",
+						"type": "Zoom"
+					},
+					{
+						"name": "grid",
+						"type": "Grid"
+					}
+				]
+			},
+			{
+				"name": "Label",
+				"properties": [
+					{
+						"name": "position",
+						"type": "Coordinates"
+					},
+					{
+						"name": "text",
+						"type": "String",
+						"default": "Label1"
+					},
+					{
+						"name": "color",
+						"type": "String",
+						"isAttr": true,
+						"default": "black"
+					},
+					{
+						"name": "fontSize",
+						"type": "Real",
+						"isAttr": true,
+						"default": 16
+					}
+				]
+			},
+			{
+				"name": "Node",
+				"superClass": [
+					"Base"
+				],
+				"properties": [
+					{
+						"name": "label",
+						"type": "Label"
+					},
+					{
+						"name": "type",
+						"type": "String",
+						"isAttr": true,
+						"default": "default"
+					},
+					{
+						"name": "position",
+						"type": "Coordinates"
+					},
+					{
+						"name": "size",
+						"type": "Real",
+						"isAttr": true,
+						"default": 25
+					}
+				]
+			},
+			{
+				"name": "Zone",
+				"superClass": [
+					"Base"
+				],
+				"properties": [
+					{
+						"name": "label",
+						"type": "Label"
+					},
+					{
+						"name": "position",
+						"type": "Coordinates"
+					},
+					{
+						"name": "size",
+						"type": "Real",
+						"default": 25
+					}
+				]
+			},
+			{
+				"name": "Link",
+				"superClass": [
+					"Base"
+				],
+				"properties": [
+					{
+						"name": "label",
+						"type": "Label"
+					},
+					{
+						"name": "source",
+						"type": "String",
+						"isAttr": true,
+						"isReference": true
+					},
+					{
+						"name": "target",
+						"type": "String",
+						"isAttr": true,
+						"isReference": true
+					},
+					{
+						"name": "color",
+						"type": "String",
+						"isAttr": true,
+						"default": "blue"
+					},
+					{
+						"name": "waypoints",
+						"type": "Coordinates",
+						"isMany": true
+					}
+				]
+			},
+			{
+				"name": "Diagram",
+				"superClass": [
+					"Base"
+				],
+				"properties": [
+					{
+						"name": "settings",
+						"type": "Settings"
+					},
+					{
+						"name": "node",
+						"type": "Node",
+						"isMany": true
+					},
+					{
+						"name": "links",
+						"type": "Link",
+						"isMany": true
+					},
+					{
+						"name": "labels",
+						"type": "Label",
+						"isMany": true
+					},
+					{
+						"name": "zones",
+						"type": "Zone",
+						"isMany": true
+					}
+				]
+			}
+		],
+		"prefix": "pfdn",
+		"xml": {
+			"tagAlias": "lowerCase",
+			"typePrefix": "t"
+		}
+	};
+
+/***/ },
+/* 433 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __depends__: [
+	    __webpack_require__(434),
+	    __webpack_require__(436),
+	    __webpack_require__(531),
+	    __webpack_require__(533)
+	  ]
+	};
+
+/***/ },
+/* 434 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: [ 'force' ],
+	  force: [ 'type', __webpack_require__(435) ],
+	  __depends__: [
+	    __webpack_require__(436)
+	  ]
+	};
+
+/***/ },
+/* 435 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var d3 = __webpack_require__(313);
+	
+	/**
+	 * The D3 force handler.
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {Object} options
+	 * @param {EventBus} eventBus
+	 */
+	function Force(canvas, eventBus, nodes) {
+	
+	  this._force = {};
+	
+	  this._canvas = canvas;
+	  this._eventBus = eventBus;
+	  this._nodes = nodes;
+	
+	  this._init();
+	}
+	
+	Force.$inject = [ 'canvas', 'eventBus', 'nodes' ];
+	
+	module.exports = Force;
+	
+	Force.prototype._init = function() {
+	
+	  var that = this;
+	
+	  this._force = d3.forceSimulation(this._nodes._nodes);
+	
+	  this._links = d3.forceLink(this._nodes._links);
+	
+	  this._force.on('tick', function(){
+	    that._eventBus.emit('force.tick');
+	    //that._force.stop();
+	  });
+	
+	  that._eventBus.emit('force.init');
+	};
+
+/***/ },
+/* 436 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: [ 'nodes' ],
+	  nodes: [ 'type', __webpack_require__(437) ],
+	  __depends__: [
+	    __webpack_require__(503),
+	    __webpack_require__(529)
+	  ]
+	};
+
+/***/ },
+/* 437 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var cloneDeep = __webpack_require__(255).cloneDeep,
+	  forIn = __webpack_require__(6).forIn,
+	  forEach = __webpack_require__(438).forEach,
+	  isUndefined = __webpack_require__(255).isUndefined,
+	  _nodes = null,
+	  _nodesContainer = null
+	  ;
+	
+	/**
+	 * The node processing & drawing module.
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {Object} nodesDict
+	 * @param {Canvas} canvas
+	 * @param {EventBus} eventBus
+	 */
+	function Nodes(nodes, canvas, eventBus, iconLoader) {
+	  var that = this;
+	
+	  this._nodes = nodes;
+	  this._canvas = canvas;
+	  this._eventBus = eventBus;
+	  this._iconLoader = iconLoader;
+	
+	  this._init();
+	  this._eventBus.on('force.init', function(){
+	    that._draw();
+	  });
+	  this._eventBus.on('canvas.resized', function(){
+	    that._draw();
+	  });
+	}
+	
+	Nodes.$inject = [ 'd3polytree.definitions.node', 'canvas', 'eventBus', 'iconLoader' ];
+	
+	module.exports = Nodes;
+	
+	Nodes.prototype._draw = function() {
+	  var that = this;
+	  if (_nodesContainer){
+	    // delete previous nodes
+	    _nodesContainer.remove();
+	  }
+	  _nodesContainer = this._canvas.getDrawingLayer()
+	    .append('g')
+	    .attr('class', 'nodes');
+	  // draw the nodes wraps
+	  _nodes = _nodesContainer
+	    .selectAll('.node')
+	    .data(this._nodes)
+	    .enter()
+	    .append('g')
+	    .attr('class', 'node')
+	    .attr('node-id', function(d){
+	      return d.id;
+	    })
+	    // .attr('fx', function(d){
+	    //   console.log(d);
+	    //   return !isUndefined(d.position.x) ? d.position.x : d.x;
+	    // })
+	    // .attr('fy', function(d){
+	    //   return !isUndefined(d.position.y) ? d.position.y : d.y;
+	    // })
+	    .attr('transform', function(d){
+	      return 'translate(' + d.position.x + ',' + d.position.y + ')';
+	    });
+	  _nodes.on('mouseover', function(){
+	    console.log('node mouseover');
+	  });
+	  // draw the nodes icons
+	  _nodes
+	    .append('svg')
+	    .attr('width', function(d){
+	      return !isUndefined(d.size) ? d.size : 50;
+	    })
+	    .attr('height', function(d){
+	      return !isUndefined(d.size) ? d.size : 50;
+	    })
+	    .attr('viewBox', function(d) {
+	      return (!isUndefined(that._iconLoader._processedIcons[d.type])) ? that._iconLoader._processedIcons[d.type] :
+	        that._iconLoader._processedIcons['default'];
+	    })
+	    .attr('preserveAspectRatio', 'xMaxYMax meet')
+	    .append('use')
+	    .attr('xlink:href', function(d) {
+	      return (!isUndefined(that._iconLoader._processedIcons[d.type])) ? '#'+d.type+'_icon_def' :
+	        '#default_icon_def';
+	    });
+	};
+	
+	Nodes.prototype._init = function() {
+	
+	};
+
+/***/ },
+/* 438 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  'countBy': __webpack_require__(439),
+	  'each': __webpack_require__(445),
+	  'eachRight': __webpack_require__(447),
+	  'every': __webpack_require__(451),
+	  'filter': __webpack_require__(454),
+	  'find': __webpack_require__(456),
+	  'findLast': __webpack_require__(460),
+	  'flatMap': __webpack_require__(462),
+	  'flatMapDeep': __webpack_require__(465),
+	  'flatMapDepth': __webpack_require__(466),
+	  'forEach': __webpack_require__(446),
+	  'forEachRight': __webpack_require__(448),
+	  'groupBy': __webpack_require__(467),
+	  'includes': __webpack_require__(468),
+	  'invokeMap': __webpack_require__(472),
+	  'keyBy': __webpack_require__(473),
+	  'map': __webpack_require__(463),
+	  'orderBy': __webpack_require__(474),
+	  'partition': __webpack_require__(479),
+	  'reduce': __webpack_require__(480),
+	  'reduceRight': __webpack_require__(482),
+	  'reject': __webpack_require__(484),
+	  'sample': __webpack_require__(485),
+	  'sampleSize': __webpack_require__(489),
+	  'shuffle': __webpack_require__(493),
+	  'size': __webpack_require__(496),
+	  'some': __webpack_require__(500),
+	  'sortBy': __webpack_require__(502)
+	};
+
+
+/***/ },
+/* 439 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseAssignValue = __webpack_require__(9),
+	    createAggregator = __webpack_require__(440);
+	
+	/** Used for built-in method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Creates an object composed of keys generated from the results of running
+	 * each element of `collection` thru `iteratee`. The corresponding value of
+	 * each key is the number of times the key was returned by `iteratee`. The
+	 * iteratee is invoked with one argument: (value).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.5.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The iteratee to transform keys.
+	 * @returns {Object} Returns the composed aggregate object.
+	 * @example
+	 *
+	 * _.countBy([6.1, 4.2, 6.3], Math.floor);
+	 * // => { '4': 1, '6': 2 }
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.countBy(['one', 'two', 'three'], 'length');
+	 * // => { '3': 2, '5': 1 }
+	 */
+	var countBy = createAggregator(function(result, value, key) {
+	  if (hasOwnProperty.call(result, key)) {
+	    ++result[key];
+	  } else {
+	    baseAssignValue(result, key, 1);
+	  }
+	});
+	
+	module.exports = countBy;
+
+
+/***/ },
+/* 440 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayAggregator = __webpack_require__(441),
+	    baseAggregator = __webpack_require__(442),
+	    baseIteratee = __webpack_require__(153),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * Creates a function like `_.groupBy`.
+	 *
+	 * @private
+	 * @param {Function} setter The function to set accumulator values.
+	 * @param {Function} [initializer] The accumulator object initializer.
+	 * @returns {Function} Returns the new aggregator function.
+	 */
+	function createAggregator(setter, initializer) {
+	  return function(collection, iteratee) {
+	    var func = isArray(collection) ? arrayAggregator : baseAggregator,
+	        accumulator = initializer ? initializer() : {};
+	
+	    return func(collection, setter, baseIteratee(iteratee, 2), accumulator);
+	  };
+	}
+	
+	module.exports = createAggregator;
+
+
+/***/ },
+/* 441 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `baseAggregator` for arrays.
+	 *
+	 * @private
+	 * @param {Array} [array] The array to iterate over.
+	 * @param {Function} setter The function to set `accumulator` values.
+	 * @param {Function} iteratee The iteratee to transform keys.
+	 * @param {Object} accumulator The initial aggregated object.
+	 * @returns {Function} Returns `accumulator`.
+	 */
+	function arrayAggregator(array, setter, iteratee, accumulator) {
+	  var index = -1,
+	      length = array == null ? 0 : array.length;
+	
+	  while (++index < length) {
+	    var value = array[index];
+	    setter(accumulator, value, iteratee(value), array);
+	  }
+	  return accumulator;
+	}
+	
+	module.exports = arrayAggregator;
+
+
+/***/ },
+/* 442 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseEach = __webpack_require__(443);
+	
+	/**
+	 * Aggregates elements of `collection` on `accumulator` with keys transformed
+	 * by `iteratee` and values set by `setter`.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} setter The function to set `accumulator` values.
+	 * @param {Function} iteratee The iteratee to transform keys.
+	 * @param {Object} accumulator The initial aggregated object.
+	 * @returns {Function} Returns `accumulator`.
+	 */
+	function baseAggregator(collection, setter, iteratee, accumulator) {
+	  baseEach(collection, function(value, key, collection) {
+	    setter(accumulator, value, iteratee(value), collection);
+	  });
+	  return accumulator;
+	}
+	
+	module.exports = baseAggregator;
+
+
+/***/ },
+/* 443 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseForOwn = __webpack_require__(152),
+	    createBaseEach = __webpack_require__(444);
+	
+	/**
+	 * The base implementation of `_.forEach` without support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array|Object} Returns `collection`.
+	 */
+	var baseEach = createBaseEach(baseForOwn);
+	
+	module.exports = baseEach;
+
+
+/***/ },
+/* 444 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isArrayLike = __webpack_require__(37);
+	
+	/**
+	 * Creates a `baseEach` or `baseEachRight` function.
+	 *
+	 * @private
+	 * @param {Function} eachFunc The function to iterate over a collection.
+	 * @param {boolean} [fromRight] Specify iterating from right to left.
+	 * @returns {Function} Returns the new base function.
+	 */
+	function createBaseEach(eachFunc, fromRight) {
+	  return function(collection, iteratee) {
+	    if (collection == null) {
+	      return collection;
+	    }
+	    if (!isArrayLike(collection)) {
+	      return eachFunc(collection, iteratee);
+	    }
+	    var length = collection.length,
+	        index = fromRight ? length : -1,
+	        iterable = Object(collection);
+	
+	    while ((fromRight ? index-- : ++index < length)) {
+	      if (iteratee(iterable[index], index, iterable) === false) {
+	        break;
+	      }
+	    }
+	    return collection;
+	  };
+	}
+	
+	module.exports = createBaseEach;
+
+
+/***/ },
+/* 445 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(446);
+
+
+/***/ },
+/* 446 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayEach = __webpack_require__(205),
+	    baseEach = __webpack_require__(443),
+	    castFunction = __webpack_require__(181),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * Iterates over elements of `collection` and invokes `iteratee` for each element.
+	 * The iteratee is invoked with three arguments: (value, index|key, collection).
+	 * Iteratee functions may exit iteration early by explicitly returning `false`.
+	 *
+	 * **Note:** As with other "Collections" methods, objects with a "length"
+	 * property are iterated like arrays. To avoid this behavior use `_.forIn`
+	 * or `_.forOwn` for object iteration.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @alias each
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @returns {Array|Object} Returns `collection`.
+	 * @see _.forEachRight
+	 * @example
+	 *
+	 * _.forEach([1, 2], function(value) {
+	 *   console.log(value);
+	 * });
+	 * // => Logs `1` then `2`.
+	 *
+	 * _.forEach({ 'a': 1, 'b': 2 }, function(value, key) {
+	 *   console.log(key);
+	 * });
+	 * // => Logs 'a' then 'b' (iteration order is not guaranteed).
+	 */
+	function forEach(collection, iteratee) {
+	  var func = isArray(collection) ? arrayEach : baseEach;
+	  return func(collection, castFunction(iteratee));
+	}
+	
+	module.exports = forEach;
+
+
+/***/ },
+/* 447 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(448);
+
+
+/***/ },
+/* 448 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayEachRight = __webpack_require__(449),
+	    baseEachRight = __webpack_require__(450),
+	    castFunction = __webpack_require__(181),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * This method is like `_.forEach` except that it iterates over elements of
+	 * `collection` from right to left.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 2.0.0
+	 * @alias eachRight
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @returns {Array|Object} Returns `collection`.
+	 * @see _.forEach
+	 * @example
+	 *
+	 * _.forEachRight([1, 2], function(value) {
+	 *   console.log(value);
+	 * });
+	 * // => Logs `2` then `1`.
+	 */
+	function forEachRight(collection, iteratee) {
+	  var func = isArray(collection) ? arrayEachRight : baseEachRight;
+	  return func(collection, castFunction(iteratee));
+	}
+	
+	module.exports = forEachRight;
+
+
+/***/ },
+/* 449 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `_.forEachRight` for arrays without support for
+	 * iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array} [array] The array to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns `array`.
+	 */
+	function arrayEachRight(array, iteratee) {
+	  var length = array == null ? 0 : array.length;
+	
+	  while (length--) {
+	    if (iteratee(array[length], length, array) === false) {
+	      break;
+	    }
+	  }
+	  return array;
+	}
+	
+	module.exports = arrayEachRight;
+
+
+/***/ },
+/* 450 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseForOwnRight = __webpack_require__(178),
+	    createBaseEach = __webpack_require__(444);
+	
+	/**
+	 * The base implementation of `_.forEachRight` without support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array|Object} Returns `collection`.
+	 */
+	var baseEachRight = createBaseEach(baseForOwnRight, true);
+	
+	module.exports = baseEachRight;
+
+
+/***/ },
+/* 451 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayEvery = __webpack_require__(452),
+	    baseEvery = __webpack_require__(453),
+	    baseIteratee = __webpack_require__(153),
+	    isArray = __webpack_require__(47),
+	    isIterateeCall = __webpack_require__(36);
+	
+	/**
+	 * Checks if `predicate` returns truthy for **all** elements of `collection`.
+	 * Iteration is stopped once `predicate` returns falsey. The predicate is
+	 * invoked with three arguments: (value, index|key, collection).
+	 *
+	 * **Note:** This method returns `true` for
+	 * [empty collections](https://en.wikipedia.org/wiki/Empty_set) because
+	 * [everything is true](https://en.wikipedia.org/wiki/Vacuous_truth) of
+	 * elements of empty collections.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
+	 * @returns {boolean} Returns `true` if all elements pass the predicate check,
+	 *  else `false`.
+	 * @example
+	 *
+	 * _.every([true, 1, null, 'yes'], Boolean);
+	 * // => false
+	 *
+	 * var users = [
+	 *   { 'user': 'barney', 'age': 36, 'active': false },
+	 *   { 'user': 'fred',   'age': 40, 'active': false }
+	 * ];
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.every(users, { 'user': 'barney', 'active': false });
+	 * // => false
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.every(users, ['active', false]);
+	 * // => true
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.every(users, 'active');
+	 * // => false
+	 */
+	function every(collection, predicate, guard) {
+	  var func = isArray(collection) ? arrayEvery : baseEvery;
+	  if (guard && isIterateeCall(collection, predicate, guard)) {
+	    predicate = undefined;
+	  }
+	  return func(collection, baseIteratee(predicate, 3));
+	}
+	
+	module.exports = every;
+
+
+/***/ },
+/* 452 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `_.every` for arrays without support for
+	 * iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array} [array] The array to iterate over.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @returns {boolean} Returns `true` if all elements pass the predicate check,
+	 *  else `false`.
+	 */
+	function arrayEvery(array, predicate) {
+	  var index = -1,
+	      length = array == null ? 0 : array.length;
+	
+	  while (++index < length) {
+	    if (!predicate(array[index], index, array)) {
+	      return false;
+	    }
+	  }
+	  return true;
+	}
+	
+	module.exports = arrayEvery;
+
+
+/***/ },
+/* 453 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseEach = __webpack_require__(443);
+	
+	/**
+	 * The base implementation of `_.every` without support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @returns {boolean} Returns `true` if all elements pass the predicate check,
+	 *  else `false`
+	 */
+	function baseEvery(collection, predicate) {
+	  var result = true;
+	  baseEach(collection, function(value, index, collection) {
+	    result = !!predicate(value, index, collection);
+	    return result;
+	  });
+	  return result;
+	}
+	
+	module.exports = baseEvery;
+
+
+/***/ },
+/* 454 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayFilter = __webpack_require__(187),
+	    baseFilter = __webpack_require__(455),
+	    baseIteratee = __webpack_require__(153),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * Iterates over elements of `collection`, returning an array of all elements
+	 * `predicate` returns truthy for. The predicate is invoked with three
+	 * arguments: (value, index|key, collection).
+	 *
+	 * **Note:** Unlike `_.remove`, this method returns a new array.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @returns {Array} Returns the new filtered array.
+	 * @see _.reject
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'barney', 'age': 36, 'active': true },
+	 *   { 'user': 'fred',   'age': 40, 'active': false }
+	 * ];
+	 *
+	 * _.filter(users, function(o) { return !o.active; });
+	 * // => objects for ['fred']
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.filter(users, { 'age': 36, 'active': true });
+	 * // => objects for ['barney']
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.filter(users, ['active', false]);
+	 * // => objects for ['fred']
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.filter(users, 'active');
+	 * // => objects for ['barney']
+	 */
+	function filter(collection, predicate) {
+	  var func = isArray(collection) ? arrayFilter : baseFilter;
+	  return func(collection, baseIteratee(predicate, 3));
+	}
+	
+	module.exports = filter;
+
+
+/***/ },
+/* 455 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseEach = __webpack_require__(443);
+	
+	/**
+	 * The base implementation of `_.filter` without support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @returns {Array} Returns the new filtered array.
+	 */
+	function baseFilter(collection, predicate) {
+	  var result = [];
+	  baseEach(collection, function(value, index, collection) {
+	    if (predicate(value, index, collection)) {
+	      result.push(value);
+	    }
+	  });
+	  return result;
+	}
+	
+	module.exports = baseFilter;
+
+
+/***/ },
+/* 456 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var createFind = __webpack_require__(457),
+	    findIndex = __webpack_require__(458);
+	
+	/**
+	 * Iterates over elements of `collection`, returning the first element
+	 * `predicate` returns truthy for. The predicate is invoked with three
+	 * arguments: (value, index|key, collection).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to inspect.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @param {number} [fromIndex=0] The index to search from.
+	 * @returns {*} Returns the matched element, else `undefined`.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'barney',  'age': 36, 'active': true },
+	 *   { 'user': 'fred',    'age': 40, 'active': false },
+	 *   { 'user': 'pebbles', 'age': 1,  'active': true }
+	 * ];
+	 *
+	 * _.find(users, function(o) { return o.age < 40; });
+	 * // => object for 'barney'
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.find(users, { 'age': 1, 'active': true });
+	 * // => object for 'pebbles'
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.find(users, ['active', false]);
+	 * // => object for 'fred'
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.find(users, 'active');
+	 * // => object for 'barney'
+	 */
+	var find = createFind(findIndex);
+	
+	module.exports = find;
+
+
+/***/ },
+/* 457 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseIteratee = __webpack_require__(153),
+	    isArrayLike = __webpack_require__(37),
+	    keys = __webpack_require__(41);
+	
+	/**
+	 * Creates a `_.find` or `_.findLast` function.
+	 *
+	 * @private
+	 * @param {Function} findIndexFunc The function to find the collection index.
+	 * @returns {Function} Returns the new find function.
+	 */
+	function createFind(findIndexFunc) {
+	  return function(collection, predicate, fromIndex) {
+	    var iterable = Object(collection);
+	    if (!isArrayLike(collection)) {
+	      var iteratee = baseIteratee(predicate, 3);
+	      collection = keys(collection);
+	      predicate = function(key) { return iteratee(iterable[key], key, iterable); };
+	    }
+	    var index = findIndexFunc(collection, predicate, fromIndex);
+	    return index > -1 ? iterable[iteratee ? collection[index] : index] : undefined;
+	  };
+	}
+	
+	module.exports = createFind;
+
+
+/***/ },
+/* 458 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseFindIndex = __webpack_require__(459),
+	    baseIteratee = __webpack_require__(153),
+	    toInteger = __webpack_require__(280);
+	
+	/* Built-in method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+	
+	/**
+	 * This method is like `_.find` except that it returns the index of the first
+	 * element `predicate` returns truthy for instead of the element itself.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 1.1.0
+	 * @category Array
+	 * @param {Array} array The array to inspect.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @param {number} [fromIndex=0] The index to search from.
+	 * @returns {number} Returns the index of the found element, else `-1`.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'barney',  'active': false },
+	 *   { 'user': 'fred',    'active': false },
+	 *   { 'user': 'pebbles', 'active': true }
+	 * ];
+	 *
+	 * _.findIndex(users, function(o) { return o.user == 'barney'; });
+	 * // => 0
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.findIndex(users, { 'user': 'fred', 'active': false });
+	 * // => 1
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.findIndex(users, ['active', false]);
+	 * // => 0
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.findIndex(users, 'active');
+	 * // => 2
+	 */
+	function findIndex(array, predicate, fromIndex) {
+	  var length = array == null ? 0 : array.length;
+	  if (!length) {
+	    return -1;
+	  }
+	  var index = fromIndex == null ? 0 : toInteger(fromIndex);
+	  if (index < 0) {
+	    index = nativeMax(length + index, 0);
+	  }
+	  return baseFindIndex(array, baseIteratee(predicate, 3), index);
+	}
+	
+	module.exports = findIndex;
+
+
+/***/ },
+/* 459 */
+/***/ function(module, exports) {
+
+	/**
+	 * The base implementation of `_.findIndex` and `_.findLastIndex` without
+	 * support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array} array The array to inspect.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @param {number} fromIndex The index to search from.
+	 * @param {boolean} [fromRight] Specify iterating from right to left.
+	 * @returns {number} Returns the index of the matched value, else `-1`.
+	 */
+	function baseFindIndex(array, predicate, fromIndex, fromRight) {
+	  var length = array.length,
+	      index = fromIndex + (fromRight ? 1 : -1);
+	
+	  while ((fromRight ? index-- : ++index < length)) {
+	    if (predicate(array[index], index, array)) {
+	      return index;
+	    }
+	  }
+	  return -1;
+	}
+	
+	module.exports = baseFindIndex;
+
+
+/***/ },
+/* 460 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var createFind = __webpack_require__(457),
+	    findLastIndex = __webpack_require__(461);
+	
+	/**
+	 * This method is like `_.find` except that it iterates over elements of
+	 * `collection` from right to left.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 2.0.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to inspect.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @param {number} [fromIndex=collection.length-1] The index to search from.
+	 * @returns {*} Returns the matched element, else `undefined`.
+	 * @example
+	 *
+	 * _.findLast([1, 2, 3, 4], function(n) {
+	 *   return n % 2 == 1;
+	 * });
+	 * // => 3
+	 */
+	var findLast = createFind(findLastIndex);
+	
+	module.exports = findLast;
+
+
+/***/ },
+/* 461 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseFindIndex = __webpack_require__(459),
+	    baseIteratee = __webpack_require__(153),
+	    toInteger = __webpack_require__(280);
+	
+	/* Built-in method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max,
+	    nativeMin = Math.min;
+	
+	/**
+	 * This method is like `_.findIndex` except that it iterates over elements
+	 * of `collection` from right to left.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 2.0.0
+	 * @category Array
+	 * @param {Array} array The array to inspect.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @param {number} [fromIndex=array.length-1] The index to search from.
+	 * @returns {number} Returns the index of the found element, else `-1`.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'barney',  'active': true },
+	 *   { 'user': 'fred',    'active': false },
+	 *   { 'user': 'pebbles', 'active': false }
+	 * ];
+	 *
+	 * _.findLastIndex(users, function(o) { return o.user == 'pebbles'; });
+	 * // => 2
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.findLastIndex(users, { 'user': 'barney', 'active': true });
+	 * // => 0
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.findLastIndex(users, ['active', false]);
+	 * // => 2
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.findLastIndex(users, 'active');
+	 * // => 0
+	 */
+	function findLastIndex(array, predicate, fromIndex) {
+	  var length = array == null ? 0 : array.length;
+	  if (!length) {
+	    return -1;
+	  }
+	  var index = length - 1;
+	  if (fromIndex !== undefined) {
+	    index = toInteger(fromIndex);
+	    index = fromIndex < 0
+	      ? nativeMax(length + index, 0)
+	      : nativeMin(index, length - 1);
+	  }
+	  return baseFindIndex(array, baseIteratee(predicate, 3), index, true);
+	}
+	
+	module.exports = findLastIndex;
+
+
+/***/ },
+/* 462 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseFlatten = __webpack_require__(103),
+	    map = __webpack_require__(463);
+	
+	/**
+	 * Creates a flattened array of values by running each element in `collection`
+	 * thru `iteratee` and flattening the mapped results. The iteratee is invoked
+	 * with three arguments: (value, index|key, collection).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @returns {Array} Returns the new flattened array.
+	 * @example
+	 *
+	 * function duplicate(n) {
+	 *   return [n, n];
+	 * }
+	 *
+	 * _.flatMap([1, 2], duplicate);
+	 * // => [1, 1, 2, 2]
+	 */
+	function flatMap(collection, iteratee) {
+	  return baseFlatten(map(collection, iteratee), 1);
+	}
+	
+	module.exports = flatMap;
+
+
+/***/ },
+/* 463 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayMap = __webpack_require__(99),
+	    baseIteratee = __webpack_require__(153),
+	    baseMap = __webpack_require__(464),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * Creates an array of values by running each element in `collection` thru
+	 * `iteratee`. The iteratee is invoked with three arguments:
+	 * (value, index|key, collection).
+	 *
+	 * Many lodash methods are guarded to work as iteratees for methods like
+	 * `_.every`, `_.filter`, `_.map`, `_.mapValues`, `_.reject`, and `_.some`.
+	 *
+	 * The guarded methods are:
+	 * `ary`, `chunk`, `curry`, `curryRight`, `drop`, `dropRight`, `every`,
+	 * `fill`, `invert`, `parseInt`, `random`, `range`, `rangeRight`, `repeat`,
+	 * `sampleSize`, `slice`, `some`, `sortBy`, `split`, `take`, `takeRight`,
+	 * `template`, `trim`, `trimEnd`, `trimStart`, and `words`
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @returns {Array} Returns the new mapped array.
+	 * @example
+	 *
+	 * function square(n) {
+	 *   return n * n;
+	 * }
+	 *
+	 * _.map([4, 8], square);
+	 * // => [16, 64]
+	 *
+	 * _.map({ 'a': 4, 'b': 8 }, square);
+	 * // => [16, 64] (iteration order is not guaranteed)
+	 *
+	 * var users = [
+	 *   { 'user': 'barney' },
+	 *   { 'user': 'fred' }
+	 * ];
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.map(users, 'user');
+	 * // => ['barney', 'fred']
+	 */
+	function map(collection, iteratee) {
+	  var func = isArray(collection) ? arrayMap : baseMap;
+	  return func(collection, baseIteratee(iteratee, 3));
+	}
+	
+	module.exports = map;
+
+
+/***/ },
+/* 464 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseEach = __webpack_require__(443),
+	    isArrayLike = __webpack_require__(37);
+	
+	/**
+	 * The base implementation of `_.map` without support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns the new mapped array.
+	 */
+	function baseMap(collection, iteratee) {
+	  var index = -1,
+	      result = isArrayLike(collection) ? Array(collection.length) : [];
+	
+	  baseEach(collection, function(value, key, collection) {
+	    result[++index] = iteratee(value, key, collection);
+	  });
+	  return result;
+	}
+	
+	module.exports = baseMap;
+
+
+/***/ },
+/* 465 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseFlatten = __webpack_require__(103),
+	    map = __webpack_require__(463);
+	
+	/** Used as references for various `Number` constants. */
+	var INFINITY = 1 / 0;
+	
+	/**
+	 * This method is like `_.flatMap` except that it recursively flattens the
+	 * mapped results.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.7.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @returns {Array} Returns the new flattened array.
+	 * @example
+	 *
+	 * function duplicate(n) {
+	 *   return [[[n, n]]];
+	 * }
+	 *
+	 * _.flatMapDeep([1, 2], duplicate);
+	 * // => [1, 1, 2, 2]
+	 */
+	function flatMapDeep(collection, iteratee) {
+	  return baseFlatten(map(collection, iteratee), INFINITY);
+	}
+	
+	module.exports = flatMapDeep;
+
+
+/***/ },
+/* 466 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseFlatten = __webpack_require__(103),
+	    map = __webpack_require__(463),
+	    toInteger = __webpack_require__(280);
+	
+	/**
+	 * This method is like `_.flatMap` except that it recursively flattens the
+	 * mapped results up to `depth` times.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.7.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @param {number} [depth=1] The maximum recursion depth.
+	 * @returns {Array} Returns the new flattened array.
+	 * @example
+	 *
+	 * function duplicate(n) {
+	 *   return [[[n, n]]];
+	 * }
+	 *
+	 * _.flatMapDepth([1, 2], duplicate, 2);
+	 * // => [[1, 1], [2, 2]]
+	 */
+	function flatMapDepth(collection, iteratee, depth) {
+	  depth = depth === undefined ? 1 : toInteger(depth);
+	  return baseFlatten(map(collection, iteratee), depth);
+	}
+	
+	module.exports = flatMapDepth;
+
+
+/***/ },
+/* 467 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseAssignValue = __webpack_require__(9),
+	    createAggregator = __webpack_require__(440);
+	
+	/** Used for built-in method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Creates an object composed of keys generated from the results of running
+	 * each element of `collection` thru `iteratee`. The order of grouped values
+	 * is determined by the order they occur in `collection`. The corresponding
+	 * value of each key is an array of elements responsible for generating the
+	 * key. The iteratee is invoked with one argument: (value).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The iteratee to transform keys.
+	 * @returns {Object} Returns the composed aggregate object.
+	 * @example
+	 *
+	 * _.groupBy([6.1, 4.2, 6.3], Math.floor);
+	 * // => { '4': [4.2], '6': [6.1, 6.3] }
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.groupBy(['one', 'two', 'three'], 'length');
+	 * // => { '3': ['one', 'two'], '5': ['three'] }
+	 */
+	var groupBy = createAggregator(function(result, value, key) {
+	  if (hasOwnProperty.call(result, key)) {
+	    result[key].push(value);
+	  } else {
+	    baseAssignValue(result, key, [value]);
+	  }
+	});
+	
+	module.exports = groupBy;
+
+
+/***/ },
+/* 468 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseIndexOf = __webpack_require__(469),
+	    isArrayLike = __webpack_require__(37),
+	    isString = __webpack_require__(297),
+	    toInteger = __webpack_require__(280),
+	    values = __webpack_require__(241);
+	
+	/* Built-in method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+	
+	/**
+	 * Checks if `value` is in `collection`. If `collection` is a string, it's
+	 * checked for a substring of `value`, otherwise
+	 * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+	 * is used for equality comparisons. If `fromIndex` is negative, it's used as
+	 * the offset from the end of `collection`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object|string} collection The collection to inspect.
+	 * @param {*} value The value to search for.
+	 * @param {number} [fromIndex=0] The index to search from.
+	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.reduce`.
+	 * @returns {boolean} Returns `true` if `value` is found, else `false`.
+	 * @example
+	 *
+	 * _.includes([1, 2, 3], 1);
+	 * // => true
+	 *
+	 * _.includes([1, 2, 3], 1, 2);
+	 * // => false
+	 *
+	 * _.includes({ 'a': 1, 'b': 2 }, 1);
+	 * // => true
+	 *
+	 * _.includes('abcd', 'bc');
+	 * // => true
+	 */
+	function includes(collection, value, fromIndex, guard) {
+	  collection = isArrayLike(collection) ? collection : values(collection);
+	  fromIndex = (fromIndex && !guard) ? toInteger(fromIndex) : 0;
+	
+	  var length = collection.length;
+	  if (fromIndex < 0) {
+	    fromIndex = nativeMax(length + fromIndex, 0);
+	  }
+	  return isString(collection)
+	    ? (fromIndex <= length && collection.indexOf(value, fromIndex) > -1)
+	    : (!!length && baseIndexOf(collection, value, fromIndex) > -1);
+	}
+	
+	module.exports = includes;
+
+
+/***/ },
+/* 469 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseFindIndex = __webpack_require__(459),
+	    baseIsNaN = __webpack_require__(470),
+	    strictIndexOf = __webpack_require__(471);
+	
+	/**
+	 * The base implementation of `_.indexOf` without `fromIndex` bounds checks.
+	 *
+	 * @private
+	 * @param {Array} array The array to inspect.
+	 * @param {*} value The value to search for.
+	 * @param {number} fromIndex The index to search from.
+	 * @returns {number} Returns the index of the matched value, else `-1`.
+	 */
+	function baseIndexOf(array, value, fromIndex) {
+	  return value === value
+	    ? strictIndexOf(array, value, fromIndex)
+	    : baseFindIndex(array, baseIsNaN, fromIndex);
+	}
+	
+	module.exports = baseIndexOf;
+
+
+/***/ },
+/* 470 */
+/***/ function(module, exports) {
+
+	/**
+	 * The base implementation of `_.isNaN` without support for number objects.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
+	 */
+	function baseIsNaN(value) {
+	  return value !== value;
+	}
+	
+	module.exports = baseIsNaN;
+
+
+/***/ },
+/* 471 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `_.indexOf` which performs strict equality
+	 * comparisons of values, i.e. `===`.
+	 *
+	 * @private
+	 * @param {Array} array The array to inspect.
+	 * @param {*} value The value to search for.
+	 * @param {number} fromIndex The index to search from.
+	 * @returns {number} Returns the index of the matched value, else `-1`.
+	 */
+	function strictIndexOf(array, value, fromIndex) {
+	  var index = fromIndex - 1,
+	      length = array.length;
+	
+	  while (++index < length) {
+	    if (array[index] === value) {
+	      return index;
+	    }
+	  }
+	  return -1;
+	}
+	
+	module.exports = strictIndexOf;
+
+
+/***/ },
+/* 472 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var apply = __webpack_require__(31),
+	    baseEach = __webpack_require__(443),
+	    baseInvoke = __webpack_require__(196),
+	    baseRest = __webpack_require__(28),
+	    isArrayLike = __webpack_require__(37);
+	
+	/**
+	 * Invokes the method at `path` of each element in `collection`, returning
+	 * an array of the results of each invoked method. Any additional arguments
+	 * are provided to each invoked method. If `path` is a function, it's invoked
+	 * for, and `this` bound to, each element in `collection`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Array|Function|string} path The path of the method to invoke or
+	 *  the function invoked per iteration.
+	 * @param {...*} [args] The arguments to invoke each method with.
+	 * @returns {Array} Returns the array of results.
+	 * @example
+	 *
+	 * _.invokeMap([[5, 1, 7], [3, 2, 1]], 'sort');
+	 * // => [[1, 5, 7], [1, 2, 3]]
+	 *
+	 * _.invokeMap([123, 456], String.prototype.split, '');
+	 * // => [['1', '2', '3'], ['4', '5', '6']]
+	 */
+	var invokeMap = baseRest(function(collection, path, args) {
+	  var index = -1,
+	      isFunc = typeof path == 'function',
+	      result = isArrayLike(collection) ? Array(collection.length) : [];
+	
+	  baseEach(collection, function(value) {
+	    result[++index] = isFunc ? apply(path, value, args) : baseInvoke(value, path, args);
+	  });
+	  return result;
+	});
+	
+	module.exports = invokeMap;
+
+
+/***/ },
+/* 473 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseAssignValue = __webpack_require__(9),
+	    createAggregator = __webpack_require__(440);
+	
+	/**
+	 * Creates an object composed of keys generated from the results of running
+	 * each element of `collection` thru `iteratee`. The corresponding value of
+	 * each key is the last element responsible for generating the key. The
+	 * iteratee is invoked with one argument: (value).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The iteratee to transform keys.
+	 * @returns {Object} Returns the composed aggregate object.
+	 * @example
+	 *
+	 * var array = [
+	 *   { 'dir': 'left', 'code': 97 },
+	 *   { 'dir': 'right', 'code': 100 }
+	 * ];
+	 *
+	 * _.keyBy(array, function(o) {
+	 *   return String.fromCharCode(o.code);
+	 * });
+	 * // => { 'a': { 'dir': 'left', 'code': 97 }, 'd': { 'dir': 'right', 'code': 100 } }
+	 *
+	 * _.keyBy(array, 'dir');
+	 * // => { 'left': { 'dir': 'left', 'code': 97 }, 'right': { 'dir': 'right', 'code': 100 } }
+	 */
+	var keyBy = createAggregator(function(result, value, key) {
+	  baseAssignValue(result, key, value);
+	});
+	
+	module.exports = keyBy;
+
+
+/***/ },
+/* 474 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseOrderBy = __webpack_require__(475),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * This method is like `_.sortBy` except that it allows specifying the sort
+	 * orders of the iteratees to sort by. If `orders` is unspecified, all values
+	 * are sorted in ascending order. Otherwise, specify an order of "desc" for
+	 * descending or "asc" for ascending sort order of corresponding values.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Array[]|Function[]|Object[]|string[]} [iteratees=[_.identity]]
+	 *  The iteratees to sort by.
+	 * @param {string[]} [orders] The sort orders of `iteratees`.
+	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.reduce`.
+	 * @returns {Array} Returns the new sorted array.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'fred',   'age': 48 },
+	 *   { 'user': 'barney', 'age': 34 },
+	 *   { 'user': 'fred',   'age': 40 },
+	 *   { 'user': 'barney', 'age': 36 }
+	 * ];
+	 *
+	 * // Sort by `user` in ascending order and by `age` in descending order.
+	 * _.orderBy(users, ['user', 'age'], ['asc', 'desc']);
+	 * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
+	 */
+	function orderBy(collection, iteratees, orders, guard) {
+	  if (collection == null) {
+	    return [];
+	  }
+	  if (!isArray(iteratees)) {
+	    iteratees = iteratees == null ? [] : [iteratees];
+	  }
+	  orders = guard ? undefined : orders;
+	  if (!isArray(orders)) {
+	    orders = orders == null ? [] : [orders];
+	  }
+	  return baseOrderBy(collection, iteratees, orders);
+	}
+	
+	module.exports = orderBy;
+
+
+/***/ },
+/* 475 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayMap = __webpack_require__(99),
+	    baseIteratee = __webpack_require__(153),
+	    baseMap = __webpack_require__(464),
+	    baseSortBy = __webpack_require__(476),
+	    baseUnary = __webpack_require__(53),
+	    compareMultiple = __webpack_require__(477),
+	    identity = __webpack_require__(29);
+	
+	/**
+	 * The base implementation of `_.orderBy` without param guards.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function[]|Object[]|string[]} iteratees The iteratees to sort by.
+	 * @param {string[]} orders The sort orders of `iteratees`.
+	 * @returns {Array} Returns the new sorted array.
+	 */
+	function baseOrderBy(collection, iteratees, orders) {
+	  var index = -1;
+	  iteratees = arrayMap(iteratees.length ? iteratees : [identity], baseUnary(baseIteratee));
+	
+	  var result = baseMap(collection, function(value, key, collection) {
+	    var criteria = arrayMap(iteratees, function(iteratee) {
+	      return iteratee(value);
+	    });
+	    return { 'criteria': criteria, 'index': ++index, 'value': value };
+	  });
+	
+	  return baseSortBy(result, function(object, other) {
+	    return compareMultiple(object, other, orders);
+	  });
+	}
+	
+	module.exports = baseOrderBy;
+
+
+/***/ },
+/* 476 */
+/***/ function(module, exports) {
+
+	/**
+	 * The base implementation of `_.sortBy` which uses `comparer` to define the
+	 * sort order of `array` and replaces criteria objects with their corresponding
+	 * values.
+	 *
+	 * @private
+	 * @param {Array} array The array to sort.
+	 * @param {Function} comparer The function to define sort order.
+	 * @returns {Array} Returns `array`.
+	 */
+	function baseSortBy(array, comparer) {
+	  var length = array.length;
+	
+	  array.sort(comparer);
+	  while (length--) {
+	    array[length] = array[length].value;
+	  }
+	  return array;
+	}
+	
+	module.exports = baseSortBy;
+
+
+/***/ },
+/* 477 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var compareAscending = __webpack_require__(478);
+	
+	/**
+	 * Used by `_.orderBy` to compare multiple properties of a value to another
+	 * and stable sort them.
+	 *
+	 * If `orders` is unspecified, all values are sorted in ascending order. Otherwise,
+	 * specify an order of "desc" for descending or "asc" for ascending sort order
+	 * of corresponding values.
+	 *
+	 * @private
+	 * @param {Object} object The object to compare.
+	 * @param {Object} other The other object to compare.
+	 * @param {boolean[]|string[]} orders The order to sort by for each property.
+	 * @returns {number} Returns the sort order indicator for `object`.
+	 */
+	function compareMultiple(object, other, orders) {
+	  var index = -1,
+	      objCriteria = object.criteria,
+	      othCriteria = other.criteria,
+	      length = objCriteria.length,
+	      ordersLength = orders.length;
+	
+	  while (++index < length) {
+	    var result = compareAscending(objCriteria[index], othCriteria[index]);
+	    if (result) {
+	      if (index >= ordersLength) {
+	        return result;
+	      }
+	      var order = orders[index];
+	      return result * (order == 'desc' ? -1 : 1);
+	    }
+	  }
+	  // Fixes an `Array#sort` bug in the JS engine embedded in Adobe applications
+	  // that causes it, under certain circumstances, to provide the same value for
+	  // `object` and `other`. See https://github.com/jashkenas/underscore/pull/1247
+	  // for more details.
+	  //
+	  // This also ensures a stable sort in V8 and other engines.
+	  // See https://bugs.chromium.org/p/v8/issues/detail?id=90 for more details.
+	  return object.index - other.index;
+	}
+	
+	module.exports = compareMultiple;
+
+
+/***/ },
+/* 478 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isSymbol = __webpack_require__(70);
+	
+	/**
+	 * Compares values to sort them in ascending order.
+	 *
+	 * @private
+	 * @param {*} value The value to compare.
+	 * @param {*} other The other value to compare.
+	 * @returns {number} Returns the sort order indicator for `value`.
+	 */
+	function compareAscending(value, other) {
+	  if (value !== other) {
+	    var valIsDefined = value !== undefined,
+	        valIsNull = value === null,
+	        valIsReflexive = value === value,
+	        valIsSymbol = isSymbol(value);
+	
+	    var othIsDefined = other !== undefined,
+	        othIsNull = other === null,
+	        othIsReflexive = other === other,
+	        othIsSymbol = isSymbol(other);
+	
+	    if ((!othIsNull && !othIsSymbol && !valIsSymbol && value > other) ||
+	        (valIsSymbol && othIsDefined && othIsReflexive && !othIsNull && !othIsSymbol) ||
+	        (valIsNull && othIsDefined && othIsReflexive) ||
+	        (!valIsDefined && othIsReflexive) ||
+	        !valIsReflexive) {
+	      return 1;
+	    }
+	    if ((!valIsNull && !valIsSymbol && !othIsSymbol && value < other) ||
+	        (othIsSymbol && valIsDefined && valIsReflexive && !valIsNull && !valIsSymbol) ||
+	        (othIsNull && valIsDefined && valIsReflexive) ||
+	        (!othIsDefined && valIsReflexive) ||
+	        !othIsReflexive) {
+	      return -1;
+	    }
+	  }
+	  return 0;
+	}
+	
+	module.exports = compareAscending;
+
+
+/***/ },
+/* 479 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var createAggregator = __webpack_require__(440);
+	
+	/**
+	 * Creates an array of elements split into two groups, the first of which
+	 * contains elements `predicate` returns truthy for, the second of which
+	 * contains elements `predicate` returns falsey for. The predicate is
+	 * invoked with one argument: (value).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 3.0.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @returns {Array} Returns the array of grouped elements.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'barney',  'age': 36, 'active': false },
+	 *   { 'user': 'fred',    'age': 40, 'active': true },
+	 *   { 'user': 'pebbles', 'age': 1,  'active': false }
+	 * ];
+	 *
+	 * _.partition(users, function(o) { return o.active; });
+	 * // => objects for [['fred'], ['barney', 'pebbles']]
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.partition(users, { 'age': 1, 'active': false });
+	 * // => objects for [['pebbles'], ['barney', 'fred']]
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.partition(users, ['active', false]);
+	 * // => objects for [['barney', 'pebbles'], ['fred']]
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.partition(users, 'active');
+	 * // => objects for [['fred'], ['barney', 'pebbles']]
+	 */
+	var partition = createAggregator(function(result, value, key) {
+	  result[key ? 0 : 1].push(value);
+	}, function() { return [[], []]; });
+	
+	module.exports = partition;
+
+
+/***/ },
+/* 480 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayReduce = __webpack_require__(220),
+	    baseEach = __webpack_require__(443),
+	    baseIteratee = __webpack_require__(153),
+	    baseReduce = __webpack_require__(481),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * Reduces `collection` to a value which is the accumulated result of running
+	 * each element in `collection` thru `iteratee`, where each successive
+	 * invocation is supplied the return value of the previous. If `accumulator`
+	 * is not given, the first element of `collection` is used as the initial
+	 * value. The iteratee is invoked with four arguments:
+	 * (accumulator, value, index|key, collection).
+	 *
+	 * Many lodash methods are guarded to work as iteratees for methods like
+	 * `_.reduce`, `_.reduceRight`, and `_.transform`.
+	 *
+	 * The guarded methods are:
+	 * `assign`, `defaults`, `defaultsDeep`, `includes`, `merge`, `orderBy`,
+	 * and `sortBy`
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @param {*} [accumulator] The initial value.
+	 * @returns {*} Returns the accumulated value.
+	 * @see _.reduceRight
+	 * @example
+	 *
+	 * _.reduce([1, 2], function(sum, n) {
+	 *   return sum + n;
+	 * }, 0);
+	 * // => 3
+	 *
+	 * _.reduce({ 'a': 1, 'b': 2, 'c': 1 }, function(result, value, key) {
+	 *   (result[value] || (result[value] = [])).push(key);
+	 *   return result;
+	 * }, {});
+	 * // => { '1': ['a', 'c'], '2': ['b'] } (iteration order is not guaranteed)
+	 */
+	function reduce(collection, iteratee, accumulator) {
+	  var func = isArray(collection) ? arrayReduce : baseReduce,
+	      initAccum = arguments.length < 3;
+	
+	  return func(collection, baseIteratee(iteratee, 4), accumulator, initAccum, baseEach);
+	}
+	
+	module.exports = reduce;
+
+
+/***/ },
+/* 481 */
+/***/ function(module, exports) {
+
+	/**
+	 * The base implementation of `_.reduce` and `_.reduceRight`, without support
+	 * for iteratee shorthands, which iterates over `collection` using `eachFunc`.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @param {*} accumulator The initial value.
+	 * @param {boolean} initAccum Specify using the first or last element of
+	 *  `collection` as the initial value.
+	 * @param {Function} eachFunc The function to iterate over `collection`.
+	 * @returns {*} Returns the accumulated value.
+	 */
+	function baseReduce(collection, iteratee, accumulator, initAccum, eachFunc) {
+	  eachFunc(collection, function(value, index, collection) {
+	    accumulator = initAccum
+	      ? (initAccum = false, value)
+	      : iteratee(accumulator, value, index, collection);
+	  });
+	  return accumulator;
+	}
+	
+	module.exports = baseReduce;
+
+
+/***/ },
+/* 482 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayReduceRight = __webpack_require__(483),
+	    baseEachRight = __webpack_require__(450),
+	    baseIteratee = __webpack_require__(153),
+	    baseReduce = __webpack_require__(481),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * This method is like `_.reduce` except that it iterates over elements of
+	 * `collection` from right to left.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @param {*} [accumulator] The initial value.
+	 * @returns {*} Returns the accumulated value.
+	 * @see _.reduce
+	 * @example
+	 *
+	 * var array = [[0, 1], [2, 3], [4, 5]];
+	 *
+	 * _.reduceRight(array, function(flattened, other) {
+	 *   return flattened.concat(other);
+	 * }, []);
+	 * // => [4, 5, 2, 3, 0, 1]
+	 */
+	function reduceRight(collection, iteratee, accumulator) {
+	  var func = isArray(collection) ? arrayReduceRight : baseReduce,
+	      initAccum = arguments.length < 3;
+	
+	  return func(collection, baseIteratee(iteratee, 4), accumulator, initAccum, baseEachRight);
+	}
+	
+	module.exports = reduceRight;
+
+
+/***/ },
+/* 483 */
+/***/ function(module, exports) {
+
+	/**
+	 * A specialized version of `_.reduceRight` for arrays without support for
+	 * iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array} [array] The array to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @param {*} [accumulator] The initial value.
+	 * @param {boolean} [initAccum] Specify using the last element of `array` as
+	 *  the initial value.
+	 * @returns {*} Returns the accumulated value.
+	 */
+	function arrayReduceRight(array, iteratee, accumulator, initAccum) {
+	  var length = array == null ? 0 : array.length;
+	  if (initAccum && length) {
+	    accumulator = array[--length];
+	  }
+	  while (length--) {
+	    accumulator = iteratee(accumulator, array[length], length, array);
+	  }
+	  return accumulator;
+	}
+	
+	module.exports = arrayReduceRight;
+
+
+/***/ },
+/* 484 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayFilter = __webpack_require__(187),
+	    baseFilter = __webpack_require__(455),
+	    baseIteratee = __webpack_require__(153),
+	    isArray = __webpack_require__(47),
+	    negate = __webpack_require__(227);
+	
+	/**
+	 * The opposite of `_.filter`; this method returns the elements of `collection`
+	 * that `predicate` does **not** return truthy for.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @returns {Array} Returns the new filtered array.
+	 * @see _.filter
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'barney', 'age': 36, 'active': false },
+	 *   { 'user': 'fred',   'age': 40, 'active': true }
+	 * ];
+	 *
+	 * _.reject(users, function(o) { return !o.active; });
+	 * // => objects for ['fred']
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.reject(users, { 'age': 40, 'active': true });
+	 * // => objects for ['barney']
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.reject(users, ['active', false]);
+	 * // => objects for ['fred']
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.reject(users, 'active');
+	 * // => objects for ['barney']
+	 */
+	function reject(collection, predicate) {
+	  var func = isArray(collection) ? arrayFilter : baseFilter;
+	  return func(collection, negate(baseIteratee(predicate, 3)));
+	}
+	
+	module.exports = reject;
+
+
+/***/ },
+/* 485 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arraySample = __webpack_require__(486),
+	    baseSample = __webpack_require__(488),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * Gets a random element from `collection`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 2.0.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to sample.
+	 * @returns {*} Returns the random element.
+	 * @example
+	 *
+	 * _.sample([1, 2, 3, 4]);
+	 * // => 2
+	 */
+	function sample(collection) {
+	  var func = isArray(collection) ? arraySample : baseSample;
+	  return func(collection);
+	}
+	
+	module.exports = sample;
+
+
+/***/ },
+/* 486 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseRandom = __webpack_require__(487);
+	
+	/**
+	 * A specialized version of `_.sample` for arrays.
+	 *
+	 * @private
+	 * @param {Array} array The array to sample.
+	 * @returns {*} Returns the random element.
+	 */
+	function arraySample(array) {
+	  var length = array.length;
+	  return length ? array[baseRandom(0, length - 1)] : undefined;
+	}
+	
+	module.exports = arraySample;
+
+
+/***/ },
+/* 487 */
+/***/ function(module, exports) {
+
+	/* Built-in method references for those with the same name as other `lodash` methods. */
+	var nativeFloor = Math.floor,
+	    nativeRandom = Math.random;
+	
+	/**
+	 * The base implementation of `_.random` without support for returning
+	 * floating-point numbers.
+	 *
+	 * @private
+	 * @param {number} lower The lower bound.
+	 * @param {number} upper The upper bound.
+	 * @returns {number} Returns the random number.
+	 */
+	function baseRandom(lower, upper) {
+	  return lower + nativeFloor(nativeRandom() * (upper - lower + 1));
+	}
+	
+	module.exports = baseRandom;
+
+
+/***/ },
+/* 488 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arraySample = __webpack_require__(486),
+	    values = __webpack_require__(241);
+	
+	/**
+	 * The base implementation of `_.sample`.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to sample.
+	 * @returns {*} Returns the random element.
+	 */
+	function baseSample(collection) {
+	  return arraySample(values(collection));
+	}
+	
+	module.exports = baseSample;
+
+
+/***/ },
+/* 489 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arraySampleSize = __webpack_require__(490),
+	    baseSampleSize = __webpack_require__(492),
+	    isArray = __webpack_require__(47),
+	    isIterateeCall = __webpack_require__(36),
+	    toInteger = __webpack_require__(280);
+	
+	/**
+	 * Gets `n` random elements at unique keys from `collection` up to the
+	 * size of `collection`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to sample.
+	 * @param {number} [n=1] The number of elements to sample.
+	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
+	 * @returns {Array} Returns the random elements.
+	 * @example
+	 *
+	 * _.sampleSize([1, 2, 3], 2);
+	 * // => [3, 1]
+	 *
+	 * _.sampleSize([1, 2, 3], 4);
+	 * // => [2, 3, 1]
+	 */
+	function sampleSize(collection, n, guard) {
+	  if ((guard ? isIterateeCall(collection, n, guard) : n === undefined)) {
+	    n = 1;
+	  } else {
+	    n = toInteger(n);
+	  }
+	  var func = isArray(collection) ? arraySampleSize : baseSampleSize;
+	  return func(collection, n);
+	}
+	
+	module.exports = sampleSize;
+
+
+/***/ },
+/* 490 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseClamp = __webpack_require__(311),
+	    copyArray = __webpack_require__(128),
+	    shuffleSelf = __webpack_require__(491);
+	
+	/**
+	 * A specialized version of `_.sampleSize` for arrays.
+	 *
+	 * @private
+	 * @param {Array} array The array to sample.
+	 * @param {number} n The number of elements to sample.
+	 * @returns {Array} Returns the random elements.
+	 */
+	function arraySampleSize(array, n) {
+	  return shuffleSelf(copyArray(array), baseClamp(n, 0, array.length));
+	}
+	
+	module.exports = arraySampleSize;
+
+
+/***/ },
+/* 491 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseRandom = __webpack_require__(487);
+	
+	/**
+	 * A specialized version of `_.shuffle` which mutates and sets the size of `array`.
+	 *
+	 * @private
+	 * @param {Array} array The array to shuffle.
+	 * @param {number} [size=array.length] The size of `array`.
+	 * @returns {Array} Returns `array`.
+	 */
+	function shuffleSelf(array, size) {
+	  var index = -1,
+	      length = array.length,
+	      lastIndex = length - 1;
+	
+	  size = size === undefined ? length : size;
+	  while (++index < size) {
+	    var rand = baseRandom(index, lastIndex),
+	        value = array[rand];
+	
+	    array[rand] = array[index];
+	    array[index] = value;
+	  }
+	  array.length = size;
+	  return array;
+	}
+	
+	module.exports = shuffleSelf;
+
+
+/***/ },
+/* 492 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseClamp = __webpack_require__(311),
+	    shuffleSelf = __webpack_require__(491),
+	    values = __webpack_require__(241);
+	
+	/**
+	 * The base implementation of `_.sampleSize` without param guards.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to sample.
+	 * @param {number} n The number of elements to sample.
+	 * @returns {Array} Returns the random elements.
+	 */
+	function baseSampleSize(collection, n) {
+	  var array = values(collection);
+	  return shuffleSelf(array, baseClamp(n, 0, array.length));
+	}
+	
+	module.exports = baseSampleSize;
+
+
+/***/ },
+/* 493 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayShuffle = __webpack_require__(494),
+	    baseShuffle = __webpack_require__(495),
+	    isArray = __webpack_require__(47);
+	
+	/**
+	 * Creates an array of shuffled values, using a version of the
+	 * [Fisher-Yates shuffle](https://en.wikipedia.org/wiki/Fisher-Yates_shuffle).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to shuffle.
+	 * @returns {Array} Returns the new shuffled array.
+	 * @example
+	 *
+	 * _.shuffle([1, 2, 3, 4]);
+	 * // => [4, 1, 3, 2]
+	 */
+	function shuffle(collection) {
+	  var func = isArray(collection) ? arrayShuffle : baseShuffle;
+	  return func(collection);
+	}
+	
+	module.exports = shuffle;
+
+
+/***/ },
+/* 494 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var copyArray = __webpack_require__(128),
+	    shuffleSelf = __webpack_require__(491);
+	
+	/**
+	 * A specialized version of `_.shuffle` for arrays.
+	 *
+	 * @private
+	 * @param {Array} array The array to shuffle.
+	 * @returns {Array} Returns the new shuffled array.
+	 */
+	function arrayShuffle(array) {
+	  return shuffleSelf(copyArray(array));
+	}
+	
+	module.exports = arrayShuffle;
+
+
+/***/ },
+/* 495 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var shuffleSelf = __webpack_require__(491),
+	    values = __webpack_require__(241);
+	
+	/**
+	 * The base implementation of `_.shuffle`.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to shuffle.
+	 * @returns {Array} Returns the new shuffled array.
+	 */
+	function baseShuffle(collection) {
+	  return shuffleSelf(values(collection));
+	}
+	
+	module.exports = baseShuffle;
+
+
+/***/ },
+/* 496 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseKeys = __webpack_require__(55),
+	    getTag = __webpack_require__(139),
+	    isArrayLike = __webpack_require__(37),
+	    isString = __webpack_require__(297),
+	    stringSize = __webpack_require__(497);
+	
+	/** `Object#toString` result references. */
+	var mapTag = '[object Map]',
+	    setTag = '[object Set]';
+	
+	/**
+	 * Gets the size of `collection` by returning its length for array-like
+	 * values or the number of own enumerable string keyed properties for objects.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object|string} collection The collection to inspect.
+	 * @returns {number} Returns the collection size.
+	 * @example
+	 *
+	 * _.size([1, 2, 3]);
+	 * // => 3
+	 *
+	 * _.size({ 'a': 1, 'b': 2 });
+	 * // => 2
+	 *
+	 * _.size('pebbles');
+	 * // => 7
+	 */
+	function size(collection) {
+	  if (collection == null) {
+	    return 0;
+	  }
+	  if (isArrayLike(collection)) {
+	    return isString(collection) ? stringSize(collection) : collection.length;
+	  }
+	  var tag = getTag(collection);
+	  if (tag == mapTag || tag == setTag) {
+	    return collection.size;
+	  }
+	  return baseKeys(collection).length;
+	}
+	
+	module.exports = size;
+
+
+/***/ },
+/* 497 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var asciiSize = __webpack_require__(498),
+	    hasUnicode = __webpack_require__(308),
+	    unicodeSize = __webpack_require__(499);
+	
+	/**
+	 * Gets the number of symbols in `string`.
+	 *
+	 * @private
+	 * @param {string} string The string to inspect.
+	 * @returns {number} Returns the string size.
+	 */
+	function stringSize(string) {
+	  return hasUnicode(string)
+	    ? unicodeSize(string)
+	    : asciiSize(string);
+	}
+	
+	module.exports = stringSize;
+
+
+/***/ },
+/* 498 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseProperty = __webpack_require__(175);
+	
+	/**
+	 * Gets the size of an ASCII `string`.
+	 *
+	 * @private
+	 * @param {string} string The string inspect.
+	 * @returns {number} Returns the string size.
+	 */
+	var asciiSize = baseProperty('length');
+	
+	module.exports = asciiSize;
+
+
+/***/ },
+/* 499 */
+/***/ function(module, exports) {
+
+	/** Used to compose unicode character classes. */
+	var rsAstralRange = '\\ud800-\\udfff',
+	    rsComboMarksRange = '\\u0300-\\u036f',
+	    reComboHalfMarksRange = '\\ufe20-\\ufe2f',
+	    rsComboSymbolsRange = '\\u20d0-\\u20ff',
+	    rsComboRange = rsComboMarksRange + reComboHalfMarksRange + rsComboSymbolsRange,
+	    rsVarRange = '\\ufe0e\\ufe0f';
+	
+	/** Used to compose unicode capture groups. */
+	var rsAstral = '[' + rsAstralRange + ']',
+	    rsCombo = '[' + rsComboRange + ']',
+	    rsFitz = '\\ud83c[\\udffb-\\udfff]',
+	    rsModifier = '(?:' + rsCombo + '|' + rsFitz + ')',
+	    rsNonAstral = '[^' + rsAstralRange + ']',
+	    rsRegional = '(?:\\ud83c[\\udde6-\\uddff]){2}',
+	    rsSurrPair = '[\\ud800-\\udbff][\\udc00-\\udfff]',
+	    rsZWJ = '\\u200d';
+	
+	/** Used to compose unicode regexes. */
+	var reOptMod = rsModifier + '?',
+	    rsOptVar = '[' + rsVarRange + ']?',
+	    rsOptJoin = '(?:' + rsZWJ + '(?:' + [rsNonAstral, rsRegional, rsSurrPair].join('|') + ')' + rsOptVar + reOptMod + ')*',
+	    rsSeq = rsOptVar + reOptMod + rsOptJoin,
+	    rsSymbol = '(?:' + [rsNonAstral + rsCombo + '?', rsCombo, rsRegional, rsSurrPair, rsAstral].join('|') + ')';
+	
+	/** Used to match [string symbols](https://mathiasbynens.be/notes/javascript-unicode). */
+	var reUnicode = RegExp(rsFitz + '(?=' + rsFitz + ')|' + rsSymbol + rsSeq, 'g');
+	
+	/**
+	 * Gets the size of a Unicode `string`.
+	 *
+	 * @private
+	 * @param {string} string The string inspect.
+	 * @returns {number} Returns the string size.
+	 */
+	function unicodeSize(string) {
+	  var result = reUnicode.lastIndex = 0;
+	  while (reUnicode.test(string)) {
+	    ++result;
+	  }
+	  return result;
+	}
+	
+	module.exports = unicodeSize;
+
+
+/***/ },
+/* 500 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arraySome = __webpack_require__(162),
+	    baseIteratee = __webpack_require__(153),
+	    baseSome = __webpack_require__(501),
+	    isArray = __webpack_require__(47),
+	    isIterateeCall = __webpack_require__(36);
+	
+	/**
+	 * Checks if `predicate` returns truthy for **any** element of `collection`.
+	 * Iteration is stopped once `predicate` returns truthy. The predicate is
+	 * invoked with three arguments: (value, index|key, collection).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
+	 * @returns {boolean} Returns `true` if any element passes the predicate check,
+	 *  else `false`.
+	 * @example
+	 *
+	 * _.some([null, 0, 'yes', false], Boolean);
+	 * // => true
+	 *
+	 * var users = [
+	 *   { 'user': 'barney', 'active': true },
+	 *   { 'user': 'fred',   'active': false }
+	 * ];
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.some(users, { 'user': 'barney', 'active': false });
+	 * // => false
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.some(users, ['active', false]);
+	 * // => true
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.some(users, 'active');
+	 * // => true
+	 */
+	function some(collection, predicate, guard) {
+	  var func = isArray(collection) ? arraySome : baseSome;
+	  if (guard && isIterateeCall(collection, predicate, guard)) {
+	    predicate = undefined;
+	  }
+	  return func(collection, baseIteratee(predicate, 3));
+	}
+	
+	module.exports = some;
+
+
+/***/ },
+/* 501 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseEach = __webpack_require__(443);
+	
+	/**
+	 * The base implementation of `_.some` without support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} predicate The function invoked per iteration.
+	 * @returns {boolean} Returns `true` if any element passes the predicate check,
+	 *  else `false`.
+	 */
+	function baseSome(collection, predicate) {
+	  var result;
+	
+	  baseEach(collection, function(value, index, collection) {
+	    result = predicate(value, index, collection);
+	    return !result;
+	  });
+	  return !!result;
+	}
+	
+	module.exports = baseSome;
+
+
+/***/ },
+/* 502 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseFlatten = __webpack_require__(103),
+	    baseOrderBy = __webpack_require__(475),
+	    baseRest = __webpack_require__(28),
+	    isIterateeCall = __webpack_require__(36);
+	
+	/**
+	 * Creates an array of elements, sorted in ascending order by the results of
+	 * running each element in a collection thru each iteratee. This method
+	 * performs a stable sort, that is, it preserves the original sort order of
+	 * equal elements. The iteratees are invoked with one argument: (value).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {...(Function|Function[])} [iteratees=[_.identity]]
+	 *  The iteratees to sort by.
+	 * @returns {Array} Returns the new sorted array.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'fred',   'age': 48 },
+	 *   { 'user': 'barney', 'age': 36 },
+	 *   { 'user': 'fred',   'age': 40 },
+	 *   { 'user': 'barney', 'age': 34 }
+	 * ];
+	 *
+	 * _.sortBy(users, [function(o) { return o.user; }]);
+	 * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
+	 *
+	 * _.sortBy(users, ['user', 'age']);
+	 * // => objects for [['barney', 34], ['barney', 36], ['fred', 40], ['fred', 48]]
+	 */
+	var sortBy = baseRest(function(collection, iteratees) {
+	  if (collection == null) {
+	    return [];
+	  }
+	  var length = iteratees.length;
+	  if (length > 1 && isIterateeCall(collection, iteratees[0], iteratees[1])) {
+	    iteratees = [];
+	  } else if (length > 2 && isIterateeCall(iteratees[0], iteratees[1], iteratees[2])) {
+	    iteratees = [iteratees[0]];
+	  }
+	  return baseOrderBy(collection, baseFlatten(iteratees, 1), []);
+	});
+	
+	module.exports = sortBy;
+
+
+/***/ },
+/* 503 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: [ 'iconLoader' ],
+	  iconLoader: [ 'type', __webpack_require__(504) ],
+	  __depends__: [
+	    __webpack_require__(526)
+	  ]
+	};
+
+/***/ },
+/* 504 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var forIn = __webpack_require__(6).forIn,
+	  xml2js = __webpack_require__(505),
+	  isUndefined = __webpack_require__(255).isUndefined
+	  ;
+	
+	/**
+	 * The icon loader module.
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {Icons} icons
+	 * @param {Canvas} canvas
+	 */
+	function IconLoader(icons, canvas) {
+	  this._icons = icons;
+	  this._canvas = canvas;
+	  this._processedIcons = {};
+	
+	  this._init();
+	}
+	
+	IconLoader.$inject = [ 'icons', 'canvas' ];
+	
+	module.exports = IconLoader;
+	
+	IconLoader.prototype._createNode = function(iconKey, defsNode, parentNode, nodeObj, nodeType) {
+	  var that = this,
+	    attrs = nodeObj.$ || {},
+	    thisNode = {};
+	
+	  if (isUndefined(attrs.id)) {
+	    thisNode = parentNode.append(nodeType);
+	    forIn(attrs, function(n, k){
+	      thisNode.attr(k, n);
+	    });
+	  } else {
+	    thisNode = defsNode.append(nodeType);
+	    forIn(attrs, function(n, k){
+	      thisNode.attr(k, n);
+	    });
+	    thisNode.attr('id', iconKey + '_' + attrs.id);
+	  }
+	  if (!isUndefined(attrs['xlink:href'])) {
+	    thisNode.attr('xlink:href', attrs['xlink:href'].replace('#','#'+iconKey+'_'));
+	  }
+	  if (!isUndefined(attrs['clip-path'])) {
+	    thisNode.attr('clip-path', attrs['clip-path'].replace('#','#'+iconKey+'_'));
+	  }
+	
+	  forIn(nodeObj.$$, function(node){
+	    if (node['#name']=='defs'){
+	      forIn(node.$$, function (nodeDef){
+	        that._createNode(iconKey, defsNode, defsNode, nodeDef, nodeDef['#name']);
+	      });
+	    } else {
+	      that._createNode(iconKey, defsNode, thisNode, node, node['#name']);
+	    }
+	  });
+	  return thisNode;
+	};
+	
+	IconLoader.prototype._init = function() {
+	  var svg = this._canvas.getSVG(),
+	    iconObj = svg.append('defs'),
+	    that = this;
+	
+	  // create the icons definitions
+	  forIn(this._icons, function(icon, iconKey){
+	    var parser = new xml2js.Parser({normalizeTags: true, preserveChildrenOrder: true, explicitChildren: true });
+	    parser.parseString(icon, function (err, result) {
+	      if (!err){
+	        var iconNode = that._createNode(iconKey, iconObj, iconObj, result.svg, 'symbol');
+	        iconNode.attr('id', iconKey + '_icon_def');
+	        that._processedIcons[iconKey] = result.svg.$.viewBox || '';
+	      }
+	    });
+	  });
+	};
+
+/***/ },
+/* 505 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Generated by CoffeeScript 1.10.0
+	(function() {
+	  "use strict";
+	  var bom, builder, escapeCDATA, events, isEmpty, processName, processors, requiresCDATA, sax, setImmediate, wrapCDATA,
+	    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+	    hasProp = {}.hasOwnProperty,
+	    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+	
+	  sax = __webpack_require__(506);
+	
+	  events = __webpack_require__(408);
+	
+	  builder = __webpack_require__(507);
+	
+	  bom = __webpack_require__(524);
+	
+	  processors = __webpack_require__(525);
+	
+	  setImmediate = __webpack_require__(246).setImmediate;
+	
+	  isEmpty = function(thing) {
+	    return typeof thing === "object" && (thing != null) && Object.keys(thing).length === 0;
+	  };
+	
+	  processName = function(processors, processedName) {
+	    var i, len, process;
+	    for (i = 0, len = processors.length; i < len; i++) {
+	      process = processors[i];
+	      processedName = process(processedName);
+	    }
+	    return processedName;
+	  };
+	
+	  requiresCDATA = function(entry) {
+	    return entry.indexOf('&') >= 0 || entry.indexOf('>') >= 0 || entry.indexOf('<') >= 0;
+	  };
+	
+	  wrapCDATA = function(entry) {
+	    return "<![CDATA[" + (escapeCDATA(entry)) + "]]>";
+	  };
+	
+	  escapeCDATA = function(entry) {
+	    return entry.replace(']]>', ']]]]><![CDATA[>');
+	  };
+	
+	  exports.processors = processors;
+	
+	  exports.defaults = {
+	    "0.1": {
+	      explicitCharkey: false,
+	      trim: true,
+	      normalize: true,
+	      normalizeTags: false,
+	      attrkey: "@",
+	      charkey: "#",
+	      explicitArray: false,
+	      ignoreAttrs: false,
+	      mergeAttrs: false,
+	      explicitRoot: false,
+	      validator: null,
+	      xmlns: false,
+	      explicitChildren: false,
+	      childkey: '@@',
+	      charsAsChildren: false,
+	      includeWhiteChars: false,
+	      async: false,
+	      strict: true,
+	      attrNameProcessors: null,
+	      attrValueProcessors: null,
+	      tagNameProcessors: null,
+	      valueProcessors: null,
+	      emptyTag: ''
+	    },
+	    "0.2": {
+	      explicitCharkey: false,
+	      trim: false,
+	      normalize: false,
+	      normalizeTags: false,
+	      attrkey: "$",
+	      charkey: "_",
+	      explicitArray: true,
+	      ignoreAttrs: false,
+	      mergeAttrs: false,
+	      explicitRoot: true,
+	      validator: null,
+	      xmlns: false,
+	      explicitChildren: false,
+	      preserveChildrenOrder: false,
+	      childkey: '$$',
+	      charsAsChildren: false,
+	      includeWhiteChars: false,
+	      async: false,
+	      strict: true,
+	      attrNameProcessors: null,
+	      attrValueProcessors: null,
+	      tagNameProcessors: null,
+	      valueProcessors: null,
+	      rootName: 'root',
+	      xmldec: {
+	        'version': '1.0',
+	        'encoding': 'UTF-8',
+	        'standalone': true
+	      },
+	      doctype: null,
+	      renderOpts: {
+	        'pretty': true,
+	        'indent': '  ',
+	        'newline': '\n'
+	      },
+	      headless: false,
+	      chunkSize: 10000,
+	      emptyTag: '',
+	      cdata: false
+	    }
+	  };
+	
+	  exports.ValidationError = (function(superClass) {
+	    extend(ValidationError, superClass);
+	
+	    function ValidationError(message) {
+	      this.message = message;
+	    }
+	
+	    return ValidationError;
+	
+	  })(Error);
+	
+	  exports.Builder = (function() {
+	    function Builder(opts) {
+	      var key, ref, value;
+	      this.options = {};
+	      ref = exports.defaults["0.2"];
+	      for (key in ref) {
+	        if (!hasProp.call(ref, key)) continue;
+	        value = ref[key];
+	        this.options[key] = value;
+	      }
+	      for (key in opts) {
+	        if (!hasProp.call(opts, key)) continue;
+	        value = opts[key];
+	        this.options[key] = value;
+	      }
+	    }
+	
+	    Builder.prototype.buildObject = function(rootObj) {
+	      var attrkey, charkey, render, rootElement, rootName;
+	      attrkey = this.options.attrkey;
+	      charkey = this.options.charkey;
+	      if ((Object.keys(rootObj).length === 1) && (this.options.rootName === exports.defaults['0.2'].rootName)) {
+	        rootName = Object.keys(rootObj)[0];
+	        rootObj = rootObj[rootName];
+	      } else {
+	        rootName = this.options.rootName;
+	      }
+	      render = (function(_this) {
+	        return function(element, obj) {
+	          var attr, child, entry, index, key, value;
+	          if (typeof obj !== 'object') {
+	            if (_this.options.cdata && requiresCDATA(obj)) {
+	              element.raw(wrapCDATA(obj));
+	            } else {
+	              element.txt(obj);
+	            }
+	          } else {
+	            for (key in obj) {
+	              if (!hasProp.call(obj, key)) continue;
+	              child = obj[key];
+	              if (key === attrkey) {
+	                if (typeof child === "object") {
+	                  for (attr in child) {
+	                    value = child[attr];
+	                    element = element.att(attr, value);
+	                  }
+	                }
+	              } else if (key === charkey) {
+	                if (_this.options.cdata && requiresCDATA(child)) {
+	                  element = element.raw(wrapCDATA(child));
+	                } else {
+	                  element = element.txt(child);
+	                }
+	              } else if (Array.isArray(child)) {
+	                for (index in child) {
+	                  if (!hasProp.call(child, index)) continue;
+	                  entry = child[index];
+	                  if (typeof entry === 'string') {
+	                    if (_this.options.cdata && requiresCDATA(entry)) {
+	                      element = element.ele(key).raw(wrapCDATA(entry)).up();
+	                    } else {
+	                      element = element.ele(key, entry).up();
+	                    }
+	                  } else {
+	                    element = render(element.ele(key), entry).up();
+	                  }
+	                }
+	              } else if (typeof child === "object") {
+	                element = render(element.ele(key), child).up();
+	              } else {
+	                if (typeof child === 'string' && _this.options.cdata && requiresCDATA(child)) {
+	                  element = element.ele(key).raw(wrapCDATA(child)).up();
+	                } else {
+	                  if (child == null) {
+	                    child = '';
+	                  }
+	                  element = element.ele(key, child.toString()).up();
+	                }
+	              }
+	            }
+	          }
+	          return element;
+	        };
+	      })(this);
+	      rootElement = builder.create(rootName, this.options.xmldec, this.options.doctype, {
+	        headless: this.options.headless,
+	        allowSurrogateChars: this.options.allowSurrogateChars
+	      });
+	      return render(rootElement, rootObj).end(this.options.renderOpts);
+	    };
+	
+	    return Builder;
+	
+	  })();
+	
+	  exports.Parser = (function(superClass) {
+	    extend(Parser, superClass);
+	
+	    function Parser(opts) {
+	      this.parseString = bind(this.parseString, this);
+	      this.reset = bind(this.reset, this);
+	      this.assignOrPush = bind(this.assignOrPush, this);
+	      this.processAsync = bind(this.processAsync, this);
+	      var key, ref, value;
+	      if (!(this instanceof exports.Parser)) {
+	        return new exports.Parser(opts);
+	      }
+	      this.options = {};
+	      ref = exports.defaults["0.2"];
+	      for (key in ref) {
+	        if (!hasProp.call(ref, key)) continue;
+	        value = ref[key];
+	        this.options[key] = value;
+	      }
+	      for (key in opts) {
+	        if (!hasProp.call(opts, key)) continue;
+	        value = opts[key];
+	        this.options[key] = value;
+	      }
+	      if (this.options.xmlns) {
+	        this.options.xmlnskey = this.options.attrkey + "ns";
+	      }
+	      if (this.options.normalizeTags) {
+	        if (!this.options.tagNameProcessors) {
+	          this.options.tagNameProcessors = [];
+	        }
+	        this.options.tagNameProcessors.unshift(processors.normalize);
+	      }
+	      this.reset();
+	    }
+	
+	    Parser.prototype.processAsync = function() {
+	      var chunk, err, error1;
+	      try {
+	        if (this.remaining.length <= this.options.chunkSize) {
+	          chunk = this.remaining;
+	          this.remaining = '';
+	          this.saxParser = this.saxParser.write(chunk);
+	          return this.saxParser.close();
+	        } else {
+	          chunk = this.remaining.substr(0, this.options.chunkSize);
+	          this.remaining = this.remaining.substr(this.options.chunkSize, this.remaining.length);
+	          this.saxParser = this.saxParser.write(chunk);
+	          return setImmediate(this.processAsync);
+	        }
+	      } catch (error1) {
+	        err = error1;
+	        if (!this.saxParser.errThrown) {
+	          this.saxParser.errThrown = true;
+	          return this.emit(err);
+	        }
+	      }
+	    };
+	
+	    Parser.prototype.assignOrPush = function(obj, key, newValue) {
+	      if (!(key in obj)) {
+	        if (!this.options.explicitArray) {
+	          return obj[key] = newValue;
+	        } else {
+	          return obj[key] = [newValue];
+	        }
+	      } else {
+	        if (!(obj[key] instanceof Array)) {
+	          obj[key] = [obj[key]];
+	        }
+	        return obj[key].push(newValue);
+	      }
+	    };
+	
+	    Parser.prototype.reset = function() {
+	      var attrkey, charkey, ontext, stack;
+	      this.removeAllListeners();
+	      this.saxParser = sax.parser(this.options.strict, {
+	        trim: false,
+	        normalize: false,
+	        xmlns: this.options.xmlns
+	      });
+	      this.saxParser.errThrown = false;
+	      this.saxParser.onerror = (function(_this) {
+	        return function(error) {
+	          _this.saxParser.resume();
+	          if (!_this.saxParser.errThrown) {
+	            _this.saxParser.errThrown = true;
+	            return _this.emit("error", error);
+	          }
+	        };
+	      })(this);
+	      this.saxParser.onend = (function(_this) {
+	        return function() {
+	          if (!_this.saxParser.ended) {
+	            _this.saxParser.ended = true;
+	            return _this.emit("end", _this.resultObject);
+	          }
+	        };
+	      })(this);
+	      this.saxParser.ended = false;
+	      this.EXPLICIT_CHARKEY = this.options.explicitCharkey;
+	      this.resultObject = null;
+	      stack = [];
+	      attrkey = this.options.attrkey;
+	      charkey = this.options.charkey;
+	      this.saxParser.onopentag = (function(_this) {
+	        return function(node) {
+	          var key, newValue, obj, processedKey, ref;
+	          obj = {};
+	          obj[charkey] = "";
+	          if (!_this.options.ignoreAttrs) {
+	            ref = node.attributes;
+	            for (key in ref) {
+	              if (!hasProp.call(ref, key)) continue;
+	              if (!(attrkey in obj) && !_this.options.mergeAttrs) {
+	                obj[attrkey] = {};
+	              }
+	              newValue = _this.options.attrValueProcessors ? processName(_this.options.attrValueProcessors, node.attributes[key]) : node.attributes[key];
+	              processedKey = _this.options.attrNameProcessors ? processName(_this.options.attrNameProcessors, key) : key;
+	              if (_this.options.mergeAttrs) {
+	                _this.assignOrPush(obj, processedKey, newValue);
+	              } else {
+	                obj[attrkey][processedKey] = newValue;
+	              }
+	            }
+	          }
+	          obj["#name"] = _this.options.tagNameProcessors ? processName(_this.options.tagNameProcessors, node.name) : node.name;
+	          if (_this.options.xmlns) {
+	            obj[_this.options.xmlnskey] = {
+	              uri: node.uri,
+	              local: node.local
+	            };
+	          }
+	          return stack.push(obj);
+	        };
+	      })(this);
+	      this.saxParser.onclosetag = (function(_this) {
+	        return function() {
+	          var cdata, emptyStr, err, error1, key, node, nodeName, obj, objClone, old, s, xpath;
+	          obj = stack.pop();
+	          nodeName = obj["#name"];
+	          if (!_this.options.explicitChildren || !_this.options.preserveChildrenOrder) {
+	            delete obj["#name"];
+	          }
+	          if (obj.cdata === true) {
+	            cdata = obj.cdata;
+	            delete obj.cdata;
+	          }
+	          s = stack[stack.length - 1];
+	          if (obj[charkey].match(/^\s*$/) && !cdata) {
+	            emptyStr = obj[charkey];
+	            delete obj[charkey];
+	          } else {
+	            if (_this.options.trim) {
+	              obj[charkey] = obj[charkey].trim();
+	            }
+	            if (_this.options.normalize) {
+	              obj[charkey] = obj[charkey].replace(/\s{2,}/g, " ").trim();
+	            }
+	            obj[charkey] = _this.options.valueProcessors ? processName(_this.options.valueProcessors, obj[charkey]) : obj[charkey];
+	            if (Object.keys(obj).length === 1 && charkey in obj && !_this.EXPLICIT_CHARKEY) {
+	              obj = obj[charkey];
+	            }
+	          }
+	          if (isEmpty(obj)) {
+	            obj = _this.options.emptyTag !== '' ? _this.options.emptyTag : emptyStr;
+	          }
+	          if (_this.options.validator != null) {
+	            xpath = "/" + ((function() {
+	              var i, len, results;
+	              results = [];
+	              for (i = 0, len = stack.length; i < len; i++) {
+	                node = stack[i];
+	                results.push(node["#name"]);
+	              }
+	              return results;
+	            })()).concat(nodeName).join("/");
+	            try {
+	              obj = _this.options.validator(xpath, s && s[nodeName], obj);
+	            } catch (error1) {
+	              err = error1;
+	              _this.emit("error", err);
+	            }
+	          }
+	          if (_this.options.explicitChildren && !_this.options.mergeAttrs && typeof obj === 'object') {
+	            if (!_this.options.preserveChildrenOrder) {
+	              node = {};
+	              if (_this.options.attrkey in obj) {
+	                node[_this.options.attrkey] = obj[_this.options.attrkey];
+	                delete obj[_this.options.attrkey];
+	              }
+	              if (!_this.options.charsAsChildren && _this.options.charkey in obj) {
+	                node[_this.options.charkey] = obj[_this.options.charkey];
+	                delete obj[_this.options.charkey];
+	              }
+	              if (Object.getOwnPropertyNames(obj).length > 0) {
+	                node[_this.options.childkey] = obj;
+	              }
+	              obj = node;
+	            } else if (s) {
+	              s[_this.options.childkey] = s[_this.options.childkey] || [];
+	              objClone = {};
+	              for (key in obj) {
+	                if (!hasProp.call(obj, key)) continue;
+	                objClone[key] = obj[key];
+	              }
+	              s[_this.options.childkey].push(objClone);
+	              delete obj["#name"];
+	              if (Object.keys(obj).length === 1 && charkey in obj && !_this.EXPLICIT_CHARKEY) {
+	                obj = obj[charkey];
+	              }
+	            }
+	          }
+	          if (stack.length > 0) {
+	            return _this.assignOrPush(s, nodeName, obj);
+	          } else {
+	            if (_this.options.explicitRoot) {
+	              old = obj;
+	              obj = {};
+	              obj[nodeName] = old;
+	            }
+	            _this.resultObject = obj;
+	            _this.saxParser.ended = true;
+	            return _this.emit("end", _this.resultObject);
+	          }
+	        };
+	      })(this);
+	      ontext = (function(_this) {
+	        return function(text) {
+	          var charChild, s;
+	          s = stack[stack.length - 1];
+	          if (s) {
+	            s[charkey] += text;
+	            if (_this.options.explicitChildren && _this.options.preserveChildrenOrder && _this.options.charsAsChildren && (_this.options.includeWhiteChars || text.replace(/\\n/g, '').trim() !== '')) {
+	              s[_this.options.childkey] = s[_this.options.childkey] || [];
+	              charChild = {
+	                '#name': '__text__'
+	              };
+	              charChild[charkey] = text;
+	              if (_this.options.normalize) {
+	                charChild[charkey] = charChild[charkey].replace(/\s{2,}/g, " ").trim();
+	              }
+	              s[_this.options.childkey].push(charChild);
+	            }
+	            return s;
+	          }
+	        };
+	      })(this);
+	      this.saxParser.ontext = ontext;
+	      return this.saxParser.oncdata = (function(_this) {
+	        return function(text) {
+	          var s;
+	          s = ontext(text);
+	          if (s) {
+	            return s.cdata = true;
+	          }
+	        };
+	      })(this);
+	    };
+	
+	    Parser.prototype.parseString = function(str, cb) {
+	      var err, error1;
+	      if ((cb != null) && typeof cb === "function") {
+	        this.on("end", function(result) {
+	          this.reset();
+	          return cb(null, result);
+	        });
+	        this.on("error", function(err) {
+	          this.reset();
+	          return cb(err);
+	        });
+	      }
+	      try {
+	        str = str.toString();
+	        if (str.trim() === '') {
+	          this.emit("end", null);
+	          return true;
+	        }
+	        str = bom.stripBOM(str);
+	        if (this.options.async) {
+	          this.remaining = str;
+	          setImmediate(this.processAsync);
+	          return this.saxParser;
+	        }
+	        return this.saxParser.write(str).close();
+	      } catch (error1) {
+	        err = error1;
+	        if (!(this.saxParser.errThrown || this.saxParser.ended)) {
+	          this.emit('error', err);
+	          return this.saxParser.errThrown = true;
+	        } else if (this.saxParser.ended) {
+	          throw err;
+	        }
+	      }
+	    };
+	
+	    return Parser;
+	
+	  })(events.EventEmitter);
+	
+	  exports.parseString = function(str, a, b) {
+	    var cb, options, parser;
+	    if (b != null) {
+	      if (typeof b === 'function') {
+	        cb = b;
+	      }
+	      if (typeof a === 'object') {
+	        options = a;
+	      }
+	    } else {
+	      if (typeof a === 'function') {
+	        cb = a;
+	      }
+	      options = {};
+	    }
+	    parser = new exports.Parser(options);
+	    return parser.parseString(str, cb);
+	  };
+	
+	}).call(this);
+
+
+/***/ },
+/* 506 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(Buffer) {;(function (sax) { // wrapper for non-node envs
+	  sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
+	  sax.SAXParser = SAXParser
+	  sax.SAXStream = SAXStream
+	  sax.createStream = createStream
+	
+	  // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
+	  // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
+	  // since that's the earliest that a buffer overrun could occur.  This way, checks are
+	  // as rare as required, but as often as necessary to ensure never crossing this bound.
+	  // Furthermore, buffers are only tested at most once per write(), so passing a very
+	  // large string into write() might have undesirable effects, but this is manageable by
+	  // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
+	  // edge case, result in creating at most one complete copy of the string passed in.
+	  // Set to Infinity to have unlimited buffers.
+	  sax.MAX_BUFFER_LENGTH = 64 * 1024
+	
+	  var buffers = [
+	    'comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype',
+	    'procInstName', 'procInstBody', 'entity', 'attribName',
+	    'attribValue', 'cdata', 'script'
+	  ]
+	
+	  sax.EVENTS = [
+	    'text',
+	    'processinginstruction',
+	    'sgmldeclaration',
+	    'doctype',
+	    'comment',
+	    'opentagstart',
+	    'attribute',
+	    'opentag',
+	    'closetag',
+	    'opencdata',
+	    'cdata',
+	    'closecdata',
+	    'error',
+	    'end',
+	    'ready',
+	    'script',
+	    'opennamespace',
+	    'closenamespace'
+	  ]
+	
+	  function SAXParser (strict, opt) {
+	    if (!(this instanceof SAXParser)) {
+	      return new SAXParser(strict, opt)
+	    }
+	
+	    var parser = this
+	    clearBuffers(parser)
+	    parser.q = parser.c = ''
+	    parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
+	    parser.opt = opt || {}
+	    parser.opt.lowercase = parser.opt.lowercase || parser.opt.lowercasetags
+	    parser.looseCase = parser.opt.lowercase ? 'toLowerCase' : 'toUpperCase'
+	    parser.tags = []
+	    parser.closed = parser.closedRoot = parser.sawRoot = false
+	    parser.tag = parser.error = null
+	    parser.strict = !!strict
+	    parser.noscript = !!(strict || parser.opt.noscript)
+	    parser.state = S.BEGIN
+	    parser.strictEntities = parser.opt.strictEntities
+	    parser.ENTITIES = parser.strictEntities ? Object.create(sax.XML_ENTITIES) : Object.create(sax.ENTITIES)
+	    parser.attribList = []
+	
+	    // namespaces form a prototype chain.
+	    // it always points at the current tag,
+	    // which protos to its parent tag.
+	    if (parser.opt.xmlns) {
+	      parser.ns = Object.create(rootNS)
+	    }
+	
+	    // mostly just for error reporting
+	    parser.trackPosition = parser.opt.position !== false
+	    if (parser.trackPosition) {
+	      parser.position = parser.line = parser.column = 0
+	    }
+	    emit(parser, 'onready')
+	  }
+	
+	  if (!Object.create) {
+	    Object.create = function (o) {
+	      function F () {}
+	      F.prototype = o
+	      var newf = new F()
+	      return newf
+	    }
+	  }
+	
+	  if (!Object.keys) {
+	    Object.keys = function (o) {
+	      var a = []
+	      for (var i in o) if (o.hasOwnProperty(i)) a.push(i)
+	      return a
+	    }
+	  }
+	
+	  function checkBufferLength (parser) {
+	    var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
+	    var maxActual = 0
+	    for (var i = 0, l = buffers.length; i < l; i++) {
+	      var len = parser[buffers[i]].length
+	      if (len > maxAllowed) {
+	        // Text/cdata nodes can get big, and since they're buffered,
+	        // we can get here under normal conditions.
+	        // Avoid issues by emitting the text node now,
+	        // so at least it won't get any bigger.
+	        switch (buffers[i]) {
+	          case 'textNode':
+	            closeText(parser)
+	            break
+	
+	          case 'cdata':
+	            emitNode(parser, 'oncdata', parser.cdata)
+	            parser.cdata = ''
+	            break
+	
+	          case 'script':
+	            emitNode(parser, 'onscript', parser.script)
+	            parser.script = ''
+	            break
+	
+	          default:
+	            error(parser, 'Max buffer length exceeded: ' + buffers[i])
+	        }
+	      }
+	      maxActual = Math.max(maxActual, len)
+	    }
+	    // schedule the next check for the earliest possible buffer overrun.
+	    var m = sax.MAX_BUFFER_LENGTH - maxActual
+	    parser.bufferCheckPosition = m + parser.position
+	  }
+	
+	  function clearBuffers (parser) {
+	    for (var i = 0, l = buffers.length; i < l; i++) {
+	      parser[buffers[i]] = ''
+	    }
+	  }
+	
+	  function flushBuffers (parser) {
+	    closeText(parser)
+	    if (parser.cdata !== '') {
+	      emitNode(parser, 'oncdata', parser.cdata)
+	      parser.cdata = ''
+	    }
+	    if (parser.script !== '') {
+	      emitNode(parser, 'onscript', parser.script)
+	      parser.script = ''
+	    }
+	  }
+	
+	  SAXParser.prototype = {
+	    end: function () { end(this) },
+	    write: write,
+	    resume: function () { this.error = null; return this },
+	    close: function () { return this.write(null) },
+	    flush: function () { flushBuffers(this) }
+	  }
+	
+	  var Stream
+	  try {
+	    Stream = __webpack_require__(407).Stream
+	  } catch (ex) {
+	    Stream = function () {}
+	  }
+	
+	  var streamWraps = sax.EVENTS.filter(function (ev) {
+	    return ev !== 'error' && ev !== 'end'
+	  })
+	
+	  function createStream (strict, opt) {
+	    return new SAXStream(strict, opt)
+	  }
+	
+	  function SAXStream (strict, opt) {
+	    if (!(this instanceof SAXStream)) {
+	      return new SAXStream(strict, opt)
+	    }
+	
+	    Stream.apply(this)
+	
+	    this._parser = new SAXParser(strict, opt)
+	    this.writable = true
+	    this.readable = true
+	
+	    var me = this
+	
+	    this._parser.onend = function () {
+	      me.emit('end')
+	    }
+	
+	    this._parser.onerror = function (er) {
+	      me.emit('error', er)
+	
+	      // if didn't throw, then means error was handled.
+	      // go ahead and clear error, so we can write again.
+	      me._parser.error = null
+	    }
+	
+	    this._decoder = null
+	
+	    streamWraps.forEach(function (ev) {
+	      Object.defineProperty(me, 'on' + ev, {
+	        get: function () {
+	          return me._parser['on' + ev]
+	        },
+	        set: function (h) {
+	          if (!h) {
+	            me.removeAllListeners(ev)
+	            me._parser['on' + ev] = h
+	            return h
+	          }
+	          me.on(ev, h)
+	        },
+	        enumerable: true,
+	        configurable: false
+	      })
+	    })
+	  }
+	
+	  SAXStream.prototype = Object.create(Stream.prototype, {
+	    constructor: {
+	      value: SAXStream
+	    }
+	  })
+	
+	  SAXStream.prototype.write = function (data) {
+	    if (typeof Buffer === 'function' &&
+	      typeof Buffer.isBuffer === 'function' &&
+	      Buffer.isBuffer(data)) {
+	      if (!this._decoder) {
+	        var SD = __webpack_require__(416).StringDecoder
+	        this._decoder = new SD('utf8')
+	      }
+	      data = this._decoder.write(data)
+	    }
+	
+	    this._parser.write(data.toString())
+	    this.emit('data', data)
+	    return true
+	  }
+	
+	  SAXStream.prototype.end = function (chunk) {
+	    if (chunk && chunk.length) {
+	      this.write(chunk)
+	    }
+	    this._parser.end()
+	    return true
+	  }
+	
+	  SAXStream.prototype.on = function (ev, handler) {
+	    var me = this
+	    if (!me._parser['on' + ev] && streamWraps.indexOf(ev) !== -1) {
+	      me._parser['on' + ev] = function () {
+	        var args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
+	        args.splice(0, 0, ev)
+	        me.emit.apply(me, args)
+	      }
+	    }
+	
+	    return Stream.prototype.on.call(me, ev, handler)
+	  }
+	
+	  // character classes and tokens
+	  var whitespace = '\r\n\t '
+	
+	  // this really needs to be replaced with character classes.
+	  // XML allows all manner of ridiculous numbers and digits.
+	  var number = '0124356789'
+	  var letter = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+	
+	  // (Letter | "_" | ":")
+	  var quote = '\'"'
+	  var attribEnd = whitespace + '>'
+	  var CDATA = '[CDATA['
+	  var DOCTYPE = 'DOCTYPE'
+	  var XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace'
+	  var XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/'
+	  var rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE }
+	
+	  // turn all the string character sets into character class objects.
+	  whitespace = charClass(whitespace)
+	  number = charClass(number)
+	  letter = charClass(letter)
+	
+	  // http://www.w3.org/TR/REC-xml/#NT-NameStartChar
+	  // This implementation works on strings, a single character at a time
+	  // as such, it cannot ever support astral-plane characters (10000-EFFFF)
+	  // without a significant breaking change to either this  parser, or the
+	  // JavaScript language.  Implementation of an emoji-capable xml parser
+	  // is left as an exercise for the reader.
+	  var nameStart = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
+	
+	  var nameBody = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040\.\d-]/
+	
+	  var entityStart = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
+	  var entityBody = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040\.\d-]/
+	
+	  quote = charClass(quote)
+	  attribEnd = charClass(attribEnd)
+	
+	  function charClass (str) {
+	    return str.split('').reduce(function (s, c) {
+	      s[c] = true
+	      return s
+	    }, {})
+	  }
+	
+	  function isRegExp (c) {
+	    return Object.prototype.toString.call(c) === '[object RegExp]'
+	  }
+	
+	  function is (charclass, c) {
+	    return isRegExp(charclass) ? !!c.match(charclass) : charclass[c]
+	  }
+	
+	  function not (charclass, c) {
+	    return !is(charclass, c)
+	  }
+	
+	  var S = 0
+	  sax.STATE = {
+	    BEGIN: S++, // leading byte order mark or whitespace
+	    BEGIN_WHITESPACE: S++, // leading whitespace
+	    TEXT: S++, // general stuff
+	    TEXT_ENTITY: S++, // &amp and such.
+	    OPEN_WAKA: S++, // <
+	    SGML_DECL: S++, // <!BLARG
+	    SGML_DECL_QUOTED: S++, // <!BLARG foo "bar
+	    DOCTYPE: S++, // <!DOCTYPE
+	    DOCTYPE_QUOTED: S++, // <!DOCTYPE "//blah
+	    DOCTYPE_DTD: S++, // <!DOCTYPE "//blah" [ ...
+	    DOCTYPE_DTD_QUOTED: S++, // <!DOCTYPE "//blah" [ "foo
+	    COMMENT_STARTING: S++, // <!-
+	    COMMENT: S++, // <!--
+	    COMMENT_ENDING: S++, // <!-- blah -
+	    COMMENT_ENDED: S++, // <!-- blah --
+	    CDATA: S++, // <![CDATA[ something
+	    CDATA_ENDING: S++, // ]
+	    CDATA_ENDING_2: S++, // ]]
+	    PROC_INST: S++, // <?hi
+	    PROC_INST_BODY: S++, // <?hi there
+	    PROC_INST_ENDING: S++, // <?hi "there" ?
+	    OPEN_TAG: S++, // <strong
+	    OPEN_TAG_SLASH: S++, // <strong /
+	    ATTRIB: S++, // <a
+	    ATTRIB_NAME: S++, // <a foo
+	    ATTRIB_NAME_SAW_WHITE: S++, // <a foo _
+	    ATTRIB_VALUE: S++, // <a foo=
+	    ATTRIB_VALUE_QUOTED: S++, // <a foo="bar
+	    ATTRIB_VALUE_CLOSED: S++, // <a foo="bar"
+	    ATTRIB_VALUE_UNQUOTED: S++, // <a foo=bar
+	    ATTRIB_VALUE_ENTITY_Q: S++, // <foo bar="&quot;"
+	    ATTRIB_VALUE_ENTITY_U: S++, // <foo bar=&quot
+	    CLOSE_TAG: S++, // </a
+	    CLOSE_TAG_SAW_WHITE: S++, // </a   >
+	    SCRIPT: S++, // <script> ...
+	    SCRIPT_ENDING: S++ // <script> ... <
+	  }
+	
+	  sax.XML_ENTITIES = {
+	    'amp': '&',
+	    'gt': '>',
+	    'lt': '<',
+	    'quot': '"',
+	    'apos': "'"
+	  }
+	
+	  sax.ENTITIES = {
+	    'amp': '&',
+	    'gt': '>',
+	    'lt': '<',
+	    'quot': '"',
+	    'apos': "'",
+	    'AElig': 198,
+	    'Aacute': 193,
+	    'Acirc': 194,
+	    'Agrave': 192,
+	    'Aring': 197,
+	    'Atilde': 195,
+	    'Auml': 196,
+	    'Ccedil': 199,
+	    'ETH': 208,
+	    'Eacute': 201,
+	    'Ecirc': 202,
+	    'Egrave': 200,
+	    'Euml': 203,
+	    'Iacute': 205,
+	    'Icirc': 206,
+	    'Igrave': 204,
+	    'Iuml': 207,
+	    'Ntilde': 209,
+	    'Oacute': 211,
+	    'Ocirc': 212,
+	    'Ograve': 210,
+	    'Oslash': 216,
+	    'Otilde': 213,
+	    'Ouml': 214,
+	    'THORN': 222,
+	    'Uacute': 218,
+	    'Ucirc': 219,
+	    'Ugrave': 217,
+	    'Uuml': 220,
+	    'Yacute': 221,
+	    'aacute': 225,
+	    'acirc': 226,
+	    'aelig': 230,
+	    'agrave': 224,
+	    'aring': 229,
+	    'atilde': 227,
+	    'auml': 228,
+	    'ccedil': 231,
+	    'eacute': 233,
+	    'ecirc': 234,
+	    'egrave': 232,
+	    'eth': 240,
+	    'euml': 235,
+	    'iacute': 237,
+	    'icirc': 238,
+	    'igrave': 236,
+	    'iuml': 239,
+	    'ntilde': 241,
+	    'oacute': 243,
+	    'ocirc': 244,
+	    'ograve': 242,
+	    'oslash': 248,
+	    'otilde': 245,
+	    'ouml': 246,
+	    'szlig': 223,
+	    'thorn': 254,
+	    'uacute': 250,
+	    'ucirc': 251,
+	    'ugrave': 249,
+	    'uuml': 252,
+	    'yacute': 253,
+	    'yuml': 255,
+	    'copy': 169,
+	    'reg': 174,
+	    'nbsp': 160,
+	    'iexcl': 161,
+	    'cent': 162,
+	    'pound': 163,
+	    'curren': 164,
+	    'yen': 165,
+	    'brvbar': 166,
+	    'sect': 167,
+	    'uml': 168,
+	    'ordf': 170,
+	    'laquo': 171,
+	    'not': 172,
+	    'shy': 173,
+	    'macr': 175,
+	    'deg': 176,
+	    'plusmn': 177,
+	    'sup1': 185,
+	    'sup2': 178,
+	    'sup3': 179,
+	    'acute': 180,
+	    'micro': 181,
+	    'para': 182,
+	    'middot': 183,
+	    'cedil': 184,
+	    'ordm': 186,
+	    'raquo': 187,
+	    'frac14': 188,
+	    'frac12': 189,
+	    'frac34': 190,
+	    'iquest': 191,
+	    'times': 215,
+	    'divide': 247,
+	    'OElig': 338,
+	    'oelig': 339,
+	    'Scaron': 352,
+	    'scaron': 353,
+	    'Yuml': 376,
+	    'fnof': 402,
+	    'circ': 710,
+	    'tilde': 732,
+	    'Alpha': 913,
+	    'Beta': 914,
+	    'Gamma': 915,
+	    'Delta': 916,
+	    'Epsilon': 917,
+	    'Zeta': 918,
+	    'Eta': 919,
+	    'Theta': 920,
+	    'Iota': 921,
+	    'Kappa': 922,
+	    'Lambda': 923,
+	    'Mu': 924,
+	    'Nu': 925,
+	    'Xi': 926,
+	    'Omicron': 927,
+	    'Pi': 928,
+	    'Rho': 929,
+	    'Sigma': 931,
+	    'Tau': 932,
+	    'Upsilon': 933,
+	    'Phi': 934,
+	    'Chi': 935,
+	    'Psi': 936,
+	    'Omega': 937,
+	    'alpha': 945,
+	    'beta': 946,
+	    'gamma': 947,
+	    'delta': 948,
+	    'epsilon': 949,
+	    'zeta': 950,
+	    'eta': 951,
+	    'theta': 952,
+	    'iota': 953,
+	    'kappa': 954,
+	    'lambda': 955,
+	    'mu': 956,
+	    'nu': 957,
+	    'xi': 958,
+	    'omicron': 959,
+	    'pi': 960,
+	    'rho': 961,
+	    'sigmaf': 962,
+	    'sigma': 963,
+	    'tau': 964,
+	    'upsilon': 965,
+	    'phi': 966,
+	    'chi': 967,
+	    'psi': 968,
+	    'omega': 969,
+	    'thetasym': 977,
+	    'upsih': 978,
+	    'piv': 982,
+	    'ensp': 8194,
+	    'emsp': 8195,
+	    'thinsp': 8201,
+	    'zwnj': 8204,
+	    'zwj': 8205,
+	    'lrm': 8206,
+	    'rlm': 8207,
+	    'ndash': 8211,
+	    'mdash': 8212,
+	    'lsquo': 8216,
+	    'rsquo': 8217,
+	    'sbquo': 8218,
+	    'ldquo': 8220,
+	    'rdquo': 8221,
+	    'bdquo': 8222,
+	    'dagger': 8224,
+	    'Dagger': 8225,
+	    'bull': 8226,
+	    'hellip': 8230,
+	    'permil': 8240,
+	    'prime': 8242,
+	    'Prime': 8243,
+	    'lsaquo': 8249,
+	    'rsaquo': 8250,
+	    'oline': 8254,
+	    'frasl': 8260,
+	    'euro': 8364,
+	    'image': 8465,
+	    'weierp': 8472,
+	    'real': 8476,
+	    'trade': 8482,
+	    'alefsym': 8501,
+	    'larr': 8592,
+	    'uarr': 8593,
+	    'rarr': 8594,
+	    'darr': 8595,
+	    'harr': 8596,
+	    'crarr': 8629,
+	    'lArr': 8656,
+	    'uArr': 8657,
+	    'rArr': 8658,
+	    'dArr': 8659,
+	    'hArr': 8660,
+	    'forall': 8704,
+	    'part': 8706,
+	    'exist': 8707,
+	    'empty': 8709,
+	    'nabla': 8711,
+	    'isin': 8712,
+	    'notin': 8713,
+	    'ni': 8715,
+	    'prod': 8719,
+	    'sum': 8721,
+	    'minus': 8722,
+	    'lowast': 8727,
+	    'radic': 8730,
+	    'prop': 8733,
+	    'infin': 8734,
+	    'ang': 8736,
+	    'and': 8743,
+	    'or': 8744,
+	    'cap': 8745,
+	    'cup': 8746,
+	    'int': 8747,
+	    'there4': 8756,
+	    'sim': 8764,
+	    'cong': 8773,
+	    'asymp': 8776,
+	    'ne': 8800,
+	    'equiv': 8801,
+	    'le': 8804,
+	    'ge': 8805,
+	    'sub': 8834,
+	    'sup': 8835,
+	    'nsub': 8836,
+	    'sube': 8838,
+	    'supe': 8839,
+	    'oplus': 8853,
+	    'otimes': 8855,
+	    'perp': 8869,
+	    'sdot': 8901,
+	    'lceil': 8968,
+	    'rceil': 8969,
+	    'lfloor': 8970,
+	    'rfloor': 8971,
+	    'lang': 9001,
+	    'rang': 9002,
+	    'loz': 9674,
+	    'spades': 9824,
+	    'clubs': 9827,
+	    'hearts': 9829,
+	    'diams': 9830
+	  }
+	
+	  Object.keys(sax.ENTITIES).forEach(function (key) {
+	    var e = sax.ENTITIES[key]
+	    var s = typeof e === 'number' ? String.fromCharCode(e) : e
+	    sax.ENTITIES[key] = s
+	  })
+	
+	  for (var s in sax.STATE) {
+	    sax.STATE[sax.STATE[s]] = s
+	  }
+	
+	  // shorthand
+	  S = sax.STATE
+	
+	  function emit (parser, event, data) {
+	    parser[event] && parser[event](data)
+	  }
+	
+	  function emitNode (parser, nodeType, data) {
+	    if (parser.textNode) closeText(parser)
+	    emit(parser, nodeType, data)
+	  }
+	
+	  function closeText (parser) {
+	    parser.textNode = textopts(parser.opt, parser.textNode)
+	    if (parser.textNode) emit(parser, 'ontext', parser.textNode)
+	    parser.textNode = ''
+	  }
+	
+	  function textopts (opt, text) {
+	    if (opt.trim) text = text.trim()
+	    if (opt.normalize) text = text.replace(/\s+/g, ' ')
+	    return text
+	  }
+	
+	  function error (parser, er) {
+	    closeText(parser)
+	    if (parser.trackPosition) {
+	      er += '\nLine: ' + parser.line +
+	        '\nColumn: ' + parser.column +
+	        '\nChar: ' + parser.c
+	    }
+	    er = new Error(er)
+	    parser.error = er
+	    emit(parser, 'onerror', er)
+	    return parser
+	  }
+	
+	  function end (parser) {
+	    if (parser.sawRoot && !parser.closedRoot) strictFail(parser, 'Unclosed root tag')
+	    if ((parser.state !== S.BEGIN) &&
+	      (parser.state !== S.BEGIN_WHITESPACE) &&
+	      (parser.state !== S.TEXT)) {
+	      error(parser, 'Unexpected end')
+	    }
+	    closeText(parser)
+	    parser.c = ''
+	    parser.closed = true
+	    emit(parser, 'onend')
+	    SAXParser.call(parser, parser.strict, parser.opt)
+	    return parser
+	  }
+	
+	  function strictFail (parser, message) {
+	    if (typeof parser !== 'object' || !(parser instanceof SAXParser)) {
+	      throw new Error('bad call to strictFail')
+	    }
+	    if (parser.strict) {
+	      error(parser, message)
+	    }
+	  }
+	
+	  function newTag (parser) {
+	    if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]()
+	    var parent = parser.tags[parser.tags.length - 1] || parser
+	    var tag = parser.tag = { name: parser.tagName, attributes: {} }
+	
+	    // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
+	    if (parser.opt.xmlns) {
+	      tag.ns = parent.ns
+	    }
+	    parser.attribList.length = 0
+	    emitNode(parser, 'onopentagstart', tag)
+	  }
+	
+	  function qname (name, attribute) {
+	    var i = name.indexOf(':')
+	    var qualName = i < 0 ? [ '', name ] : name.split(':')
+	    var prefix = qualName[0]
+	    var local = qualName[1]
+	
+	    // <x "xmlns"="http://foo">
+	    if (attribute && name === 'xmlns') {
+	      prefix = 'xmlns'
+	      local = ''
+	    }
+	
+	    return { prefix: prefix, local: local }
+	  }
+	
+	  function attrib (parser) {
+	    if (!parser.strict) {
+	      parser.attribName = parser.attribName[parser.looseCase]()
+	    }
+	
+	    if (parser.attribList.indexOf(parser.attribName) !== -1 ||
+	      parser.tag.attributes.hasOwnProperty(parser.attribName)) {
+	      parser.attribName = parser.attribValue = ''
+	      return
+	    }
+	
+	    if (parser.opt.xmlns) {
+	      var qn = qname(parser.attribName, true)
+	      var prefix = qn.prefix
+	      var local = qn.local
+	
+	      if (prefix === 'xmlns') {
+	        // namespace binding attribute. push the binding into scope
+	        if (local === 'xml' && parser.attribValue !== XML_NAMESPACE) {
+	          strictFail(parser,
+	            'xml: prefix must be bound to ' + XML_NAMESPACE + '\n' +
+	            'Actual: ' + parser.attribValue)
+	        } else if (local === 'xmlns' && parser.attribValue !== XMLNS_NAMESPACE) {
+	          strictFail(parser,
+	            'xmlns: prefix must be bound to ' + XMLNS_NAMESPACE + '\n' +
+	            'Actual: ' + parser.attribValue)
+	        } else {
+	          var tag = parser.tag
+	          var parent = parser.tags[parser.tags.length - 1] || parser
+	          if (tag.ns === parent.ns) {
+	            tag.ns = Object.create(parent.ns)
+	          }
+	          tag.ns[local] = parser.attribValue
+	        }
+	      }
+	
+	      // defer onattribute events until all attributes have been seen
+	      // so any new bindings can take effect. preserve attribute order
+	      // so deferred events can be emitted in document order
+	      parser.attribList.push([parser.attribName, parser.attribValue])
+	    } else {
+	      // in non-xmlns mode, we can emit the event right away
+	      parser.tag.attributes[parser.attribName] = parser.attribValue
+	      emitNode(parser, 'onattribute', {
+	        name: parser.attribName,
+	        value: parser.attribValue
+	      })
+	    }
+	
+	    parser.attribName = parser.attribValue = ''
+	  }
+	
+	  function openTag (parser, selfClosing) {
+	    if (parser.opt.xmlns) {
+	      // emit namespace binding events
+	      var tag = parser.tag
+	
+	      // add namespace info to tag
+	      var qn = qname(parser.tagName)
+	      tag.prefix = qn.prefix
+	      tag.local = qn.local
+	      tag.uri = tag.ns[qn.prefix] || ''
+	
+	      if (tag.prefix && !tag.uri) {
+	        strictFail(parser, 'Unbound namespace prefix: ' +
+	          JSON.stringify(parser.tagName))
+	        tag.uri = qn.prefix
+	      }
+	
+	      var parent = parser.tags[parser.tags.length - 1] || parser
+	      if (tag.ns && parent.ns !== tag.ns) {
+	        Object.keys(tag.ns).forEach(function (p) {
+	          emitNode(parser, 'onopennamespace', {
+	            prefix: p,
+	            uri: tag.ns[p]
+	          })
+	        })
+	      }
+	
+	      // handle deferred onattribute events
+	      // Note: do not apply default ns to attributes:
+	      //   http://www.w3.org/TR/REC-xml-names/#defaulting
+	      for (var i = 0, l = parser.attribList.length; i < l; i++) {
+	        var nv = parser.attribList[i]
+	        var name = nv[0]
+	        var value = nv[1]
+	        var qualName = qname(name, true)
+	        var prefix = qualName.prefix
+	        var local = qualName.local
+	        var uri = prefix === '' ? '' : (tag.ns[prefix] || '')
+	        var a = {
+	          name: name,
+	          value: value,
+	          prefix: prefix,
+	          local: local,
+	          uri: uri
+	        }
+	
+	        // if there's any attributes with an undefined namespace,
+	        // then fail on them now.
+	        if (prefix && prefix !== 'xmlns' && !uri) {
+	          strictFail(parser, 'Unbound namespace prefix: ' +
+	            JSON.stringify(prefix))
+	          a.uri = prefix
+	        }
+	        parser.tag.attributes[name] = a
+	        emitNode(parser, 'onattribute', a)
+	      }
+	      parser.attribList.length = 0
+	    }
+	
+	    parser.tag.isSelfClosing = !!selfClosing
+	
+	    // process the tag
+	    parser.sawRoot = true
+	    parser.tags.push(parser.tag)
+	    emitNode(parser, 'onopentag', parser.tag)
+	    if (!selfClosing) {
+	      // special case for <script> in non-strict mode.
+	      if (!parser.noscript && parser.tagName.toLowerCase() === 'script') {
+	        parser.state = S.SCRIPT
+	      } else {
+	        parser.state = S.TEXT
+	      }
+	      parser.tag = null
+	      parser.tagName = ''
+	    }
+	    parser.attribName = parser.attribValue = ''
+	    parser.attribList.length = 0
+	  }
+	
+	  function closeTag (parser) {
+	    if (!parser.tagName) {
+	      strictFail(parser, 'Weird empty close tag.')
+	      parser.textNode += '</>'
+	      parser.state = S.TEXT
+	      return
+	    }
+	
+	    if (parser.script) {
+	      if (parser.tagName !== 'script') {
+	        parser.script += '</' + parser.tagName + '>'
+	        parser.tagName = ''
+	        parser.state = S.SCRIPT
+	        return
+	      }
+	      emitNode(parser, 'onscript', parser.script)
+	      parser.script = ''
+	    }
+	
+	    // first make sure that the closing tag actually exists.
+	    // <a><b></c></b></a> will close everything, otherwise.
+	    var t = parser.tags.length
+	    var tagName = parser.tagName
+	    if (!parser.strict) {
+	      tagName = tagName[parser.looseCase]()
+	    }
+	    var closeTo = tagName
+	    while (t--) {
+	      var close = parser.tags[t]
+	      if (close.name !== closeTo) {
+	        // fail the first time in strict mode
+	        strictFail(parser, 'Unexpected close tag')
+	      } else {
+	        break
+	      }
+	    }
+	
+	    // didn't find it.  we already failed for strict, so just abort.
+	    if (t < 0) {
+	      strictFail(parser, 'Unmatched closing tag: ' + parser.tagName)
+	      parser.textNode += '</' + parser.tagName + '>'
+	      parser.state = S.TEXT
+	      return
+	    }
+	    parser.tagName = tagName
+	    var s = parser.tags.length
+	    while (s-- > t) {
+	      var tag = parser.tag = parser.tags.pop()
+	      parser.tagName = parser.tag.name
+	      emitNode(parser, 'onclosetag', parser.tagName)
+	
+	      var x = {}
+	      for (var i in tag.ns) {
+	        x[i] = tag.ns[i]
+	      }
+	
+	      var parent = parser.tags[parser.tags.length - 1] || parser
+	      if (parser.opt.xmlns && tag.ns !== parent.ns) {
+	        // remove namespace bindings introduced by tag
+	        Object.keys(tag.ns).forEach(function (p) {
+	          var n = tag.ns[p]
+	          emitNode(parser, 'onclosenamespace', { prefix: p, uri: n })
+	        })
+	      }
+	    }
+	    if (t === 0) parser.closedRoot = true
+	    parser.tagName = parser.attribValue = parser.attribName = ''
+	    parser.attribList.length = 0
+	    parser.state = S.TEXT
+	  }
+	
+	  function parseEntity (parser) {
+	    var entity = parser.entity
+	    var entityLC = entity.toLowerCase()
+	    var num
+	    var numStr = ''
+	
+	    if (parser.ENTITIES[entity]) {
+	      return parser.ENTITIES[entity]
+	    }
+	    if (parser.ENTITIES[entityLC]) {
+	      return parser.ENTITIES[entityLC]
+	    }
+	    entity = entityLC
+	    if (entity.charAt(0) === '#') {
+	      if (entity.charAt(1) === 'x') {
+	        entity = entity.slice(2)
+	        num = parseInt(entity, 16)
+	        numStr = num.toString(16)
+	      } else {
+	        entity = entity.slice(1)
+	        num = parseInt(entity, 10)
+	        numStr = num.toString(10)
+	      }
+	    }
+	    entity = entity.replace(/^0+/, '')
+	    if (numStr.toLowerCase() !== entity) {
+	      strictFail(parser, 'Invalid character entity')
+	      return '&' + parser.entity + ';'
+	    }
+	
+	    return String.fromCodePoint(num)
+	  }
+	
+	  function beginWhiteSpace (parser, c) {
+	    if (c === '<') {
+	      parser.state = S.OPEN_WAKA
+	      parser.startTagPosition = parser.position
+	    } else if (not(whitespace, c)) {
+	      // have to process this as a text node.
+	      // weird, but happens.
+	      strictFail(parser, 'Non-whitespace before first tag.')
+	      parser.textNode = c
+	      parser.state = S.TEXT
+	    }
+	  }
+	
+	  function charAt (chunk, i) {
+	    var result = ''
+	    if (i < chunk.length) {
+	      result = chunk.charAt(i)
+	    }
+	    return result
+	  }
+	
+	  function write (chunk) {
+	    var parser = this
+	    if (this.error) {
+	      throw this.error
+	    }
+	    if (parser.closed) {
+	      return error(parser,
+	        'Cannot write after close. Assign an onready handler.')
+	    }
+	    if (chunk === null) {
+	      return end(parser)
+	    }
+	    if (typeof chunk === 'object') {
+	      chunk = chunk.toString()
+	    }
+	    var i = 0
+	    var c = ''
+	    while (true) {
+	      c = charAt(chunk, i++)
+	      parser.c = c
+	      if (!c) {
+	        break
+	      }
+	      if (parser.trackPosition) {
+	        parser.position++
+	        if (c === '\n') {
+	          parser.line++
+	          parser.column = 0
+	        } else {
+	          parser.column++
+	        }
+	      }
+	      switch (parser.state) {
+	        case S.BEGIN:
+	          parser.state = S.BEGIN_WHITESPACE
+	          if (c === '\uFEFF') {
+	            continue
+	          }
+	          beginWhiteSpace(parser, c)
+	          continue
+	
+	        case S.BEGIN_WHITESPACE:
+	          beginWhiteSpace(parser, c)
+	          continue
+	
+	        case S.TEXT:
+	          if (parser.sawRoot && !parser.closedRoot) {
+	            var starti = i - 1
+	            while (c && c !== '<' && c !== '&') {
+	              c = charAt(chunk, i++)
+	              if (c && parser.trackPosition) {
+	                parser.position++
+	                if (c === '\n') {
+	                  parser.line++
+	                  parser.column = 0
+	                } else {
+	                  parser.column++
+	                }
+	              }
+	            }
+	            parser.textNode += chunk.substring(starti, i - 1)
+	          }
+	          if (c === '<' && !(parser.sawRoot && parser.closedRoot && !parser.strict)) {
+	            parser.state = S.OPEN_WAKA
+	            parser.startTagPosition = parser.position
+	          } else {
+	            if (not(whitespace, c) && (!parser.sawRoot || parser.closedRoot)) {
+	              strictFail(parser, 'Text data outside of root node.')
+	            }
+	            if (c === '&') {
+	              parser.state = S.TEXT_ENTITY
+	            } else {
+	              parser.textNode += c
+	            }
+	          }
+	          continue
+	
+	        case S.SCRIPT:
+	          // only non-strict
+	          if (c === '<') {
+	            parser.state = S.SCRIPT_ENDING
+	          } else {
+	            parser.script += c
+	          }
+	          continue
+	
+	        case S.SCRIPT_ENDING:
+	          if (c === '/') {
+	            parser.state = S.CLOSE_TAG
+	          } else {
+	            parser.script += '<' + c
+	            parser.state = S.SCRIPT
+	          }
+	          continue
+	
+	        case S.OPEN_WAKA:
+	          // either a /, ?, !, or text is coming next.
+	          if (c === '!') {
+	            parser.state = S.SGML_DECL
+	            parser.sgmlDecl = ''
+	          } else if (is(whitespace, c)) {
+	            // wait for it...
+	          } else if (is(nameStart, c)) {
+	            parser.state = S.OPEN_TAG
+	            parser.tagName = c
+	          } else if (c === '/') {
+	            parser.state = S.CLOSE_TAG
+	            parser.tagName = ''
+	          } else if (c === '?') {
+	            parser.state = S.PROC_INST
+	            parser.procInstName = parser.procInstBody = ''
+	          } else {
+	            strictFail(parser, 'Unencoded <')
+	            // if there was some whitespace, then add that in.
+	            if (parser.startTagPosition + 1 < parser.position) {
+	              var pad = parser.position - parser.startTagPosition
+	              c = new Array(pad).join(' ') + c
+	            }
+	            parser.textNode += '<' + c
+	            parser.state = S.TEXT
+	          }
+	          continue
+	
+	        case S.SGML_DECL:
+	          if ((parser.sgmlDecl + c).toUpperCase() === CDATA) {
+	            emitNode(parser, 'onopencdata')
+	            parser.state = S.CDATA
+	            parser.sgmlDecl = ''
+	            parser.cdata = ''
+	          } else if (parser.sgmlDecl + c === '--') {
+	            parser.state = S.COMMENT
+	            parser.comment = ''
+	            parser.sgmlDecl = ''
+	          } else if ((parser.sgmlDecl + c).toUpperCase() === DOCTYPE) {
+	            parser.state = S.DOCTYPE
+	            if (parser.doctype || parser.sawRoot) {
+	              strictFail(parser,
+	                'Inappropriately located doctype declaration')
+	            }
+	            parser.doctype = ''
+	            parser.sgmlDecl = ''
+	          } else if (c === '>') {
+	            emitNode(parser, 'onsgmldeclaration', parser.sgmlDecl)
+	            parser.sgmlDecl = ''
+	            parser.state = S.TEXT
+	          } else if (is(quote, c)) {
+	            parser.state = S.SGML_DECL_QUOTED
+	            parser.sgmlDecl += c
+	          } else {
+	            parser.sgmlDecl += c
+	          }
+	          continue
+	
+	        case S.SGML_DECL_QUOTED:
+	          if (c === parser.q) {
+	            parser.state = S.SGML_DECL
+	            parser.q = ''
+	          }
+	          parser.sgmlDecl += c
+	          continue
+	
+	        case S.DOCTYPE:
+	          if (c === '>') {
+	            parser.state = S.TEXT
+	            emitNode(parser, 'ondoctype', parser.doctype)
+	            parser.doctype = true // just remember that we saw it.
+	          } else {
+	            parser.doctype += c
+	            if (c === '[') {
+	              parser.state = S.DOCTYPE_DTD
+	            } else if (is(quote, c)) {
+	              parser.state = S.DOCTYPE_QUOTED
+	              parser.q = c
+	            }
+	          }
+	          continue
+	
+	        case S.DOCTYPE_QUOTED:
+	          parser.doctype += c
+	          if (c === parser.q) {
+	            parser.q = ''
+	            parser.state = S.DOCTYPE
+	          }
+	          continue
+	
+	        case S.DOCTYPE_DTD:
+	          parser.doctype += c
+	          if (c === ']') {
+	            parser.state = S.DOCTYPE
+	          } else if (is(quote, c)) {
+	            parser.state = S.DOCTYPE_DTD_QUOTED
+	            parser.q = c
+	          }
+	          continue
+	
+	        case S.DOCTYPE_DTD_QUOTED:
+	          parser.doctype += c
+	          if (c === parser.q) {
+	            parser.state = S.DOCTYPE_DTD
+	            parser.q = ''
+	          }
+	          continue
+	
+	        case S.COMMENT:
+	          if (c === '-') {
+	            parser.state = S.COMMENT_ENDING
+	          } else {
+	            parser.comment += c
+	          }
+	          continue
+	
+	        case S.COMMENT_ENDING:
+	          if (c === '-') {
+	            parser.state = S.COMMENT_ENDED
+	            parser.comment = textopts(parser.opt, parser.comment)
+	            if (parser.comment) {
+	              emitNode(parser, 'oncomment', parser.comment)
+	            }
+	            parser.comment = ''
+	          } else {
+	            parser.comment += '-' + c
+	            parser.state = S.COMMENT
+	          }
+	          continue
+	
+	        case S.COMMENT_ENDED:
+	          if (c !== '>') {
+	            strictFail(parser, 'Malformed comment')
+	            // allow <!-- blah -- bloo --> in non-strict mode,
+	            // which is a comment of " blah -- bloo "
+	            parser.comment += '--' + c
+	            parser.state = S.COMMENT
+	          } else {
+	            parser.state = S.TEXT
+	          }
+	          continue
+	
+	        case S.CDATA:
+	          if (c === ']') {
+	            parser.state = S.CDATA_ENDING
+	          } else {
+	            parser.cdata += c
+	          }
+	          continue
+	
+	        case S.CDATA_ENDING:
+	          if (c === ']') {
+	            parser.state = S.CDATA_ENDING_2
+	          } else {
+	            parser.cdata += ']' + c
+	            parser.state = S.CDATA
+	          }
+	          continue
+	
+	        case S.CDATA_ENDING_2:
+	          if (c === '>') {
+	            if (parser.cdata) {
+	              emitNode(parser, 'oncdata', parser.cdata)
+	            }
+	            emitNode(parser, 'onclosecdata')
+	            parser.cdata = ''
+	            parser.state = S.TEXT
+	          } else if (c === ']') {
+	            parser.cdata += ']'
+	          } else {
+	            parser.cdata += ']]' + c
+	            parser.state = S.CDATA
+	          }
+	          continue
+	
+	        case S.PROC_INST:
+	          if (c === '?') {
+	            parser.state = S.PROC_INST_ENDING
+	          } else if (is(whitespace, c)) {
+	            parser.state = S.PROC_INST_BODY
+	          } else {
+	            parser.procInstName += c
+	          }
+	          continue
+	
+	        case S.PROC_INST_BODY:
+	          if (!parser.procInstBody && is(whitespace, c)) {
+	            continue
+	          } else if (c === '?') {
+	            parser.state = S.PROC_INST_ENDING
+	          } else {
+	            parser.procInstBody += c
+	          }
+	          continue
+	
+	        case S.PROC_INST_ENDING:
+	          if (c === '>') {
+	            emitNode(parser, 'onprocessinginstruction', {
+	              name: parser.procInstName,
+	              body: parser.procInstBody
+	            })
+	            parser.procInstName = parser.procInstBody = ''
+	            parser.state = S.TEXT
+	          } else {
+	            parser.procInstBody += '?' + c
+	            parser.state = S.PROC_INST_BODY
+	          }
+	          continue
+	
+	        case S.OPEN_TAG:
+	          if (is(nameBody, c)) {
+	            parser.tagName += c
+	          } else {
+	            newTag(parser)
+	            if (c === '>') {
+	              openTag(parser)
+	            } else if (c === '/') {
+	              parser.state = S.OPEN_TAG_SLASH
+	            } else {
+	              if (not(whitespace, c)) {
+	                strictFail(parser, 'Invalid character in tag name')
+	              }
+	              parser.state = S.ATTRIB
+	            }
+	          }
+	          continue
+	
+	        case S.OPEN_TAG_SLASH:
+	          if (c === '>') {
+	            openTag(parser, true)
+	            closeTag(parser)
+	          } else {
+	            strictFail(parser, 'Forward-slash in opening tag not followed by >')
+	            parser.state = S.ATTRIB
+	          }
+	          continue
+	
+	        case S.ATTRIB:
+	          // haven't read the attribute name yet.
+	          if (is(whitespace, c)) {
+	            continue
+	          } else if (c === '>') {
+	            openTag(parser)
+	          } else if (c === '/') {
+	            parser.state = S.OPEN_TAG_SLASH
+	          } else if (is(nameStart, c)) {
+	            parser.attribName = c
+	            parser.attribValue = ''
+	            parser.state = S.ATTRIB_NAME
+	          } else {
+	            strictFail(parser, 'Invalid attribute name')
+	          }
+	          continue
+	
+	        case S.ATTRIB_NAME:
+	          if (c === '=') {
+	            parser.state = S.ATTRIB_VALUE
+	          } else if (c === '>') {
+	            strictFail(parser, 'Attribute without value')
+	            parser.attribValue = parser.attribName
+	            attrib(parser)
+	            openTag(parser)
+	          } else if (is(whitespace, c)) {
+	            parser.state = S.ATTRIB_NAME_SAW_WHITE
+	          } else if (is(nameBody, c)) {
+	            parser.attribName += c
+	          } else {
+	            strictFail(parser, 'Invalid attribute name')
+	          }
+	          continue
+	
+	        case S.ATTRIB_NAME_SAW_WHITE:
+	          if (c === '=') {
+	            parser.state = S.ATTRIB_VALUE
+	          } else if (is(whitespace, c)) {
+	            continue
+	          } else {
+	            strictFail(parser, 'Attribute without value')
+	            parser.tag.attributes[parser.attribName] = ''
+	            parser.attribValue = ''
+	            emitNode(parser, 'onattribute', {
+	              name: parser.attribName,
+	              value: ''
+	            })
+	            parser.attribName = ''
+	            if (c === '>') {
+	              openTag(parser)
+	            } else if (is(nameStart, c)) {
+	              parser.attribName = c
+	              parser.state = S.ATTRIB_NAME
+	            } else {
+	              strictFail(parser, 'Invalid attribute name')
+	              parser.state = S.ATTRIB
+	            }
+	          }
+	          continue
+	
+	        case S.ATTRIB_VALUE:
+	          if (is(whitespace, c)) {
+	            continue
+	          } else if (is(quote, c)) {
+	            parser.q = c
+	            parser.state = S.ATTRIB_VALUE_QUOTED
+	          } else {
+	            strictFail(parser, 'Unquoted attribute value')
+	            parser.state = S.ATTRIB_VALUE_UNQUOTED
+	            parser.attribValue = c
+	          }
+	          continue
+	
+	        case S.ATTRIB_VALUE_QUOTED:
+	          if (c !== parser.q) {
+	            if (c === '&') {
+	              parser.state = S.ATTRIB_VALUE_ENTITY_Q
+	            } else {
+	              parser.attribValue += c
+	            }
+	            continue
+	          }
+	          attrib(parser)
+	          parser.q = ''
+	          parser.state = S.ATTRIB_VALUE_CLOSED
+	          continue
+	
+	        case S.ATTRIB_VALUE_CLOSED:
+	          if (is(whitespace, c)) {
+	            parser.state = S.ATTRIB
+	          } else if (c === '>') {
+	            openTag(parser)
+	          } else if (c === '/') {
+	            parser.state = S.OPEN_TAG_SLASH
+	          } else if (is(nameStart, c)) {
+	            strictFail(parser, 'No whitespace between attributes')
+	            parser.attribName = c
+	            parser.attribValue = ''
+	            parser.state = S.ATTRIB_NAME
+	          } else {
+	            strictFail(parser, 'Invalid attribute name')
+	          }
+	          continue
+	
+	        case S.ATTRIB_VALUE_UNQUOTED:
+	          if (not(attribEnd, c)) {
+	            if (c === '&') {
+	              parser.state = S.ATTRIB_VALUE_ENTITY_U
+	            } else {
+	              parser.attribValue += c
+	            }
+	            continue
+	          }
+	          attrib(parser)
+	          if (c === '>') {
+	            openTag(parser)
+	          } else {
+	            parser.state = S.ATTRIB
+	          }
+	          continue
+	
+	        case S.CLOSE_TAG:
+	          if (!parser.tagName) {
+	            if (is(whitespace, c)) {
+	              continue
+	            } else if (not(nameStart, c)) {
+	              if (parser.script) {
+	                parser.script += '</' + c
+	                parser.state = S.SCRIPT
+	              } else {
+	                strictFail(parser, 'Invalid tagname in closing tag.')
+	              }
+	            } else {
+	              parser.tagName = c
+	            }
+	          } else if (c === '>') {
+	            closeTag(parser)
+	          } else if (is(nameBody, c)) {
+	            parser.tagName += c
+	          } else if (parser.script) {
+	            parser.script += '</' + parser.tagName
+	            parser.tagName = ''
+	            parser.state = S.SCRIPT
+	          } else {
+	            if (not(whitespace, c)) {
+	              strictFail(parser, 'Invalid tagname in closing tag')
+	            }
+	            parser.state = S.CLOSE_TAG_SAW_WHITE
+	          }
+	          continue
+	
+	        case S.CLOSE_TAG_SAW_WHITE:
+	          if (is(whitespace, c)) {
+	            continue
+	          }
+	          if (c === '>') {
+	            closeTag(parser)
+	          } else {
+	            strictFail(parser, 'Invalid characters in closing tag')
+	          }
+	          continue
+	
+	        case S.TEXT_ENTITY:
+	        case S.ATTRIB_VALUE_ENTITY_Q:
+	        case S.ATTRIB_VALUE_ENTITY_U:
+	          var returnState
+	          var buffer
+	          switch (parser.state) {
+	            case S.TEXT_ENTITY:
+	              returnState = S.TEXT
+	              buffer = 'textNode'
+	              break
+	
+	            case S.ATTRIB_VALUE_ENTITY_Q:
+	              returnState = S.ATTRIB_VALUE_QUOTED
+	              buffer = 'attribValue'
+	              break
+	
+	            case S.ATTRIB_VALUE_ENTITY_U:
+	              returnState = S.ATTRIB_VALUE_UNQUOTED
+	              buffer = 'attribValue'
+	              break
+	          }
+	
+	          if (c === ';') {
+	            parser[buffer] += parseEntity(parser)
+	            parser.entity = ''
+	            parser.state = returnState
+	          } else if (is(parser.entity.length ? entityBody : entityStart, c)) {
+	            parser.entity += c
+	          } else {
+	            strictFail(parser, 'Invalid character in entity name')
+	            parser[buffer] += '&' + parser.entity + c
+	            parser.entity = ''
+	            parser.state = returnState
+	          }
+	
+	          continue
+	
+	        default:
+	          throw new Error(parser, 'Unknown state: ' + parser.state)
+	      }
+	    } // while
+	
+	    if (parser.position >= parser.bufferCheckPosition) {
+	      checkBufferLength(parser)
+	    }
+	    return parser
+	  }
+	
+	  /*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
+	  if (!String.fromCodePoint) {
+	    (function () {
+	      var stringFromCharCode = String.fromCharCode
+	      var floor = Math.floor
+	      var fromCodePoint = function () {
+	        var MAX_SIZE = 0x4000
+	        var codeUnits = []
+	        var highSurrogate
+	        var lowSurrogate
+	        var index = -1
+	        var length = arguments.length
+	        if (!length) {
+	          return ''
+	        }
+	        var result = ''
+	        while (++index < length) {
+	          var codePoint = Number(arguments[index])
+	          if (
+	            !isFinite(codePoint) || // `NaN`, `+Infinity`, or `-Infinity`
+	            codePoint < 0 || // not a valid Unicode code point
+	            codePoint > 0x10FFFF || // not a valid Unicode code point
+	            floor(codePoint) !== codePoint // not an integer
+	          ) {
+	            throw RangeError('Invalid code point: ' + codePoint)
+	          }
+	          if (codePoint <= 0xFFFF) { // BMP code point
+	            codeUnits.push(codePoint)
+	          } else { // Astral code point; split in surrogate halves
+	            // http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+	            codePoint -= 0x10000
+	            highSurrogate = (codePoint >> 10) + 0xD800
+	            lowSurrogate = (codePoint % 0x400) + 0xDC00
+	            codeUnits.push(highSurrogate, lowSurrogate)
+	          }
+	          if (index + 1 === length || codeUnits.length > MAX_SIZE) {
+	            result += stringFromCharCode.apply(null, codeUnits)
+	            codeUnits.length = 0
+	          }
+	        }
+	        return result
+	      }
+	      if (Object.defineProperty) {
+	        Object.defineProperty(String, 'fromCodePoint', {
+	          value: fromCodePoint,
+	          configurable: true,
+	          writable: true
+	        })
+	      } else {
+	        String.fromCodePoint = fromCodePoint
+	      }
+	    }())
+	  }
+	})( false ? this.sax = {} : exports)
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(403).Buffer))
+
+/***/ },
+/* 507 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -24431,7 +31616,7 @@
 	
 	  assign = __webpack_require__(7);
 	
-	  XMLBuilder = __webpack_require__(411);
+	  XMLBuilder = __webpack_require__(508);
 	
 	  module.exports.create = function(name, xmldec, doctype, options) {
 	    options = assign({}, xmldec, doctype, options);
@@ -24442,20 +31627,20 @@
 
 
 /***/ },
-/* 411 */
+/* 508 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
 	(function() {
 	  var XMLBuilder, XMLDeclaration, XMLDocType, XMLElement, XMLStringifier;
 	
-	  XMLStringifier = __webpack_require__(412);
+	  XMLStringifier = __webpack_require__(509);
 	
-	  XMLDeclaration = __webpack_require__(413);
+	  XMLDeclaration = __webpack_require__(510);
 	
-	  XMLDocType = __webpack_require__(420);
+	  XMLDocType = __webpack_require__(517);
 	
-	  XMLElement = __webpack_require__(415);
+	  XMLElement = __webpack_require__(512);
 	
 	  module.exports = XMLBuilder = (function() {
 	    function XMLBuilder(name, options) {
@@ -24517,7 +31702,7 @@
 
 
 /***/ },
-/* 412 */
+/* 509 */
 /***/ function(module, exports) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -24693,7 +31878,7 @@
 
 
 /***/ },
-/* 413 */
+/* 510 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -24706,7 +31891,7 @@
 	
 	  isObject = __webpack_require__(20);
 	
-	  XMLNode = __webpack_require__(414);
+	  XMLNode = __webpack_require__(511);
 	
 	  module.exports = XMLDeclaration = (function(superClass) {
 	    extend(XMLDeclaration, superClass);
@@ -24764,7 +31949,7 @@
 
 
 /***/ },
-/* 414 */
+/* 511 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -24798,13 +31983,13 @@
 	      this.options = this.parent.options;
 	      this.stringify = this.parent.stringify;
 	      if (XMLElement === null) {
-	        XMLElement = __webpack_require__(415);
-	        XMLCData = __webpack_require__(418);
-	        XMLComment = __webpack_require__(419);
-	        XMLDeclaration = __webpack_require__(413);
-	        XMLDocType = __webpack_require__(420);
-	        XMLRaw = __webpack_require__(425);
-	        XMLText = __webpack_require__(426);
+	        XMLElement = __webpack_require__(512);
+	        XMLCData = __webpack_require__(515);
+	        XMLComment = __webpack_require__(516);
+	        XMLDeclaration = __webpack_require__(510);
+	        XMLDocType = __webpack_require__(517);
+	        XMLRaw = __webpack_require__(522);
+	        XMLText = __webpack_require__(523);
 	      }
 	    }
 	
@@ -25101,7 +32286,7 @@
 
 
 /***/ },
-/* 415 */
+/* 512 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25116,13 +32301,13 @@
 	
 	  isFunction = __webpack_require__(13);
 	
-	  every = __webpack_require__(334);
+	  every = __webpack_require__(451);
 	
-	  XMLNode = __webpack_require__(414);
+	  XMLNode = __webpack_require__(511);
 	
-	  XMLAttribute = __webpack_require__(416);
+	  XMLAttribute = __webpack_require__(513);
 	
-	  XMLProcessingInstruction = __webpack_require__(417);
+	  XMLProcessingInstruction = __webpack_require__(514);
 	
 	  module.exports = XMLElement = (function(superClass) {
 	    extend(XMLElement, superClass);
@@ -25319,7 +32504,7 @@
 
 
 /***/ },
-/* 416 */
+/* 513 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25357,7 +32542,7 @@
 
 
 /***/ },
-/* 417 */
+/* 514 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25414,7 +32599,7 @@
 
 
 /***/ },
-/* 418 */
+/* 515 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25425,7 +32610,7 @@
 	
 	  create = __webpack_require__(106);
 	
-	  XMLNode = __webpack_require__(414);
+	  XMLNode = __webpack_require__(511);
 	
 	  module.exports = XMLCData = (function(superClass) {
 	    extend(XMLCData, superClass);
@@ -25469,7 +32654,7 @@
 
 
 /***/ },
-/* 419 */
+/* 516 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25480,7 +32665,7 @@
 	
 	  create = __webpack_require__(106);
 	
-	  XMLNode = __webpack_require__(414);
+	  XMLNode = __webpack_require__(511);
 	
 	  module.exports = XMLComment = (function(superClass) {
 	    extend(XMLComment, superClass);
@@ -25524,7 +32709,7 @@
 
 
 /***/ },
-/* 420 */
+/* 517 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25535,19 +32720,19 @@
 	
 	  isObject = __webpack_require__(20);
 	
-	  XMLCData = __webpack_require__(418);
+	  XMLCData = __webpack_require__(515);
 	
-	  XMLComment = __webpack_require__(419);
+	  XMLComment = __webpack_require__(516);
 	
-	  XMLDTDAttList = __webpack_require__(421);
+	  XMLDTDAttList = __webpack_require__(518);
 	
-	  XMLDTDEntity = __webpack_require__(422);
+	  XMLDTDEntity = __webpack_require__(519);
 	
-	  XMLDTDElement = __webpack_require__(423);
+	  XMLDTDElement = __webpack_require__(520);
 	
-	  XMLDTDNotation = __webpack_require__(424);
+	  XMLDTDNotation = __webpack_require__(521);
 	
-	  XMLProcessingInstruction = __webpack_require__(417);
+	  XMLProcessingInstruction = __webpack_require__(514);
 	
 	  module.exports = XMLDocType = (function() {
 	    function XMLDocType(parent, pubID, sysID) {
@@ -25718,7 +32903,7 @@
 
 
 /***/ },
-/* 421 */
+/* 518 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25792,7 +32977,7 @@
 
 
 /***/ },
-/* 422 */
+/* 519 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25882,7 +33067,7 @@
 
 
 /***/ },
-/* 423 */
+/* 520 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25934,7 +33119,7 @@
 
 
 /***/ },
-/* 424 */
+/* 521 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -25996,7 +33181,7 @@
 
 
 /***/ },
-/* 425 */
+/* 522 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -26007,7 +33192,7 @@
 	
 	  create = __webpack_require__(106);
 	
-	  XMLNode = __webpack_require__(414);
+	  XMLNode = __webpack_require__(511);
 	
 	  module.exports = XMLRaw = (function(superClass) {
 	    extend(XMLRaw, superClass);
@@ -26051,7 +33236,7 @@
 
 
 /***/ },
-/* 426 */
+/* 523 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.9.1
@@ -26062,7 +33247,7 @@
 	
 	  create = __webpack_require__(106);
 	
-	  XMLNode = __webpack_require__(414);
+	  XMLNode = __webpack_require__(511);
 	
 	  module.exports = XMLText = (function(superClass) {
 	    extend(XMLText, superClass);
@@ -26106,7 +33291,7 @@
 
 
 /***/ },
-/* 427 */
+/* 524 */
 /***/ function(module, exports) {
 
 	// Generated by CoffeeScript 1.10.0
@@ -26124,7 +33309,7 @@
 
 
 /***/ },
-/* 428 */
+/* 525 */
 /***/ function(module, exports) {
 
 	// Generated by CoffeeScript 1.10.0
@@ -26164,46 +33349,46 @@
 
 
 /***/ },
-/* 429 */
+/* 526 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'icons' ],
-	  icons: [ 'type', __webpack_require__(430) ]
+	  icons: [ 'type', __webpack_require__(527) ]
 	};
 
 
 /***/ },
-/* 430 */
+/* 527 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	function Icons(){
 	  return {
-	    'default': __webpack_require__(431)
+	    'default': __webpack_require__(528)
 	  };
 	}
 	
 	module.exports = Icons;
 
 /***/ },
-/* 431 */
+/* 528 */
 /***/ function(module, exports) {
 
 	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><path fill=\"#87868A\" d=\"M87.5,0h-75C5.597,0,0,5.597,0,12.5v68.75v3.125V87.5C0,94.403,5.597,100,12.5,100h75 c6.903,0,12.5-5.597,12.5-12.5v-3.05v-0.075V81.25V12.5C100,5.597,94.403,0,87.5,0z\"></path></svg>"
 
 /***/ },
-/* 432 */
+/* 529 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'axes' ],
-	  axes: [ 'type', __webpack_require__(433) ]
+	  axes: [ 'type', __webpack_require__(530) ]
 	};
 
 /***/ },
-/* 433 */
+/* 530 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -26233,12 +33418,12 @@
 	
 	  this._options = _merge(
 	    {
-	      gridSize: 25,
-	      gridLinesColor: '#ddd',
-	      gridLinesWidth: 1,
-	      showGridLines: true
+	      size: 30,
+	      color: '#ddd',
+	      lineWidth: 1,
+	      show: true
 	    },
-	    options);
+	    options.settings.grid);
 	
 	  this._canvas = canvas;
 	  this._eventBus = eventBus;
@@ -26246,7 +33431,7 @@
 	  this._init();
 	}
 	
-	Axes.$inject = [ 'd3polytree.options', 'canvas', 'eventBus' ];
+	Axes.$inject = [ 'd3polytree.definitions', 'canvas', 'eventBus' ];
 	
 	module.exports = Axes;
 	
@@ -26261,6 +33446,14 @@
 	  });
 	
 	  this._draw();
+	
+	  this.setVisible(this._options.show);
+	};
+	
+	Axes.prototype.setVisible = function(visible){
+	  if (_svg){
+	    _svg.style('display', visible ? 'inline' : 'none');
+	  }
 	};
 	
 	Axes.prototype._rescale = function(){
@@ -26279,20 +33472,24 @@
 	      .scale(
 	        zoomTransform.rescaleX(_x)
 	      )
-	      .ticks(width / this._options.gridSize)
+	      .ticks(width / this._options.size)
 	  );
 	  _gY.call(
 	    _yAxis
 	      .scale(
 	        zoomTransform.rescaleY(_y)
 	      )
-	      .ticks(height / this._options.gridSize)
+	      .ticks(height / this._options.size)
 	  );
 	
 	  _gX.selectAll('line, path')
-	    .style('stroke', this._options.gridLinesColor);
+	    .style('stroke', this._options.color)
+	    .style('stroke-dasharray', '2')
+	    .style('stroke-width', this._options.lineWidth);
 	  _gY.selectAll('line, path')
-	    .style('stroke', this._options.gridLinesColor);
+	    .style('stroke', this._options.color)
+	    .style('stroke-dasharray', '2')
+	    .style('stroke-width', this._options.lineWidth);
 	};
 	
 	Axes.prototype._draw = function() {
@@ -26328,75 +33525,152 @@
 	    .tickSize(width);
 	
 	  _gX = _svg.append('g')
-	    .attr('class', 'axis axis--x')
 	    .call(_xAxis);
 	  _gY = _svg.append('g')
-	    .attr('class', 'axis axis--y')
 	    .call(_yAxis);
 	
 	};
 
 
 /***/ },
-/* 434 */
+/* 531 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
-	  __init__: [ 'force' ],
-	  force: [ 'type', __webpack_require__(435) ],
-	  __depends__: [
-	    __webpack_require__(319)
-	  ]
+	  __init__: [ 'zoom' ],
+	  zoom: [ 'type', __webpack_require__(532) ]
 	};
 
 /***/ },
-/* 435 */
+/* 532 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var d3 = __webpack_require__(313);
+	var d3 = __webpack_require__(313),
+	  isUndefined = __webpack_require__(255).isUndefined,
+	  _isZoomable = false,
+	  _zoom = null
+	  ;
 	
 	/**
-	 * The D3 force handler.
+	 * The zoom functionality.
 	 *
 	 * @class
 	 * @constructor
 	 *
 	 * @param {Object} options
-	 * @param {EventBus} eventBus
+	 * @param {Canvas} canvas
+	 * @param {GridLines} gridLines
 	 */
-	function Force(canvas, eventBus, nodes) {
-	
-	  this._force = {};
+	function Zoom(options, canvas, eventBus) {
+	  var tX = options.settings.get('zoom').get('offset').get('x'),
+	    tY = options.settings.get('zoom').get('offset').get('y'),
+	    s = options.settings.get('zoom').get('scale');
 	
 	  this._canvas = canvas;
 	  this._eventBus = eventBus;
-	  this._nodes = nodes;
 	
-	  this._init();
+	  init.apply(this, [tX, tY, s]);
+	
+	  this.setZoomable(true);
+	  this.setZoom(tX, tY, s);
+	  this.setZoomable(false);
 	}
 	
-	Force.$inject = [ 'canvas', 'eventBus', 'nodes' ];
+	Zoom.$inject = [ 'd3polytree.definitions', 'canvas', 'eventBus' ];
 	
-	module.exports = Force;
+	module.exports = Zoom;
 	
-	Force.prototype._init = function() {
+	Zoom.prototype.setZoom = function(translateX, translateY, scale){
+	  this._eventBus.emit('zoom.preZoom', translateX, translateY, scale);
 	
+	  if (_isZoomable === true) {
+	
+	    var currentTransform = this._canvas.getTransform();
+	
+	    translateX = !isUndefined(translateX) ? translateX : currentTransform.e;
+	
+	    translateY = !isUndefined(translateY) ? translateY : currentTransform.f;
+	
+	    scale = !isUndefined(scale) ? scale : currentTransform.a;
+	
+	    // apply transform
+	    this._canvas.getDrawingLayer()
+	      .attr('transform', 'translate(' + translateX + ', ' + translateY + ') scale(' + scale + ')');
+	
+	    this._eventBus.emit('canvas.zoomed');
+	  }
+	};
+	
+	Zoom.prototype.setZoomable = function(isZoomable){
+	  _isZoomable = isZoomable;
+	};
+	
+	var init = function(tX, tY, s){
+	  var drawingLayer = this._canvas.getDrawingLayer();
 	  var that = this;
+	  _zoom = d3
+	    .zoom()
+	    .scaleExtent([0.1, 15])
+	    .on('zoom', function(){
+	      if (!_isZoomable) return true;
+	      // on zoom event
+	      var trans = d3.event.transform;
+	      that.setZoom(trans.x, trans.y, trans.k);
+	    });
 	
-	  this._force = d3.forceSimulation(this._nodes._nodes);
+	  drawingLayer = drawingLayer
+	    .call(_zoom)
+	    .call(_zoom.transform, d3.zoomIdentity
+	      .translate(tX, tY)
+	      .scale(s))
+	    .append('g');
 	
-	  this._links = d3.forceLink(this._nodes._links);
+	  this._canvas.setDrawingLayer(drawingLayer);
+	};
+
+/***/ },
+/* 533 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: [ 'backgroundColor' ],
+	  backgroundColor: [ 'type', __webpack_require__(534) ]
+	};
+
+/***/ },
+/* 534 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
 	
-	  this._force.on('tick', function(){
-	    that._eventBus.emit('force.tick');
-	    //that._force.stop();
-	  });
+	var assign = __webpack_require__(6).assign;
 	
-	  that._eventBus.emit('force.init');
+	/**
+	 * Sets the background color.
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {DOMElement} parent
+	 */
+	function BackgroundColor(parent, settings, s) {
+	  this._parent = parent;
+	  this._settings = settings;
+	  console.log(s);
+	  this.setColor(settings.backgroundColor);
+	}
+	
+	BackgroundColor.$inject = [ 'd3polytree.container', 'd3polytree.definitions.settings', 'd3polytree.definitions'];
+	
+	module.exports = BackgroundColor;
+	
+	BackgroundColor.prototype.setColor = function(color){
+	  assign(this._parent.style, {'background-color': color});
+	  this._settings.backgroundColor = color;
 	};
 
 /***/ }
-/******/ ]);
+/******/ ])));
 //# sourceMappingURL=D3P.Commons.js.map

@@ -5,8 +5,7 @@ module.exports = {
   entry: {
     Viewer: ["./lib/Viewer"],
     InteractiveViewer: ["./lib/InteractiveViewer"],
-    Editor: ["./lib/Editor"],
-    testModdle: ["./lib/testModdle"]
+    Editor: ["./lib/Editor"]
   },
   devtool: process.env.WEBPACK_DEVTOOL || "source-map",
   output: {
