@@ -44,6 +44,7 @@
     "didi": "^0.1.1",
     "eslint": "^3.9.1",
     "eslint-loader": "^1.6.1",
+    "ids": "^0.2.0",
     "inherits": "^2.0.3",
     "json-loader": "^0.5.4",
     "moddle": "^0.8.0",
