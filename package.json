@@ -31,7 +31,6 @@
     "xml2js": "^0.4.16"
   },
   "devDependencies": {
-    "add-event-listener": "0.0.1",
     "css-loader": "^0.25.0",
     "d3-axis": "^1.0.4",
     "d3-canvas": "C:\\Users\\davcs861\\WebstormProjects\\Redes\\d3-canvas",
