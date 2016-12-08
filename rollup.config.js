@@ -5,5 +5,5 @@ export default {
   format: "umd",
   moduleName: "d3",
   plugins: [node()],
-  dest: "d3/d3.js"
+  dest: "d3/d3.min.js"
 };

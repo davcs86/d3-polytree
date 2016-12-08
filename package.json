@@ -4,7 +4,7 @@
   "description": "Interactive polytree viewer based on D3.js",
   "main": "index.js",
   "scripts": {
-    "build-d3": "rollup -c && uglifyjs d3/d3.js -c -m -o d3/d3.min.js",
+    "build-d3": "rollup -c",
     "prebuild": "npm run build-d3",
     "build": "webpack --progress --profile --colors --display-error-details",
     "dev": "webpack-dev-server --progress --profile --colors --inline --hot --port 8083",

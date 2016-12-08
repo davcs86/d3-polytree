@@ -5,7 +5,7 @@
 <body style="text-align: center">
 <a href="index.html" title="Index">Index</a>
 <h3>Viewer</h3>
-<div id="d3Canvas" style="width: 800px; height: 400px; position: relative"></div>
+<div id="d3Canvas" style="width: 100%; height: 800px; position: relative"></div>
 <!--<script type="text/javascript" src="d3.v4.min.js" charset="utf-8"></script>-->
 <script type="text/javascript" src="D3P.Commons.js" charset="utf-8"></script>
 <script type="text/javascript" src="D3P.Viewer.js" charset="utf-8"></script>
@@ -14,30 +14,41 @@
         var diagram = new D3P.Viewer({
             container: '#d3Canvas'
         });
-        diagram.importDiagram({
-            A: {
-                label: 'A',
-                adjacencyList: {
-                    B: {
-                        label: 'A -> B'
-                    },
-                    C: {
-                        label: 'A -> C'
-                    }
-                }
-            },
-            B: {
-                label: 'B',
-                adjacencyList: {
-                    C: {
-                        label: 'B -> C'
-                    }
-                }
-            },
-            C: {
-                label: 'C'
-            }
-        });
+        diagram.importDiagram('<?xml version="1.0" encoding="UTF-8"?>' +
+          '<pfdn:diagram xmlns:pfdn="http://pfdn">'+
+          '<settings>'+
+          '    <author>David</author>' +
+          '    <name>Diagram1</name>' +
+          '    <zoom>' +
+          '        <offset x="38.5" y="12.22" />'+
+          '        <scale>1.8</scale>'+
+          '    </zoom>' +
+          '    <backgroundColor>lightgray</backgroundColor>' +
+          '    <grid color="green" />' +
+          '</settings>' +
+          '<node id="Node_1" size="50">' +
+          '    <position x="50" y="250" />'+
+          '    <label color="red" fontSize="16">' +
+          '        <position x="38.5" y="212.22" />'+
+          '        <text>2.5</text>'+
+          '    </label>' +
+          '</node>' +
+          '<node id="Node_2" size="40" type="default1">' +
+          '    <position x="120" y="300" />'+
+          '    <label color="green" fontSize="16">' +
+          '        <position x="38.5" y="212.22" />'+
+          '        <text>2.5</text>'+
+          '    </label>' +
+          '</node>' +
+          '<link id="Link_1" source="Node_1" target="Node_2" lineColor="red" fillColor="blue" lineWidth="5">' +
+          '    <waypoint x="450" y="300" />'+
+          '    <waypoint x="750" y="300" />'+
+          '    <label color="green" fontSize="16">' +
+          '        <position x="18.5" y="12.22" />'+
+          '        <text>2.5</text>'+
+          '    </label>' +
+          '</link>' +
+          '</pfdn:diagram>');
     };
 </script>
 </body>
