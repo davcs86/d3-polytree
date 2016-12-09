@@ -11,10 +11,10 @@
 <script type="text/javascript" src="D3P.InteractiveViewer.js" charset="utf-8"></script>
 <script type="text/javascript">
     window.onload = function (){
-        var diagram = new D3P.InteractiveViewer({
+        window.diagram = new D3P.InteractiveViewer({
             container: '#d3Canvas'
         });
-        diagram.importDiagram('<?xml version="1.0" encoding="UTF-8"?>' +
+        window.diagram.importDiagram('<?xml version="1.0" encoding="UTF-8"?>' +
           '<pfdn:diagram xmlns:pfdn="http://pfdn">'+
           '<settings>'+
           '    <author>David</author>' +
@@ -48,7 +48,11 @@
           '        <text>2.5</text>'+
           '    </label>' +
           '</link>' +
-          '</pfdn:diagram>');
+          '</pfdn:diagram>')
+          .then(function(){
+            console.log(window.diagram.get("elementRegistry").getAll());
+          });
+
     };
 </script>
 </body>
