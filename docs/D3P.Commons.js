@@ -36488,7 +36488,7 @@
 	  this._options = _merge(
 	    {
 	      size: 30,
-	      color: '#ddd',
+	      lineColor: '#ddd',
 	      lineWidth: 1,
 	      show: true
 	    },
@@ -36560,11 +36560,11 @@
 	  );
 	
 	  _gX.selectAll('line, path')
-	    .style('stroke', this._options.color)
+	    .style('stroke', this._options.lineColor)
 	    .style('stroke-dasharray', '2')
 	    .style('stroke-width', this._options.lineWidth);
 	  _gY.selectAll('line, path')
-	    .style('stroke', this._options.color)
+	    .style('stroke', this._options.lineColor)
 	    .style('stroke-dasharray', '2')
 	    .style('stroke-width', this._options.lineWidth);
 	};

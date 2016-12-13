@@ -49,14 +49,18 @@
           '        <text>24px fontSize</text>'+
           '    </label>' +
           '</link>' +
-          '<zone fillColor="blue" width="600" height="400" >' +
-          '    <border lineWidth="2" lineColor="red" />'+
+          '<zone fillColor="lightgreen" width="600" height="400" >' +
+          '    <border lineWidth="2" lineColor="yellow" />'+
           '    <position x="-30" y="50" />'+
-          '    <label color="blue" fontSize="24">' +
-          '        <position x="18.5" y="12.22" />'+
-          '        <text>24px fontSize</text>'+
+          '    <label color="red" fontSize="12">' +
+          '        <position x="24" y="12.22" />'+
+          '        <text>12px fontSize</text>'+
           '    </label>' +
           '</zone>' +
+          '<label color="blue" fontSize="32">' +
+          '    <position x="70" y="52.22" />'+
+          '    <text>DDD</text>'+
+          '</label>' +
           '</pfdn:diagram>')
           .then(function(){
             console.log(window.diagram.get("elementRegistry").getAll());
