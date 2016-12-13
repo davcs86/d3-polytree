@@ -13,12 +13,12 @@ return webpackJsonpD3P([1],{
 /***/ 0:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(846);
+	module.exports = __webpack_require__(852);
 
 
 /***/ },
 
-/***/ 846:
+/***/ 852:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -42,7 +42,7 @@ return webpackJsonpD3P([1],{
 	module.exports = {InteractiveViewer: InteractiveViewer};
 	
 	InteractiveViewer.prototype._interactionModules = [
-	  __webpack_require__(847),
+	  __webpack_require__(853),
 	  //require('./features/tooltip')
 	];
 	
@@ -53,17 +53,17 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 847:
+/***/ 853:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'zoomScroll' ],
-	  zoomScroll: [ 'type', __webpack_require__(848) ]
+	  zoomScroll: [ 'type', __webpack_require__(854) ]
 	};
 
 /***/ },
 
-/***/ 848:
+/***/ 854:
 /***/ function(module, exports) {
 
 	'use strict';

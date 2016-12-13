@@ -44,7 +44,7 @@ return webpackJsonpD3P([0],[
 	};
 	
 	Editor.prototype._interactionModules = [
-	  __webpack_require__(842)
+	  __webpack_require__(848)
 	  //require('./features/tooltip')
 	];
 	
