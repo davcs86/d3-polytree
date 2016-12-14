@@ -13,7 +13,7 @@ return webpackJsonpD3P([1],{
 /***/ 0:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(852);
+	module.exports = __webpack_require__(858);
 
 
 /***/ },
@@ -21,50 +21,14 @@ return webpackJsonpD3P([1],{
 /***/ 852:
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
-	
-	var inherits = __webpack_require__(2),
-	  Viewer = __webpack_require__(3).Viewer;
-	
-	/**
-	 * A viewer that includes user interactions
-	 *
-	 * @param {Object} options
-	 */
-	function InteractiveViewer(options) {
-	  Viewer.call(this, options);
-	}
-	
-	inherits(InteractiveViewer, Viewer);
-	
 	module.exports = {
-	  InteractiveViewer: InteractiveViewer
+	  __init__: [ 'zoomScroll' ],
+	  zoomScroll: [ 'type', __webpack_require__(853) ]
 	};
-	
-	InteractiveViewer.prototype._interactionModules = [
-	  __webpack_require__(853),
-	  __webpack_require__(855),
-	  __webpack_require__(857)
-	];
-	
-	InteractiveViewer.prototype._modules = [].concat(
-	  InteractiveViewer.prototype._modules,
-	  InteractiveViewer.prototype._interactionModules
-	);
 
 /***/ },
 
 /***/ 853:
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = {
-	  __init__: [ 'zoomScroll' ],
-	  zoomScroll: [ 'type', __webpack_require__(854) ]
-	};
-
-/***/ },
-
-/***/ 854:
 /***/ function(module, exports) {
 
 	'use strict';
@@ -88,12 +52,12 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 855:
+/***/ 854:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['mouseEvents'],
-	  mouseEvents: ['type', __webpack_require__(856)],
+	  mouseEvents: ['type', __webpack_require__(855)],
 	  __depends__: [
 	    __webpack_require__(741)
 	  ]
@@ -102,7 +66,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 856:
+/***/ 855:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -173,12 +137,48 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 857:
+/***/ 858:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var inherits = __webpack_require__(2),
+	  Viewer = __webpack_require__(3).Viewer;
+	
+	/**
+	 * A viewer that includes user interactions
+	 *
+	 * @param {Object} options
+	 */
+	function InteractiveViewer(options) {
+	  Viewer.call(this, options);
+	}
+	
+	inherits(InteractiveViewer, Viewer);
+	
+	module.exports = {
+	  InteractiveViewer: InteractiveViewer
+	};
+	
+	InteractiveViewer.prototype._interactionModules = [
+	  __webpack_require__(852),
+	  __webpack_require__(854),
+	  __webpack_require__(859)
+	];
+	
+	InteractiveViewer.prototype._modules = [].concat(
+	  InteractiveViewer.prototype._modules,
+	  InteractiveViewer.prototype._interactionModules
+	);
+
+/***/ },
+
+/***/ 859:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'tooltip' ],
-	  tooltip: [ 'type', __webpack_require__(858) ],
+	  tooltip: [ 'type', __webpack_require__(860) ],
 	  __depends__: [
 	    //
 	  ]
@@ -186,17 +186,18 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 858:
+/***/ 860:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var d3 = __webpack_require__(555),
-	  _d3tip = __webpack_require__(859),
-	  _tooltip = null
+	  _d3tip = __webpack_require__(861),
+	  _tooltip = null,
+	  isFunction = __webpack_require__(561).isFunction
 	  ;
 	
-	__webpack_require__(860);
+	__webpack_require__(862);
 	
 	/**
 	 * The tooltip functionality.
@@ -209,8 +210,7 @@ return webpackJsonpD3P([1],{
 	 * @param {EventBus} eventBus
 	 */
 	function Tooltip(tooltip, canvas, eventBus) {
-	  //console.log(tooltip);
-	  //if (tooltip) {
+	  if (isFunction(tooltip)) {
 	    _tooltip = _d3tip(d3)
 	      .attr('class', 'd3-tip')
 	      .offset([-10, 0])
@@ -230,7 +230,7 @@ return webpackJsonpD3P([1],{
 	    eventBus.on('node.mouseout', function () {
 	      _tooltip.hide();
 	    });
-	  //}
+	  }
 	}
 	
 	Tooltip.$inject = [
@@ -243,7 +243,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 859:
+/***/ 861:
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// d3.tip
@@ -573,16 +573,16 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 860:
+/***/ 862:
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(861);
+	var content = __webpack_require__(863);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(863)(content, {});
+	var update = __webpack_require__(865)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -600,10 +600,10 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 861:
+/***/ 863:
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(862)();
+	exports = module.exports = __webpack_require__(864)();
 	// imports
 	
 	
@@ -615,7 +615,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 862:
+/***/ 864:
 /***/ function(module, exports) {
 
 	/*
@@ -672,7 +672,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 863:
+/***/ 865:
 /***/ function(module, exports, __webpack_require__) {
 
 	/*

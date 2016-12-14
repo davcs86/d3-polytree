@@ -5,19 +5,67 @@
 <body style="text-align: center">
 <a href="index.html" title="Index">Index</a>
 <h3>Editor</h3>
-<div id="d3Canvas" style="width: 800px; height: 400px; position: relative"></div>
+<div id="d3Canvas" style="width: 100%; height: 80%; position: relative"></div>
 <!--<script type="text/javascript" src="d3.v4.min.js" charset="utf-8"></script>-->
 <script type="text/javascript" src="D3P.Commons.js" charset="utf-8"></script>
 <script type="text/javascript" src="D3P.Editor.js" charset="utf-8"></script>
 <script type="text/javascript">
   window.onload = function (){
-    var diagram = new D3P.Editor({
+    window.diagram = new D3P.Editor({
       container: '#d3Canvas',
-      translateX: '0',
-      translateY: '0',
-      scale: '1.5'
     });
-    diagram.createDiagram();
+    window.diagram.importDiagram('<?xml version="1.0" encoding="UTF-8"?>' +
+      '<pfdn:diagram xmlns:pfdn="http://pfdn">'+
+      '<settings>'+
+      '    <author>David</author>' +
+      '    <name>Diagram1</name>' +
+      '    <zoom>' +
+      '        <offset x="38.5" y="12.22" />'+
+      '        <scale>1.1</scale>'+
+      '    </zoom>' +
+      '    <backgroundColor>lightgray</backgroundColor>' +
+      '    <grid lineColor="green" />' +
+      '</settings>' +
+      '<node id="Node_1" size="50">' +
+      '    <position x="50" y="250" />'+
+      '    <label color="red" fontSize="12">' +
+      '        <position x="50" y="310" />'+
+      '        <text>Nodo A</text>'+
+      '    </label>' +
+      '</node>' +
+      '<node id="Node_2" size="40" type="default1">' +
+      '    <position x="120" y="300" />'+
+      '    <label color="green" fontSize="16">' +
+      '        <position x="38.5" y="212.22" />'+
+      '        <text>2.5</text>'+
+      '    </label>' +
+      '</node>' +
+      '<link source="Node_1" target="Node_2" lineColor="red" fillColor="blue" lineWidth="5">' +
+      '    <waypoint x="450" y="300" />'+
+      '    <waypoint x="600" y="150" />'+
+      '    <waypoint x="750" y="300" />'+
+      '    <label color="green" fontSize="24">' +
+      '        <position x="18.5" y="12.22" />'+
+      '        <text>24px fontSize</text>'+
+      '    </label>' +
+      '</link>' +
+      '<zone fillColor="lightgreen" width="600" height="400" >' +
+      '    <border lineWidth="2" lineColor="yellow" />'+
+      '    <position x="-30" y="50" />'+
+      '    <label color="red" fontSize="12">' +
+      '        <position x="24" y="12.22" />'+
+      '        <text>12px fontSize</text>'+
+      '    </label>' +
+      '</zone>' +
+      '<label color="blue" fontSize="32">' +
+      '    <position x="70" y="52.22" />'+
+      '    <text>DDD</text>'+
+      '</label>' +
+      '</pfdn:diagram>'
+    )
+      .then(function(){
+        console.log(window.diagram.get("elementRegistry").getAll());
+      });
   };
 </script>
 </body>
