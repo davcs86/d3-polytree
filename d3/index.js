@@ -28,3 +28,6 @@ export {
   map
 } from "d3-collection"
 
+export {
+  drag
+} from "d3-drag"
