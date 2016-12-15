@@ -17,7 +17,7 @@ module.exports = {
   resolve: {
     extensions: ["", ".js", ".css", ".scss", ".svg", ".json"],
     alias: {
-      d3: path.join(__dirname, '/d3/d3.min')
+      d3: path.join(__dirname, '/assets/d3/d3.min')
     }
   },
   module: {

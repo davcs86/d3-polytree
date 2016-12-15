@@ -1,0 +1,75 @@
+@font-face {
+  font-family: 'pfdn-font';
+  src: url('../font/pfdn-font.eot?49215192');
+  src: url('../font/pfdn-font.eot?49215192#iefix') format('embedded-opentype'),
+       url('../font/pfdn-font.woff2?49215192') format('woff2'),
+       url('../font/pfdn-font.woff?49215192') format('woff'),
+       url('../font/pfdn-font.ttf?49215192') format('truetype'),
+       url('../font/pfdn-font.svg?49215192#pfdn-font') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+/* Chrome hack: SVG is rendered more smooth in Windozze. 100% magic, uncomment if you need it. */
+/* Note, that will break hinting! In other OS-es font will be not as sharp as it could be */
+/*
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: 'pfdn-font';
+    src: url('../font/pfdn-font.svg?49215192#pfdn-font') format('svg');
+  }
+}
+*/
+ 
+ [class^="icon-"]:before, [class*=" icon-"]:before {
+  font-family: "pfdn-font";
+  font-style: normal;
+  font-weight: normal;
+  speak: none;
+ 
+  display: inline-block;
+  text-decoration: inherit;
+  width: 1em;
+  margin-right: .2em;
+  text-align: center;
+  /* opacity: .8; */
+ 
+  /* For safety - reset parent styles, that can break glyph codes*/
+  font-variant: normal;
+  text-transform: none;
+ 
+  /* fix buttons height, for twitter bootstrap */
+  line-height: 1em;
+ 
+  /* Animation center compensation - margins should be symmetric */
+  /* remove if not needed */
+  margin-left: .2em;
+ 
+  /* you can be more comfortable with increased icons size */
+  /* font-size: 120%; */
+ 
+  /* Font smoothing. That was taken from TWBS */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+ 
+  /* Uncomment for 3D effect */
+  /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
+}
+ 
+.icon-plus-circled:before { content: '\e800'; } /* '' */
+.icon-download:before { content: '\e801'; } /* '' */
+.icon-grid:before { content: '\e802'; } /* '' */
+.icon-cog:before { content: '\e803'; } /* '' */
+.icon-doc:before { content: '\e804'; } /* '' */
+.icon-picture:before { content: '\e805'; } /* '' */
+.icon-search:before { content: '\e806'; } /* '' */
+.icon-target:before { content: '\e807'; } /* '' */
+.icon-lasso-tool:before { content: '\e809'; } /* '' */
+.icon-connection-multi:before { content: '\e80a'; } /* '' */
+.icon-check-empty:before { content: '\f096'; } /* '' */
+.icon-angle-double-left:before { content: '\f100'; } /* '' */
+.icon-angle-double-right:before { content: '\f101'; } /* '' */
+.icon-angle-double-up:before { content: '\f102'; } /* '' */
+.icon-angle-double-down:before { content: '\f103'; } /* '' */
+.icon-folder-open-empty:before { content: '\f115'; } /* '' */
+.icon-trash:before { content: '\f1f8'; } /* '' */
+.icon-mouse-pointer:before { content: '\f245'; } /* '' */
