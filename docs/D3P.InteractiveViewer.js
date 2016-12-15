@@ -13,7 +13,7 @@ return webpackJsonpD3P([1],{
 /***/ 0:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(864);
+	module.exports = __webpack_require__(866);
 
 
 /***/ },
@@ -137,7 +137,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 862:
+/***/ 860:
 /***/ function(module, exports) {
 
 	/*
@@ -194,7 +194,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 863:
+/***/ 861:
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -447,7 +447,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 864:
+/***/ 866:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -473,7 +473,7 @@ return webpackJsonpD3P([1],{
 	InteractiveViewer.prototype._interactionModules = [
 	  __webpack_require__(852),
 	  __webpack_require__(854),
-	  __webpack_require__(865)
+	  __webpack_require__(867)
 	];
 	
 	InteractiveViewer.prototype._modules = [].concat(
@@ -483,12 +483,12 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 865:
+/***/ 867:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'tooltip' ],
-	  tooltip: [ 'type', __webpack_require__(866) ],
+	  tooltip: [ 'type', __webpack_require__(868) ],
 	  __depends__: [
 	    //
 	  ]
@@ -496,18 +496,18 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 866:
+/***/ 868:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var d3 = __webpack_require__(555),
-	  _d3tip = __webpack_require__(867),
+	  _d3tip = __webpack_require__(869),
 	  _tooltip = null,
 	  isFunction = __webpack_require__(561).isFunction
 	  ;
 	
-	__webpack_require__(868);
+	__webpack_require__(870);
 	
 	/**
 	 * The tooltip functionality.
@@ -553,7 +553,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 867:
+/***/ 869:
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// d3.tip
@@ -883,16 +883,16 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 868:
+/***/ 870:
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(869);
+	var content = __webpack_require__(871);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(863)(content, {});
+	var update = __webpack_require__(861)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -910,10 +910,10 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 869:
+/***/ 871:
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(862)();
+	exports = module.exports = __webpack_require__(860)();
 	// imports
 	
 	

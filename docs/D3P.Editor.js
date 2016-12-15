@@ -188,7 +188,7 @@ return webpackJsonpD3P([0],{
 	  __init__: ['drag'],
 	  drag: ['type', __webpack_require__(857)],
 	  __depends__: [
-	    __webpack_require__(858)
+	    __webpack_require__(862)
 	  ]
 	};
 
@@ -202,6 +202,8 @@ return webpackJsonpD3P([0],{
 	
 	var d3 = __webpack_require__(555);
 	
+	__webpack_require__(858);
+	
 	/**
 	 * Drag description
 	 *
@@ -211,8 +213,9 @@ return webpackJsonpD3P([0],{
 	 * @param {EventBus} eventBus
 	 */
 	
-	function Drag(eventBus, elementRegistry) {
+	function Drag(canvas, eventBus, elementRegistry) {
 	
+	  this._canvas = canvas;
 	  this._eventBus = eventBus;
 	  this._elementRegistry = elementRegistry;
 	
@@ -220,6 +223,7 @@ return webpackJsonpD3P([0],{
 	}
 	
 	Drag.$inject = [
+	  'canvas',
 	  'eventBus',
 	  'elementRegistry'
 	];
@@ -228,22 +232,30 @@ return webpackJsonpD3P([0],{
 	
 	Drag.prototype._setElemToDrag = function(element){
 	  var that = this;
-	  element.call(
+	  d3.select(element.node().parentNode).call(
 	    d3.drag()
+	      .subject(function(def) {
+	         return d3.select(that._elementRegistry.get(def.id).node().parentNode);
+	      })
+	      .on('start', function(){
+	        d3.event.subject.classed('cursor-grabbing', true);
+	      })
+	      .on('end', function(){
+	        d3.event.subject.classed('cursor-grabbing', false);
+	      })
 	      .on('drag', function(def){
-	        var elem = d3.select(that._elementRegistry.get(def.id).node().parentNode),
-	          //x = elem.attr('x')*1.0,
-	          //y = elem.attr('y')*1.0,
-	          x = d3.event.dx,
-	          y = d3.event.dy,
-	          translate = 'translate('+(x)+','+(y)+')';
-	        console.log(x,y);
+	        var elem = d3.event.subject,
+	          x = (elem.attr('x')*1.0) + d3.event.dx,
+	          y = (elem.attr('y')*1.0) + d3.event.dy,
+	          translate = 'translate('+x+','+y+')';
 	        elem
 	          .attr('x', x)
 	          .attr('y', y)
 	          .attr('transform', translate);
-	
-	        console.log(elem.attr('x'));
+	        // update business object
+	        def.position.x = x;
+	        def.position.y = y;
+	        //
 	      })
 	  );
 	};
@@ -256,130 +268,24 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 858:
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = {
-	  __init__: ['outline'],
-	  outline: ['type', __webpack_require__(859)],
-	  __depends__: [
-	    //''
-	  ]
-	};
-
-
-/***/ },
+[872, 859],
 
 /***/ 859:
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
-	
-	var d3 = __webpack_require__(555);
-	
-	__webpack_require__(860);
-	
-	/**
-	 * Outline description
-	 *
-	 * @class
-	 * @constructor
-	 *
-	 * @param {Canvas} canvas
-	 */
-	
-	function Outline(canvas, eventBus) {
-	
-	  this._canvas = canvas;
-	  this._eventBus = eventBus;
-	
-	  this._init();
-	}
-	
-	Outline.$inject = [
-	  'canvas',
-	  'eventBus',
-	];
-	
-	module.exports = Outline;
-	
-	Outline.prototype._getElemBBox = function(element){
-	  return element.node().getBBox();
-	};
-	
-	Outline.prototype._createOutline = function(element, definition){
-	  // add the outline to every node created
-	  var that = this,
-	    type = definition.$descriptor.ns.localName.toLowerCase(),
-	    elemSize = this._getElemBBox(element),
-	    outline = d3.select(element.node().parentNode)
-	      .append('rect')
-	      .attr('class', 'element-outline')
-	      .attr('x', function(){
-	        return (type === 'label')? elemSize.width / -2 : 0;
-	      })
-	      .attr('y', function(){
-	        return (type === 'label')? elemSize.height / -1.33333333 : 0;
-	      })
-	      .attr('fill', 'none')
-	      .attr('stroke', 'red')
-	      //.attr('stroke-width', '1px')
-	      .attr('stroke-dasharray', '3')
-	      .attr('width', elemSize.width + 6)
-	      .attr('height', elemSize.height + 6);
-	    that._eventBus.emit('outline.created', outline);
-	};
-	
-	Outline.prototype._init = function () {
-	  this._eventBus.on('node.created', this._createOutline, this);
-	  this._eventBus.on('label.created', this._createOutline, this);
-	  this._eventBus.on('zone.created', this._createOutline, this);
-	};
-
-/***/ },
-
-/***/ 860:
-/***/ function(module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-	
-	// load the styles
-	var content = __webpack_require__(861);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	// add the styles to the DOM
-	var update = __webpack_require__(863)(content, {});
-	if(content.locals) module.exports = content.locals;
-	// Hot Module Replacement
-	if(false) {
-		// When the styles change, update the <style> tags
-		if(!content.locals) {
-			module.hot.accept("!!./../../../node_modules/css-loader/index.js!./../../../node_modules/sass-loader/index.js!./style.scss", function() {
-				var newContent = require("!!./../../../node_modules/css-loader/index.js!./../../../node_modules/sass-loader/index.js!./style.scss");
-				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-				update(newContent);
-			});
-		}
-		// When the module is disposed, remove the <style> tags
-		module.hot.dispose(function() { update(); });
-	}
-
-/***/ },
-
-/***/ 861:
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(862)();
+	exports = module.exports = __webpack_require__(860)();
 	// imports
 	
 	
 	// module
-	exports.push([module.id, ".element > .element-outline {\n  stroke-width: 0; }\n\n.element.selected > .element-outline, .element:hover > .element-outline {\n  stroke-width: 1px; }\n", ""]);
+	exports.push([module.id, ".cursor-grabbing {\n  cursor: -webkit-grabbing;\n  cursor: -moz-grabbing;\n  cursor: grabbing; }\n", ""]);
 	
 	// exports
 
 
 /***/ },
 
-/***/ 862:
+/***/ 860:
 /***/ function(module, exports) {
 
 	/*
@@ -436,7 +342,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 863:
+/***/ 861:
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -686,6 +592,133 @@ return webpackJsonpD3P([0],{
 			URL.revokeObjectURL(oldSrc);
 	}
 
+
+/***/ },
+
+/***/ 862:
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: ['outline'],
+	  outline: ['type', __webpack_require__(863)],
+	  __depends__: [
+	    //''
+	  ]
+	};
+
+
+/***/ },
+
+/***/ 863:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var d3 = __webpack_require__(555);
+	
+	__webpack_require__(864);
+	
+	/**
+	 * Outline description
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {Canvas} canvas
+	 */
+	
+	function Outline(canvas, eventBus) {
+	
+	  this._canvas = canvas;
+	  this._eventBus = eventBus;
+	
+	  this._init();
+	}
+	
+	Outline.$inject = [
+	  'canvas',
+	  'eventBus',
+	];
+	
+	module.exports = Outline;
+	
+	Outline.prototype._getElemBBox = function(element){
+	  return element.node().getBBox();
+	};
+	
+	Outline.prototype._createOutline = function(element, definition){
+	  // add the outline to every node created
+	  var that = this,
+	    type = definition.$descriptor.ns.localName.toLowerCase(),
+	    elemSize = this._getElemBBox(element),
+	    outline = d3.select(element.node().parentNode)
+	      .append('rect')
+	      .attr('class', 'element-outline')
+	      .attr('x', function(){
+	        return (type === 'label')? elemSize.width / -2 : 0;
+	      })
+	      .attr('y', function(){
+	        return (type === 'label')? elemSize.height / -1.33333333 : 0;
+	      })
+	      .attr('fill', 'none')
+	      .attr('stroke', 'red')
+	      //.attr('stroke-width', '1px')
+	      .attr('stroke-dasharray', '3')
+	      .attr('width', elemSize.width + 6)
+	      .attr('height', elemSize.height + 6);
+	    that._eventBus.emit('outline.created', outline);
+	};
+	
+	Outline.prototype._init = function () {
+	  this._eventBus.on('node.created', this._createOutline, this);
+	  this._eventBus.on('label.created', this._createOutline, this);
+	  this._eventBus.on('zone.created', this._createOutline, this);
+	};
+
+/***/ },
+
+/***/ 864:
+[872, 865],
+
+/***/ 865:
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(860)();
+	// imports
+	
+	
+	// module
+	exports.push([module.id, ".element > .element-outline {\n  stroke-width: 0; }\n\n.element.selected > .element-outline, .element:hover > .element-outline {\n  stroke-width: 1px; }\n", ""]);
+	
+	// exports
+
+
+/***/ },
+
+/***/ 872:
+/***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+	
+	// load the styles
+	var content = __webpack_require__(__webpack_module_template_argument_0__);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(861)(content, {});
+	if(content.locals) module.exports = content.locals;
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		if(!content.locals) {
+			module.hot.accept("!!./../../../node_modules/css-loader/index.js!./../../../node_modules/sass-loader/index.js!./style.scss", function() {
+				var newContent = require("!!./../../../node_modules/css-loader/index.js!./../../../node_modules/sass-loader/index.js!./style.scss");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
 
 /***/ }
 
