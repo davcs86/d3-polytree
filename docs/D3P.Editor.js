@@ -54,6 +54,7 @@ return webpackJsonpD3P([0],{
 	  __webpack_require__(856),
 	  __webpack_require__(866),
 	  __webpack_require__(887),
+	  __webpack_require__(892),
 	];
 	
 	Editor.prototype._modules = [].concat(
@@ -289,7 +290,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 858:
-[898, 859],
+[900, 859],
 
 /***/ 859:
 /***/ function(module, exports, __webpack_require__) {
@@ -699,7 +700,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 864:
-[898, 865],
+[900, 865],
 
 /***/ 865:
 /***/ function(module, exports, __webpack_require__) {
@@ -1528,7 +1529,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 883:
-[898, 884],
+[900, 884],
 
 /***/ 884:
 /***/ function(module, exports, __webpack_require__) {
@@ -1538,7 +1539,7 @@ return webpackJsonpD3P([0],{
 	
 	
 	// module
-	exports.push([module.id, ".pfdjs-palette {\n  position: absolute;\n  margin: 6px;\n  padding: 3px 6px;\n  background: #fafafa;\n  border: solid 1px #cccccc;\n  border-radius: 2px;\n  box-shadow: 0 1px 1px 0px rgba(0, 0, 0, 0.3); }\n  .pfdjs-palette .pfdjs-entries .pfdjs-entries-group {\n    margin-bottom: 3px;\n    margin-top: 3px;\n    height: 26px;\n    float: left; }\n    .pfdjs-palette .pfdjs-entries .pfdjs-entries-group .pfdjs-entry {\n      float: left;\n      width: 24px;\n      color: #333333;\n      padding: 3px;\n      font-size: 20px; }\n      .pfdjs-palette .pfdjs-entries .pfdjs-entries-group .pfdjs-entry:hover {\n        color: rgba(255, 72, 0, 0.79); }\n  .pfdjs-palette .pfdjs-entries .pfdjs-entries-group:not(:last-of-type) {\n    border-right: 1px solid #cccccc;\n    padding-right: 8px; }\n", ""]);
+	exports.push([module.id, ".pfdjs-palette {\n  position: absolute;\n  margin: 6px;\n  padding: 3px 6px;\n  background: #fafafa;\n  border: solid 1px #cccccc;\n  border-radius: 2px;\n  box-shadow: 0 1px 1px 0px rgba(0, 0, 0, 0.3);\n  z-index: 1; }\n  .pfdjs-palette .pfdjs-entries .pfdjs-entries-group {\n    margin-bottom: 3px;\n    margin-top: 3px;\n    height: 26px;\n    float: left; }\n    .pfdjs-palette .pfdjs-entries .pfdjs-entries-group .pfdjs-entry {\n      float: left;\n      width: 24px;\n      color: #333333;\n      padding: 3px;\n      font-size: 20px; }\n      .pfdjs-palette .pfdjs-entries .pfdjs-entries-group .pfdjs-entry:hover {\n        color: rgba(255, 72, 0, 0.79); }\n  .pfdjs-palette .pfdjs-entries .pfdjs-entries-group:not(:last-of-type) {\n    border-right: 1px solid #cccccc;\n    padding-right: 8px; }\n", ""]);
 	
 	// exports
 
@@ -1573,18 +1574,20 @@ return webpackJsonpD3P([0],{
 	 * @param {EventBus} eventBus
 	 */
 	
-	function PaletteProvider(d3polytree, eventBus, localStorage) {
+	function PaletteProvider(d3polytree, eventBus, localStorage, uploader) {
 	
 	  this._d3polytree = d3polytree;
 	  this._eventBus = eventBus;
 	  this._localStorage = localStorage;
+	  this._uploader = uploader;
 	
 	}
 	
 	PaletteProvider.$inject = [
 	  'd3polytree',
 	  'eventBus',
-	  'localStorage'
+	  'localStorage',
+	  'upload'
 	];
 	
 	module.exports = PaletteProvider;
@@ -1618,11 +1621,8 @@ return webpackJsonpD3P([0],{
 	      iconClassName: 'icon-folder-open-empty',
 	      action: {
 	        click: function(){
-	          console.log('click button');
-	        },
-	        dragstart: function(){
-	          console.log('drag button');
-	        },
+	          that._uploader.openDialog();
+	        }
 	      },
 	    },
 	    'download': {
@@ -1768,7 +1768,8 @@ return webpackJsonpD3P([0],{
 
 	'use strict';
 	
-	var ls = __webpack_require__(889);
+	var ls = __webpack_require__(889),
+	  _done = false;
 	
 	/**
 	 * LocalStorage description
@@ -1783,7 +1784,6 @@ return webpackJsonpD3P([0],{
 	
 	  this._eventBus = eventBus;
 	  this._d3polytree = d3polytree;
-	  this._done = false;
 	
 	  this._init();
 	}
@@ -1796,20 +1796,20 @@ return webpackJsonpD3P([0],{
 	module.exports = LocalStorage;
 	
 	LocalStorage.prototype.loadSaved = function () {
-	  if (this._done){
+	  if (_done){
 	    return;
+	  } else {
+	    _done = true;
 	  }
-	  console.log('dddd');
 	  var diagram = ls('diagram');
 	  if (!diagram) {
 	    diagram = this._d3polytree.initialDiagram;
 	  }
-	  this._done = true;
 	  this._d3polytree.importDiagram(diagram);
 	};
 	
 	LocalStorage.prototype._init = function(){
-	  this._eventBus.once('diagram.ready', this.loadSaved, this );
+	  this._eventBus.once('diagram.ready', this.loadSaved, this);
 	};
 	
 	LocalStorage.prototype.save = function () {
@@ -1972,7 +1972,111 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 898:
+/***/ 892:
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: ['upload'],
+	  upload: ['type', __webpack_require__(893)],
+	  __depends__: [
+	    //''
+	  ]
+	};
+
+
+/***/ },
+
+/***/ 893:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var domify = __webpack_require__(868),
+	  assign = __webpack_require__(6).assign,
+	  domEvent = __webpack_require__(619)
+	  ;
+	
+	/**
+	 * Upload description
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {EventBus} eventBus
+	 */
+	
+	function Upload(canvas, d3polytree) {
+	
+	  this._canvas = canvas;
+	  this._d3polytree = d3polytree;
+	
+	  this._init();
+	}
+	
+	Upload.$inject = [
+	  'canvas',
+	  'd3polytree'
+	];
+	
+	module.exports = Upload;
+	
+	Upload.prototype._init = function () {
+	  var that = this,
+	    container = this._canvas.getContainer();
+	
+	  this._fileInput = domify('<input type="file" />');
+	
+	  assign(this._fileInput.style, {
+	    width: 1,
+	    height: 1,
+	    display: 'none',
+	    overflow: 'hidden'
+	  });
+	
+	  container.insertBefore(this._fileInput, container.childNodes[0]);
+	
+	  domEvent.bind(this._fileInput, 'change', function(e) {
+	    that._openFile(e.target.files[0], that._openDiagram, that);
+	  });
+	
+	};
+	
+	Upload.prototype.openDialog = function() {
+	  this._fileInput.click();
+	};
+	
+	Upload.prototype._openDiagram = function(diagram){
+	  this._d3polytree.importDiagram(diagram);
+	};
+	
+	Upload.prototype._openFile = function(file, callback, context){
+	  // check file api availability
+	  if (!window.FileReader) {
+	    return window.alert(
+	      'Looks like you use an older browser that does not support upload. ' +
+	      'Try using a modern browser such as Chrome, Firefox or Internet Explorer > 10.');
+	  }
+	
+	  // no file chosen
+	  if (!file) {
+	    return;
+	  }
+	
+	  var reader = new FileReader();
+	
+	  reader.onload = function(e) {
+	
+	    var xml = e.target.result;
+	
+	    callback.call(context, xml);
+	  };
+	
+	  reader.readAsText(file);
+	};
+
+/***/ },
+
+/***/ 900:
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
