@@ -56,6 +56,7 @@ return webpackJsonpD3P([0],{
 	  __webpack_require__(887),
 	  __webpack_require__(892),
 	  __webpack_require__(894),
+	  __webpack_require__(896),
 	];
 	
 	Editor.prototype._modules = [].concat(
@@ -167,31 +168,32 @@ return webpackJsonpD3P([0],{
 	  var type = definition.$descriptor.ns.localName.toLowerCase(),
 	    that = this
 	    ;
-	  element.on('mouseenter', function () {
+	  d3.select(element.node().parentNode).on('mouseenter', function () {
 	    that._eventBus.emit(type + '.mouseenter', element, definition, d3.event);
 	  });
-	  element.on('mouseover', function () {
+	  d3.select(element.node().parentNode).on('mouseover', function () {
 	    that._eventBus.emit(type + '.mouseover', element, definition, d3.event);
 	  });
-	  element.on('mousedown', function () {
+	  d3.select(element.node().parentNode).on('mousedown', function () {
 	    that._eventBus.emit(type + '.mousedown', element, definition, d3.event);
 	  });
-	  element.on('mouseup', function () {
+	  d3.select(element.node().parentNode).on('mouseup', function () {
 	    that._eventBus.emit(type + '.mouseup', element, definition, d3.event);
 	  });
-	  element.on('click', function () {
+	  d3.select(element.node().parentNode).on('click', function () {
+	    //d3.event.stopImmediatePropagation();
 	    that._eventBus.emit(type + '.click', element, definition, d3.event);
 	  });
-	  element.on('dblclick', function () {
+	  d3.select(element.node().parentNode).on('dblclick', function () {
 	    that._eventBus.emit(type + '.dblclick', element, definition, d3.event);
 	  });
-	  element.on('mouseleave', function () {
+	  d3.select(element.node().parentNode).on('mouseleave', function () {
 	    that._eventBus.emit(type + '.mouseleave', element, definition, d3.event);
 	  });
-	  element.on('mouseout', function () {
+	  d3.select(element.node().parentNode).on('mouseout', function () {
 	    that._eventBus.emit(type + '.mouseout', element, definition, d3.event);
 	  });
-	  element.on('contextmenu', function () {
+	  d3.select(element.node().parentNode).on('contextmenu', function () {
 	    that._eventBus.emit(type + '.contextmenu', element, definition, d3.event);
 	  });
 	};
@@ -291,7 +293,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 858:
-[902, 859],
+[904, 859],
 
 /***/ 859:
 /***/ function(module, exports, __webpack_require__) {
@@ -685,7 +687,7 @@ return webpackJsonpD3P([0],{
 	      })
 	      .attr('fill', 'none')
 	      .attr('stroke', 'red')
-	      //.attr('stroke-width', '1px')
+	      .attr('stroke-width', 0)
 	      .attr('stroke-dasharray', '3')
 	      .attr('width', elemSize.width + 6)
 	      .attr('height', elemSize.height + 6);
@@ -701,7 +703,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 864:
-[902, 865],
+[904, 865],
 
 /***/ 865:
 /***/ function(module, exports, __webpack_require__) {
@@ -1530,7 +1532,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 883:
-[902, 884],
+[904, 884],
 
 /***/ 884:
 /***/ function(module, exports, __webpack_require__) {
@@ -1575,13 +1577,14 @@ return webpackJsonpD3P([0],{
 	 * @param {EventBus} eventBus
 	 */
 	
-	function PaletteProvider(d3polytree, eventBus, localStorage, uploader, exporting) {
+	function PaletteProvider(d3polytree, eventBus, localStorage, uploader, exporting, axes) {
 	
 	  this._d3polytree = d3polytree;
 	  this._eventBus = eventBus;
 	  this._localStorage = localStorage;
 	  this._uploader = uploader;
 	  this._exporting = exporting;
+	  this._axes = axes;
 	
 	}
 	
@@ -1590,7 +1593,8 @@ return webpackJsonpD3P([0],{
 	  'eventBus',
 	  'localStorage',
 	  'upload',
-	  'exporting'
+	  'exporting',
+	  'axes'
 	];
 	
 	module.exports = PaletteProvider;
@@ -1644,7 +1648,7 @@ return webpackJsonpD3P([0],{
 	      iconClassName: 'icon-image',
 	      action: {
 	        click: function(){
-	          that._exporting.trigger('xml');
+	          that._exporting.trigger('svg');
 	        }
 	      },
 	    },
@@ -1680,11 +1684,8 @@ return webpackJsonpD3P([0],{
 	      iconClassName: 'icon-grid',
 	      action: {
 	        click: function(){
-	          console.log('click button');
-	        },
-	        dragstart: function(){
-	          console.log('drag button');
-	        },
+	          that._axes.toggleVisible();
+	        }
 	      },
 	    },
 	    'new-connection': {
@@ -2161,7 +2162,98 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 902:
+/***/ 896:
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: ['selection'],
+	  selection: ['type', __webpack_require__(897)],
+	  __depends__: [
+	    //''
+	  ]
+	};
+
+
+/***/ },
+
+/***/ 897:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var d3 = __webpack_require__(555),
+	  forIn = __webpack_require__(6).forIn;
+	
+	/**
+	 * Selection description
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {EventEmitter} eventBus
+	 * @param {Canvas} canvas
+	 */
+	
+	function Selection(eventBus, canvas) {
+	
+	  this._eventBus = eventBus;
+	  this._canvas = canvas;
+	
+	  this._currentSelection = {};
+	
+	  this._init();
+	}
+	
+	Selection.$inject = [
+	  'eventBus',
+	  'canvas'
+	];
+	
+	module.exports = Selection;
+	
+	Selection.prototype._unSelectElement = function(element, definition){
+	  delete this._currentSelection[definition.id];
+	  d3.select(element.node().parentNode).classed('selected', false);
+	};
+	
+	Selection.prototype._selectElement = function(element, definition, event){
+	
+	  event.stopImmediatePropagation();
+	  if (!event.ctrlKey){
+	    // overwrite the selected elements with the clicked element
+	    this._unSelectAllElements();
+	  }
+	  // append the clicked element to the selected elements
+	  d3.select(element.node().parentNode).classed('selected', true);
+	  this._currentSelection[definition.id] = {
+	    element: element,
+	    definition: definition
+	  };
+	
+	};
+	
+	Selection.prototype._unSelectAllElements = function(){
+	  var that = this;
+	  forIn(this._currentSelection, function(v){
+	    that._unSelectElement(v.element, v.definition);
+	  });
+	};
+	
+	Selection.prototype._init = function () {
+	  this._eventBus.on('node.click', this._selectElement, this);
+	  this._eventBus.on('label.click', this._selectElement, this);
+	  this._eventBus.on('zone.click', this._selectElement, this);
+	  var that = this,
+	    canvas = this._canvas.getDrawingLayer();
+	  canvas.on('click', function(){
+	    console.log('canvas clicked');
+	    that._unSelectAllElements();
+	  });
+	};
+
+/***/ },
+
+/***/ 904:
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
