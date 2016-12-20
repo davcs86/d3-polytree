@@ -55,6 +55,7 @@ return webpackJsonpD3P([0],{
 	  __webpack_require__(866),
 	  __webpack_require__(887),
 	  __webpack_require__(892),
+	  __webpack_require__(894),
 	];
 	
 	Editor.prototype._modules = [].concat(
@@ -290,7 +291,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 858:
-[900, 859],
+[902, 859],
 
 /***/ 859:
 /***/ function(module, exports, __webpack_require__) {
@@ -700,7 +701,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 864:
-[900, 865],
+[902, 865],
 
 /***/ 865:
 /***/ function(module, exports, __webpack_require__) {
@@ -1529,7 +1530,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 883:
-[900, 884],
+[902, 884],
 
 /***/ 884:
 /***/ function(module, exports, __webpack_require__) {
@@ -1574,12 +1575,13 @@ return webpackJsonpD3P([0],{
 	 * @param {EventBus} eventBus
 	 */
 	
-	function PaletteProvider(d3polytree, eventBus, localStorage, uploader) {
+	function PaletteProvider(d3polytree, eventBus, localStorage, uploader, exporting) {
 	
 	  this._d3polytree = d3polytree;
 	  this._eventBus = eventBus;
 	  this._localStorage = localStorage;
 	  this._uploader = uploader;
+	  this._exporting = exporting;
 	
 	}
 	
@@ -1587,7 +1589,8 @@ return webpackJsonpD3P([0],{
 	  'd3polytree',
 	  'eventBus',
 	  'localStorage',
-	  'upload'
+	  'upload',
+	  'exporting'
 	];
 	
 	module.exports = PaletteProvider;
@@ -1631,11 +1634,8 @@ return webpackJsonpD3P([0],{
 	      iconClassName: 'icon-download',
 	      action: {
 	        click: function(){
-	          console.log('click button');
-	        },
-	        dragstart: function(){
-	          console.log('drag button');
-	        },
+	          that._exporting.trigger('xml');
+	        }
 	      },
 	    },
 	    'export-svg': {
@@ -1644,11 +1644,8 @@ return webpackJsonpD3P([0],{
 	      iconClassName: 'icon-image',
 	      action: {
 	        click: function(){
-	          console.log('click button');
-	        },
-	        dragstart: function(){
-	          console.log('drag button');
-	        },
+	          that._exporting.trigger('xml');
+	        }
 	      },
 	    },
 	    'search': {
@@ -2065,9 +2062,7 @@ return webpackJsonpD3P([0],{
 	  var reader = new FileReader();
 	
 	  reader.onload = function(e) {
-	
 	    var xml = e.target.result;
-	
 	    callback.call(context, xml);
 	  };
 	
@@ -2076,7 +2071,97 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 900:
+/***/ 894:
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: ['exporting'],
+	  exporting: ['type', __webpack_require__(895)],
+	  __depends__: [
+	    //''
+	  ]
+	};
+
+
+/***/ },
+
+/***/ 895:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var domify = __webpack_require__(868),
+	  assign = __webpack_require__(6).assign
+	  ;
+	
+	/**
+	 * Exporting description
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {d3polytree} d3polytree
+	 */
+	
+	function Exporting(canvas, d3polytree) {
+	
+	  this._canvas = canvas;
+	  this._d3polytree = d3polytree;
+	  this._init();
+	
+	}
+	
+	Exporting.$inject = [
+	  'canvas',
+	  'd3polytree'
+	];
+	
+	module.exports = Exporting;
+	
+	Exporting.prototype._encode = function(data){
+	  return 'data:application/xml;charset=UTF-8,' +
+	    encodeURIComponent(data);
+	};
+	
+	Exporting.prototype.trigger = function(fileType, options){
+	  var fn, that = this;
+	  switch(fileType){
+	    case 'xml':
+	      fn = this._d3polytree.exportDiagram;
+	      break;
+	    case 'svg':
+	      fn = this._d3polytree.exportSVG;
+	      break;
+	    default:
+	      throw new Error('Format not supported');
+	  }
+	  fn.call(this._d3polytree, options).then(function(str){
+	    that._exporter.setAttribute('href', that._encode(str));
+	    that._exporter.setAttribute('download', 'diagram.'+fileType);
+	    that._exporter.click();
+	  }, function(e){
+	    throw new Error(e);
+	  });
+	};
+	
+	Exporting.prototype._init = function(){
+	  var container = this._canvas.getContainer();
+	
+	  this._exporter = domify('<a/>');
+	
+	  assign(this._exporter.style, {
+	    width: 1,
+	    height: 1,
+	    display: 'none',
+	    overflow: 'hidden'
+	  });
+	
+	  container.insertBefore(this._exporter, container.childNodes[0]);
+	};
+
+/***/ },
+
+/***/ 902:
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
