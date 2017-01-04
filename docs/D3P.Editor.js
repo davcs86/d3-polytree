@@ -46,17 +46,16 @@ return webpackJsonpD3P([0],{
 	};
 	
 	Editor.prototype._interactionModules = [
-	  __webpack_require__(852),
-	  __webpack_require__(854)
+	  __webpack_require__(854),
+	  __webpack_require__(856)
 	];
 	
 	Editor.prototype._editionModules = [
-	  __webpack_require__(856),
-	  __webpack_require__(866),
-	  __webpack_require__(887),
-	  __webpack_require__(892),
-	  __webpack_require__(894),
+	  __webpack_require__(858),
+	  __webpack_require__(870),
+	  __webpack_require__(891),
 	  __webpack_require__(896),
+	  __webpack_require__(898),
 	];
 	
 	Editor.prototype._modules = [].concat(
@@ -87,17 +86,17 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 852:
+/***/ 854:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: [ 'zoomScroll' ],
-	  zoomScroll: [ 'type', __webpack_require__(853) ]
+	  zoomScroll: [ 'type', __webpack_require__(855) ]
 	};
 
 /***/ },
 
-/***/ 853:
+/***/ 855:
 /***/ function(module, exports) {
 
 	'use strict';
@@ -121,21 +120,21 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 854:
+/***/ 856:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['mouseEvents'],
-	  mouseEvents: ['type', __webpack_require__(855)],
+	  mouseEvents: ['type', __webpack_require__(857)],
 	  __depends__: [
-	    __webpack_require__(741)
+	    __webpack_require__(743)
 	  ]
 	};
 
 
 /***/ },
 
-/***/ 855:
+/***/ 857:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -207,28 +206,30 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 856:
+/***/ 858:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['drag'],
-	  drag: ['type', __webpack_require__(857)],
+	  drag: ['type', __webpack_require__(859)],
 	  __depends__: [
-	    __webpack_require__(862)
+	    __webpack_require__(864),
+	    __webpack_require__(868)
 	  ]
 	};
 
 
 /***/ },
 
-/***/ 857:
+/***/ 859:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var d3 = __webpack_require__(555);
+	var d3 = __webpack_require__(555),
+	  forIn = __webpack_require__(6).forIn;
 	
-	__webpack_require__(858);
+	__webpack_require__(860);
 	
 	/**
 	 * Drag description
@@ -239,11 +240,12 @@ return webpackJsonpD3P([0],{
 	 * @param {EventBus} eventBus
 	 */
 	
-	function Drag(canvas, eventBus, elementRegistry) {
+	function Drag(canvas, eventBus, elementRegistry, selection) {
 	
 	  this._canvas = canvas;
 	  this._eventBus = eventBus;
 	  this._elementRegistry = elementRegistry;
+	  this._selection = selection;
 	
 	  this._init();
 	}
@@ -251,10 +253,31 @@ return webpackJsonpD3P([0],{
 	Drag.$inject = [
 	  'canvas',
 	  'eventBus',
-	  'elementRegistry'
+	  'elementRegistry',
+	  'selection'
 	];
 	
 	module.exports = Drag;
+	
+	Drag.prototype._applyOffset = function(elem, def, dX, dY){
+	  var x = (elem.attr('x')*1.0) + dX,
+	    y = (elem.attr('y')*1.0) + dY,
+	    translate = 'translate('+x+','+y+')';
+	  elem
+	    .attr('x', x)
+	    .attr('y', y)
+	    .attr('transform', translate);
+	  // update business object
+	  def.position.x = x;
+	  def.position.y = y;
+	};
+	
+	Drag.prototype._applyOffsetToSelected = function(dX, dY){
+	  var that = this;
+	  forIn(this._selection._currentSelection, function(v){
+	    that._applyOffset(d3.select(v.element.node().parentNode), v.definition, dX, dY);
+	  });
+	};
 	
 	Drag.prototype._setElemToDrag = function(element){
 	  var that = this;
@@ -269,18 +292,8 @@ return webpackJsonpD3P([0],{
 	      .on('end', function(){
 	        d3.event.subject.classed('cursor-grabbing', false);
 	      })
-	      .on('drag', function(def){
-	        var elem = d3.event.subject,
-	          x = (elem.attr('x')*1.0) + d3.event.dx,
-	          y = (elem.attr('y')*1.0) + d3.event.dy,
-	          translate = 'translate('+x+','+y+')';
-	        elem
-	          .attr('x', x)
-	          .attr('y', y)
-	          .attr('transform', translate);
-	        // update business object
-	        def.position.x = x;
-	        def.position.y = y;
+	      .on('drag', function(){
+	        that._applyOffsetToSelected(d3.event.dx, d3.event.dy);
 	      })
 	  );
 	};
@@ -292,13 +305,13 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 858:
-[904, 859],
+/***/ 860:
+[906, 861],
 
-/***/ 859:
+/***/ 861:
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(860)();
+	exports = module.exports = __webpack_require__(862)();
 	// imports
 	
 	
@@ -310,7 +323,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 860:
+/***/ 862:
 /***/ function(module, exports) {
 
 	/*
@@ -367,7 +380,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 861:
+/***/ 863:
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -620,12 +633,12 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 862:
+/***/ 864:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['outline'],
-	  outline: ['type', __webpack_require__(863)],
+	  outline: ['type', __webpack_require__(865)],
 	  __depends__: [
 	    //''
 	  ]
@@ -634,14 +647,14 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 863:
+/***/ 865:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var d3 = __webpack_require__(555);
 	
-	__webpack_require__(864);
+	__webpack_require__(866);
 	
 	/**
 	 * Outline description
@@ -702,13 +715,13 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 864:
-[904, 865],
+/***/ 866:
+[906, 867],
 
-/***/ 865:
+/***/ 867:
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(860)();
+	exports = module.exports = __webpack_require__(862)();
 	// imports
 	
 	
@@ -720,39 +733,148 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 866:
+/***/ 868:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
-	  __init__: ['palette'],
-	  palette: ['type', __webpack_require__(867)],
+	  __init__: ['selection'],
+	  selection: ['type', __webpack_require__(869)],
 	  __depends__: [
-	    __webpack_require__(885)
+	    //''
 	  ]
 	};
 
 
 /***/ },
 
-/***/ 867:
+/***/ 869:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var isFunction = __webpack_require__(561).isFunction,
+	var d3 = __webpack_require__(555),
+	  forIn = __webpack_require__(6).forIn;
+	
+	/**
+	 * Selection description
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 * @param {EventEmitter} eventBus
+	 * @param {Canvas} canvas
+	 */
+	
+	function Selection(eventBus, canvas, elementRegistry, definitions) {
+	
+	  this._eventBus = eventBus;
+	  this._canvas = canvas;
+	  this._elementRegistry = elementRegistry;
+	  this._definitions = definitions;
+	  console.log(this._definitions);
+	
+	  this._currentSelection = {};
+	
+	  this._init();
+	}
+	
+	Selection.$inject = [
+	  'eventBus',
+	  'canvas',
+	  'elementRegistry',
+	  'd3polytree.definitions'
+	];
+	
+	module.exports = Selection;
+	
+	Selection.prototype._unSelectElement = function(element, definition){
+	  delete this._currentSelection[definition.id];
+	  d3.select(element.node().parentNode).classed('selected', false);
+	};
+	
+	Selection.prototype._selectElement = function(element, definition, event){
+	
+	  //event.stopImmediatePropagation();
+	  if (!event.ctrlKey){
+	    // overwrite the selected elements with the clicked element
+	    this._unSelectAllElements();
+	  }
+	  // append the clicked element to the selected elements
+	  d3.select(element.node().parentNode).classed('selected', true);
+	  this._currentSelection[definition.id] = {
+	    element: element,
+	    definition: definition
+	  };
+	
+	};
+	
+	Selection.prototype._unSelectAllElements = function(){
+	  var that = this;
+	  forIn(this._currentSelection, function(v){
+	    that._unSelectElement(v.element, v.definition);
+	  });
+	};
+	
+	Selection.prototype.deleteSelected = function(){
+	  var that = this;
+	  forIn(this._currentSelection, function(v){
+	    that._unSelectElement(v.element, v.definition);
+	    that._elementRegistry.removeElementById(v.definition.id);
+	  });
+	};
+	
+	Selection.prototype._init = function () {
+	  this._eventBus.on('node.click', this._selectElement, this);
+	  this._eventBus.on('label.click', this._selectElement, this);
+	  this._eventBus.on('zone.click', this._selectElement, this);
+	  //TODO: Fix when user clicks the canvas, un-select all elements.
+	  // this._eventBus.on('canvas.resized', function(){
+	  //   var that = this,
+	  //     canvas = this._canvas.getDrawingLayer();
+	  //   console.log('canvas resized');
+	  //   canvas.on('click', function(){
+	  //     console.log('canvas clicked');
+	  //     that._unSelectAllElements();
+	  //   });
+	  // }, this);
+	
+	};
+
+/***/ },
+
+/***/ 870:
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: ['palette'],
+	  palette: ['type', __webpack_require__(871)],
+	  __depends__: [
+	    __webpack_require__(889)
+	  ]
+	};
+
+
+/***/ },
+
+/***/ 871:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var isFunction = __webpack_require__(563).isFunction,
 	  forIn = __webpack_require__(6).forIn,
-	  domify = __webpack_require__(868),
+	  domify = __webpack_require__(872),
 	  domQuery = __webpack_require__(4),
-	  domAttr = __webpack_require__(870),
-	  domClear = __webpack_require__(871),
-	  domClasses = __webpack_require__(872),
-	  domDelegate = __webpack_require__(875),
-	  domEvent = __webpack_require__(619)
+	  domAttr = __webpack_require__(874),
+	  domClear = __webpack_require__(875),
+	  domClasses = __webpack_require__(876),
+	  domDelegate = __webpack_require__(879),
+	  domEvent = __webpack_require__(621)
 	  ;
 	
-	__webpack_require__(879);
-	__webpack_require__(881);
 	__webpack_require__(883);
+	__webpack_require__(885);
+	__webpack_require__(887);
 	
 	/**
 	 * Palette description
@@ -907,14 +1029,14 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 868:
+/***/ 872:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(869);
+	module.exports = __webpack_require__(873);
 
 /***/ },
 
-/***/ 869:
+/***/ 873:
 /***/ function(module, exports) {
 
 	
@@ -1033,7 +1155,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 870:
+/***/ 874:
 /***/ function(module, exports) {
 
 	/**
@@ -1064,7 +1186,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 871:
+/***/ 875:
 /***/ function(module, exports) {
 
 	module.exports = function(el) {
@@ -1081,14 +1203,14 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 872:
+/***/ 876:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(873);
+	module.exports = __webpack_require__(877);
 
 /***/ },
 
-/***/ 873:
+/***/ 877:
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -1096,9 +1218,9 @@ return webpackJsonpD3P([0],{
 	 */
 	
 	try {
-	  var index = __webpack_require__(874);
+	  var index = __webpack_require__(878);
 	} catch (err) {
-	  var index = __webpack_require__(874);
+	  var index = __webpack_require__(878);
 	}
 	
 	/**
@@ -1286,7 +1408,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 874:
+/***/ 878:
 /***/ function(module, exports) {
 
 	module.exports = function(arr, obj){
@@ -1299,14 +1421,14 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 875:
+/***/ 879:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(876);
+	module.exports = __webpack_require__(880);
 
 /***/ },
 
-/***/ 876:
+/***/ 880:
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -1314,15 +1436,15 @@ return webpackJsonpD3P([0],{
 	 */
 	
 	try {
-	  var closest = __webpack_require__(877);
+	  var closest = __webpack_require__(881);
 	} catch(err) {
-	  var closest = __webpack_require__(877);
+	  var closest = __webpack_require__(881);
 	}
 	
 	try {
-	  var event = __webpack_require__(620);
+	  var event = __webpack_require__(622);
 	} catch(err) {
-	  var event = __webpack_require__(620);
+	  var event = __webpack_require__(622);
 	}
 	
 	/**
@@ -1364,10 +1486,10 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 877:
+/***/ 881:
 /***/ function(module, exports, __webpack_require__) {
 
-	var matches = __webpack_require__(878)
+	var matches = __webpack_require__(882)
 	
 	module.exports = function (element, selector, checkYoSelf, root) {
 	  element = checkYoSelf ? {parentNode: element} : element
@@ -1390,7 +1512,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 878:
+/***/ 882:
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -1447,16 +1569,16 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 879:
+/***/ 883:
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(880);
+	var content = __webpack_require__(884);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(861)(content, {});
+	var update = __webpack_require__(863)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -1474,10 +1596,10 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 880:
+/***/ 884:
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(860)();
+	exports = module.exports = __webpack_require__(862)();
 	// imports
 	
 	
@@ -1489,16 +1611,16 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 881:
+/***/ 885:
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(882);
+	var content = __webpack_require__(886);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(861)(content, {});
+	var update = __webpack_require__(863)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -1516,10 +1638,10 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 882:
+/***/ 886:
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(860)();
+	exports = module.exports = __webpack_require__(862)();
 	// imports
 	
 	
@@ -1531,13 +1653,13 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 883:
-[904, 884],
+/***/ 887:
+[906, 888],
 
-/***/ 884:
+/***/ 888:
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(860)();
+	exports = module.exports = __webpack_require__(862)();
 	// imports
 	
 	
@@ -1549,12 +1671,12 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 885:
+/***/ 889:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['paletteProvider'],
-	  paletteProvider: ['type', __webpack_require__(886)],
+	  paletteProvider: ['type', __webpack_require__(890)],
 	  __depends__: [
 	    //''
 	  ]
@@ -1563,7 +1685,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 886:
+/***/ 890:
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1577,7 +1699,7 @@ return webpackJsonpD3P([0],{
 	 * @param {EventBus} eventBus
 	 */
 	
-	function PaletteProvider(d3polytree, eventBus, localStorage, uploader, exporting, axes) {
+	function PaletteProvider(d3polytree, eventBus, localStorage, uploader, exporting, axes, selection) {
 	
 	  this._d3polytree = d3polytree;
 	  this._eventBus = eventBus;
@@ -1585,6 +1707,7 @@ return webpackJsonpD3P([0],{
 	  this._uploader = uploader;
 	  this._exporting = exporting;
 	  this._axes = axes;
+	  this._selection = selection;
 	
 	}
 	
@@ -1594,7 +1717,8 @@ return webpackJsonpD3P([0],{
 	  'localStorage',
 	  'upload',
 	  'exporting',
-	  'axes'
+	  'axes',
+	  'selection'
 	];
 	
 	module.exports = PaletteProvider;
@@ -1666,16 +1790,13 @@ return webpackJsonpD3P([0],{
 	      },
 	    },
 	    'delete-item': {
-	      title: 'Delete selected item',
+	      title: 'Delete selected item(s)',
 	      group: 'utils',
 	      iconClassName: 'icon-trash',
 	      action: {
 	        click: function(){
-	          console.log('click button');
-	        },
-	        dragstart: function(){
-	          console.log('drag button');
-	        },
+	          that._selection.deleteSelected();
+	        }
 	      },
 	    },
 	    'toggle-grid': {
@@ -1747,12 +1868,12 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 887:
+/***/ 891:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['localStorage'],
-	  localStorage: ['type', __webpack_require__(888)],
+	  localStorage: ['type', __webpack_require__(892)],
 	  __depends__: [
 	    //''
 	  ]
@@ -1761,12 +1882,12 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 888:
+/***/ 892:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var ls = __webpack_require__(889),
+	var ls = __webpack_require__(893),
 	  _done = false;
 	
 	/**
@@ -1820,13 +1941,13 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 889:
+/***/ 893:
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
 	
-	var stub = __webpack_require__(890);
-	var tracking = __webpack_require__(891);
+	var stub = __webpack_require__(894);
+	var tracking = __webpack_require__(895);
 	var ls = 'localStorage' in global && global.localStorage ? global.localStorage : stub;
 	
 	function accessor (key, value) {
@@ -1870,7 +1991,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 890:
+/***/ 894:
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1909,7 +2030,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 891:
+/***/ 895:
 /***/ function(module, exports) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
@@ -1970,12 +2091,12 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 892:
+/***/ 896:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['upload'],
-	  upload: ['type', __webpack_require__(893)],
+	  upload: ['type', __webpack_require__(897)],
 	  __depends__: [
 	    //''
 	  ]
@@ -1984,14 +2105,14 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 893:
+/***/ 897:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var domify = __webpack_require__(868),
+	var domify = __webpack_require__(872),
 	  assign = __webpack_require__(6).assign,
-	  domEvent = __webpack_require__(619)
+	  domEvent = __webpack_require__(621)
 	  ;
 	
 	/**
@@ -2072,12 +2193,12 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 894:
+/***/ 898:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['exporting'],
-	  exporting: ['type', __webpack_require__(895)],
+	  exporting: ['type', __webpack_require__(899)],
 	  __depends__: [
 	    //''
 	  ]
@@ -2086,12 +2207,12 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 895:
+/***/ 899:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var domify = __webpack_require__(868),
+	var domify = __webpack_require__(872),
 	  assign = __webpack_require__(6).assign
 	  ;
 	
@@ -2162,98 +2283,7 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 896:
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = {
-	  __init__: ['selection'],
-	  selection: ['type', __webpack_require__(897)],
-	  __depends__: [
-	    //''
-	  ]
-	};
-
-
-/***/ },
-
-/***/ 897:
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var d3 = __webpack_require__(555),
-	  forIn = __webpack_require__(6).forIn;
-	
-	/**
-	 * Selection description
-	 *
-	 * @class
-	 * @constructor
-	 *
-	 * @param {EventEmitter} eventBus
-	 * @param {Canvas} canvas
-	 */
-	
-	function Selection(eventBus, canvas) {
-	
-	  this._eventBus = eventBus;
-	  this._canvas = canvas;
-	
-	  this._currentSelection = {};
-	
-	  this._init();
-	}
-	
-	Selection.$inject = [
-	  'eventBus',
-	  'canvas'
-	];
-	
-	module.exports = Selection;
-	
-	Selection.prototype._unSelectElement = function(element, definition){
-	  delete this._currentSelection[definition.id];
-	  d3.select(element.node().parentNode).classed('selected', false);
-	};
-	
-	Selection.prototype._selectElement = function(element, definition, event){
-	
-	  event.stopImmediatePropagation();
-	  if (!event.ctrlKey){
-	    // overwrite the selected elements with the clicked element
-	    this._unSelectAllElements();
-	  }
-	  // append the clicked element to the selected elements
-	  d3.select(element.node().parentNode).classed('selected', true);
-	  this._currentSelection[definition.id] = {
-	    element: element,
-	    definition: definition
-	  };
-	
-	};
-	
-	Selection.prototype._unSelectAllElements = function(){
-	  var that = this;
-	  forIn(this._currentSelection, function(v){
-	    that._unSelectElement(v.element, v.definition);
-	  });
-	};
-	
-	Selection.prototype._init = function () {
-	  this._eventBus.on('node.click', this._selectElement, this);
-	  this._eventBus.on('label.click', this._selectElement, this);
-	  this._eventBus.on('zone.click', this._selectElement, this);
-	  var that = this,
-	    canvas = this._canvas.getDrawingLayer();
-	  canvas.on('click', function(){
-	    console.log('canvas clicked');
-	    that._unSelectAllElements();
-	  });
-	};
-
-/***/ },
-
-/***/ 904:
+/***/ 906:
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
@@ -2262,7 +2292,7 @@ return webpackJsonpD3P([0],{
 	var content = __webpack_require__(__webpack_module_template_argument_0__);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(861)(content, {});
+	var update = __webpack_require__(863)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
