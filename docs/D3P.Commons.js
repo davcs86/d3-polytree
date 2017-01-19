@@ -29853,7 +29853,9 @@
 				"properties": [
 					{
 						"name": "label",
-						"type": "Label"
+						"type": "Label",
+						"isAttr": true,
+						"isReference": true
 					},
 					{
 						"name": "type",
@@ -29898,7 +29900,9 @@
 				"properties": [
 					{
 						"name": "label",
-						"type": "Label"
+						"type": "Label",
+						"isAttr": true,
+						"isReference": true
 					},
 					{
 						"name": "position",
@@ -29942,7 +29946,9 @@
 				"properties": [
 					{
 						"name": "label",
-						"type": "Label"
+						"type": "Label",
+						"isAttr": true,
+						"isReference": true
 					},
 					{
 						"name": "source",
@@ -30140,10 +30146,9 @@
 	 * @param {ElementBuilder} elementBuilder
 	 * @param {ElementRegistry} elementRegistry
 	 */
-	function Nodes(nodes, canvas, eventBus, iconLoader, elementBuilder, elementRegistry, labels) {
+	function Nodes(nodes, canvas, eventBus, iconLoader, elementBuilder, elementRegistry) {
 	
 	  this._iconLoader = iconLoader;
-	  this._labels = labels;
 	  BaseElement.call(this, 'node', nodes, canvas, eventBus, elementBuilder, elementRegistry);
 	
 	}
@@ -30156,13 +30161,12 @@
 	  'eventBus',
 	  'iconLoader',
 	  'elementBuilder',
-	  'elementRegistry',
-	  'labels'
+	  'elementRegistry'
 	];
 	
 	module.exports = Nodes;
 	
-	Nodes.prototype._createElement = function(node, definition){
+	Nodes.prototype._createElement = function(node){
 	  var that = this;
 	
 	  d3.select(node.node().parentNode)
@@ -30195,9 +30199,6 @@
 	      return (!isUndefined(that._iconLoader._processedIcons[d.type])) ? '#'+d.type+'_icon_def' :
 	        '#default_icon_def';
 	    });
-	
-	  // add the label
-	  this._labels.appendElement(definition.label);
 	
 	};
 
@@ -36906,7 +36907,7 @@
 	  __init__: ['zones'],
 	  zones: ['type', __webpack_require__(845)],
 	  __depends__: [
-	    //''
+	    __webpack_require__(842)
 	  ]
 	};
 
@@ -36934,11 +36935,8 @@
 	 * @param {ElementBuilder} elementBuilder
 	 * @param {ElementRegistry} elementRegistry
 	 */
-	function Zones(zones, canvas, eventBus, elementBuilder, elementRegistry, labels) {
-	
-	  this._labels = labels;
+	function Zones(zones, canvas, eventBus, elementBuilder, elementRegistry) {
 	  BaseElement.call(this, 'zone', zones, canvas, eventBus, elementBuilder, elementRegistry);
-	
 	}
 	
 	inherits(Zones, BaseElement);
@@ -36948,8 +36946,7 @@
 	  'canvas',
 	  'eventBus',
 	  'elementBuilder',
-	  'elementRegistry',
-	  'labels'
+	  'elementRegistry'
 	];
 	
 	module.exports = Zones;
@@ -36975,7 +36972,6 @@
 	    .style("opacity", definition.opacity)
 	    .style("stroke-width", definition.border.lineWidth);
 	
-	  this._labels.appendElement(definition.label);
 	};
 	
 	Zones.prototype._drawContainer = function(){
@@ -36998,7 +36994,8 @@
 	  links: [ 'type', __webpack_require__(847) ],
 	  __depends__: [
 	    __webpack_require__(743),
-	    __webpack_require__(848)
+	    __webpack_require__(848),
+	    __webpack_require__(842),
 	  ]
 	};
 
@@ -37026,10 +37023,9 @@
 	 * @param {ElementBuilder} elementBuilder
 	 * @param {ElementRegistry} elementRegistry
 	 */
-	function Links(links, canvas, eventBus, markers, elementBuilder, elementRegistry, labels) {
+	function Links(links, canvas, eventBus, markers, elementBuilder, elementRegistry) {
 	
 	  this._markers = markers;
-	  this._labels = labels;
 	  BaseElement.call(this, 'link', links, canvas, eventBus, elementBuilder, elementRegistry);
 	
 	}
@@ -37042,13 +37038,12 @@
 	  'eventBus',
 	  'markers',
 	  'elementBuilder',
-	  'elementRegistry',
-	  'labels'
+	  'elementRegistry'
 	];
 	
 	module.exports = Links;
 	
-	Links.prototype._createElement = function(link, definition) {
+	Links.prototype._createElement = function(link) {
 	  var that = this;
 	
 	  link
@@ -37093,8 +37088,6 @@
 	    })
 	    .style('stroke-linecap', 'round');
 	
-	  // add the label
-	  this._labels.appendElement(definition.label);
 	};
 
 

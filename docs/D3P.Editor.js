@@ -75,13 +75,13 @@ return webpackJsonpD3P([0],{
 	  '    </zoom>' +
 	  '    <grid />' +
 	  '</settings>' +
-	  '<node id="Node_1">' +
+	  '<node id="Node_1" label="Label_1">' +
 	  '    <position x="20" y="100" />'+
-	  '    <label fontSize="12">' +
-	  '        <position x="33" y="140" />'+
-	  '        <text>Node 1</text>'+
-	  '    </label>' +
 	  '</node>' +
+	  '<label fontSize="12">' +
+	  '    <position x="33" y="140" />'+
+	  '    <text>Node 1</text>'+
+	  '</label>' +
 	  '</pfdn:diagram>';
 
 /***/ },

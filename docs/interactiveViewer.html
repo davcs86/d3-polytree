@@ -30,40 +30,40 @@
             '    <backgroundColor>#fefefe</backgroundColor>' +
             '    <grid lineColor="#343d46" lineWidth="0.5" />' +
             '</settings>' +
-            '<node id="Node_1" size="50">' +
+            '<node id="Node_1" size="50" label="Label_2">' +
             '    <position x="50" y="250" />'+
-            '    <label color="red" fontSize="12">' +
-            '        <position x="50" y="310" />'+
-            '        <text>Nodo A</text>'+
-            '    </label>' +
             '</node>' +
-            '<node id="Node_2" size="40" type="default1">' +
+            '<node id="Node_2" size="40" label="Label_3" type="default1">' +
             '    <position x="120" y="300" />'+
-            '    <label color="green" fontSize="16">' +
-            '        <position x="38.5" y="212.22" />'+
-            '        <text>2.5</text>'+
-            '    </label>' +
             '</node>' +
-            '<link source="Node_1" target="Node_2" lineColor="red" fillColor="blue" lineWidth="5">' +
+            '<link source="Node_1" target="Node_2" lineColor="red" fillColor="blue" lineWidth="5" label="Label_4">' +
             '    <waypoint x="450" y="300" />'+
             '    <waypoint x="600" y="150" />'+
             '    <waypoint x="750" y="300" />'+
-            '    <label color="green" fontSize="24">' +
-            '        <position x="18.5" y="12.22" />'+
-            '        <text>24px fontSize</text>'+
-            '    </label>' +
             '</link>' +
-            '<zone fillColor="lightgreen" width="600" height="400" >' +
+            '<zone fillColor="lightgreen" width="600" height="400" label="Label_5">' +
             '    <border lineWidth="2" lineColor="yellow" />'+
             '    <position x="-30" y="50" />'+
-            '    <label color="red" fontSize="12">' +
-            '        <position x="24" y="12.22" />'+
-            '        <text>12px fontSize</text>'+
-            '    </label>' +
             '</zone>' +
-            '<label color="blue" fontSize="32">' +
+            '<label id="Label_1" color="blue" fontSize="32">' +
             '    <position x="70" y="52.22" />'+
             '    <text>DDD</text>'+
+            '</label>' +
+            '<label id="Label_2" color="red" fontSize="12">' +
+            '    <position x="50" y="310" />'+
+            '    <text>Nodo A</text>'+
+            '</label>' +
+            '<label id="Label_3" color="green" fontSize="16">' +
+            '    <position x="38.5" y="212.22" />'+
+            '    <text>2.5</text>'+
+            '</label>' +
+            '<label id="Label_4" color="green" fontSize="24">' +
+            '    <position x="18.5" y="12.22" />'+
+            '    <text>24px fontSize</text>'+
+            '</label>' +
+            '<label id="Label_5" color="red" fontSize="12">' +
+            '   <position x="24" y="12.22" />'+
+            '   <text>12px fontSize</text>'+
             '</label>' +
             '</pfdn:diagram>'
         )
