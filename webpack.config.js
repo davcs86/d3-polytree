@@ -71,6 +71,6 @@ module.exports = {
       filename: "D3P.Commons.js",
       chunks: ["Viewer", "InteractiveViewer", "Editor"]
     })
-    //,new webpack.optimize.UglifyJsPlugin()
+    ,new webpack.optimize.UglifyJsPlugin()
   ]
 };
