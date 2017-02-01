@@ -1,6 +1,13 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <title>Interactive viewer | D3-based Polytrees by @davcs86</title>
+    <link href="http://fonts.googleapis.com/css?family=Droid+Sans+Mono" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Droid Sans Mono', monospace;
+        }
+    </style>
 </head>
 <body style="text-align: center">
 <a href="index.html" title="Index">Index</a>
@@ -10,67 +17,81 @@
 <script type="text/javascript" src="D3P.Commons.js" charset="utf-8"></script>
 <script type="text/javascript" src="D3P.InteractiveViewer.js" charset="utf-8"></script>
 <script type="text/javascript">
-    window.onload = function (){
-        window.diagram = new D3P.InteractiveViewer({
-            container: '#d3Canvas',
-            tooltip: function(node, businessObj){
-              var html = "<strong>"+businessObj.label.text+"</strong>";
-              return html;
-            }
+  window.onload = function () {
+    window.diagram = new D3P.InteractiveViewer({
+      container: '#d3Canvas',
+      tooltip: function (node, businessObj) {
+        var html = "<strong>" + businessObj.label.text + "</strong>";
+        return html;
+      }
+    });
+    window.diagram.importDiagram('<?xml version="1.0" encoding="UTF-8"?>' +
+      '<pfdn:diagram xmlns:pfdn="http://pfdn">' +
+      '<settings>' +
+      '    <author>David</author>' +
+      '    <name>Diagram1</name>' +
+      '    <zoom>' +
+      '        <offset x="38.5" y="12.22" />' +
+      '        <scale>1.1</scale>' +
+      '    </zoom>' +
+      '    <backgroundColor>#fefefe</backgroundColor>' +
+      '    <grid lineColor="#343d46" lineWidth="0.5" />' +
+      '</settings>' +
+      '<node id="Node_1" size="50" label="Label_2">' +
+      '    <position x="50" y="250" />' +
+      '</node>' +
+      '<node id="Node_2" size="40" label="Label_3" type="default1">' +
+      '    <position x="120" y="300" />' +
+      '</node>' +
+      '<link source="Node_1" target="Node_2" lineColor="red" fillColor="blue" lineWidth="5" label="Label_4">' +
+      '    <waypoint x="450" y="300" />' +
+      '    <waypoint x="600" y="150" />' +
+      '    <waypoint x="750" y="300" />' +
+      '</link>' +
+      '<zone fillColor="lightgreen" width="600" height="400" label="Label_5">' +
+      '    <border lineWidth="2" lineColor="yellow" />' +
+      '    <position x="-30" y="50" />' +
+      '</zone>' +
+      '<label id="Label_1" color="blue" fontSize="32">' +
+      '    <position x="70" y="52.22" />' +
+      '    <text>DDD</text>' +
+      '</label>' +
+      '<label id="Label_2" color="red" fontSize="12">' +
+      '    <position x="50" y="310" />' +
+      '    <text>Nodo A</text>' +
+      '</label>' +
+      '<label id="Label_3" color="green" fontSize="16">' +
+      '    <position x="38.5" y="212.22" />' +
+      '    <text>2.5</text>' +
+      '</label>' +
+      '<label id="Label_4" color="green" fontSize="24">' +
+      '    <position x="18.5" y="12.22" />' +
+      '    <text>24px fontSize</text>' +
+      '</label>' +
+      '<label id="Label_5" color="red" fontSize="12">' +
+      '   <position x="24" y="12.22" />' +
+      '   <text>12px fontSize</text>' +
+      '</label>' +
+      '</pfdn:diagram>'
+    )
+      .then(function () {
+        console.log(window.diagram.get("elementRegistry").getAll());
+      });
+    // FPS meter, unrelated to the d3-polytree project.
+    (function () {
+      var script = document.createElement('script');
+      script.onload = function () {
+        var stats = new Stats();
+        document.body.appendChild(stats.dom);
+        requestAnimationFrame(function loop() {
+          stats.update();
+          requestAnimationFrame(loop)
         });
-        window.diagram.importDiagram('<?xml version="1.0" encoding="UTF-8"?>' +
-            '<pfdn:diagram xmlns:pfdn="http://pfdn">'+
-            '<settings>'+
-            '    <author>David</author>' +
-            '    <name>Diagram1</name>' +
-            '    <zoom>' +
-            '        <offset x="38.5" y="12.22" />'+
-            '        <scale>1.1</scale>'+
-            '    </zoom>' +
-            '    <backgroundColor>#fefefe</backgroundColor>' +
-            '    <grid lineColor="#343d46" lineWidth="0.5" />' +
-            '</settings>' +
-            '<node id="Node_1" size="50" label="Label_2">' +
-            '    <position x="50" y="250" />'+
-            '</node>' +
-            '<node id="Node_2" size="40" label="Label_3" type="default1">' +
-            '    <position x="120" y="300" />'+
-            '</node>' +
-            '<link source="Node_1" target="Node_2" lineColor="red" fillColor="blue" lineWidth="5" label="Label_4">' +
-            '    <waypoint x="450" y="300" />'+
-            '    <waypoint x="600" y="150" />'+
-            '    <waypoint x="750" y="300" />'+
-            '</link>' +
-            '<zone fillColor="lightgreen" width="600" height="400" label="Label_5">' +
-            '    <border lineWidth="2" lineColor="yellow" />'+
-            '    <position x="-30" y="50" />'+
-            '</zone>' +
-            '<label id="Label_1" color="blue" fontSize="32">' +
-            '    <position x="70" y="52.22" />'+
-            '    <text>DDD</text>'+
-            '</label>' +
-            '<label id="Label_2" color="red" fontSize="12">' +
-            '    <position x="50" y="310" />'+
-            '    <text>Nodo A</text>'+
-            '</label>' +
-            '<label id="Label_3" color="green" fontSize="16">' +
-            '    <position x="38.5" y="212.22" />'+
-            '    <text>2.5</text>'+
-            '</label>' +
-            '<label id="Label_4" color="green" fontSize="24">' +
-            '    <position x="18.5" y="12.22" />'+
-            '    <text>24px fontSize</text>'+
-            '</label>' +
-            '<label id="Label_5" color="red" fontSize="12">' +
-            '   <position x="24" y="12.22" />'+
-            '   <text>12px fontSize</text>'+
-            '</label>' +
-            '</pfdn:diagram>'
-        )
-        .then(function(){
-            console.log(window.diagram.get("elementRegistry").getAll());
-        });
-    };
+      };
+      script.src = '//rawgit.com/mrdoob/stats.js/master/build/stats.min.js';
+      document.head.appendChild(script);
+    })();
+  };
 </script>
 </body>
 </html>

@@ -4,11 +4,8 @@
   "description": "Interactive polytree viewer based on D3.js",
   "main": "index.js",
   "scripts": {
-    "build-d3": "rollup -c",
-    "prebuild": "npm run build-d3",
     "build": "webpack --progress --profile --colors --display-error-details",
-    "dev": "webpack-dev-server --progress --profile --colors --inline --hot --port 8083",
-    "postinstall": "npm run build-d3"
+    "dev": "webpack-dev-server --progress --profile --colors --inline --hot --port 8083"
   },
   "repository": {
     "type": "git",
@@ -32,14 +29,8 @@
   },
   "devDependencies": {
     "css-loader": "^0.25.0",
-    "d3-axis": "^1.0.4",
     "d3-canvas": "C:\\Users\\davcs861\\WebstormProjects\\Redes\\d3-canvas",
-    "d3-collection": "^1.0.2",
-    "d3-force": "^1.0.4",
-    "d3-scale": "^1.0.4",
-    "d3-selection": "^1.0.3",
     "d3-tip": "^0.7.1",
-    "d3-zoom": "^1.1.1",
     "didi": "^0.1.1",
     "eslint": "^3.9.1",
     "eslint-loader": "^1.6.1",
@@ -51,8 +42,6 @@
     "node-sass": "^3.13.0",
     "pfdn-moddle": "file:///C:\\Users\\davcs861\\WebstormProjects\\Redes\\pfdn-moddle",
     "q": "^1.4.1",
-    "rollup": "^0.36.4",
-    "rollup-plugin-node-resolve": "^2.0.0",
     "sass-loader": "^4.0.2",
     "style-loader": "^0.13.1",
     "svg-inline-loader": "^0.7.1",

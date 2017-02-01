@@ -1,23 +1,23 @@
-var webpack = require("webpack");
-var path = require("path");
+var webpack = require('webpack');
+var path = require('path');
 
 module.exports = {
   entry: {
-    Viewer: ["./lib/Viewer"],
-    InteractiveViewer: ["./lib/InteractiveViewer"],
-    Editor: ["./lib/Editor"]
+    Viewer: ['./lib/Viewer'],
+    InteractiveViewer: ['./lib/InteractiveViewer'],
+    Editor: ['./lib/Editor']
   },
-  devtool: process.env.WEBPACK_DEVTOOL || "source-map",
+  devtool: 'source-map',
   output: {
-    path: path.join(__dirname, "docs"),
-    filename: "D3P.[name].js",
-    library: ["D3P"],
-    libraryTarget: "umd"
+    path: path.join(__dirname, 'docs'),
+    filename: 'D3P.[name].js',
+    library: ['D3P'],
+    libraryTarget: 'umd'
   },
   resolve: {
-    extensions: ["", ".js", ".css", ".scss", ".svg", ".json"],
+    extensions: ['', '.js', '.css', '.scss', '.svg', '.json'],
     alias: {
-      d3: path.join(__dirname, '/assets/d3/d3.min')
+      d3: path.join(__dirname, '/node_modules/d3-canvas/d3/d3.min')
     }
   },
   module: {
@@ -32,18 +32,18 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        loader: "style-loader!css-loader"
+        loader: 'style-loader!css-loader'
       },
       {
         test: /\.scss$/,
-        loader: "style-loader!css-loader!sass-loader"
+        loader: 'style-loader!css-loader!sass-loader'
       }
     ],
     preLoaders: [
       {
         test: /\.js$|\.es6$/,
         exclude: /(node_modules|bower_components|docs|d3)/,
-        loaders: ["eslint-loader"]
+        loaders: ['eslint-loader']
       }
     ]
   },
@@ -59,18 +59,18 @@ module.exports = {
     failOnError: true
   },
   devServer: {
-    contentBase: "./docs",
+    contentBase: './docs',
     noInfo: false,
     hot: true,
-    inline: true
+    inline: false
   },
   plugins: [
     new webpack.optimize.DedupePlugin(),
     new webpack.optimize.CommonsChunkPlugin({
-      name: "commons",
-      filename: "D3P.Commons.js",
-      chunks: ["Viewer", "InteractiveViewer", "Editor"]
+      name: 'commons',
+      filename: 'D3P.Commons.js',
+      chunks: ['Viewer', 'InteractiveViewer', 'Editor']
     })
-    ,new webpack.optimize.UglifyJsPlugin()
+    //,new webpack.optimize.UglifyJsPlugin()
   ]
 };
