@@ -1,0 +1,14 @@
+.cursor-add-link {
+  .zone, .label, .link {
+    // hide the other layers but node
+    opacity: 0.1;
+  }
+  .fake-link {
+    display: block;
+  }
+  //cursor: crosshair;
+}
+
+.fake-link {
+  display: none;
+}
