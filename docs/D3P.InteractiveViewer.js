@@ -13,7 +13,7 @@ return webpackJsonpD3P([1],{
 /***/ 0:
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(923);
+	module.exports = __webpack_require__(928);
 
 
 /***/ },
@@ -456,7 +456,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 923:
+/***/ 928:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -482,7 +482,7 @@ return webpackJsonpD3P([1],{
 	InteractiveViewer.prototype._interactionModules = [
 	  __webpack_require__(852),
 	  __webpack_require__(854),
-	  __webpack_require__(924)
+	  __webpack_require__(929)
 	];
 	
 	InteractiveViewer.prototype._modules = [].concat(
@@ -492,12 +492,12 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 924:
+/***/ 929:
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['tooltip'],
-	  tooltip: ['type', __webpack_require__(925)],
+	  tooltip: ['type', __webpack_require__(930)],
 	  __depends__: [
 	    //
 	  ]
@@ -505,18 +505,18 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 925:
+/***/ 930:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var d3 = __webpack_require__(551),
-	  _d3tip = __webpack_require__(926),
+	  _d3tip = __webpack_require__(931),
 	  _tooltip = null,
 	  isFunction = __webpack_require__(560).isFunction
 	;
 	
-	__webpack_require__(927);
+	__webpack_require__(932);
 	
 	/**
 	 * The tooltip functionality.
@@ -562,7 +562,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 926:
+/***/ 931:
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// d3.tip
@@ -892,13 +892,13 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 927:
+/***/ 932:
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(928);
+	var content = __webpack_require__(933);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(861)(content, {});
@@ -919,7 +919,7 @@ return webpackJsonpD3P([1],{
 
 /***/ },
 
-/***/ 928:
+/***/ 933:
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(860)();

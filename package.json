@@ -28,8 +28,9 @@
     "xml2js": "^0.4.16"
   },
   "devDependencies": {
+    "Notify": "github:davcs86/Vanilla-Notify",
     "css-loader": "^0.25.0",
-    "d3-canvas": "C:\\Users\\One326\\WebstormProjects\\Redes\\d3-canvas",
+    "d3-canvas": "github:davcs86/d3-canvas",
     "d3-tip": "^0.7.1",
     "didi": "^0.1.1",
     "eslint": "^3.9.1",
@@ -40,7 +41,7 @@
     "local-storage": "^1.4.2",
     "moddle": "^0.8.0",
     "node-sass": "^3.13.0",
-    "pfdn-moddle": "C:\\Users\\One326\\WebstormProjects\\Redes\\pfdn-moddle",
+    "pfdn-moddle": "github:davcs86/pfdn-moddle",
     "q": "^1.4.1",
     "sass-loader": "^4.0.2",
     "style-loader": "^0.13.1",
@@ -48,6 +49,6 @@
     "svgo-loader": "^1.1.2",
     "uglify-js": "^2.7.4",
     "webpack": "^1.13.3",
-    "webpack-dev-server": "^1.16.2"
+    "webpack-dev-server": "^1.16.3"
   }
 }

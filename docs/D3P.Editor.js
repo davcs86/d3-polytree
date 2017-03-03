@@ -65,7 +65,8 @@ return webpackJsonpD3P([0],{
 	  __webpack_require__(901),
 	  __webpack_require__(906),
 	  __webpack_require__(908),
-	  __webpack_require__(910)
+	  __webpack_require__(910),
+	  __webpack_require__(923)
 	];
 	
 	Editor.prototype._modules = [].concat(
@@ -298,7 +299,9 @@ return webpackJsonpD3P([0],{
 	Drag.prototype._applyOffsetToSelected = function (dX, dY) {
 	  var that = this;
 	  forIn(this._selection._currentSelection, function (v) {
-	    that._applyOffset(d3.select(v.element.node().parentNode), v.definition, dX, dY);
+	    if (getLocalName(v.definition) !== 'link') {
+	      that._applyOffset(d3.select(v.element.node().parentNode), v.definition, dX, dY);
+	    }
 	  });
 	};
 	
@@ -334,7 +337,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 858:
-[929, 859],
+[934, 859],
 
 /***/ 859:
 /***/ function(module, exports, __webpack_require__) {
@@ -776,7 +779,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 864:
-[929, 865],
+[934, 865],
 
 /***/ 865:
 /***/ function(module, exports, __webpack_require__) {
@@ -1748,7 +1751,7 @@ return webpackJsonpD3P([0],{
 /***/ },
 
 /***/ 885:
-[929, 886],
+[934, 886],
 
 /***/ 886:
 /***/ function(module, exports, __webpack_require__) {
@@ -1905,36 +1908,16 @@ return webpackJsonpD3P([0],{
 	          }
 	        },
 	      },
-	      'search': {
-	        title: 'Search item',
-	        group: 'utils',
-	        iconClassName: 'icon-glass',
-	        action: {
-	          click: function () {
-	            console.log('click button');
-	          }
-	        },
-	      },
-	      'delete-item': {
-	        title: 'Delete selected item(s)',
-	        group: 'utils',
-	        iconClassName: 'icon-trash',
-	        action: {
-	          click: function () {
-	            that._selection.deleteSelected();
-	          }
-	        },
-	      },
-	      'toggle-grid': {
-	        title: 'Show/hide grid',
-	        group: 'utils',
-	        iconClassName: 'icon-grid',
-	        action: {
-	          click: function () {
-	            that._axes.toggleVisible();
-	          }
-	        },
-	      },
+	      // 'search': {
+	      //   title: 'Search item',
+	      //   group: 'utils',
+	      //   iconClassName: 'icon-glass',
+	      //   action: {
+	      //     click: function () {
+	      //       console.log('click button');
+	      //     }
+	      //   },
+	      // },
 	      'new-connection': {
 	        title: 'New connection',
 	        group: 'drawing',
@@ -1962,6 +1945,26 @@ return webpackJsonpD3P([0],{
 	        action: {
 	          click: function () {
 	            that._addNodeHandler.append();
+	          }
+	        },
+	      },
+	      'delete-item': {
+	        title: 'Delete selected item(s)',
+	        group: 'utils',
+	        iconClassName: 'icon-trash',
+	        action: {
+	          click: function () {
+	            that._selection.deleteSelected();
+	          }
+	        },
+	      },
+	      'toggle-grid': {
+	        title: 'Show/hide grid',
+	        group: 'settings',
+	        iconClassName: 'icon-grid',
+	        action: {
+	          click: function () {
+	            that._axes.toggleVisible();
 	          }
 	        },
 	      },
@@ -2398,17 +2401,19 @@ return webpackJsonpD3P([0],{
 	 * @param {EventBus} eventBus
 	 */
 	
-	function LocalStorage(eventBus, d3polytree) {
+	function LocalStorage(eventBus, d3polytree, notifications) {
 	  
 	  this._eventBus = eventBus;
 	  this._d3polytree = d3polytree;
-	  
+	  this._notifications = notifications;
+	
 	  this._init();
 	}
 	
 	LocalStorage.$inject = [
 	  'eventBus',
-	  'd3polytree'
+	  'd3polytree',
+	  'notifications'
 	];
 	
 	module.exports = LocalStorage;
@@ -2434,9 +2439,11 @@ return webpackJsonpD3P([0],{
 	};
 	
 	LocalStorage.prototype.save = function () {
+	  var that = this;
 	  this._d3polytree.exportDiagram()
 	    .then(function (diagram) {
 	      ls('diagram', diagram);
+	      that._notifications.success({title: 'Sucess', text: 'Diagram saved'});
 	    });
 	};
 
@@ -2887,7 +2894,6 @@ return webpackJsonpD3P([0],{
 	  });
 	  
 	  this._eventBus.on('node.deleted', function () {
-	    console.log(arguments);
 	    that.doAction.apply(that, ['node', 'delete', [].slice.call(arguments)]);
 	  });
 	  
@@ -2990,7 +2996,6 @@ return webpackJsonpD3P([0],{
 	};
 	
 	Base.prototype.delete = function (element, definition) {
-	  console.log(arguments);
 	  var localName = getLocalName(definition);
 	  collections.remove(this._definitions.get(localName), definition);
 	  this._elements.removeElement.apply(this._elements, arguments);
@@ -3114,13 +3119,15 @@ return webpackJsonpD3P([0],{
 	
 	var inherits = __webpack_require__(2),
 	  base = __webpack_require__(914),
-	  forEach = __webpack_require__(744).forEach;
+	  forEach = __webpack_require__(744).forEach,
+	  sortBy = __webpack_require__(744).sortBy;
 	
-	function Links(definitions, moddle, links, eventBus) {
+	function Links(definitions, moddle, links, eventBus, elementRegistry) {
 	  base.call(this, definitions, links);
 	  this._moddle = moddle;
 	  this._links = links;
 	  this._eventBus = eventBus;
+	  this._elementRegistry = elementRegistry;
 	  this.init();
 	}
 	
@@ -3128,7 +3135,8 @@ return webpackJsonpD3P([0],{
 	  'd3polytree.definitions',
 	  'd3polytree.moddle',
 	  'links',
-	  'eventBus'
+	  'eventBus',
+	  'elementRegistry'
 	];
 	
 	module.exports = Links;
@@ -3152,6 +3160,10 @@ return webpackJsonpD3P([0],{
 	      ]
 	    });
 	  this._links._builder(newLinkDef);
+	  var sourceElem = this._elementRegistry.get(newLinkDef.source.id);
+	  this.updateNodeLinks(sourceElem, newLinkDef.source);
+	  var targetElem = this._elementRegistry.get(newLinkDef.target.id);
+	  this.updateNodeLinks(targetElem, newLinkDef.target);
 	  // return the element
 	  return newLinkDef;
 	};
@@ -3159,29 +3171,275 @@ return webpackJsonpD3P([0],{
 	Links.prototype.init = function () {
 	  var that = this;
 	  this._eventBus.on('node.moved', function (element, definition) {
+	    //console.log('MOVED - pre');
 	    that.updateNodeLinks(element, definition);
+	    //console.log('MOVED - post');
 	  });
 	};
 	
-	Links.prototype.updateNodeLinks = function(element, definition){
-	  // update the positions of the links related to the node.
-	  console.log('updateNodeLinks');
-	  var predecessorList = [],
-	    sucessorList = [];
-	  
-	  forEach(this._links.getAll(), function(v){
-	    console.log(v);
-	    if (v.target === definition){
-	      predecessorList.push({link: v, node: v.source});
-	    }
-	    if (v.source === definition){
-	      sucessorList.push({link: v, node: v.target});
-	    }
+	Links.prototype._calculateAngle = function (a, b) {
+	  // angle between 2 vectors (lines)
+	  var dotProduct = (a.x * b.x) + (a.y * b.y);
+	  var vectorAModule = Math.sqrt(Math.pow(a.x, 2) + Math.pow(a.y, 2));
+	  var vectorBModule = Math.sqrt(Math.pow(b.x, 2) + Math.pow(b.y, 2));
+	  return Math.acos(dotProduct / (vectorAModule * vectorBModule));
+	};
+	
+	Links.prototype._sortSide = function (sides, sideIdx, s) {
+	  // set reference vector and angle factor
+	  var vector = {x: 1, y: 1},
+	    factor = 1.0,
+	    that = this;
+	  if (sideIdx === 0) {
+	    vector.x = -1.0;
+	  } else if (sideIdx === 1) {
+	    factor = -1.0;
+	  } else if (sideIdx === 2) {
+	    vector.y = -1.0;
+	    factor = -1.0;
+	  } else if (sideIdx === 3) {
+	    vector.x = -1.0;
+	    vector.y = -1.0;
+	  }
+	  return sortBy(sides[sideIdx], function (o) {
+	    var vectorB = {
+	      x: o.pos.x - s.x,
+	      y: o.pos.y - s.y
+	    };
+	    return factor * that._calculateAngle(vector, vectorB);
 	  });
-	  console.log(predecessorList);
-	  console.log(sucessorList);
+	};
+	
+	Links.prototype._setQuadrants = function (sides, s, t, toSave, isTarget) {
+	  
+	  var sideIdx = false;
+	  if (t.x >= s.x && t.y >= s.y) {
+	    if (Math.abs(t.x - s.x) >= Math.abs(t.y - s.y)) {
+	      // left side
+	      sideIdx = 3;
+	      if (isTarget && Math.abs(t.y - s.y) > 80)
+	        sideIdx = 0;
+	    } else {
+	      // upside
+	      sideIdx = 0;
+	      if (isTarget && Math.abs(t.x - s.x) > 80)
+	        sideIdx = 3;
+	    }
+	  } else if (t.x < s.x && t.y >= s.y) {
+	    if (Math.abs(t.x - s.x) >= Math.abs(t.y - s.y)) {
+	      // right side
+	      sideIdx = 1;
+	      if (isTarget && Math.abs(t.y - s.y) > 80)
+	        sideIdx = 0;
+	    } else {
+	      // upside
+	      sideIdx = 0;
+	      if (isTarget && Math.abs(t.x - s.x) > 80)
+	        sideIdx = 1;
+	    }
+	  } else if (t.x >= s.x && t.y < s.y) {
+	    if (Math.abs(t.x - s.x) >= Math.abs(t.y - s.y)) {
+	      // right side
+	      sideIdx = 3;
+	      if (isTarget && Math.abs(t.y - s.y) > 80)
+	        sideIdx = 2;
+	    } else {
+	      // downside
+	      sideIdx = 2;
+	      if (isTarget && Math.abs(t.x - s.x) > 80)
+	        sideIdx = 3;
+	    }
+	  } else if (t.x < s.x && t.y < s.y) {
+	    if (Math.abs(t.x - s.x) >= Math.abs(t.y - s.y)) {
+	      // right side
+	      sideIdx = 1;
+	      if (isTarget && Math.abs(t.y - s.y) > 80)
+	        sideIdx = 2;
+	    } else {
+	      // downside
+	      sideIdx = 2;
+	      if (isTarget && Math.abs(t.x - s.x) > 80)
+	        sideIdx = 1;
+	    }
+	  }
+	  
+	  if (sideIdx === false) {
+	    return;
+	  }
+	  sides[sideIdx].push({
+	    obj: toSave,
+	    pos: s
+	  });
+	  sides[sideIdx] = this._sortSide(sides, sideIdx, t);
 	  
 	};
+	
+	Links.prototype._setSideConnectors = function (definition, isTarget) {
+	  var sides = [[], [], [], []],
+	    that = this,
+	    element = this._elementRegistry.get(definition.id);
+	  if (element) {
+	    this._fillPredAndSuc(element, definition);
+	    forEach(element.predecessorList, function (link) {
+	      var sourceData = link.source;
+	      that._setQuadrants(sides, sourceData.position, definition.position, sourceData.id, isTarget);
+	    });
+	    forEach(element.sucessorList, function (link) {
+	      var targetData = link.target;
+	      that._setQuadrants(sides, targetData.position, definition.position, targetData.id, false);
+	    });
+	    element.sides = sides;
+	  }
+	};
+	
+	Links.prototype.updateNodeLinks = function (element, definition) {
+	  var that = this;
+	  
+	  // update the positions of the links related to the node.
+	  this._fillPredAndSuc(element, definition);
+	
+	  forEach(element.predecessorList, function (link) {
+	    that._updateLink(link);
+	  });
+	
+	  forEach(element.sucessorList, function (link) {
+	    that._updateLink(link);
+	  });
+	};
+	
+	Links.prototype._createWaypoint = function(x, y) {
+	  return this._moddle.create('pfdn:Coordinates', {x, y});
+	};
+	
+	Links.prototype._updateLink = function (link) {
+	  // update the positions of the links related to the node.
+	  this._setSideConnectors(link.source, false);
+	  this._setSideConnectors(link.target, true);
+	  var sourcePoint = {x: link.source.position.x, y: link.source.position.y},
+	    targetPoint = {x: link.target.position.x, y: link.target.position.y},
+	    sourceElem = this._elementRegistry.get(link.source.id),
+	    targetElem = this._elementRegistry.get(link.target.id),
+	    sourceSide = {idx: 0},
+	    targetSide = {idx: 0},
+	    waypoints = [],
+	    curve1RefPoint = false,
+	    curve2RefPoint = false,
+	    midPoint = false;
+	  
+	  this._adjustSidePoint(sourcePoint, sourceElem.sides, link.target.id,  link.source.size, sourceSide);
+	  this._adjustSidePoint(targetPoint, targetElem.sides, link.source.id,  link.target.size, targetSide);
+	  
+	  waypoints.push(this._createWaypoint(sourcePoint.x, sourcePoint.y));
+	  if (sourceSide.idx === 1 || sourceSide.idx === 3){
+	    // source point starts from left or right
+	    if (targetSide.idx === 0 || targetSide.idx === 2){
+	      // target point arrives to top or bottom, draw a curve line
+	      curve1RefPoint = {
+	        x: targetPoint.x,
+	        y: sourcePoint.y
+	      };
+	    } else {
+	      if (Math.abs(sourcePoint.y - targetPoint.y) > 20) {
+	        // if distance allows to create a quadratic bezier curve, then draw it; else, show a straight line
+	        midPoint = {
+	          x: (targetPoint.x + sourcePoint.x) / 2,
+	          y: (targetPoint.y + sourcePoint.y) / 2
+	        };
+	        curve1RefPoint = {
+	          x: midPoint.x,
+	          y: sourcePoint.y
+	        };
+	        curve2RefPoint = {
+	          x: midPoint.x,
+	          y: targetPoint.y
+	        };
+	      }
+	    }
+	  } else {
+	    // source point starts from top or bottom
+	    if (targetSide.idx === 1 || targetSide.idx === 3){
+	      // target point arrives to left or right, draw a curve line
+	      curve1RefPoint = {
+	        x: sourcePoint.x,
+	        y: targetPoint.y
+	      };
+	    } else {
+	      if (Math.abs(sourcePoint.x - targetPoint.x) > 20) {
+	        // if distance allows to create a quadratic bezier curve, then draw it; else, show a straight line
+	        midPoint = {
+	          x: (targetPoint.x + sourcePoint.x) / 2,
+	          y: (targetPoint.y + sourcePoint.y) / 2
+	        };
+	        curve1RefPoint = {
+	          x: sourcePoint.x,
+	          y: midPoint.y
+	        };
+	        curve2RefPoint = {
+	          x: targetPoint.x,
+	          y: midPoint.y
+	        };
+	      }
+	    }
+	  }
+	  
+	  if (curve1RefPoint !== false){
+	    waypoints.push(this._createWaypoint(curve1RefPoint.x, curve1RefPoint.y));
+	  }
+	  if (curve2RefPoint !== false){
+	    waypoints.push(this._createWaypoint(curve2RefPoint.x, curve2RefPoint.y));
+	  }
+	  waypoints.push(this._createWaypoint(targetPoint.x, targetPoint.y));
+	  
+	  link.waypoint = waypoints;
+	  this._links._builder(link);
+	};
+	
+	Links.prototype._adjustSidePoint = function(point, sides, referencePoint, elemSize, saveIndex){
+	  var found = false;
+	  forEach(sides, function(side, sideIdx){
+	    var sideLen = side.length;
+	    if (found || sideLen===0){return;}
+	    var distBtwArrows = elemSize * 0.8 / (sideLen + 1);
+	    var origin = (elemSize / 2.0) - (distBtwArrows * (sideLen + 1) / 2);
+	    forEach(side, function(v) {
+	      origin += distBtwArrows;
+	      if (v.obj === referencePoint){
+	        saveIndex.idx = sideIdx;
+	        if (sideIdx === 0) {
+	          point.x += origin;
+	          point.y -= 5;
+	          //point.y -= elemSize / 2.0;
+	        } else if (sideIdx === 1) {
+	          point.x += elemSize + 5;
+	          point.y += origin;
+	        } else if (sideIdx === 2) {
+	          point.x += origin;
+	          point.y += elemSize + 5;
+	        } else if (sideIdx === 3) {
+	          //point.x += elemSize / 2.0;
+	          point.x -= 5;
+	          point.y += origin;
+	        }
+	        found = true;
+	      }
+	    });
+	  });
+	};
+	
+	Links.prototype._fillPredAndSuc = function (element, definition) {
+	  element.predecessorList = [];
+	  element.sucessorList = [];
+	  
+	  forEach(this._links.getAll(), function (link) {
+	    if (link.target === definition) {
+	      element.predecessorList.push(link);
+	    }
+	    if (link.source === definition) {
+	      element.sucessorList.push(link);
+	    }
+	  });
+	};
+	
 
 
 /***/ },
@@ -3278,7 +3536,342 @@ return webpackJsonpD3P([0],{
 
 /***/ },
 
-/***/ 929:
+/***/ 923:
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  __init__: ['notifications'],
+	  notifications: ['type', __webpack_require__(924)],
+	  __depends__: [
+	    //''
+	  ]
+	};
+
+
+/***/ },
+
+/***/ 924:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var notify = __webpack_require__(925);
+	
+	__webpack_require__(926);
+	
+	/**
+	 * Notification description
+	 *
+	 * @class
+	 * @constructor
+	 *
+	 */
+	
+	function Notifications() {
+	  this._notify = notify;
+	  this._notify.options.position = 'topCenter';
+	}
+	
+	module.exports = Notifications;
+	
+	Notifications.prototype.info = function (parameters) {
+	  this._notify.info(parameters);
+	};
+	
+	Notifications.prototype.success = function (parameters) {
+	  this._notify.success(parameters);
+	};
+	
+	Notifications.prototype.warning = function (parameters) {
+	  this._notify.warning(parameters);
+	};
+	
+	Notifications.prototype.error = function (parameters) {
+	  this._notify.error(parameters);
+	};
+	
+	Notifications.prototype.notify = function (parameters) {
+	  this._notify.notify(parameters);
+	};
+	
+	module.exports = Notifications;
+
+/***/ },
+
+/***/ 925:
+/***/ function(module, exports, __webpack_require__) {
+
+	var require;var require;/*! Notify - v0.0.2 - 2017-03-02
+	* Copyright (c) 2017 Martin Laritz;
+	* Contributor(s): David Castillo;
+	 Licensed MIT */
+	
+	(function(f){if(true){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.vNotify = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return require(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+	module.exports = (function() {
+	
+	  var positionOption = {
+	    topLeft: 'topLeft',
+	    topRight: 'topRight',
+	    bottomLeft: 'bottomLeft',
+	    bottomRight: 'bottomRight',
+	    center: 'center'
+	  };
+	
+	  var options = {
+	    fadeInDuration: 1000,
+	    fadeOutDuration: 1000,
+	    fadeInterval: 50,
+	    visibleDuration: 5000,
+	    postHoverVisibleDuration: 500,
+	    position: positionOption.topRight,
+	    sticky: false,
+	    showClose: true
+	  };
+	
+	  var addText = function (text) {
+	    var item = document.createElement('div');
+	    item.classList.add('vnotify-text');
+	    item.innerHTML = text;
+	    return item;
+	  };
+	
+	  var addTitle = function (title) {
+	    var item = document.createElement('div');
+	    item.classList.add('vnotify-title');
+	    item.innerHTML = title;
+	    return item;
+	  };
+	
+	  var remove = function (item) {
+	    item.style.display = 'none';
+	    item.outerHTML = '';
+	    item = null;
+	  };
+	
+	  var addClose = function (parent) {
+	    var item = document.createElement('span');
+	    item.classList.add('vn-close');
+	    item.addEventListener('click', function () {
+	      remove(parent);
+	    });
+	    return item;
+	  };
+	
+	  var createNotifyContainer = function (positionClass) {
+	    var frag = document.createDocumentFragment();
+	    var container = document.createElement('div');
+	    container.classList.add('vnotify-container');
+	    container.classList.add(positionClass);
+	    container.setAttribute('role', 'alert');
+	
+	    frag.appendChild(container);
+	    document.body.appendChild(frag);
+	
+	    return container;
+	  };
+	
+	  var getPositionClass = function (option) {
+	    switch (option) {
+	    case positionOption.topLeft:
+	      return 'vn-top-left';
+	    case positionOption.topCenter:
+	      return 'vn-top-left';
+	    case positionOption.bottomRight:
+	      return 'vn-bottom-right';
+	    case positionOption.bottomLeft:
+	      return 'vn-bottom-left';
+	    case positionOption.center:
+	      return 'vn-center';
+	    default:
+	      return 'vn-top-right';
+	    }
+	  };
+	
+	  var getNotifyContainer = function (position) {
+	    var positionClass = getPositionClass(position);
+	    var container = document.querySelector('.' + positionClass);
+	    return container ? container : createNotifyContainer(positionClass);
+	  };
+	
+	  var getOptions = function (opts) {
+	    return {
+	      fadeInDuration: opts.fadeInDuration || options.fadeInDuration,
+	      fadeOutDuration: opts.fadeOutDuration || options.fadeOutDuration,
+	      fadeInterval: opts.fadeInterval || options.fadeInterval,
+	      visibleDuration: opts.visibleDuration || options.visibleDuration,
+	      postHoverVisibleDuration: opts.postHoverVisibleDuration || options.postHoverVisibleDuration,
+	      position: opts.position || options.position,
+	      sticky: opts.sticky !== null ? opts.sticky : options.sticky,
+	      showClose: opts.showClose !== null ? opts.showClose : options.showClose
+	    };
+	  };
+	
+	  var checkRemoveContainer = function () {
+	    var item = document.querySelector('.vnotify-item');
+	    if (!item) {
+	      var container = document.querySelectorAll('.vnotify-container');
+	      for (var i = 0; i < container.length; i++) {
+	        container[i].outerHTML = '';
+	        container[i] = null;
+	      }
+	    }
+	  };
+	
+	  //New fade - based on http://toddmotto.com/raw-javascript-jquery-style-fadein-fadeout-functions-hugo-giraudel/
+	  var fade = function (type, ms, el) {
+	    var isIn = type === 'in',
+	      opacity = isIn ? 0 : el.style.opacity || 1,
+	      goal = isIn ? 0.8 : 0,
+	      gap = options.fadeInterval / ms;
+	
+	    if (isIn) {
+	      el.style.display = 'block';
+	      el.style.opacity = opacity;
+	    }
+	
+	    var fading;
+	
+	    var func = function () {
+	      opacity = isIn ? opacity + gap : opacity - gap;
+	      el.style.opacity = opacity;
+	
+	      if (opacity <= 0) {
+	        remove(el);
+	        checkRemoveContainer();
+	      }
+	      if ((!isIn && opacity <= goal) || (isIn && opacity >= goal)) {
+	        window.clearInterval(fading);
+	      }
+	    };
+	
+	    fading = window.setInterval(func, options.fadeInterval);
+	    return fading;
+	  };
+	
+	  var addNotify = function (params) {
+	    if (!params.title && !params.text) {
+	      return null;
+	    }
+	
+	    var frag = document.createDocumentFragment();
+	
+	    var item = document.createElement('div');
+	    item.classList.add('vnotify-item');
+	    item.classList.add(params.notifyClass);
+	    item.style.opacity = 0;
+	
+	    item.options = getOptions(params);
+	
+	    if (params.title) {
+	      item.appendChild(addTitle(params.title));
+	    }
+	    if (params.text) {
+	      item.appendChild(addText(params.text));
+	    }
+	    if (item.options.showClose) {
+	      item.appendChild(addClose(item));
+	    }
+	
+	    item.visibleDuration = item.options.visibleDuration; //option
+	
+	    var hideNotify = function () {
+	      item.fadeInterval = fade('out', item.options.fadeOutDuration, item);
+	    };
+	
+	    var resetInterval = function () {
+	      clearTimeout(item.interval);
+	      clearTimeout(item.fadeInterval);
+	      item.style.opacity = null;
+	      item.visibleDuration = item.options.postHoverVisibleDuration;
+	    };
+	
+	    var hideTimeout = function () {
+	      item.interval = setTimeout(hideNotify, item.visibleDuration);
+	    };
+	
+	    frag.appendChild(item);
+	    var container = getNotifyContainer(item.options.position);
+	    container.appendChild(frag);
+	
+	    item.addEventListener('mouseover', resetInterval);
+	
+	    fade('in', item.options.fadeInDuration, item);
+	
+	    if (!item.options.sticky) {
+	      item.addEventListener('mouseout', hideTimeout);
+	      hideTimeout();
+	    }
+	
+	
+	
+	    return item;
+	  };
+	
+	  var info = function (params) {
+	    params.notifyClass = 'vnotify-info';
+	    return addNotify(params);
+	  };
+	
+	  var success = function (params) {
+	    params.notifyClass = 'vnotify-success';
+	    return addNotify(params);
+	  };
+	
+	  var error = function (params) {
+	    params.notifyClass = 'vnotify-error';
+	    return addNotify(params);
+	  };
+	
+	  var warning = function (params) {
+	    params.notifyClass = 'vnotify-warning';
+	    return addNotify(params);
+	  };
+	
+	  var notify = function (params) {
+	    params.notifyClass = 'vnotify-notify';
+	    return addNotify(params);
+	  };
+	
+	  var custom = function (params) {
+	    return addNotify(params);
+	  };
+	
+	  return {
+	    info: info,
+	    success: success,
+	    error: error,
+	    warning: warning,
+	    notify: notify,
+	    custom: custom,
+	    options: options,
+	    positionOption: positionOption
+	  };
+	})();
+	
+	},{}]},{},[1])(1)
+	});
+
+/***/ },
+
+/***/ 926:
+[934, 927],
+
+/***/ 927:
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(860)();
+	// imports
+	
+	
+	// module
+	exports.push([module.id, ".vnotify-container {\n  position: fixed; }\n  .vnotify-container.vn-top-right {\n    right: 10px;\n    top: 10px; }\n  .vnotify-container.vn-top-left {\n    top: 10px;\n    left: 10px; }\n  .vnotify-container.vn-bottom-right {\n    bottom: 10px;\n    right: 10px; }\n  .vnotify-container.vn-bottom-left {\n    bottom: 10px;\n    left: 10px; }\n  .vnotify-container.vn-center {\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%); }\n  .vnotify-container.vn-top-center {\n    transform: translate(0, -50%);\n    top: 10px;\n    left: 50%; }\n  .vnotify-container .vn-close {\n    position: absolute;\n    top: 5px;\n    right: 10px;\n    width: 15px;\n    height: 15px;\n    padding: 2px;\n    cursor: pointer; }\n    .vnotify-container .vn-close:before, .vnotify-container .vn-close:after {\n      content: '';\n      position: absolute;\n      width: 100%;\n      top: 50%;\n      height: 2px;\n      background: #fff; }\n    .vnotify-container .vn-close:before {\n      -webkit-transform: rotate(45deg);\n      -moz-transform: rotate(45deg);\n      transform: rotate(45deg); }\n    .vnotify-container .vn-close:after {\n      -webkit-transform: rotate(-45deg);\n      -moz-transform: rotate(-45deg);\n      transform: rotate(-45deg); }\n\n.vnotify-item {\n  width: 20em;\n  padding: 15px;\n  position: relative;\n  -webkit-border-radius: 5px;\n  -moz-border-radius: 5px;\n  -ms-border-radius: 5px;\n  border-radius: 5px;\n  margin-bottom: 15px;\n  opacity: 0.75;\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=75)\";\n  filter: alpha(opacity=75); }\n  .vnotify-item:hover {\n    opacity: 1; }\n\n.vnotify-title {\n  font-weight: bold; }\n\n.vnotify-info {\n  background: #3498db;\n  color: #fff; }\n\n.vnotify-success {\n  background: #2ecc71;\n  color: #fff; }\n\n.vnotify-error {\n  background: #e74c3c;\n  color: #fff; }\n\n.vnotify-warning {\n  background: #f39c12;\n  color: #fff; }\n\n.vnotify-notify {\n  background: #333;\n  color: #fff; }\n", ""]);
+	
+	// exports
+
+
+/***/ },
+
+/***/ 934:
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
