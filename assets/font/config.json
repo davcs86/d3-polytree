@@ -191,6 +191,18 @@
       "src": "entypo"
     },
     {
+      "uid": "b6f32db98a3de777f5ae3005191b1831",
+      "css": "code",
+      "code": 59405,
+      "src": "entypo"
+    },
+    {
+      "uid": "26613a2e6bc41593c54bead46f8c8ee3",
+      "css": "file-code",
+      "code": 61897,
+      "src": "fontawesome"
+    },
+    {
       "uid": "c24b1d9a8a6bc693bb5c724eaa2e052a",
       "css": "gear",
       "code": 59395,
