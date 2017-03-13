@@ -1,7 +1,13 @@
-.element > .element-outline {
-  stroke-width: 0;
-}
-
-.element.selected > .element-outline, .element:hover > .element-outline {
-  stroke-width: 1px;
+.pfdjs-container {
+  .element {
+    &>.element-outline {
+      stroke-width: 0;
+    }
+    &.selected,
+    &:hover {
+      &>.element-outline {
+        stroke-width: 1px;
+      }
+    }
+  }
 }
