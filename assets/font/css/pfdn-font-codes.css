@@ -13,6 +13,8 @@
 .icon-floppy:before { content: '\e80b'; } /* '' */
 .icon-target:before { content: '\e80c'; } /* '' */
 .icon-code:before { content: '\e80d'; } /* '' */
+.icon-wrench:before { content: '\e80e'; } /* '' */
+.icon-cancel:before { content: '\e80f'; } /* '' */
 .icon-check-empty:before { content: '\f096'; } /* '' */
 .icon-angle-double-left:before { content: '\f100'; } /* '' */
 .icon-angle-double-right:before { content: '\f101'; } /* '' */
@@ -20,4 +22,5 @@
 .icon-angle-double-down:before { content: '\f103'; } /* '' */
 .icon-folder-open-empty:before { content: '\f115'; } /* '' */
 .icon-file-code:before { content: '\f1c9'; } /* '' */
+.icon-sliders:before { content: '\f1de'; } /* '' */
 .icon-mouse-pointer:before { content: '\f245'; } /* '' */

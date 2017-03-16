@@ -7,7 +7,7 @@
     background: #fafafa;
     border: solid 1px #cccccc;
     border-radius: 2px;
-    box-shadow: 0 1px 1px 0px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.3);
     z-index: 1;
     .pfdjs-entries {
       .pfdjs-entries-group {
@@ -23,7 +23,7 @@
           font-size: 20px;
           cursor: pointer;
           &:hover {
-            color: rgba(255, 72, 0, 0.79);
+            color: #ff4800;
           }
         }
       }

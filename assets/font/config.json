@@ -203,6 +203,24 @@
       "src": "fontawesome"
     },
     {
+      "uid": "21b42d3c3e6be44c3cc3d73042faa216",
+      "css": "sliders",
+      "code": 61918,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "5bb103cd29de77e0e06a52638527b575",
+      "css": "wrench",
+      "code": 59406,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "c709da589c923ba3c2ad48d9fc563e93",
+      "css": "cancel",
+      "code": 59407,
+      "src": "entypo"
+    },
+    {
       "uid": "c24b1d9a8a6bc693bb5c724eaa2e052a",
       "css": "gear",
       "code": 59395,
