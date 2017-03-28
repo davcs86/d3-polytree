@@ -23,15 +23,14 @@
   },
   "homepage": "https://github.com/davcs86/d3-polytree#readme",
   "dependencies": {
-    "lodash": "^4.11.1",
-    "min-dom": "^0.2.0",
-    "xml2js": "^0.4.16"
   },
   "devDependencies": {
     "Notify": "github:davcs86/Vanilla-Notify",
     "css-loader": "^0.25.0",
     "d3-canvas": "github:davcs86/d3-canvas",
     "d3-tip": "^0.7.1",
+    "lodash": "^4.17.4",
+    "xml2js": "^0.4.16",
     "didi": "^0.1.1",
     "eslint": "^3.9.1",
     "eslint-loader": "^1.6.1",
@@ -42,7 +41,7 @@
     "moddle": "^0.8.0",
     "node-sass": "^3.13.0",
     "pfdn-moddle": "github:davcs86/pfdn-moddle",
-    "q": "^1.4.1",
+    "q": "^1.5.0",
     "sass-loader": "^4.0.2",
     "style-loader": "^0.13.1",
     "svg-inline-loader": "^0.7.1",
