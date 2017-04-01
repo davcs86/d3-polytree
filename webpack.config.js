@@ -1,3 +1,5 @@
+/* global __dirname */
+
 var webpack = require('webpack');
 var path = require('path');
 
