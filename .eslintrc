@@ -1,19 +1,31 @@
 {
     "rules": {
         "indent": [
-             2,
-             2
+            2,
+            2,
+            {
+                "VariableDeclarator": {
+                    "var": 2,
+                    "let": 2,
+                    "const": 3
+                }
+            }
+        ],
+        "no-unused-vars": [
+            2,
+            {
+                "args": "none"
+            }
         ],
         "quotes": [
-            1,
+            2,
             "single"
         ],
-        "linebreak-style": "off",
-        "no-console": 0,
         "semi": [
             2,
             "always"
-        ]
+        ],
+        "no-console": 0
     },
     "env": {
         "es6": false,
@@ -26,7 +38,7 @@
         "modules": true
     },
     "globals": {
-      "require": true
+        "require": true
     },
     "parserOptions": {
         "sourceType": "module"

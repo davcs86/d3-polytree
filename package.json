@@ -22,15 +22,12 @@
     "url": "https://github.com/davcs86/d3-polytree/issues"
   },
   "homepage": "https://github.com/davcs86/d3-polytree#readme",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "Notify": "github:davcs86/Vanilla-Notify",
     "css-loader": "^0.25.0",
     "d3-canvas": "github:davcs86/d3-canvas",
     "d3-tip": "^0.7.1",
-    "lodash": "^4.17.4",
-    "xml2js": "^0.4.16",
     "didi": "^0.1.1",
     "eslint": "^3.9.1",
     "eslint-loader": "^1.6.1",
@@ -38,8 +35,11 @@
     "inherits": "^2.0.3",
     "json-loader": "^0.5.4",
     "local-storage": "^1.4.2",
+    "lodash": "^4.17.4",
+    "min-dom": "^0.2.0",
     "moddle": "^0.8.0",
     "node-sass": "^3.13.0",
+    "normalize.css": "^6.0.0",
     "pfdn-moddle": "github:davcs86/pfdn-moddle",
     "q": "^1.5.0",
     "sass-loader": "^4.0.2",
@@ -47,8 +47,8 @@
     "svg-inline-loader": "^0.7.1",
     "svgo-loader": "^1.1.2",
     "uglify-js": "^2.7.4",
-    "min-dom": "^0.2.0",
     "webpack": "^1.13.3",
-    "webpack-dev-server": "^1.16.3"
+    "webpack-dev-server": "^1.16.3",
+    "xml2js": "^0.4.16"
   }
 }
