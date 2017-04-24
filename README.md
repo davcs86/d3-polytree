@@ -1,5 +1,7 @@
 # D3 Polytree
 
+> **Notice** Explore the next version capabilities in **[v2.0-beta](https://github.com/davcs86/d3-polytree/tree/v2.0-beta) branch**, which includes 3 components: a viewer (just like this viewer but without the zoom), an interactive viewer (with zooming and search panel) and a modeler (for drawing your own diagrams).
+
 Interactive [polytree](https://www.google.com/search?q=polytree) viewer based on D3js.
 
 Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/yywby23u/2/)
