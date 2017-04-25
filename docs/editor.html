@@ -2,39 +2,62 @@
 <head>
     <meta charset="utf-8">
     <title>Editor | D3-based Polytrees by @davcs86</title>
-    <link href="http://fonts.googleapis.com/css?family=Droid+Sans+Mono" rel="stylesheet">
-    <style>
-        body {
-            background-color: #020223;
-        }
-        * {
-            font-family: 'Droid Sans Mono', monospace;
-        }
-        h3, a, a:hover {
-            color: white;
-        }
-    </style>
+    <link href="http://fonts.googleapis.com/css?family=Droid+Sans+Mono" rel="stylesheet" async="true">
+    <link href="libs/prism/prism.css" rel="stylesheet" async="true">
+    <link href="css/style.css" rel="stylesheet" async="true">
 </head>
-<body style="text-align: center">
-<a href="index.html" title="Index">Index</a>
-<h3>Editor</h3>
-<div id="d3Canvas" style="width: 100%; height: 80%; position: relative"></div>
+<body>
+
+<a class="return" href="index.html" title="Return to Index">Return to Index</a>
+
+<div class="tab-container">
+    <div class="tabs">
+        <a class="tab active">Editor</a>
+        <a class="tab">XML</a>
+    </div>
+    <div class="tab-panes">
+        <div class="tab-pane active">
+            <div id="d3Canvas" style="width: 100%; height: 100%; position: relative"></div>
+        </div>
+        <div class="tab-pane">
+            <pre style="margin: 0"><code id="d3CanvasCode" class="language-markup"></code></pre>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="libs/prism/prism.js" charset="utf-8"></script>
+<script type="text/javascript" src="libs/tabs.js" charset="utf-8"></script>
 <script type="text/javascript" src="D3P.Commons.js" charset="utf-8"></script>
 <script type="text/javascript" src="D3P.Editor.js" charset="utf-8"></script>
 <script type="text/javascript">
   window.onload = function () {
+    var exportXML = function(){
+      window.diagram.exportDiagram({format: true})
+        .then(function (xml) {
+          document.querySelector('#d3CanvasCode').innerHTML = Prism.highlight(xml, Prism.languages.markup);
+        });
+    };
     window.diagram = new D3P.Editor({
       container: '#d3Canvas',
     });
     window.diagram.createDiagram()
       .then(function () {
         console.log(window.diagram.get("elementRegistry").getAll());
+        exportXML();
       });
+    // xml code
+    setInterval(exportXML, 5000);
+    // tabs
+    tabs(document.querySelector('.tab-container'));
+
     // FPS meter, unrelated to the d3-polytree project.
     (function () {
       var script = document.createElement('script');
       script.onload = function () {
         var stats = new Stats();
+        stats.dom.style.position = 'relative';
+        stats.dom.style.float = 'left';
+        stats.dom.style.margin = '0 calc(50% - 40px)';
         document.body.appendChild(stats.dom);
         requestAnimationFrame(function loop() {
           stats.update();

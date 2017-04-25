@@ -1,0 +1,44 @@
+body {
+    text-align: center;
+}
+
+* {
+    font-family: 'Droid Sans Mono', monospace;
+}
+
+.tab-panes .tab-pane {
+    height: 80%;
+    overflow-x: auto;
+    display: none;
+    border: 1px solid #ddd;
+}
+
+.tab-panes .active {
+    display: block;
+}
+
+.tabs {
+    text-align: left;
+}
+
+.tabs a {
+    display: inline-block;
+    margin: 0 0 -1px;
+    padding: 10px 15px;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.tabs a.active {
+    border-top: 3px solid #ff5722;
+}
+
+a.return {
+    color: #ff5722;
+    float: right;
+    padding: 6px;
+    font-weight: bold;
+}

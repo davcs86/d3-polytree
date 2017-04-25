@@ -10,12 +10,12 @@
 })(this, function() {
 return webpackJsonpD3P([2],[
 /* 0 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__(3);
 
 
-/***/ }
+/***/ })
 ])
 });
 ;
