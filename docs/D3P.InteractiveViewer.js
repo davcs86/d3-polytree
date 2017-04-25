@@ -13,22 +13,22 @@ return webpackJsonpD3P([1],{
 /***/ 0:
 /***/ (function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(2878);
+	module.exports = __webpack_require__(2887);
 
 
 /***/ }),
 
-/***/ 1608:
+/***/ 1642:
 /***/ (function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['zoomScroll'],
-	  zoomScroll: ['type', __webpack_require__(1609)]
+	  zoomScroll: ['type', __webpack_require__(1643)]
 	};
 
 /***/ }),
 
-/***/ 1609:
+/***/ 1643:
 /***/ (function(module, exports) {
 
 	'use strict';
@@ -52,12 +52,12 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 1610:
+/***/ 1644:
 /***/ (function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['mouseEvents'],
-	  mouseEvents: ['type', __webpack_require__(1611)],
+	  mouseEvents: ['type', __webpack_require__(1645)],
 	  __depends__: [
 	    __webpack_require__(1492)
 	  ]
@@ -66,7 +66,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 1611:
+/***/ 1645:
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -155,13 +155,13 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 1687:
+/***/ 1696:
 /***/ (function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['sideTabs', 'sideTabsProvider'],
-	  sideTabs: ['type', __webpack_require__(1688)],
-	  sideTabsProvider: ['type', __webpack_require__(2002)],
+	  sideTabs: ['type', __webpack_require__(1697)],
+	  sideTabsProvider: ['type', __webpack_require__(2011)],
 	  __depends__: [
 	    //''
 	  ]
@@ -170,24 +170,24 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 1688:
+/***/ 1697:
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var forEach = __webpack_require__(1689).forEach,
-	  isFunction = __webpack_require__(1902).isFunction,
-	  isUndefined = __webpack_require__(1902).isUndefined,
-	  toSafeInteger = __webpack_require__(1902).toSafeInteger,
-	  domify = __webpack_require__(1984),
-	  domQuery = __webpack_require__(1986),
-	  domAttr = __webpack_require__(1988),
-	  domClear = __webpack_require__(1989),
-	  domClasses = __webpack_require__(1990),
-	  domDelegate = __webpack_require__(1993)
+	var forEach = __webpack_require__(1698).forEach,
+	  isFunction = __webpack_require__(1911).isFunction,
+	  isUndefined = __webpack_require__(1911).isUndefined,
+	  toSafeInteger = __webpack_require__(1911).toSafeInteger,
+	  domify = __webpack_require__(1993),
+	  domQuery = __webpack_require__(1995),
+	  domAttr = __webpack_require__(1997),
+	  domClear = __webpack_require__(1998),
+	  domClasses = __webpack_require__(1999),
+	  domDelegate = __webpack_require__(2002)
 	  ;
 	
-	__webpack_require__(1998);
+	__webpack_require__(2007);
 	
 	function SideTabs(canvas, sideTabsProvider, eventBus) {
 	  this._canvas = canvas;
@@ -372,1307 +372,940 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 1689:
-[3132, 1690, 1815, 1819, 1825, 1829, 1831, 1838, 1840, 1845, 1846, 1816, 1820, 1847, 1848, 1855, 1867, 1843, 1868, 1873, 1874, 1877, 1879, 1881, 1885, 1891, 1894, 1899, 1901],
-
-/***/ 1690:
-[3133, 1691, 1707],
-
-/***/ 1691:
-[2903, 1692],
-
-/***/ 1692:
-[2904, 1693],
-
-/***/ 1693:
-[2905, 1694, 1706],
-
-/***/ 1694:
-[2906, 1695, 1703, 1702, 1705],
-
-/***/ 1695:
-[2907, 1696, 1702],
-
-/***/ 1696:
-[2908, 1697, 1700, 1701],
-
-/***/ 1697:
-[2909, 1698],
-
 /***/ 1698:
-[2910, 1699],
+[3128, 1699, 1824, 1828, 1834, 1838, 1840, 1847, 1849, 1854, 1855, 1825, 1829, 1856, 1857, 1864, 1876, 1852, 1877, 1882, 1883, 1886, 1888, 1890, 1894, 1900, 1903, 1908, 1910],
 
 /***/ 1699:
-17,
+[3129, 1700, 1716],
 
 /***/ 1700:
-[2911, 1697],
+[2899, 1701],
 
 /***/ 1701:
-19,
+[2900, 1702],
 
 /***/ 1702:
-20,
+[2901, 1703, 1715],
 
 /***/ 1703:
-[2912, 1704],
+[2902, 1704, 1712, 1711, 1714],
 
 /***/ 1704:
-[2913, 1698],
+[2903, 1705, 1711],
 
 /***/ 1705:
-23,
+[2904, 1706, 1709, 1710],
 
 /***/ 1706:
-24,
+[2905, 1707],
 
 /***/ 1707:
-[3134, 1708, 1709, 1735, 1720],
+[2906, 1708],
 
 /***/ 1708:
-581,
+17,
 
 /***/ 1709:
-[3135, 1710],
+[2907, 1706],
 
 /***/ 1710:
-[3136, 1711, 1734],
+19,
 
 /***/ 1711:
-[3012, 1712, 1714],
+20,
 
 /***/ 1712:
-[2986, 1713],
+[2908, 1713],
 
 /***/ 1713:
-122,
+[2909, 1707],
 
 /***/ 1714:
-[2922, 1715, 1729, 1733],
+23,
 
 /***/ 1715:
-[2923, 1716, 1717, 1720, 1721, 1723, 1724],
+24,
 
 /***/ 1716:
-43,
+[3130, 1717, 1718, 1744, 1729],
 
 /***/ 1717:
-[2924, 1718, 1719],
+581,
 
 /***/ 1718:
-[2925, 1696, 1719],
+[3131, 1719],
 
 /***/ 1719:
-46,
+[3132, 1720, 1743],
 
 /***/ 1720:
-47,
+[3008, 1721, 1723],
 
 /***/ 1721:
-[2926, 1698, 1722],
+[2982, 1722],
 
 /***/ 1722:
-50,
+122,
 
 /***/ 1723:
-39,
+[2918, 1724, 1738, 1742],
 
 /***/ 1724:
-[2927, 1725, 1727, 1728],
+[2919, 1725, 1726, 1729, 1730, 1732, 1733],
 
 /***/ 1725:
-[2928, 1696, 1726, 1719],
+43,
 
 /***/ 1726:
-38,
+[2920, 1727, 1728],
 
 /***/ 1727:
-53,
+[2921, 1705, 1728],
 
 /***/ 1728:
-[2929, 1699],
+46,
 
 /***/ 1729:
-[2930, 1730, 1731],
+47,
 
 /***/ 1730:
-40,
+[2922, 1707, 1731],
 
 /***/ 1731:
-[2931, 1732],
+50,
 
 /***/ 1732:
-57,
+39,
 
 /***/ 1733:
-[2921, 1695, 1726],
+[2923, 1734, 1736, 1737],
 
 /***/ 1734:
-[3137, 1733],
+[2924, 1705, 1735, 1728],
 
 /***/ 1735:
-[3013, 1736, 1795, 1811, 1720, 1812],
+38,
 
 /***/ 1736:
-[3014, 1737, 1792, 1794],
+53,
 
 /***/ 1737:
-[3015, 1738, 1768],
+[2925, 1708],
 
 /***/ 1738:
-[2982, 1739, 1747, 1748, 1749, 1750, 1751],
+[2926, 1739, 1740],
 
 /***/ 1739:
-[2955, 1740, 1741, 1744, 1745, 1746],
+40,
 
 /***/ 1740:
-84,
+[2927, 1741],
 
 /***/ 1741:
-[2956, 1742],
+57,
 
 /***/ 1742:
-[2957, 1743],
+[2917, 1704, 1735],
 
 /***/ 1743:
-25,
+[3133, 1742],
 
 /***/ 1744:
-[2958, 1742],
+[3009, 1745, 1804, 1820, 1729, 1821],
 
 /***/ 1745:
-[2959, 1742],
+[3010, 1746, 1801, 1803],
 
 /***/ 1746:
-[2960, 1742],
+[3011, 1747, 1777],
 
 /***/ 1747:
-[2983, 1739],
+[2978, 1748, 1756, 1757, 1758, 1759, 1760],
 
 /***/ 1748:
-116,
+[2951, 1749, 1750, 1753, 1754, 1755],
 
 /***/ 1749:
-117,
+84,
 
 /***/ 1750:
-118,
+[2952, 1751],
 
 /***/ 1751:
-[2984, 1739, 1752, 1753],
+[2953, 1752],
 
 /***/ 1752:
-[2961, 1693, 1698],
+25,
 
 /***/ 1753:
-[2947, 1754, 1762, 1765, 1766, 1767],
+[2954, 1751],
 
 /***/ 1754:
-[2948, 1755, 1739, 1752],
+[2955, 1751],
 
 /***/ 1755:
-[2949, 1756, 1758, 1759, 1760, 1761],
+[2956, 1751],
 
 /***/ 1756:
-[2950, 1757],
+[2979, 1748],
 
 /***/ 1757:
-[2951, 1693],
+116,
 
 /***/ 1758:
-79,
+117,
 
 /***/ 1759:
-[2952, 1757],
+118,
 
 /***/ 1760:
-[2953, 1757],
+[2980, 1748, 1761, 1762],
 
 /***/ 1761:
-[2954, 1757],
+[2957, 1702, 1707],
 
 /***/ 1762:
-[2962, 1763],
+[2943, 1763, 1771, 1774, 1775, 1776],
 
 /***/ 1763:
-[2963, 1764],
+[2944, 1764, 1748, 1761],
 
 /***/ 1764:
-93,
+[2945, 1765, 1767, 1768, 1769, 1770],
 
 /***/ 1765:
-[2964, 1763],
+[2946, 1766],
 
 /***/ 1766:
-[2965, 1763],
+[2947, 1702],
 
 /***/ 1767:
-[2966, 1763],
+79,
 
 /***/ 1768:
-[3016, 1769, 1719],
+[2948, 1766],
 
 /***/ 1769:
-[3017, 1738, 1770, 1776, 1780, 1787, 1720, 1721, 1724],
+[2949, 1766],
 
 /***/ 1770:
-[3018, 1771, 1774, 1775],
+[2950, 1766],
 
 /***/ 1771:
-[3019, 1753, 1772, 1773],
+[2958, 1772],
 
 /***/ 1772:
-160,
+[2959, 1773],
 
 /***/ 1773:
-161,
+93,
 
 /***/ 1774:
-162,
+[2960, 1772],
 
 /***/ 1775:
-163,
+[2961, 1772],
 
 /***/ 1776:
-[3020, 1697, 1777, 1743, 1770, 1778, 1779],
+[2962, 1772],
 
 /***/ 1777:
-[2991, 1698],
+[3012, 1778, 1728],
 
 /***/ 1778:
-144,
+[3013, 1747, 1779, 1785, 1789, 1796, 1729, 1730, 1733],
 
 /***/ 1779:
-165,
+[3014, 1780, 1783, 1784],
 
 /***/ 1780:
-[3021, 1781],
+[3015, 1762, 1781, 1782],
 
 /***/ 1781:
-[3022, 1782, 1784, 1714],
+160,
 
 /***/ 1782:
-[3023, 1783, 1720],
+161,
 
 /***/ 1783:
-104,
+162,
 
 /***/ 1784:
-[3024, 1785, 1786],
+163,
 
 /***/ 1785:
-170,
+[3016, 1706, 1786, 1752, 1779, 1787, 1788],
 
 /***/ 1786:
-171,
+[2987, 1707],
 
 /***/ 1787:
-[3002, 1788, 1752, 1789, 1790, 1791, 1696, 1705],
+144,
 
 /***/ 1788:
-[3003, 1693, 1698],
+165,
 
 /***/ 1789:
-[3004, 1693, 1698],
+[3017, 1790],
 
 /***/ 1790:
-[3005, 1693, 1698],
+[3018, 1791, 1793, 1723],
 
 /***/ 1791:
-[3006, 1693, 1698],
+[3019, 1792, 1729],
 
 /***/ 1792:
-[3025, 1793, 1714],
+104,
 
 /***/ 1793:
-[3026, 1702],
+[3020, 1794, 1795],
 
 /***/ 1794:
-174,
+170,
 
 /***/ 1795:
-[3027, 1768, 1796, 1808, 1799, 1793, 1794, 1807],
+171,
 
 /***/ 1796:
-[2939, 1797],
+[2998, 1797, 1761, 1798, 1799, 1800, 1705, 1714],
 
 /***/ 1797:
-[2940, 1798, 1807],
+[2999, 1702, 1707],
 
 /***/ 1798:
-[2941, 1720, 1799, 1801, 1804],
+[3000, 1702, 1707],
 
 /***/ 1799:
-[2942, 1720, 1800],
+[3001, 1702, 1707],
 
 /***/ 1800:
-[2943, 1696, 1719],
+[3002, 1702, 1707],
 
 /***/ 1801:
-[2944, 1802],
+[3021, 1802, 1723],
 
 /***/ 1802:
-[2945, 1803],
+[3022, 1711],
 
 /***/ 1803:
-[2946, 1753],
+174,
 
 /***/ 1804:
-[2967, 1805],
+[3023, 1777, 1805, 1817, 1808, 1802, 1803, 1816],
 
 /***/ 1805:
-[2968, 1697, 1806, 1720, 1800],
+[2935, 1806],
 
 /***/ 1806:
-99,
+[2936, 1807, 1816],
 
 /***/ 1807:
-[2969, 1800],
+[2937, 1729, 1808, 1810, 1813],
 
 /***/ 1808:
-[3028, 1809, 1810],
+[2938, 1729, 1809],
 
 /***/ 1809:
-177,
+[2939, 1705, 1728],
 
 /***/ 1810:
-[3029, 1798, 1717, 1720, 1723, 1726, 1807],
+[2940, 1811],
 
 /***/ 1811:
-29,
+[2941, 1812],
 
 /***/ 1812:
-[3030, 1813, 1814, 1799, 1807],
+[2942, 1762],
 
 /***/ 1813:
-180,
+[2963, 1814],
 
 /***/ 1814:
-[3031, 1797],
+[2964, 1706, 1815, 1729, 1809],
 
 /***/ 1815:
-[3138, 1816],
+99,
 
 /***/ 1816:
-[3139, 1817, 1710, 1818, 1720],
+[2965, 1809],
 
 /***/ 1817:
-209,
+[3024, 1818, 1819],
 
 /***/ 1818:
-[3036, 1811],
+177,
 
 /***/ 1819:
-[3140, 1820],
+[3025, 1807, 1726, 1729, 1732, 1735, 1816],
 
 /***/ 1820:
-[3141, 1821, 1822, 1818, 1720],
+29,
 
 /***/ 1821:
-694,
+[3026, 1822, 1823, 1808, 1816],
 
 /***/ 1822:
-[3142, 1823, 1734],
+180,
 
 /***/ 1823:
-[3033, 1824, 1714],
+[3027, 1806],
 
 /***/ 1824:
-[3034, 1713],
+[3134, 1825],
 
 /***/ 1825:
-[3143, 1826, 1827, 1735, 1720, 1828],
+[3135, 1826, 1719, 1827, 1729],
 
 /***/ 1826:
-699,
+209,
 
 /***/ 1827:
-[3144, 1710],
+[3032, 1820],
 
 /***/ 1828:
-[2920, 1743, 1733, 1723, 1702],
+[3136, 1829],
 
 /***/ 1829:
-[3145, 1785, 1830, 1735, 1720],
+[3137, 1830, 1831, 1827, 1729],
 
 /***/ 1830:
-[3146, 1710],
+694,
 
 /***/ 1831:
-[3147, 1832, 1833],
+[3138, 1832, 1743],
 
 /***/ 1832:
-[3148, 1735, 1733, 1714],
+[3029, 1833, 1723],
 
 /***/ 1833:
-[3149, 1834, 1735, 1835],
+[3030, 1722],
 
 /***/ 1834:
-707,
+[3139, 1835, 1836, 1744, 1729, 1837],
 
 /***/ 1835:
-[3108, 1836],
+699,
 
 /***/ 1836:
-[3109, 1837],
+[3140, 1719],
 
 /***/ 1837:
-[3094, 1702, 1800],
+[2916, 1752, 1742, 1732, 1711],
 
 /***/ 1838:
-[3150, 1832, 1839],
+[3141, 1794, 1839, 1744, 1729],
 
 /***/ 1839:
-[3151, 1834, 1735, 1835],
+[3142, 1719],
 
 /***/ 1840:
-[3152, 1841, 1843],
+[3143, 1841, 1842],
 
 /***/ 1841:
-[2972, 1783, 1842],
+[3144, 1744, 1742, 1723],
 
 /***/ 1842:
-[2973, 1697, 1717, 1720],
+[3145, 1843, 1744, 1844],
 
 /***/ 1843:
-[3153, 1806, 1735, 1844, 1720],
+707,
 
 /***/ 1844:
-[3154, 1710, 1733],
+[3104, 1845],
 
 /***/ 1845:
-[3155, 1841, 1843],
+[3105, 1846],
 
 /***/ 1846:
-[3156, 1841, 1843, 1835],
+[3090, 1711, 1809],
 
 /***/ 1847:
-[3157, 1691, 1707],
+[3146, 1841, 1848],
 
 /***/ 1848:
-[3158, 1849, 1733, 1852, 1835, 1853],
+[3147, 1843, 1744, 1844],
 
 /***/ 1849:
-[3159, 1834, 1850, 1851],
+[3148, 1850, 1852],
 
 /***/ 1850:
-723,
+[2968, 1792, 1851],
 
 /***/ 1851:
-724,
+[2969, 1706, 1726, 1729],
 
 /***/ 1852:
-[3123, 1696, 1720, 1719],
+[3149, 1815, 1744, 1853, 1729],
 
 /***/ 1853:
-[3082, 1854, 1714],
+[3150, 1719, 1742],
 
 /***/ 1854:
-[3083, 1806],
+[3151, 1850, 1852],
 
 /***/ 1855:
-[3160, 1856, 1710, 1857, 1861, 1733],
+[3152, 1850, 1852, 1844],
 
 /***/ 1856:
-31,
+[3153, 1700, 1716],
 
 /***/ 1857:
-[3049, 1856, 1798, 1858, 1859, 1807],
+[3154, 1858, 1742, 1861, 1844, 1862],
 
 /***/ 1858:
-201,
+[3155, 1843, 1859, 1860],
 
 /***/ 1859:
-[3050, 1797, 1860],
+723,
 
 /***/ 1860:
-203,
+724,
 
 /***/ 1861:
-[2916, 1811, 1862, 1863],
+[3119, 1705, 1729, 1728],
 
 /***/ 1862:
-[2917, 1856],
+[3078, 1863, 1723],
 
 /***/ 1863:
-[2918, 1864, 1866],
+[3079, 1815],
 
 /***/ 1864:
-[2919, 1865, 1692, 1811],
+[3156, 1865, 1719, 1866, 1870, 1742],
 
 /***/ 1865:
-34,
+31,
 
 /***/ 1866:
-35,
+[3045, 1865, 1807, 1867, 1868, 1816],
 
 /***/ 1867:
-[3161, 1691, 1707],
+201,
 
 /***/ 1868:
-[3162, 1869, 1720],
+[3046, 1806, 1869],
 
 /***/ 1869:
-[3163, 1806, 1735, 1844, 1870, 1727, 1871, 1811],
+203,
 
 /***/ 1870:
-743,
+[2912, 1820, 1871, 1872],
 
 /***/ 1871:
-[3164, 1872],
+[2913, 1865],
 
 /***/ 1872:
-[3165, 1800],
+[2914, 1873, 1875],
 
 /***/ 1873:
-[3166, 1707],
+[2915, 1874, 1701, 1820],
 
 /***/ 1874:
-[3167, 1875, 1710, 1735, 1876, 1720],
+34,
 
 /***/ 1875:
-220,
+35,
 
 /***/ 1876:
-749,
+[3157, 1700, 1716],
 
 /***/ 1877:
-[3168, 1878, 1822, 1735, 1876, 1720],
+[3158, 1878, 1729],
 
 /***/ 1878:
-751,
+[3159, 1815, 1744, 1853, 1879, 1736, 1880, 1820],
 
 /***/ 1879:
-[3169, 1785, 1830, 1735, 1720, 1880],
+743,
 
 /***/ 1880:
-228,
+[3160, 1881],
 
 /***/ 1881:
-[3170, 1882, 1884, 1720],
+[3161, 1809],
 
 /***/ 1882:
-[3171, 1883],
+[3162, 1716],
 
 /***/ 1883:
-756,
+[3163, 1884, 1719, 1744, 1885, 1729],
 
 /***/ 1884:
-[3172, 1882, 1853],
+220,
 
 /***/ 1885:
-[3173, 1886, 1890, 1720, 1828, 1835],
+749,
 
 /***/ 1886:
-[3174, 1887, 1888, 1889],
+[3164, 1887, 1831, 1744, 1885, 1729],
 
 /***/ 1887:
-443,
+751,
 
 /***/ 1888:
-128,
+[3165, 1794, 1839, 1744, 1729, 1889],
 
 /***/ 1889:
-[3175, 1883],
+228,
 
 /***/ 1890:
-[3176, 1887, 1889, 1853],
+[3166, 1891, 1893, 1729],
 
 /***/ 1891:
-[3177, 1892, 1893, 1720],
+[3167, 1892],
 
 /***/ 1892:
-[3178, 1888, 1889],
+756,
 
 /***/ 1893:
-[3179, 1889, 1853],
+[3168, 1891, 1862],
 
 /***/ 1894:
-[3180, 1729, 1787, 1733, 1852, 1895],
+[3169, 1895, 1899, 1729, 1837, 1844],
 
 /***/ 1895:
-[3181, 1896, 1897, 1898],
+[3170, 1896, 1897, 1898],
 
 /***/ 1896:
-[3182, 1813],
+443,
 
 /***/ 1897:
-437,
+128,
 
 /***/ 1898:
-771,
+[3171, 1892],
 
 /***/ 1899:
-[3183, 1774, 1735, 1900, 1720, 1828],
+[3172, 1896, 1898, 1862],
 
 /***/ 1900:
-[3184, 1710],
+[3173, 1901, 1902, 1729],
 
 /***/ 1901:
-[3185, 1841, 1869, 1861, 1828],
+[3174, 1897, 1898],
 
 /***/ 1902:
-[3085, 1903, 1904, 1932, 1933, 1934, 1935, 1743, 1937, 1940, 1717, 1720, 1941, 1733, 1943, 1944, 1721, 1945, 1947, 1949, 1950, 1951, 1952, 1953, 1695, 1954, 1726, 1955, 1957, 1958, 1959, 1961, 1963, 1964, 1960, 1702, 1719, 1948, 1965, 1967, 1968, 1852, 1800, 1724, 1970, 1971, 1972, 1973, 1975, 1976, 1836, 1835, 1981, 1837, 1982, 1983, 1804],
+[3175, 1898, 1862],
 
 /***/ 1903:
-[3086, 1720],
+[3176, 1738, 1796, 1742, 1861, 1904],
 
 /***/ 1904:
-[3087, 1905],
+[3177, 1905, 1906, 1907],
 
 /***/ 1905:
-[3055, 1738, 1817, 1906, 1907, 1909, 1913, 1888, 1914, 1915, 1781, 1918, 1787, 1919, 1920, 1930, 1720, 1721, 1702, 1714],
+[3178, 1822],
 
 /***/ 1906:
-[2902, 1691, 1743],
+437,
 
 /***/ 1907:
-[2975, 1908, 1714],
+771,
 
 /***/ 1908:
-[2914, 1906, 1691],
+[3179, 1783, 1744, 1909, 1729, 1837],
 
 /***/ 1909:
-[3056, 1908, 1910],
+[3180, 1719],
 
 /***/ 1910:
-[2933, 1715, 1911, 1733],
+[3181, 1850, 1878, 1870, 1837],
 
 /***/ 1911:
-[2934, 1702, 1730, 1912],
+[3081, 1912, 1913, 1941, 1942, 1943, 1944, 1752, 1946, 1949, 1726, 1729, 1950, 1742, 1952, 1953, 1730, 1954, 1956, 1958, 1959, 1960, 1961, 1962, 1704, 1963, 1735, 1964, 1966, 1967, 1968, 1970, 1972, 1973, 1969, 1711, 1728, 1957, 1974, 1976, 1977, 1861, 1809, 1733, 1979, 1980, 1981, 1982, 1984, 1985, 1845, 1844, 1990, 1846, 1991, 1992, 1813],
 
 /***/ 1912:
-61,
+[3082, 1729],
 
 /***/ 1913:
-[2988, 1698],
+[3083, 1914],
 
 /***/ 1914:
-[3057, 1908, 1784],
+[3051, 1747, 1826, 1915, 1916, 1918, 1922, 1897, 1923, 1924, 1790, 1927, 1796, 1928, 1929, 1939, 1729, 1730, 1711, 1723],
 
 /***/ 1915:
-[3058, 1908, 1916],
+[2898, 1700, 1752],
 
 /***/ 1916:
-[3059, 1783, 1917, 1784, 1786],
+[2971, 1917, 1723],
 
 /***/ 1917:
-[2993, 1732],
+[2910, 1915, 1700],
 
 /***/ 1918:
-[3060, 1782, 1916, 1910],
+[3052, 1917, 1919],
 
 /***/ 1919:
-215,
+[2929, 1724, 1920, 1742],
 
 /***/ 1920:
-[3061, 1921, 1922, 1923, 1925, 1926, 1928, 1929],
+[2930, 1711, 1739, 1921],
 
 /***/ 1921:
-[2990, 1777],
+61,
 
 /***/ 1922:
-[3062, 1921],
+[2984, 1707],
 
 /***/ 1923:
-[3063, 1924, 1875, 1778],
+[3053, 1917, 1793],
 
 /***/ 1924:
-219,
+[3054, 1917, 1925],
 
 /***/ 1925:
-221,
+[3055, 1792, 1926, 1793, 1795],
 
 /***/ 1926:
-[3064, 1927, 1875, 1779],
+[2989, 1741],
 
 /***/ 1927:
-223,
+[3056, 1791, 1925, 1919],
 
 /***/ 1928:
-[3065, 1697],
+215,
 
 /***/ 1929:
-[2989, 1921],
+[3057, 1930, 1931, 1932, 1934, 1935, 1937, 1938],
 
 /***/ 1930:
-[2992, 1931, 1917, 1730],
+[2986, 1786],
 
 /***/ 1931:
-[2976, 1702],
+[3058, 1930],
 
 /***/ 1932:
-[3088, 1905],
+[3059, 1933, 1884, 1787],
 
 /***/ 1933:
-[3089, 1905],
+219,
 
 /***/ 1934:
-[3090, 1905],
+221,
 
 /***/ 1935:
-[3091, 1936, 1714],
+[3060, 1936, 1884, 1788],
 
 /***/ 1936:
-375,
+223,
 
 /***/ 1937:
-[3092, 1938, 1939],
+[3061, 1706],
 
 /***/ 1938:
-377,
+[2985, 1930],
 
 /***/ 1939:
-[3093, 1837],
+[2988, 1940, 1926, 1739],
 
 /***/ 1940:
-[3095, 1939],
+[2972, 1711],
 
 /***/ 1941:
-[3096, 1942, 1727, 1728],
+[3084, 1914],
 
 /***/ 1942:
-[3097, 1696, 1719],
+[3085, 1914],
 
 /***/ 1943:
-[2994, 1733, 1719],
+[3086, 1914],
 
 /***/ 1944:
-[3098, 1696, 1719],
+[3087, 1945, 1723],
 
 /***/ 1945:
-[3099, 1946, 1727, 1728],
+375,
 
 /***/ 1946:
-[3100, 1696, 1719],
+[3088, 1947, 1948],
 
 /***/ 1947:
-[3101, 1719, 1948],
+377,
 
 /***/ 1948:
-[2995, 1696, 1917, 1719],
+[3089, 1846],
 
 /***/ 1949:
-[3102, 1729, 1787, 1717, 1720, 1733, 1721, 1730, 1724],
+[3091, 1948],
 
 /***/ 1950:
-[3103, 1768],
+[3092, 1951, 1736, 1737],
 
 /***/ 1951:
-[3104, 1768],
+[3093, 1705, 1728],
 
 /***/ 1952:
-[3105, 1696, 1719, 1948],
+[2990, 1742, 1728],
 
 /***/ 1953:
-[3106, 1698],
+[3094, 1705, 1728],
 
 /***/ 1954:
-[3107, 1835],
+[3095, 1955, 1736, 1737],
 
 /***/ 1955:
-[3110, 1956, 1727, 1728],
+[3096, 1705, 1728],
 
 /***/ 1956:
-[3111, 1787, 1719],
+[3097, 1728, 1957],
 
 /***/ 1957:
-[3112, 1737, 1792],
+[2991, 1705, 1926, 1728],
 
 /***/ 1958:
-[3113, 1737, 1792],
+[3098, 1738, 1796, 1726, 1729, 1742, 1730, 1739, 1733],
 
 /***/ 1959:
-[3114, 1960],
+[3099, 1777],
 
 /***/ 1960:
-[3115, 1696, 1719],
+[3100, 1777],
 
 /***/ 1961:
-[3116, 1694, 1962],
+[3101, 1705, 1728, 1957],
 
 /***/ 1962:
-[3117, 1704, 1695, 1722],
+[3102, 1707],
 
 /***/ 1963:
-419,
+[3103, 1844],
 
 /***/ 1964:
-420,
+[3106, 1965, 1736, 1737],
 
 /***/ 1965:
-[3118, 1966, 1727, 1728],
+[3107, 1796, 1728],
 
 /***/ 1966:
-[3119, 1696, 1719],
+[3108, 1746, 1801],
 
 /***/ 1967:
-[3120, 1954],
+[3109, 1746, 1801],
 
 /***/ 1968:
-[3121, 1969, 1727, 1728],
+[3110, 1969],
 
 /***/ 1969:
-[3122, 1787, 1719],
+[3111, 1705, 1728],
 
 /***/ 1970:
-427,
+[3112, 1703, 1971],
 
 /***/ 1971:
-[3124, 1787, 1719],
+[3113, 1713, 1704, 1731],
 
 /***/ 1972:
-[3125, 1696, 1719],
+419,
 
 /***/ 1973:
-[3126, 1974, 1939],
+420,
 
 /***/ 1974:
-431,
+[3114, 1975, 1736, 1737],
 
 /***/ 1975:
-[3127, 1939],
+[3115, 1705, 1728],
 
 /***/ 1976:
-[3128, 1697, 1888, 1787, 1733, 1852, 1977, 1778, 1779, 1978, 1853],
+[3116, 1963],
 
 /***/ 1977:
-434,
+[3117, 1978, 1736, 1737],
 
 /***/ 1978:
-[3129, 1979, 1897, 1980],
+[3118, 1796, 1728],
 
 /***/ 1979:
-436,
+427,
 
 /***/ 1980:
-438,
+[3120, 1796, 1728],
 
 /***/ 1981:
-[3130, 1887, 1835],
+[3121, 1705, 1728],
 
 /***/ 1982:
-[2996, 1908, 1910],
+[3122, 1983, 1948],
 
 /***/ 1983:
-[3131, 1887, 1835],
+431,
 
 /***/ 1984:
-[2893, 1985],
+[3123, 1948],
 
 /***/ 1985:
-/***/ (function(module, exports) {
-
-	
-	/**
-	 * Expose `parse`.
-	 */
-	
-	module.exports = parse;
-	
-	/**
-	 * Tests for browser support.
-	 */
-	
-	var innerHTMLBug = false;
-	var bugTestDiv;
-	if (typeof document !== 'undefined') {
-	  bugTestDiv = document.createElement('div');
-	  // Setup
-	  bugTestDiv.innerHTML = '  <link/><table></table><a href="/a">a</a><input type="checkbox"/>';
-	  // Make sure that link elements get serialized correctly by innerHTML
-	  // This requires a wrapper element in IE
-	  innerHTMLBug = !bugTestDiv.getElementsByTagName('link').length;
-	  bugTestDiv = undefined;
-	}
-	
-	/**
-	 * Wrap map from jquery.
-	 */
-	
-	var map = {
-	  legend: [1, '<fieldset>', '</fieldset>'],
-	  tr: [2, '<table><tbody>', '</tbody></table>'],
-	  col: [2, '<table><tbody></tbody><colgroup>', '</colgroup></table>'],
-	  // for script/link/style tags to work in IE6-8, you have to wrap
-	  // in a div with a non-whitespace character in front, ha!
-	  _default: innerHTMLBug ? [1, 'X<div>', '</div>'] : [0, '', '']
-	};
-	
-	map.td =
-	map.th = [3, '<table><tbody><tr>', '</tr></tbody></table>'];
-	
-	map.option =
-	map.optgroup = [1, '<select multiple="multiple">', '</select>'];
-	
-	map.thead =
-	map.tbody =
-	map.colgroup =
-	map.caption =
-	map.tfoot = [1, '<table>', '</table>'];
-	
-	map.polyline =
-	map.ellipse =
-	map.polygon =
-	map.circle =
-	map.text =
-	map.line =
-	map.path =
-	map.rect =
-	map.g = [1, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">','</svg>'];
-	
-	/**
-	 * Parse `html` and return a DOM Node instance, which could be a TextNode,
-	 * HTML DOM Node of some kind (<div> for example), or a DocumentFragment
-	 * instance, depending on the contents of the `html` string.
-	 *
-	 * @param {String} html - HTML string to "domify"
-	 * @param {Document} doc - The `document` instance to create the Node for
-	 * @return {DOMNode} the TextNode, DOM Node, or DocumentFragment instance
-	 * @api private
-	 */
-	
-	function parse(html, doc) {
-	  if ('string' != typeof html) throw new TypeError('String expected');
-	
-	  // default to the global `document` object
-	  if (!doc) doc = document;
-	
-	  // tag name
-	  var m = /<([\w:]+)/.exec(html);
-	  if (!m) return doc.createTextNode(html);
-	
-	  html = html.replace(/^\s+|\s+$/g, ''); // Remove leading/trailing whitespace
-	
-	  var tag = m[1];
-	
-	  // body support
-	  if (tag == 'body') {
-	    var el = doc.createElement('html');
-	    el.innerHTML = html;
-	    return el.removeChild(el.lastChild);
-	  }
-	
-	  // wrap map
-	  var wrap = map[tag] || map._default;
-	  var depth = wrap[0];
-	  var prefix = wrap[1];
-	  var suffix = wrap[2];
-	  var el = doc.createElement('div');
-	  el.innerHTML = prefix + html + suffix;
-	  while (depth--) el = el.lastChild;
-	
-	  // one element
-	  if (el.firstChild == el.lastChild) {
-	    return el.removeChild(el.firstChild);
-	  }
-	
-	  // several elements
-	  var fragment = doc.createDocumentFragment();
-	  while (el.firstChild) {
-	    fragment.appendChild(el.removeChild(el.firstChild));
-	  }
-	
-	  return fragment;
-	}
-
-
-/***/ }),
+[3124, 1706, 1897, 1796, 1742, 1861, 1986, 1787, 1788, 1987, 1862],
 
 /***/ 1986:
-[2899, 1987],
+434,
 
 /***/ 1987:
-5,
+[3125, 1988, 1906, 1989],
 
 /***/ 1988:
-/***/ (function(module, exports) {
-
-	/**
-	 * Set attribute `name` to `val`, or get attr `name`.
-	 *
-	 * @param {Element} el
-	 * @param {String} name
-	 * @param {String} [val]
-	 * @api public
-	 */
-	
-	module.exports = function(el, name, val) {
-	  // get
-	  if (arguments.length == 2) {
-	    return el.getAttribute(name);
-	  }
-	
-	  // remove
-	  if (val === null) {
-	    return el.removeAttribute(name);
-	  }
-	
-	  // set
-	  el.setAttribute(name, val);
-	
-	  return el;
-	};
-
-/***/ }),
+436,
 
 /***/ 1989:
-/***/ (function(module, exports) {
-
-	module.exports = function(el) {
-	
-	  var c;
-	
-	  while (el.childNodes.length) {
-	    c = el.childNodes[0];
-	    el.removeChild(c);
-	  }
-	
-	  return el;
-	};
-
-/***/ }),
+438,
 
 /***/ 1990:
-/***/ (function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(1991);
-
-/***/ }),
+[3126, 1896, 1844],
 
 /***/ 1991:
-/***/ (function(module, exports, __webpack_require__) {
-
-	/**
-	 * Module dependencies.
-	 */
-	
-	try {
-	  var index = __webpack_require__(1992);
-	} catch (err) {
-	  var index = __webpack_require__(1992);
-	}
-	
-	/**
-	 * Whitespace regexp.
-	 */
-	
-	var re = /\s+/;
-	
-	/**
-	 * toString reference.
-	 */
-	
-	var toString = Object.prototype.toString;
-	
-	/**
-	 * Wrap `el` in a `ClassList`.
-	 *
-	 * @param {Element} el
-	 * @return {ClassList}
-	 * @api public
-	 */
-	
-	module.exports = function(el){
-	  return new ClassList(el);
-	};
-	
-	/**
-	 * Initialize a new ClassList for `el`.
-	 *
-	 * @param {Element} el
-	 * @api private
-	 */
-	
-	function ClassList(el) {
-	  if (!el || !el.nodeType) {
-	    throw new Error('A DOM element reference is required');
-	  }
-	  this.el = el;
-	  this.list = el.classList;
-	}
-	
-	/**
-	 * Add class `name` if not already present.
-	 *
-	 * @param {String} name
-	 * @return {ClassList}
-	 * @api public
-	 */
-	
-	ClassList.prototype.add = function(name){
-	  // classList
-	  if (this.list) {
-	    this.list.add(name);
-	    return this;
-	  }
-	
-	  // fallback
-	  var arr = this.array();
-	  var i = index(arr, name);
-	  if (!~i) arr.push(name);
-	  this.el.className = arr.join(' ');
-	  return this;
-	};
-	
-	/**
-	 * Remove class `name` when present, or
-	 * pass a regular expression to remove
-	 * any which match.
-	 *
-	 * @param {String|RegExp} name
-	 * @return {ClassList}
-	 * @api public
-	 */
-	
-	ClassList.prototype.remove = function(name){
-	  if ('[object RegExp]' == toString.call(name)) {
-	    return this.removeMatching(name);
-	  }
-	
-	  // classList
-	  if (this.list) {
-	    this.list.remove(name);
-	    return this;
-	  }
-	
-	  // fallback
-	  var arr = this.array();
-	  var i = index(arr, name);
-	  if (~i) arr.splice(i, 1);
-	  this.el.className = arr.join(' ');
-	  return this;
-	};
-	
-	/**
-	 * Remove all classes matching `re`.
-	 *
-	 * @param {RegExp} re
-	 * @return {ClassList}
-	 * @api private
-	 */
-	
-	ClassList.prototype.removeMatching = function(re){
-	  var arr = this.array();
-	  for (var i = 0; i < arr.length; i++) {
-	    if (re.test(arr[i])) {
-	      this.remove(arr[i]);
-	    }
-	  }
-	  return this;
-	};
-	
-	/**
-	 * Toggle class `name`, can force state via `force`.
-	 *
-	 * For browsers that support classList, but do not support `force` yet,
-	 * the mistake will be detected and corrected.
-	 *
-	 * @param {String} name
-	 * @param {Boolean} force
-	 * @return {ClassList}
-	 * @api public
-	 */
-	
-	ClassList.prototype.toggle = function(name, force){
-	  // classList
-	  if (this.list) {
-	    if ("undefined" !== typeof force) {
-	      if (force !== this.list.toggle(name, force)) {
-	        this.list.toggle(name); // toggle again to correct
-	      }
-	    } else {
-	      this.list.toggle(name);
-	    }
-	    return this;
-	  }
-	
-	  // fallback
-	  if ("undefined" !== typeof force) {
-	    if (!force) {
-	      this.remove(name);
-	    } else {
-	      this.add(name);
-	    }
-	  } else {
-	    if (this.has(name)) {
-	      this.remove(name);
-	    } else {
-	      this.add(name);
-	    }
-	  }
-	
-	  return this;
-	};
-	
-	/**
-	 * Return an array of classes.
-	 *
-	 * @return {Array}
-	 * @api public
-	 */
-	
-	ClassList.prototype.array = function(){
-	  var className = this.el.getAttribute('class') || '';
-	  var str = className.replace(/^\s+|\s+$/g, '');
-	  var arr = str.split(re);
-	  if ('' === arr[0]) arr.shift();
-	  return arr;
-	};
-	
-	/**
-	 * Check if class `name` is present.
-	 *
-	 * @param {String} name
-	 * @return {ClassList}
-	 * @api public
-	 */
-	
-	ClassList.prototype.has =
-	ClassList.prototype.contains = function(name){
-	  return this.list
-	    ? this.list.contains(name)
-	    : !! ~index(this.array(), name);
-	};
-
-
-/***/ }),
+[2992, 1917, 1919],
 
 /***/ 1992:
-/***/ (function(module, exports) {
-
-	module.exports = function(arr, obj){
-	  if (arr.indexOf) return arr.indexOf(obj);
-	  for (var i = 0; i < arr.length; ++i) {
-	    if (arr[i] === obj) return i;
-	  }
-	  return -1;
-	};
-
-/***/ }),
+[3127, 1896, 1844],
 
 /***/ 1993:
-[2894, 1994],
+[3236, 1994],
 
 /***/ 1994:
-[2895, 1995, 1995, 1997, 1997],
+1637,
 
 /***/ 1995:
-[2896, 1996],
+[2895, 1996],
 
 /***/ 1996:
-[2897, 1987, 1987],
+5,
 
 /***/ 1997:
-1004,
+1626,
 
 /***/ 1998:
-[2898, 1999, 2001],
+1630,
 
 /***/ 1999:
+[3230, 2000],
+
+/***/ 2000:
+[3231, 2001, 2001],
+
+/***/ 2001:
+1629,
+
+/***/ 2002:
+[3234, 2003],
+
+/***/ 2003:
+[3235, 2004, 2004, 2006, 2006],
+
+/***/ 2004:
+[3232, 2005],
+
+/***/ 2005:
+[3233, 1996, 1996],
+
+/***/ 2006:
+1004,
+
+/***/ 2007:
+[2894, 2008, 2010],
+
+/***/ 2008:
 /***/ (function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(2000)();
+	exports = module.exports = __webpack_require__(2009)();
 	// imports
 	
 	
@@ -1684,18 +1317,18 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2000:
+/***/ 2009:
 1485,
 
-/***/ 2001:
+/***/ 2010:
 1486,
 
-/***/ 2002:
+/***/ 2011:
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var isUndefined = __webpack_require__(1902).isUndefined;
+	var isUndefined = __webpack_require__(1911).isUndefined;
 	
 	function SideTabsProvider(eventBus){
 	  this._registeredSideTabs = [];
@@ -1732,12 +1365,12 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2003:
+/***/ 2012:
 /***/ (function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['searchPanel'],
-	  searchPanel: ['type', __webpack_require__(2004)],
+	  searchPanel: ['type', __webpack_require__(2013)],
 	  __depends__: [
 	  ]
 	};
@@ -1745,19 +1378,19 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2004:
+/***/ 2013:
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var domClear = __webpack_require__(2005),
-	  domify = __webpack_require__(2006),
-	  domDelegate = __webpack_require__(2008),
-	  domAttr = __webpack_require__(2014),
-	  List = __webpack_require__(2015)
+	var domClear = __webpack_require__(2014),
+	  domify = __webpack_require__(2015),
+	  domDelegate = __webpack_require__(2017),
+	  domAttr = __webpack_require__(2023),
+	  List = __webpack_require__(2024)
 	  ;
 	
-	__webpack_require__(2035);
+	__webpack_require__(2044);
 	
 	function SearchPanel(sideTabsProvider, eventBus){
 	  this._sideTabsProvider = sideTabsProvider;
@@ -1894,56 +1527,56 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2005:
-1989,
-
-/***/ 2006:
-[2893, 2007],
-
-/***/ 2007:
-1985,
-
-/***/ 2008:
-[2894, 2009],
-
-/***/ 2009:
-[2895, 2010, 2010, 2013, 2013],
-
-/***/ 2010:
-[2896, 2011],
-
-/***/ 2011:
-[2897, 2012, 2012],
-
-/***/ 2012:
-5,
-
-/***/ 2013:
-1004,
-
 /***/ 2014:
-1988,
+1630,
 
 /***/ 2015:
+[3236, 2016],
+
+/***/ 2016:
+1637,
+
+/***/ 2017:
+[3234, 2018],
+
+/***/ 2018:
+[3235, 2019, 2019, 2022, 2022],
+
+/***/ 2019:
+[3232, 2020],
+
+/***/ 2020:
+[3233, 2021, 2021],
+
+/***/ 2021:
+5,
+
+/***/ 2022:
+1004,
+
+/***/ 2023:
+1626,
+
+/***/ 2024:
 /***/ (function(module, exports, __webpack_require__) {
 
-	var naturalSort = __webpack_require__(2016),
-	  getByClass = __webpack_require__(2017),
-	  extend = __webpack_require__(2018),
-	  indexOf = __webpack_require__(2019),
-	  events = __webpack_require__(2020),
-	  toString = __webpack_require__(2022),
-	  classes = __webpack_require__(2023),
-	  getAttribute = __webpack_require__(2024),
-	  toArray = __webpack_require__(2021);
+	var naturalSort = __webpack_require__(2025),
+	  getByClass = __webpack_require__(2026),
+	  extend = __webpack_require__(2027),
+	  indexOf = __webpack_require__(2028),
+	  events = __webpack_require__(2029),
+	  toString = __webpack_require__(2031),
+	  classes = __webpack_require__(2032),
+	  getAttribute = __webpack_require__(2033),
+	  toArray = __webpack_require__(2030);
 	
 	module.exports = function(id, options, values) {
 	
 	  var self = this,
 	    init,
-	    Item = __webpack_require__(2025)(self),
-	    addAsync = __webpack_require__(2026)(self),
-	    initPagination = __webpack_require__(2027)(self);
+	    Item = __webpack_require__(2034)(self),
+	    addAsync = __webpack_require__(2035)(self),
+	    initPagination = __webpack_require__(2036)(self);
 	
 	  init = {
 	    start: function() {
@@ -1978,12 +1611,12 @@ return webpackJsonpD3P([1],{
 	      if (!self.listContainer) { return; }
 	      self.list       = getByClass(self.listContainer, self.listClass, true);
 	
-	      self.parse        = __webpack_require__(2028)(self);
-	      self.templater    = __webpack_require__(2029)(self);
-	      self.search       = __webpack_require__(2030)(self);
-	      self.filter       = __webpack_require__(2031)(self);
-	      self.sort         = __webpack_require__(2032)(self);
-	      self.fuzzySearch  = __webpack_require__(2033)(self, options.fuzzySearch);
+	      self.parse        = __webpack_require__(2037)(self);
+	      self.templater    = __webpack_require__(2038)(self);
+	      self.search       = __webpack_require__(2039)(self);
+	      self.filter       = __webpack_require__(2040)(self);
+	      self.sort         = __webpack_require__(2041)(self);
+	      self.fuzzySearch  = __webpack_require__(2042)(self, options.fuzzySearch);
 	
 	      this.handlers();
 	      this.items();
@@ -2193,7 +1826,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2016:
+/***/ 2025:
 /***/ (function(module, exports) {
 
 	'use strict';
@@ -2311,7 +1944,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2017:
+/***/ 2026:
 /***/ (function(module, exports) {
 
 	/**
@@ -2381,7 +2014,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2018:
+/***/ 2027:
 /***/ (function(module, exports) {
 
 	/*
@@ -2406,7 +2039,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2019:
+/***/ 2028:
 /***/ (function(module, exports) {
 
 	var indexOf = [].indexOf;
@@ -2422,13 +2055,13 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2020:
+/***/ 2029:
 /***/ (function(module, exports, __webpack_require__) {
 
 	var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
 	    unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
 	    prefix = bind !== 'addEventListener' ? 'on' : '',
-	    toArray = __webpack_require__(2021);
+	    toArray = __webpack_require__(2030);
 	
 	/**
 	 * Bind `el` event `type` to `fn`.
@@ -2467,7 +2100,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2021:
+/***/ 2030:
 /***/ (function(module, exports) {
 
 	/**
@@ -2507,7 +2140,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2022:
+/***/ 2031:
 /***/ (function(module, exports) {
 
 	module.exports = function(s) {
@@ -2520,14 +2153,14 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2023:
+/***/ 2032:
 /***/ (function(module, exports, __webpack_require__) {
 
 	/**
 	 * Module dependencies.
 	 */
 	
-	var index = __webpack_require__(2019);
+	var index = __webpack_require__(2028);
 	
 	/**
 	 * Whitespace regexp.
@@ -2691,7 +2324,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2024:
+/***/ 2033:
 /***/ (function(module, exports) {
 
 	/**
@@ -2724,7 +2357,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2025:
+/***/ 2034:
 /***/ (function(module, exports) {
 
 	module.exports = function(list) {
@@ -2791,7 +2424,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2026:
+/***/ 2035:
 /***/ (function(module, exports) {
 
 	module.exports = function(list) {
@@ -2814,12 +2447,12 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2027:
+/***/ 2036:
 /***/ (function(module, exports, __webpack_require__) {
 
-	var classes = __webpack_require__(2023),
-	  events = __webpack_require__(2020),
-	  List = __webpack_require__(2015);
+	var classes = __webpack_require__(2032),
+	  events = __webpack_require__(2029),
+	  List = __webpack_require__(2024);
 	
 	module.exports = function(list) {
 	
@@ -2914,12 +2547,12 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2028:
+/***/ 2037:
 /***/ (function(module, exports, __webpack_require__) {
 
 	module.exports = function(list) {
 	
-	  var Item = __webpack_require__(2025)(list);
+	  var Item = __webpack_require__(2034)(list);
 	
 	  var getChildren = function(parent) {
 	    var nodes = parent.childNodes,
@@ -2968,7 +2601,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2029:
+/***/ 2038:
 /***/ (function(module, exports) {
 
 	var Templater = function(list) {
@@ -3149,7 +2782,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2030:
+/***/ 2039:
 /***/ (function(module, exports) {
 
 	module.exports = function(list) {
@@ -3276,7 +2909,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2031:
+/***/ 2040:
 /***/ (function(module, exports) {
 
 	module.exports = function(list) {
@@ -3312,7 +2945,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2032:
+/***/ 2041:
 /***/ (function(module, exports) {
 
 	module.exports = function(list) {
@@ -3425,16 +3058,16 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2033:
+/***/ 2042:
 /***/ (function(module, exports, __webpack_require__) {
 
 	
-	var classes = __webpack_require__(2023),
-	  events = __webpack_require__(2020),
-	  extend = __webpack_require__(2018),
-	  toString = __webpack_require__(2022),
-	  getByClass = __webpack_require__(2017),
-	  fuzzy = __webpack_require__(2034);
+	var classes = __webpack_require__(2032),
+	  events = __webpack_require__(2029),
+	  extend = __webpack_require__(2027),
+	  toString = __webpack_require__(2031),
+	  getByClass = __webpack_require__(2026),
+	  fuzzy = __webpack_require__(2043);
 	
 	module.exports = function(list, options) {
 	  options = options || {};
@@ -3499,7 +3132,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2034:
+/***/ 2043:
 /***/ (function(module, exports) {
 
 	module.exports = function(text, pattern, options) {
@@ -3629,13 +3262,13 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2035:
-[2898, 2036, 2038],
+/***/ 2044:
+[2894, 2045, 2047],
 
-/***/ 2036:
+/***/ 2045:
 /***/ (function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(2037)();
+	exports = module.exports = __webpack_require__(2046)();
 	// imports
 	
 	
@@ -3647,13 +3280,13 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2037:
+/***/ 2046:
 1485,
 
-/***/ 2038:
+/***/ 2047:
 1486,
 
-/***/ 2878:
+/***/ 2887:
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3677,11 +3310,11 @@ return webpackJsonpD3P([1],{
 	};
 	
 	InteractiveViewer.prototype._interactionModules = [
-	  __webpack_require__(1608),
-	  __webpack_require__(1610),
-	  __webpack_require__(2879),
-	  __webpack_require__(1687),
-	  __webpack_require__(2003),
+	  __webpack_require__(1642),
+	  __webpack_require__(1644),
+	  __webpack_require__(2888),
+	  __webpack_require__(1696),
+	  __webpack_require__(2012),
 	];
 	
 	InteractiveViewer.prototype._modules = [].concat(
@@ -3691,12 +3324,12 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2879:
+/***/ 2888:
 /***/ (function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  __init__: ['tooltip'],
-	  tooltip: ['type', __webpack_require__(2880)],
+	  tooltip: ['type', __webpack_require__(2889)],
 	  __depends__: [
 	    //
 	  ]
@@ -3704,18 +3337,18 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2880:
+/***/ 2889:
 /***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var d3 = __webpack_require__(555),
-	  _d3tip = __webpack_require__(2881),
+	  _d3tip = __webpack_require__(2890),
 	  _tooltip = null,
 	  isFunction = __webpack_require__(945).isFunction
 	;
 	
-	__webpack_require__(2882);
+	__webpack_require__(2891);
 	
 	/**
 	 * The tooltip functionality.
@@ -3761,7 +3394,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2881:
+/***/ 2890:
 /***/ (function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// d3.tip
@@ -4091,34 +3724,10 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2882:
-/***/ (function(module, exports, __webpack_require__) {
+/***/ 2891:
+[3229, 2892],
 
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-	
-	// load the styles
-	var content = __webpack_require__(2883);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	// add the styles to the DOM
-	var update = __webpack_require__(1486)(content, {});
-	if(content.locals) module.exports = content.locals;
-	// Hot Module Replacement
-	if(false) {
-		// When the styles change, update the <style> tags
-		if(!content.locals) {
-			module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/sass-loader/index.js!./style.scss", function() {
-				var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/sass-loader/index.js!./style.scss");
-				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-				update(newContent);
-			});
-		}
-		// When the module is disposed, remove the <style> tags
-		module.hot.dispose(function() { update(); });
-	}
-
-/***/ }),
-
-/***/ 2883:
+/***/ 2892:
 /***/ (function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(1485)();
@@ -4133,162 +3742,7 @@ return webpackJsonpD3P([1],{
 
 /***/ }),
 
-/***/ 2893:
-/***/ (function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
-
-	module.exports = __webpack_require__(__webpack_module_template_argument_0__);
-
-/***/ }),
-
 /***/ 2894:
-/***/ (function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
-
-	module.exports = __webpack_require__(__webpack_module_template_argument_0__);
-
-/***/ }),
-
-/***/ 2895:
-/***/ (function(module, exports, __webpack_require__, __webpack_module_template_argument_0__, __webpack_module_template_argument_1__, __webpack_module_template_argument_2__, __webpack_module_template_argument_3__) {
-
-	/**
-	 * Module dependencies.
-	 */
-	
-	try {
-	  var closest = __webpack_require__(__webpack_module_template_argument_0__);
-	} catch(err) {
-	  var closest = __webpack_require__(__webpack_module_template_argument_1__);
-	}
-	
-	try {
-	  var event = __webpack_require__(__webpack_module_template_argument_2__);
-	} catch(err) {
-	  var event = __webpack_require__(__webpack_module_template_argument_3__);
-	}
-	
-	/**
-	 * Delegate event `type` to `selector`
-	 * and invoke `fn(e)`. A callback function
-	 * is returned which may be passed to `.unbind()`.
-	 *
-	 * @param {Element} el
-	 * @param {String} selector
-	 * @param {String} type
-	 * @param {Function} fn
-	 * @param {Boolean} capture
-	 * @return {Function}
-	 * @api public
-	 */
-	
-	exports.bind = function(el, selector, type, fn, capture){
-	  return event.bind(el, type, function(e){
-	    var target = e.target || e.srcElement;
-	    e.delegateTarget = closest(target, selector, true, el);
-	    if (e.delegateTarget) fn.call(el, e);
-	  }, capture);
-	};
-	
-	/**
-	 * Unbind event `type`'s callback `fn`.
-	 *
-	 * @param {Element} el
-	 * @param {String} type
-	 * @param {Function} fn
-	 * @param {Boolean} capture
-	 * @api public
-	 */
-	
-	exports.unbind = function(el, type, fn, capture){
-	  event.unbind(el, type, fn, capture);
-	};
-
-
-/***/ }),
-
-/***/ 2896:
-/***/ (function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
-
-	var matches = __webpack_require__(__webpack_module_template_argument_0__)
-	
-	module.exports = function (element, selector, checkYoSelf, root) {
-	  element = checkYoSelf ? {parentNode: element} : element
-	
-	  root = root || document
-	
-	  // Make sure `element !== document` and `element != null`
-	  // otherwise we get an illegal invocation
-	  while ((element = element.parentNode) && element !== document) {
-	    if (matches(element, selector))
-	      return element
-	    // After `matches` on the edge case that
-	    // the selector matches the root
-	    // (when the root is not the document)
-	    if (element === root)
-	      return
-	  }
-	}
-
-
-/***/ }),
-
-/***/ 2897:
-/***/ (function(module, exports, __webpack_require__, __webpack_module_template_argument_0__, __webpack_module_template_argument_1__) {
-
-	/**
-	 * Module dependencies.
-	 */
-	
-	try {
-	  var query = __webpack_require__(__webpack_module_template_argument_0__);
-	} catch (err) {
-	  var query = __webpack_require__(__webpack_module_template_argument_1__);
-	}
-	
-	/**
-	 * Element prototype.
-	 */
-	
-	var proto = Element.prototype;
-	
-	/**
-	 * Vendor function.
-	 */
-	
-	var vendor = proto.matches
-	  || proto.webkitMatchesSelector
-	  || proto.mozMatchesSelector
-	  || proto.msMatchesSelector
-	  || proto.oMatchesSelector;
-	
-	/**
-	 * Expose `match()`.
-	 */
-	
-	module.exports = match;
-	
-	/**
-	 * Match `el` to `selector`.
-	 *
-	 * @param {Element} el
-	 * @param {String} selector
-	 * @return {Boolean}
-	 * @api public
-	 */
-	
-	function match(el, selector) {
-	  if (!el || el.nodeType !== 1) return false;
-	  if (vendor) return vendor.call(el, selector);
-	  var nodes = query.all(selector, el.parentNode);
-	  for (var i = 0; i < nodes.length; ++i) {
-	    if (nodes[i] == el) return true;
-	  }
-	  return false;
-	}
-
-
-/***/ }),
-
-/***/ 2898:
 /***/ (function(module, exports, __webpack_require__, __webpack_module_template_argument_0__, __webpack_module_template_argument_1__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag

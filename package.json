@@ -24,7 +24,6 @@
   "homepage": "https://github.com/davcs86/d3-polytree#readme",
   "dependencies": {},
   "devDependencies": {
-    "Notify": "github:davcs86/Vanilla-Notify",
     "css-loader": "^0.25.0",
     "d3-canvas": "github:davcs86/d3-canvas",
     "d3-polytree-propertiespanel": "github:davcs86/d3-polytree-propertiespanel",
