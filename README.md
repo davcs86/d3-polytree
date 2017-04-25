@@ -10,7 +10,7 @@ Interactive diagrams based on D3js.
 
 3. Editor (create your own diagrams visually).
 
-> Demo on [Codepen](https://codepen.io/davcs86/project/full/DvPMzX)
+> Demo on [Codepen](https://codepen.io/davcs86/project/full/DvPMzX), you can download a demo diagram [here](/docs/demoDiagram.pfdn?raw=true "Viewer")
 
 ## Screenshots
 
