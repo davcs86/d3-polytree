@@ -1,6 +1,7 @@
 .pfdjs-container {
   @import "~normalize.css/normalize.css";
-  * {
+  *, .helv {
     font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif !important;
   }
+
 }
