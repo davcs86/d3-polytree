@@ -1,0 +1,28 @@
+.pfdjs-container {
+  :not(.no-drag) {
+    .element {
+      &.selected,
+      &:hover {
+        .resize-container {
+          display: block;
+        }
+      }
+    }
+  }
+  .element {
+    .resize-container {
+      display: none;
+      rect {
+        stroke: #303030;
+        fill: white;
+        &.resize-drag-se:hover {
+          cursor: nwse-resize;
+        }
+        &.resize-drag-sw:hover,
+        &.resize-drag-ne:hover {
+          cursor: nesw-resize;
+        }
+      }
+    }
+  }
+}
