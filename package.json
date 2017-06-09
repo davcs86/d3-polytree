@@ -24,6 +24,7 @@
   "homepage": "https://github.com/davcs86/d3-polytree#readme",
   "dependencies": {},
   "devDependencies": {
+    "autoprefixer": "^7.1.1",
     "css-loader": "^0.25.0",
     "d3-canvas": "github:davcs86/d3-canvas",
     "d3-polytree-propertiespanel": "github:davcs86/d3-polytree-propertiespanel",
@@ -43,6 +44,7 @@
     "node-sass": "^3.13.0",
     "normalize.css": "^6.0.0",
     "pfdn-moddle": "github:davcs86/pfdn-moddle",
+    "postcss-loader": "^2.0.5",
     "q": "^1.5.0",
     "sass-loader": "^4.0.2",
     "style-loader": "^0.13.1",
@@ -53,5 +55,9 @@
     "webpack": "^1.13.3",
     "webpack-dev-server": "^1.16.3",
     "xml2js": "^0.4.16"
-  }
+  },
+  "browserslist": [
+    "> 1%",
+    "not ie <= 8"
+  ]
 }

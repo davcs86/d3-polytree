@@ -4,17 +4,18 @@
       &.selected,
       &:hover {
         .resize-container {
-          display: block;
+          rect {
+            stroke: #303030;
+            fill: white;
+          }
         }
       }
     }
   }
   .element {
     .resize-container {
-      display: none;
+      //display: none;
       rect {
-        stroke: #303030;
-        fill: white;
         &.resize-drag-se:hover {
           cursor: nwse-resize;
         }
