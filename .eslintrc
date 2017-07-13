@@ -33,13 +33,10 @@
         "commonjs": true
     },
     "extends": "eslint:recommended",
-    "ecmaFeatures": {
-        "experimentalObjectRestSpread": true,
-        "modules": true
-    },
     "globals": {
         "require": true
     },
+    
     "parserOptions": {
         "sourceType": "module"
     }

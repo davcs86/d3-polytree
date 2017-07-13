@@ -9,3 +9,5 @@ node_modules
 # Optional npm cache directory
 .npm
 
+# Environment vars
+.env-cmdrc
