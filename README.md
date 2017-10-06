@@ -11,25 +11,25 @@ Demo on [JSFiddle.Net](https://jsfiddle.net/davcs86/yywby23u/2/)
 - With bower
 
 ```shell
-$> bower install --save git://github.com/davcs86/d3-polytree-graph
+$> bower install --save git://github.com/davcs86/d3-polytree
 ```
 
 import it with
 
 ```html
-<script src="bower_components/d3-polytree-graph/dist/d3-simple-networks.min.js"></script>
+<script src="bower_components/d3-polytree/dist/d3-simple-networks.min.js"></script>
 ```
 
 - With npm
 
 ```shell
-$> npm install --save davcs86/d3-polytree-graph
+$> npm install --save davcs86/d3-polytree#master
 ```
 
 use it with
 
 ```js
-var d3sn = require('d3-polytree-graph');
+var d3sn = require('d3-polytree');
 ```
 
 - Old-school way
@@ -37,7 +37,7 @@ var d3sn = require('d3-polytree-graph');
 Just download the master branch of this repo, then import it with 
 
 ```html
-<script src="<your-scripts-folder>/d3-polytree-graph/dist/d3-simple-networks.min.js"></script>
+<script src="<your-scripts-folder>/d3-polytree/dist/d3-simple-networks.min.js"></script>
 ```
 
 ## Bundle it
@@ -45,14 +45,14 @@ Just download the master branch of this repo, then import it with
 Just clone the master branch of this repo
 
 ```shell
-$> git clone https://github.com/davcs86/d3-polytree-graph.git
+$> git clone https://github.com/davcs86/d3-polytree.git
 ```
 
 Install `Grunt` and the nodejs dependencies
 
 ```shell
 $> npm install -g grunt-cli
-$> cd d3-polytree-graph
+$> cd d3-polytree
 $> npm install
 ```
 
