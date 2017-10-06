@@ -1,5 +1,5 @@
 {
-  "name": "d3-simple-networks",
+  "name": "d3-polytree",
   "description": "Simple directed networks with D3.js",
   "main": "dist/d3-simple-networks.js",
   "authors": [
@@ -11,7 +11,7 @@
     "node",
     "network"
   ],
-  "homepage": "https://github.com/davcs86/d3-simple-networks",
+  "homepage": "https://github.com/davcs86/d3-polytree",
   "moduleType": [],
   "private": true,
   "ignore": [
