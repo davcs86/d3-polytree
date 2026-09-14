@@ -1,0 +1,8 @@
+{
+  "name": "@d3-polytree/icons-amazon",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AWS icon pack for d3-polytree diagrams",
+  "license": "MIT",
+  "author": "David Castillo"
+}

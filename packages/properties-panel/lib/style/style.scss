@@ -1,0 +1,28 @@
+.pfdjs-container {
+
+  #pfdjs-pp-container {
+    margin: 10px 16px;
+
+    //@import "../../node_modules/choices.js/assets/styles/scss/base";
+    //
+    //$choices-button-icon-path: "~choices.js/assets/icons";
+    //@import "../../node_modules/choices.js/assets/styles/scss/choices";
+
+    @import "tabs";
+
+    .pfdjs-pp-contents {
+      margin-top: -6px;
+      .pfdjs-pp-content {
+        display: none;
+        border: 1px solid gray;
+        background-color: #fff;
+        padding: 6px;
+        @import "groups";
+        &.open{
+          display: block;
+        }
+      }
+    }
+
+  }
+}

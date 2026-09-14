@@ -1,0 +1,64 @@
+.pfdjs-pp-tabs {
+  padding: 0 15px;
+  text-align: left;
+}
+
+.pfdjs-pp-tabs .scroll-tabs-button {
+  color: gray;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 3px 4px 3px 4px;
+}
+
+.pfdjs-pp-tabs .scroll-tabs-button:hover { font-weight: bold; }
+
+.pfdjs-pp-tabs .scroll-tabs-button.scroll-tabs-left {
+  float: left;
+  margin-left: -15px;
+}
+
+.pfdjs-pp-tabs .scroll-tabs-button.scroll-tabs-right {
+  float: right;
+  margin-right: -15px;
+}
+
+.pfdjs-pp-tabs:not(.scroll-tabs-overflow) .scroll-tabs-button { display: none; }
+
+ul.tab-sheets {
+  margin: -1px 0 5px 0;
+  overflow: hidden;
+  padding: 0;
+  white-space: nowrap;
+}
+
+ul.tab-sheets > li {
+  display: inline-block;
+  margin: 0;
+}
+
+ul.tab-sheets > li.tab-sheet-ignore { display: none; }
+
+ul.tab-sheets > li > a {
+  background-color: #fff;
+  border: 1px solid lightgray;
+  -ms-border-radius: 4px 4px 0 0;
+  border-radius: 4px 4px 0 0;
+  border-bottom: transparent;
+  color: gray;
+  display: inline-block;
+  font-size: 12px;
+  padding: 4px 7px;
+  text-decoration: none;
+}
+
+ul.tab-sheets > li > a:hover { color: gray; }
+
+ul.tab-sheets > li + li { margin-left: 1px; }
+
+ul.tab-sheets > li.tab-sheet-active a {
+  border: 1px solid gray;
+  border-top: 2px solid #5990bd;
+  border-bottom: #fff;
+  color: #333;
+  padding-bottom: 5px;
+}

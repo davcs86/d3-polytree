@@ -1,0 +1,58 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Interactive viewer | D3-based Polytrees by @davcs86</title>
+    <link href="http://fonts.googleapis.com/css?family=Droid+Sans+Mono" rel="stylesheet">
+    <style>
+        body {
+            /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#d6d6d6+0,000000+76&0.65+0,0+76 */
+            background: -moz-linear-gradient(top, #abbaab 0%, #ffffff 76%); /* FF3.6-15 */
+            background: -webkit-linear-gradient(top, #abbaab 0%, #ffffff 76%); /* Chrome10-25,Safari5.1-6 */
+            background: linear-gradient(to bottom, #abbaab 0%, #ffffff 76%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffabbaab', endColorstr='#ffffffff',GradientType=0 ); /* IE6-9 */
+        }
+        * {
+            font-family: 'Droid Sans Mono', monospace;
+        }
+        h3, a, a:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body style="text-align: center">
+<a href="index.html" title="Index">Index</a>
+<h3>Interactive viewer</h3>
+<div id="d3Canvas" style="width: 100%; height: 80%; position: relative"></div>
+<script type="text/javascript" src="CustomD3P.Commons.js" charset="utf-8"></script>
+<script type="text/javascript" src="CustomD3P.InteractiveViewer.js" charset="utf-8"></script>
+<script type="text/javascript">
+  window.onload = function () {
+    window.diagram = new CustomD3P.InteractiveViewer({
+      container: '#d3Canvas',
+      tooltip: function (node, businessObj) {
+        var html = "<strong>" + businessObj.label.text + "</strong>";
+        return html;
+      }
+    });
+    window.diagram.importDiagram('<?xml version="1.0" encoding="UTF-8"?><pfdn:diagram xmlns:pfdn="http://pfdn"><pfdn:settings><pfdn:name>No Name Diagram</pfdn:name><pfdn:zoom><pfdn:coordinates x="408.5270546138647" y="174.31181592564872" /><pfdn:scale>0.9115336063243908</pfdn:scale></pfdn:zoom><pfdn:grid /></pfdn:settings><pfdn:node id="node_1" label="label_1" type="asginacion-tierra"><pfdn:coordinates x="-138.22301483154297" y="-47.525373458862305" /></pfdn:node><pfdn:node id="node_9l" label="label_2" type="transporte-ducto"><pfdn:coordinates x="580" y="33.8984375" /></pfdn:node><pfdn:node id="node_66" label="label_3" type="baterias"><pfdn:coordinates x="339" y="240.19921875" /></pfdn:node><pfdn:node id="node_7a" type="cabezal_recoleccion"><pfdn:coordinates x="-273.03673887535984" y="54.386590532077776" /></pfdn:node><pfdn:link id="link_5a" label="label_8e" source="node_1" target="node_9l"><pfdn:coordinates x="-108.22301483154297" y="-38.35870679219563" /><pfdn:coordinates x="592.5" y="-38.35870679219563" /><pfdn:coordinates x="592.5" y="28.8984375" /></pfdn:link><pfdn:link id="link_0l" label="label_5i" source="node_1" target="node_66"><pfdn:coordinates x="-108.22301483154297" y="-31.69204012552897" /><pfdn:coordinates x="351.5" y="-31.69204012552897" /><pfdn:coordinates x="351.5" y="235.19921875" /></pfdn:link><pfdn:link id="link_18" label="label_1b" source="node_1" target="node_7a"><pfdn:coordinates x="-143.22301483154297" y="-35.025373458862305" /><pfdn:coordinates x="-260.53673887535984" y="-35.025373458862305" /><pfdn:coordinates x="-260.53673887535984" y="49.386590532077776" /></pfdn:link><pfdn:label id="label_1" fontSize="12"><pfdn:coordinates x="-126.5752944946289" y="-4.756904602050781" /><pfdn:text>Nodo #1</pfdn:text></pfdn:label><pfdn:label id="label_2" fontSize="12"><pfdn:coordinates x="594.7105712890625" y="72.07794952392578" /><pfdn:text>Nodo #2</pfdn:text></pfdn:label><pfdn:label id="label_3" fontSize="12"><pfdn:coordinates x="352.79931640625" y="278.96219635009766" /><pfdn:text>Nodo #3</pfdn:text></pfdn:label><pfdn:label id="label_8e" isReadOnly="true"><pfdn:coordinates x="466.2488708496094" y="-48.37028694152832" /><pfdn:text>Linea #1</pfdn:text></pfdn:label><pfdn:label id="label_5i" isReadOnly="true"><pfdn:coordinates x="318.80255126953125" y="130.9523696899414" /><pfdn:text>Linea #2</pfdn:text></pfdn:label><pfdn:label id="label_1b" isReadOnly="true"><pfdn:coordinates x="-245.2423493876311" y="-46.314858649366386" /><pfdn:text>Linea #3</pfdn:text></pfdn:label><pfdn:label id="label_6l"><pfdn:coordinates x="-258.88395808966527" y="93.32180777287842" /></pfdn:label></pfdn:diagram>')
+      .then(function () {
+        console.log(window.diagram.get("elementRegistry").getAll());
+      });
+    // FPS meter, unrelated to the d3-polytree project.
+    (function () {
+      var script = document.createElement('script');
+      script.onload = function () {
+        var stats = new Stats();
+        document.body.appendChild(stats.dom);
+        requestAnimationFrame(function loop() {
+          stats.update();
+          requestAnimationFrame(loop)
+        });
+      };
+      script.src = '//rawgit.com/mrdoob/stats.js/master/build/stats.min.js';
+      document.head.appendChild(script);
+    })();
+  };
+</script>
+</body>
+</html>

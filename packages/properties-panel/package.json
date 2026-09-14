@@ -1,0 +1,8 @@
+{
+  "name": "@d3-polytree/properties-panel",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Editor properties panel",
+  "license": "MIT",
+  "author": "David Castillo"
+}

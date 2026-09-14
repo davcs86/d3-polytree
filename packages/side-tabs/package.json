@@ -1,0 +1,8 @@
+{
+  "name": "@d3-polytree/side-tabs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Side-tabs UI feature",
+  "license": "MIT",
+  "author": "David Castillo"
+}

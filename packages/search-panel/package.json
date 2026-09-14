@@ -1,0 +1,8 @@
+{
+  "name": "@d3-polytree/search-panel",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Search panel feature for the diagram viewer",
+  "license": "MIT",
+  "author": "David Castillo"
+}
