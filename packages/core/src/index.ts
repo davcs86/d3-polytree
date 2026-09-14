@@ -15,6 +15,7 @@ export * from './draw';
 export * as collections from './utils/collections';
 export { getLocalName } from './utils/localName';
 export type { Descriptored } from './utils/localName';
+export * from './features/notifications';
 
 /** didi modules that make up the core engine (extended as B3 lands more draw/features). */
 export const coreModules: unknown[] = [canvasModule, drawingRegistryModule];
