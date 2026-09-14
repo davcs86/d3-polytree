@@ -3,6 +3,7 @@ import { Selection } from './selection';
 import { Zoom } from './zoom';
 import { ZoomScroll } from './zoomScroll';
 import { BackgroundColor } from './backgroundColor';
+import { Axes } from './axes';
 import { calculateCenterModule } from '../utils/calculateCenter';
 
 export * from './notifications';
@@ -12,6 +13,7 @@ export type { SelectionEntry } from './selection';
 export { Zoom } from './zoom';
 export { ZoomScroll } from './zoomScroll';
 export { BackgroundColor } from './backgroundColor';
+export { Axes } from './axes';
 
 /**
  * didi module contributing the mouse-event bridge: re-emits DOM mouse events on
@@ -47,4 +49,11 @@ export const zoomScrollModule = {
 export const backgroundColorModule = {
   __init__: ['backgroundColor'],
   backgroundColor: ['type', BackgroundColor]
+};
+
+/** didi module drawing the background grid, aligned to the zoom transform. */
+export const axesModule = {
+  __init__: ['axes'],
+  axes: ['type', Axes],
+  __depends__: [zoomModule]
 };
