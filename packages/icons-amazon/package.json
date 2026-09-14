@@ -1,0 +1,37 @@
+{
+  "name": "d3-polytree-amazon",
+  "version": "1.0.0",
+  "description": "Amazon AWS icons for the d3-polytree library",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "webpack --progress --profile --colors --display-error-details",
+    "dev": "webpack-dev-server --progress --profile --colors --inline --hot --port 8085"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree-amazon.git"
+  },
+  "author": "David Castillo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/davcs86/d3-polytree-amazon/issues"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree-amazon#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "css-loader": "^0.25.0",
+    "d3-polytree": "github:davcs86/d3-polytree#v2.0-beta",
+    "d3-canvas": "github:davcs86/d3-canvas",
+    "eslint": "^3.9.1",
+    "eslint-loader": "^1.6.1",
+    "json-loader": "^0.5.4",
+    "node-sass": "^3.13.0",
+    "sass-loader": "^4.0.2",
+    "style-loader": "^0.13.1",
+    "svg-inline-loader": "^0.7.1",
+    "svgo-loader": "^1.1.2",
+    "uglify-js": "^2.7.4",
+    "webpack": "^1.13.3",
+    "webpack-dev-server": "^1.16.3"
+  }
+}
