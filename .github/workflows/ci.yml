@@ -1,32 +1,38 @@
-name: CI
+name: CI (v2)
 
 on:
   push:
-    branches: [master]
+    branches: [v2]
   pull_request:
 
 jobs:
   build:
-    name: lint & checks (Linux)
+    name: lint · typecheck · test · build · storybook
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
 
-      # The legacy toolchain pins node-sass@3, which has no binary for modern
-      # Node; --ignore-scripts skips that native build. It is only needed by the
-      # (separately tracked) Grunt bundle task, not by lint or the checks below.
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      # Guards F1-class defects: relative require() paths whose casing does not
-      # match a real file resolve on macOS/Windows but fail here on Linux.
-      - name: Check require casing
-        run: npm test
+      - name: Install
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Build Storybook
+        run: pnpm build-storybook

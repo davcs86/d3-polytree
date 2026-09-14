@@ -1,11 +1,17 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+storybook-static
+
+# Caches
+.turbo
+coverage
+
 # Logs
-logs
 *.log
 npm-debug.log*
 
-# Dependency directory
-node_modules
-
-# Optional npm cache directory
-.npm
-
+# OS / editor
+.DS_Store
