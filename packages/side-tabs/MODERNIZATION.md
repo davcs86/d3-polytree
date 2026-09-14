@@ -1,12 +1,14 @@
 # @d3-polytree/side-tabs — modernization status
 
-**Parked (imported in Track B / B1).** Source and full git history were imported via
-`git subtree` (authorship/history preserved; see `git blame`). The package is
-intentionally inert for now:
+**Modernized (Track B / B6).** Converted from the 2017 `min-dom` / `lodash` source to
+**TypeScript + ESM** with native DOM and a Vitest (jsdom) suite. History/authorship is
+preserved (imported via `git subtree` in B1; see `git blame`).
 
-- `package.json` is a minimal stub (no dependencies, no scripts) so it does not pull the
-  2017 toolchain into the workspace install or run in CI.
-- The original manifest is kept as [`package.json.legacy`](./package.json.legacy).
-- The directory is excluded from the modern ESLint config until migrated.
+- `SideTabsProvider` — the tab registry (`registerSideTab` / `getSideTabsEntries`), emits
+  `sidetab.registered`.
+- `SideTabs` — the collapsible tab strip + content panels, with native event delegation
+  (`closest`) replacing `min-dom/delegate`.
+- Ships `sideTabsModule` (didi) for the editor to compose.
 
-**Next:** convert to TS/ESM + Vitest, add build/test/typecheck scripts, drop `private` (B3/B4).
+`src/style.scss` is kept as-is; CSS toolchain modernization (node-sass → PostCSS/dart-sass)
+and wiring the module into `@d3-polytree/editor` are tracked as follow-ups.

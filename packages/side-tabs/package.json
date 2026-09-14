@@ -1,8 +1,29 @@
 {
   "name": "@d3-polytree/side-tabs",
   "version": "0.0.0",
-  "private": true,
-  "description": "Side-tabs UI feature",
+  "description": "Collapsible tabbed side panel feature for the d3-polytree v2 ecosystem",
   "license": "MIT",
-  "author": "David Castillo"
+  "author": "David Castillo",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@d3-polytree/canvas": "workspace:*",
+    "eventemitter3": "^5.0.1"
+  }
 }
