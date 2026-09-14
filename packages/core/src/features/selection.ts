@@ -78,6 +78,15 @@ export class Selection {
     return this._snapshot();
   }
 
+  /** Public entry point to select an element (used by the drag feature). */
+  select(
+    element: DrawingSelection,
+    definition: ModellingModelElement,
+    event?: { ctrlKey?: boolean }
+  ): void {
+    this._selectElement(element, definition, event);
+  }
+
   private _init(): void {
     (['label', 'link', 'node', 'zone'] as const).forEach((cls) => {
       this._eventBus.on(`${cls}.click`, this._selectElement, this);
