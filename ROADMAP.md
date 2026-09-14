@@ -330,6 +330,44 @@ remain; new ones should be appended below as they arise.
 | O8 | Bundled-D3 UMD/IIFE build alongside the ESM peer-dep builds? | **Yes** — a secondary artifact for the three top-level components (`viewer`, `interactive-viewer`, `editor`) only; the peer-dep ESM build stays primary. | B3, B9 |
 | O9 | Properties-panel grid replacement (replaces `slickgrid`)? | **Decide via a Storybook spike in B6** — prototype a headless grid (e.g. TanStack Table core) vs a purpose-built typed table, choose on measured bundle-size vs feature fit. This is the one deferred-to-spike decision. | B6 |
 
+### 8.1 Rationale — O1 (keep `pfdn-moddle`)
+
+1. **Installed-base compatibility.** `.pfdn` XML is the current saved-document format (the demo
+   diagram is one; `d3-polytree-amazon` and the docs load it). Switching to JSON orphans existing
+   saved diagrams and forces a converter anyway — i.e. owning two formats instead of zero.
+2. **Already built and tested.** `pfdn-moddle` ships a mocha/chai suite that round-trips
+   read/write/edit. Replacing working, tested serialization with a hand-rolled JSON schema is
+   negative-value work that reintroduces bugs those tests already cover.
+3. **Upstream leverage, same lineage.** It builds on bpmn.io's actively-maintained, typed `moddle`
+   + `moddle-xml` — the same family as the `didi`/`diagram-js` architecture — so we inherit fixes,
+   the schema-descriptor pattern, and a migration reference. A bespoke JSON layer forfeits that.
+4. **Orthogonal to the modernization goals.** TS/D3-v7/toolchain work doesn't require touching
+   serialization; keeping the model layer isolates risk instead of folding a format migration into
+   an already-large consolidation. `moddle` is JS but wraps/types cleanly and does not block TS.
+5. **Does not reintroduce F3.** `moddle-xml` parses via `saxen` (a tiny SAX parser), not `xml2js`
+   with Node builtins — browser-safe, none of v1's icon-parsing bundling baggage.
+6. **JSON stays reachable, additively.** Consumers use the object model, not raw XML, so a JSON
+   import/export adapter over the same model can be added later without breaking anything.
+
+   *Revisit only if* `moddle-xml` proves hard to bundle/type in the modern toolchain, or a
+   deliberately no-XML persistence story is wanted.
+
+### 8.2 Rationale — O8 (ship a bundled-D3 UMD build)
+
+1. **Serves the actual current audience.** Today's demos are JSFiddle, CodePen, and hand-built
+   `docs/*.html` that load a single `<script>`. A peer-dep ESM package is unusable to them without
+   hand-wiring seven D3 submodules — the UMD/IIFE bundle is the only artifact that works there.
+2. **Zero-build embedding is the norm for viewers.** Diagram viewers get dropped into CMS pages,
+   wikis, internal dashboards, and static sites by people with no bundler; a drop-in `<script>`
+   (optionally from a CDN like unpkg/jsDelivr, which publishes automatically from npm) is the
+   expected integration path.
+3. **Preserves the v1 migration path.** v1's README documents
+   `<script src=".../d3-simple-networks.min.js">`; a v2 UMD build lets existing embedders upgrade
+   without adopting a build toolchain.
+4. **Bounded cost, clearly secondary.** Only the three top-level components
+   (`viewer`, `interactive-viewer`, `editor`), each one extra target in the same Vite build. The
+   peer-dep ESM build stays primary and canonical for app developers who dedupe a single D3.
+
 ---
 
 ## 9. Risk register
