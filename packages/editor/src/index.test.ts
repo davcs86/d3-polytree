@@ -31,6 +31,18 @@ describe('@d3-polytree/editor', () => {
     expect((node.label as { isReadOnly?: boolean }).isReadOnly).toBe(true);
   });
 
+  it('opens its initial diagram and can save it to localStorage', async () => {
+    window.localStorage.clear();
+    const editor = new Editor({ container: document.body });
+    await editor.createDiagram();
+
+    // the initial document rendered
+    expect(document.body.querySelector('[element-id="node_1"]')).not.toBeNull();
+
+    editor.get<{ save(): void }>('localStorage').save();
+    expect(window.localStorage.getItem('diagram')).toContain('node_1');
+  });
+
   it('deletes the selected node, removing its drawing', () => {
     const editor = new Editor({ container: document.body });
     editor.createEmpty();
