@@ -35,3 +35,10 @@ export interface LinkDefinition extends DiagramElement {
   fillColor?: string;
   lineWidth?: number;
 }
+
+/** A diagram node, rendered as an icon at its position. */
+export interface NodeDefinition extends DiagramElement {
+  position: Point;
+  size?: number;
+  type?: string;
+}
