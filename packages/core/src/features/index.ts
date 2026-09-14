@@ -7,6 +7,8 @@ import { Axes } from './axes';
 import { Outline } from './outline';
 import { Drag } from './drag';
 import { Exporting } from './exporting';
+import { LocalStorage } from './localStorage';
+import { Upload } from './upload';
 import { drawingRegistryModule } from '../draw';
 import { calculateCenterModule } from '../utils/calculateCenter';
 
@@ -22,6 +24,10 @@ export { Outline } from './outline';
 export { Drag } from './drag';
 export { Exporting } from './exporting';
 export type { ExportFormat, ExportHost } from './exporting';
+export { LocalStorage } from './localStorage';
+export type { StorageHost } from './localStorage';
+export { Upload } from './upload';
+export type { UploadHost } from './upload';
 
 /**
  * didi module contributing the mouse-event bridge: re-emits DOM mouse events on
@@ -83,4 +89,16 @@ export const dragModule = {
 export const exportingModule = {
   __init__: ['exporting'],
   exporting: ['type', Exporting]
+};
+
+/** didi module persisting the diagram to browser localStorage. */
+export const localStorageModule = {
+  __init__: ['localStorage'],
+  localStorage: ['type', LocalStorage]
+};
+
+/** didi module opening a `.pfdn` document from disk. */
+export const uploadModule = {
+  __init__: ['upload'],
+  upload: ['type', Upload]
 };

@@ -11,6 +11,8 @@ import {
   dragModule,
   modellingModule,
   exportingModule,
+  localStorageModule,
+  uploadModule,
   type DiagramModule,
   type DrawingRegistry,
   type ModellingNodes,
@@ -19,6 +21,18 @@ import {
   type Selection
 } from '@d3-polytree/core';
 
+/** The document a fresh editor opens with. */
+const INITIAL_DIAGRAM =
+  '<?xml version="1.0" encoding="UTF-8"?>' +
+  '<pfdn:diagram xmlns:pfdn="http://pfdn" xmlns="http://pfdn">' +
+  '<settings author="No Author" name="No Name Diagram" status="1">' +
+  '<zoom><offset x="0" y="0" /><scale>1</scale></zoom><grid />' +
+  '</settings>' +
+  '<node id="node_1" label="label_1" status="1"><position x="20" y="100" /></node>' +
+  '<label id="label_1" fontSize="12" isReadOnly="true" status="1">' +
+  '<position x="33" y="140" /><text>Node 1</text></label>' +
+  '</pfdn:diagram>';
+
 export type EditorOptions = InteractiveViewerOptions;
 
 export class Editor extends InteractiveViewer {
@@ -26,8 +40,18 @@ export class Editor extends InteractiveViewer {
   static readonly editionModules: readonly DiagramModule[] = [
     dragModule as DiagramModule,
     modellingModule as DiagramModule,
-    exportingModule as DiagramModule
+    exportingModule as DiagramModule,
+    localStorageModule as DiagramModule,
+    uploadModule as DiagramModule
   ];
+
+  /** The document a fresh editor opens with (used by {@link createDiagram}). */
+  initialDiagram = INITIAL_DIAGRAM;
+
+  /** (Re)open the initial diagram. */
+  createDiagram(): Promise<void> {
+    return this.importDiagram(this.initialDiagram);
+  }
 
   getModules(): readonly DiagramModule[] {
     // interaction + editing features first (they subscribe / swap the layer),
