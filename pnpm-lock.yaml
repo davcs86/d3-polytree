@@ -139,6 +139,12 @@ importers:
 
   packages/editor:
     dependencies:
+      '@d3-polytree/core':
+        specifier: workspace:*
+        version: link:../core
+      '@d3-polytree/interactive-viewer':
+        specifier: workspace:*
+        version: link:../interactive-viewer
       '@d3-polytree/viewer':
         specifier: workspace:*
         version: link:../viewer

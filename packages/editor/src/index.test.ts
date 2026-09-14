@@ -1,9 +1,48 @@
-import { describe, it, expect } from 'vitest';
-import { Editor } from './index';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { InteractiveViewer } from '@d3-polytree/interactive-viewer';
 import { Viewer } from '@d3-polytree/viewer';
+import { Editor } from './index';
 
 describe('@d3-polytree/editor', () => {
-  it('extends the base Viewer', () => {
-    expect(new Editor()).toBeInstanceOf(Viewer);
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('extends the InteractiveViewer with editing modules', () => {
+    const editor = new Editor();
+    expect(editor).toBeInstanceOf(InteractiveViewer);
+    expect(editor.getModules().length).toBeGreaterThan(InteractiveViewer.interactionModules.length + Viewer.modules.length);
+  });
+
+  it('creates a node (with associated label) into the model and the DOM', () => {
+    const editor = new Editor({ container: document.body });
+    editor.createEmpty();
+
+    const node = editor.createNode({ position: { x: 10, y: 20 } });
+
+    expect(node.$type).toBe('pfdn:Node');
+    // rendered
+    expect(document.body.querySelector(`[element-id="${node.id}"]`)).not.toBeNull();
+    // persisted through the modelling orchestrator (saveToModel)
+    const defs = editor.getHost()!.definitions as { node?: unknown[]; label?: unknown[] };
+    expect(defs.node).toContain(node);
+    // the create flow also minted a read-only associated label
+    expect((defs.label ?? []).length).toBe(1);
+    expect((node.label as { isReadOnly?: boolean }).isReadOnly).toBe(true);
+  });
+
+  it('deletes the selected node, removing its drawing', () => {
+    const editor = new Editor({ container: document.body });
+    editor.createEmpty();
+    const node = editor.createNode({ position: { x: 5, y: 5 } });
+    const id = node.id as string;
+    expect(document.body.querySelector(`[element-id="${id}"]`)).not.toBeNull();
+
+    editor.select(node);
+    editor.deleteSelected();
+
+    // the modelling orchestrator's delete reconciled the drawing away
+    expect(document.body.querySelector(`[element-id="${id}"]`)).toBeNull();
+    expect(node.get('status')).toBe(3);
   });
 });

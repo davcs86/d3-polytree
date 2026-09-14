@@ -16,7 +16,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
@@ -24,6 +26,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@d3-polytree/viewer": "workspace:*"
+    "@d3-polytree/viewer": "workspace:*",
+    "@d3-polytree/core": "workspace:*",
+    "@d3-polytree/interactive-viewer": "workspace:*"
   }
 }

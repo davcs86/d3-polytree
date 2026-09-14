@@ -51,9 +51,13 @@ export class Outline {
       const size = Number(definition.size ?? 0);
       return { x: 0, y: 0, width: size, height: size };
     }
-    // labels / zones: measure the rendered inner element
+    // labels / zones: measure the rendered inner element. `getBBox` is not
+    // implemented in every environment (jsdom); fall back to a zero box.
     const inner = element.select<SVGGElement>('.innerElement').node();
-    const bbox = inner ? inner.getBBox() : { x: 0, y: 0, width: 0, height: 0 };
+    const bbox =
+      inner && typeof inner.getBBox === 'function'
+        ? inner.getBBox()
+        : { width: 0, height: 0 };
     return { x: 0, y: 0, width: bbox.width, height: bbox.height };
   }
 
