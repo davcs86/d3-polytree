@@ -9,7 +9,8 @@ export default tseslint.config(
       '**/.turbo/**',
       '**/node_modules/**',
       // Legacy packages imported in B1, awaiting modernization (B6).
-      'packages/icons-amazon/**',
+      // raw SVG catalogue (assets only, no source)
+      'packages/icons-amazon/catalog/**',
       '!**/.storybook'
     ]
   },
