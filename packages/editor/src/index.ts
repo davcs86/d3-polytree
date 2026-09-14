@@ -10,6 +10,7 @@ import { Viewer } from '@d3-polytree/viewer';
 import {
   dragModule,
   modellingModule,
+  exportingModule,
   type DiagramModule,
   type DrawingRegistry,
   type ModellingNodes,
@@ -24,7 +25,8 @@ export class Editor extends InteractiveViewer {
   /** Editing modules on top of the interaction layer. */
   static readonly editionModules: readonly DiagramModule[] = [
     dragModule as DiagramModule,
-    modellingModule as DiagramModule
+    modellingModule as DiagramModule,
+    exportingModule as DiagramModule
   ];
 
   getModules(): readonly DiagramModule[] {

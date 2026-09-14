@@ -6,6 +6,7 @@ import { BackgroundColor } from './backgroundColor';
 import { Axes } from './axes';
 import { Outline } from './outline';
 import { Drag } from './drag';
+import { Exporting } from './exporting';
 import { drawingRegistryModule } from '../draw';
 import { calculateCenterModule } from '../utils/calculateCenter';
 
@@ -19,6 +20,8 @@ export { BackgroundColor } from './backgroundColor';
 export { Axes } from './axes';
 export { Outline } from './outline';
 export { Drag } from './drag';
+export { Exporting } from './exporting';
+export type { ExportFormat, ExportHost } from './exporting';
 
 /**
  * didi module contributing the mouse-event bridge: re-emits DOM mouse events on
@@ -74,4 +77,10 @@ export const dragModule = {
   __init__: ['drag'],
   drag: ['type', Drag],
   __depends__: [outlineModule, selectionModule, drawingRegistryModule]
+};
+
+/** didi module providing diagram export (.pfdn / SVG / PNG). */
+export const exportingModule = {
+  __init__: ['exporting'],
+  exporting: ['type', Exporting]
 };
