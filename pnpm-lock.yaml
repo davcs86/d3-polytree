@@ -171,7 +171,11 @@ importers:
 
   packages/scroll-tabs: {}
 
-  packages/search-panel: {}
+  packages/search-panel:
+    dependencies:
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.4
 
   packages/side-tabs:
     dependencies:
