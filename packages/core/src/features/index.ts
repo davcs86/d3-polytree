@@ -5,6 +5,8 @@ import { ZoomScroll } from './zoomScroll';
 import { BackgroundColor } from './backgroundColor';
 import { Axes } from './axes';
 import { Outline } from './outline';
+import { Drag } from './drag';
+import { drawingRegistryModule } from '../draw';
 import { calculateCenterModule } from '../utils/calculateCenter';
 
 export * from './notifications';
@@ -16,6 +18,7 @@ export { ZoomScroll } from './zoomScroll';
 export { BackgroundColor } from './backgroundColor';
 export { Axes } from './axes';
 export { Outline } from './outline';
+export { Drag } from './drag';
 
 /**
  * didi module contributing the mouse-event bridge: re-emits DOM mouse events on
@@ -64,4 +67,11 @@ export const axesModule = {
 export const outlineModule = {
   __init__: ['outline'],
   outline: ['type', Outline]
+};
+
+/** didi module enabling dragging of outlined elements. */
+export const dragModule = {
+  __init__: ['drag'],
+  drag: ['type', Drag],
+  __depends__: [outlineModule, selectionModule, drawingRegistryModule]
 };
