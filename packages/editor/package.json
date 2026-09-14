@@ -14,7 +14,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./umd": "./dist/editor.umd.js"
   },
   "files": [
     "dist"
@@ -30,5 +31,7 @@
     "@d3-polytree/core": "workspace:*",
     "@d3-polytree/interactive-viewer": "workspace:*",
     "@d3-polytree/properties-panel": "workspace:*"
-  }
+  },
+  "unpkg": "./dist/editor.umd.js",
+  "jsdelivr": "./dist/editor.umd.js"
 }
