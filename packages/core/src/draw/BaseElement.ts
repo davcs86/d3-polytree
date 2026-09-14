@@ -46,6 +46,14 @@ export abstract class BaseElement {
   /** Re-render `definition` into its existing `elem`. */
   protected abstract _updateElement(elem: DrawingSelection, definition: DiagramElement): void;
 
+  /**
+   * Public reconcile entry point for the modelling layer: create, update, or
+   * remove the drawing for `definition` (remove when it is omitted).
+   */
+  reconcile(elementId: string, definition: DiagramElement | undefined): void {
+    this._builder(elementId, definition);
+  }
+
   /** Reconcile a single definition: create, update, or remove. */
   protected _builder(elementId: string, definition: DiagramElement | undefined): void {
     const element = this._elementRegistry.get(elementId);
