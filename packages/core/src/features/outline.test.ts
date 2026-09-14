@@ -59,6 +59,14 @@ describe('@d3-polytree/core Outline', () => {
     expect(outline.attr('height')).toBe('46'); // |60-20| + 6
   });
 
+  it('outlines a label from its inner bbox, tolerating a missing getBBox', () => {
+    const el = drawing();
+    const def = moddle.create('pfdn:Label', { id: 'B1' }) as unknown as ModellingModelElement;
+    // jsdom has no getBBox on SVG elements; the fallback yields a zero box
+    expect(() => bus.emit('label.created', el as unknown as DrawingSelection, def)).not.toThrow();
+    expect(el.select('.element-outline').attr('width')).toBe('6'); // 0 + padding
+  });
+
   it('updates an existing outline in place', () => {
     const el = drawing();
     const def = moddle.create('pfdn:Node', { id: 'N1', size: 25 }) as unknown as ModellingModelElement;
