@@ -9,7 +9,6 @@ export default tseslint.config(
       '**/.turbo/**',
       '**/node_modules/**',
       // Legacy packages imported in B1, awaiting modernization (B3/B4/B6).
-      'packages/pfdn-moddle/**',
       'packages/scroll-tabs/**',
       'packages/search-panel/**',
       'packages/side-tabs/**',
