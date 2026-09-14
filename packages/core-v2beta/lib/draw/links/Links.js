@@ -1,0 +1,185 @@
+'use strict';
+
+var BaseElement = require('../baseElement'),
+    inherits = require('inherits'),
+    _map = require('lodash/collection').map
+    ;
+
+/**
+ * Links processing & drawing module.
+ *
+ * @class
+ * @constructor
+ *
+ * @param {Object} links
+ * @param {Canvas} canvas
+ * @param {EventEmitter} eventBus
+ * @param {Markers} markers
+ * @param {ElementBuilder} elementBuilder
+ * @param {ElementRegistry} elementRegistry
+ * @param {DrawingRegistry} drawingRegistry
+ */
+function Links(links, canvas, eventBus, markers, elementBuilder, elementRegistry, drawingRegistry) {
+
+  this._markers = markers;
+  BaseElement.call(this, 'link', links, canvas, eventBus, elementBuilder, elementRegistry, drawingRegistry);
+
+}
+
+inherits(Links, BaseElement);
+
+Links.$inject = [
+  'd3polytree.definitions.link',
+  'canvas',
+  'eventBus',
+  'markers',
+  'elementBuilder',
+  'elementRegistry',
+  'drawingRegistry'
+];
+
+module.exports = Links;
+
+var generateWayPointPath = function(waypoints){
+  var point = function (p) {
+    var s = p.x;
+    s += ' ';
+    s += p.y;
+    return s;
+  };
+  var path = 'M ';
+  path += _map(waypoints, point).join(', L ');
+  return path;
+};
+
+// Links.prototype._setElementsData = function () {
+//   return this._elementsContainer
+//     .selectAll('.' + this._className + 'Item')
+//     .data(this.getAll(), function (d) {
+//       return {
+//         'id_': d.id,
+//         's_': d.source?d.source.id:'',
+//         'sx_': d.source?d.source.position.x:0,
+//         'sy_': d.source?d.source.position.y:0,
+//         't_': d.target?d.target.id:'',
+//         'tx_': d.target?d.target.position.x:0,
+//         'ty_': d.target?d.target.position.y:0
+//       };
+//     });
+// };
+
+Links.prototype._createElement = function (link, definition) {
+  var that = this;
+
+  var wPath = generateWayPointPath(definition.waypoint);
+
+  link
+    .select('.innerElement')
+    .append('path')
+    .attr('class', 'line-path')
+    .attr(
+      'marker-end', function (d) {
+        return 'url(#'
+          + that._markers._getMarker(d.id, d.lineColor, d.fillColor)
+          + ')';
+      }
+    )
+    .attr('d', wPath)
+    .style('stroke', function (d) {
+      return d.lineColor;
+    })
+    .style('fill', 'none')
+    .style('stroke-width', function (d) {
+      return d.lineWidth + 'px';
+    })
+    .attr('stroke-linejoin', 'round')
+    .style('stroke-linecap', 'round');
+
+  link
+    .select('.innerElement')
+    .append('path')
+    .attr('class', 'line-subpath')
+    .attr('d', wPath)
+    .style('stroke', function (d) {
+      return d.fillColor;
+    })
+    .style('fill', 'none')
+    .style('stroke-width', function (d) {
+      return (0.375 * d.lineWidth) + 'px';
+    })
+    .attr('stroke-linejoin', 'round')
+    .style('stroke-linecap', 'round');
+
+};
+
+Links.prototype._updateElement = function (link, definition) {
+  var that = this;
+
+  var wPath = generateWayPointPath(definition.waypoint);
+
+  link
+    .select('.innerElement')
+    .select('.line-path')
+    .attr(
+      'marker-end', function (d) {
+        return 'url(#'
+          + that._markers._getMarker(d.id, d.lineColor, d.fillColor)
+          + ')';
+      }
+    )
+    .attr('d', wPath)
+    .style('stroke', function (d) {
+      return d.lineColor;
+    })
+    .style('fill', 'none')
+    .style('stroke-width', function (d) {
+      return d.lineWidth + 'px';
+    })
+    .style('stroke-linecap', 'round');
+
+  link
+    .select('.innerElement')
+    .select('.line-subpath')
+    .attr('d', wPath)
+    .style('stroke', function (d) {
+      return d.fillColor;
+    })
+    .style('fill', 'none')
+    .style('stroke-width', function (d) {
+      return (0.375 * d.lineWidth) + 'px';
+    })
+    .style('stroke-linecap', 'round');
+
+  // update outline
+  // try {
+  //   var x = Infinity,
+  //       y = Infinity,
+  //       x1 = -Infinity,
+  //       y1 = -Infinity;
+  //   forEach(definition.waypoint, function (v) {
+  //     x = Math.min(x, v.x);
+  //     x1 = Math.max(x, v.x);
+  //     y = Math.min(y, v.y);
+  //     y1 = Math.max(y, v.y);
+  //   });
+  //   link
+  //     .select('.element-outline')
+  //     .attr('x', x)
+  //     .attr('y', y)
+  //     .attr('width', Math.abs(x1 - x) + 6)
+  //     .attr('height', Math.abs(y1 - y) + 6);
+  // } catch(ex){
+  //   //console.log(ex);
+  // }
+
+};
+
+Links.prototype._drawContainer = function () {
+  if (this._elementsContainer) {
+    // delete previous elements
+    this._elementsContainer.remove();
+  }
+  this._elementsContainer = this._canvas.getDrawingLayer()
+    .insert('g', '.node-group') // send to the background
+    .attr('class', this._className+'-group');
+};
