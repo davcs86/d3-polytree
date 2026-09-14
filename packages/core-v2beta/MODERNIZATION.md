@@ -24,3 +24,11 @@ script-less stub; directory excluded from the modern ESLint config.
 here and de-duplicated into **`@d3-polytree/canvas`** (the single source of truth). When this
 package is un-parked (B3), it will consume `@d3-polytree/canvas` as a `workspace:*` dependency
 instead of its former vendored copy.
+
+## B3 update (in progress)
+
+The target packages now exist as skeletons wired to the modern base:
+`@d3-polytree/core` (→ `@d3-polytree/canvas` + `@d3-polytree/pfdn-moddle`),
+`@d3-polytree/viewer` (→ core), and `@d3-polytree/interactive-viewer` /
+`@d3-polytree/editor` (→ viewer). Subsequent B3 PRs port this package's `draw`,
+`features` and `modelling` layers into them; `core-v2beta` is retired once fully carved.

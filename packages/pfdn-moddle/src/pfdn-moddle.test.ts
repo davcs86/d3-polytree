@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { ModdleElement } from 'moddle';
-import createPfdnModdle, { PfdnModdle } from './index';
+import createPfdnModdle, { PfdnModdle, type ModelElement } from './index';
 
 describe('@d3-polytree/pfdn-moddle', () => {
   it('creates a PfdnModdle with the pfdn package registered', () => {
@@ -31,7 +30,7 @@ describe('@d3-polytree/pfdn-moddle', () => {
     const { rootElement } = await moddle.fromXML(xml, 'pfdn:Diagram');
     expect(rootElement.$type).toBe('pfdn:Diagram');
     expect(rootElement.id).toBe('D1');
-    const nodes = rootElement.node as ModdleElement[];
+    const nodes = rootElement.node as ModelElement[];
     expect(nodes).toHaveLength(1);
     expect(nodes[0].id).toBe('N1');
     expect(nodes[0].name).toBe('NodeA');
