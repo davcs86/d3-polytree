@@ -9,8 +9,8 @@ This document is the single source of truth for modernizing the `d3-polytree` **
 captures a full audit of the shipping code and the existing `v2.0-beta` prototype, inventories the
 constellation of first-party repositories that make up v2, defines the target monorepo
 architecture, and sequences the work into milestones with explicit exit criteria. It is
-intentionally opinionated to minimize rework; decisions are recorded inline and open questions are
-flagged for resolution before the phase that depends on them.
+intentionally opinionated to minimize rework; decisions are recorded inline and in the decisions
+log (§8), each tagged with the phase it unblocks.
 
 ---
 
@@ -309,26 +309,26 @@ Each replacement is gated by a Storybook story and a feature-parity check agains
 
 ---
 
-## 8. Open questions (resolve before the dependent phase)
+## 8. Decisions log
 
-Resolved by this revision: **monorepo** (was O3 — confirmed), **include companion repos**
-(confirmed), **npm distribution** (confirmed), **Storybook** (confirmed), **TypeScript** (confirmed),
-**slim modular D3 peer deps** (confirmed).
+Foundational choices confirmed for this revision: **hybrid, phased-to-consolidation** strategy,
+**monorepo**, **include companion repos**, **npm distribution**, **Storybook**, **TypeScript**,
+**slim modular D3 peer deps**.
 
-Decided (@davcs86, 2026-09-14): **O2 — npm scope `@d3-polytree/*`** (scoped);
-**O6 — preserve history via `git filter-repo`** into per-package subdirectories when absorbing repos.
+All originally-open questions (O1–O9) are now decided (@davcs86, 2026-09-14). No open questions
+remain; new ones should be appended below as they arise.
 
-| ID | Question | Blocks | Recommendation |
+| ID | Question | Decision | Blocks |
 |---|---|---|---|
-| O1 | Fate of the v2 model layer — keep `.pfdn`/`moddle` XML, or move to a JSON schema? | B2, B4 | Keep `pfdn-moddle` (proven, tested); optionally add a JSON I/O adapter later |
-| ~~O2~~ | ~~npm scope — scoped vs unscoped?~~ | — | **Decided: `@d3-polytree/*` (scoped).** |
-| O3 | Storybook renderer — `@storybook/html-vite` vs `web-components-vite`? | B7 | `html-vite` (components are vanilla today) |
-| O4 | Keep `scroll-tabs` as a published package or absorb into properties-panel? | B6 | Absorb (single consumer) |
-| O5 | Layout parity bar — byte-for-byte vs "visually equivalent within tolerance"? | B4, B5 | Tolerance-based, enforced by characterization + visual-regression tests |
-| ~~O6~~ | ~~History preservation when absorbing repos?~~ | — | **Decided: `git filter-repo` into per-package subdirectories** (preserve authorship/history). |
-| O7 | Minimum browser matrix for v2 (drop IE entirely)? | B5, B8 | Evergreen + last 2 versions; drop IE (retire F13/`classlist-polyfill`) |
-| O8 | Ship a bundled-D3 UMD/IIFE build for `<script>`-tag users alongside the ESM peer-dep builds? | B3, B9 | Yes — a secondary artifact per top-level component |
-| O9 | Properties-panel grid replacement — headless grid lib vs purpose-built typed table? | B6 | Prototype both in Storybook; decide on bundle-size/feature fit |
+| O1 | v2 model layer — keep `.pfdn`/`moddle` XML, or move to JSON? | **Keep `pfdn-moddle`** (proven, tested); a JSON import/export adapter may be added later, not a replacement. | B2, B4 |
+| O2 | npm scope — scoped vs unscoped? | **`@d3-polytree/*` (scoped).** | B9 |
+| O3 | Storybook renderer? | **`@storybook/html-vite`** (components are framework-free DOM/SVG today). | B7 |
+| O4 | `scroll-tabs` — publish or absorb? | **Absorb** into `@d3-polytree/properties-panel` (single consumer); no standalone package. | B6 |
+| O5 | Layout-parity bar? | **Tolerance-based**, enforced by numeric characterization tests + Storybook visual regression (byte-for-byte is not a goal). | B4, B5 |
+| O6 | History preservation when absorbing repos? | **`git filter-repo`** into per-package subdirectories (preserve authorship/history). | B1 |
+| O7 | Minimum browser matrix? | **Evergreen + last 2 versions; drop IE** (retire F13 + `classlist-polyfill`). | B5, B8 |
+| O8 | Bundled-D3 UMD/IIFE build alongside the ESM peer-dep builds? | **Yes** — a secondary artifact for the three top-level components (`viewer`, `interactive-viewer`, `editor`) only; the peer-dep ESM build stays primary. | B3, B9 |
+| O9 | Properties-panel grid replacement (replaces `slickgrid`)? | **Decide via a Storybook spike in B6** — prototype a headless grid (e.g. TanStack Table core) vs a purpose-built typed table, choose on measured bundle-size vs feature fit. This is the one deferred-to-spike decision. | B6 |
 
 ---
 
@@ -379,7 +379,7 @@ consolidation phases begin.
 | `d3-polytree-searchpanel` | `@d3-polytree/search-panel` | Reassess `list.js` |
 | `d3-polytree-sidetabs` | `@d3-polytree/side-tabs` | |
 | `d3-polytree-propertiespanel` | `@d3-polytree/properties-panel` | De-jQuery (B6) |
-| `scroll-tabs` | absorbed into `@d3-polytree/properties-panel` | Or `@d3-polytree/scroll-tabs` (O4) |
+| `scroll-tabs` | absorbed into `@d3-polytree/properties-panel` | Decided (O4): absorbed, no standalone package |
 | `d3-polytree-amazon` | `@d3-polytree/icons-amazon` | Icon-pack convention template |
 
 ## Appendix B — v1 file-by-file disposition (Track A)
