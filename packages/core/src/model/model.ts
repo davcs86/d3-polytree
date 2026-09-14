@@ -7,18 +7,52 @@ export interface ModelHost {
   moddle: PfdnModdle;
 }
 
-/** Create an empty in-memory model (a fresh `pfdn:Diagram`). */
+/**
+ * Ensure the diagram carries a complete `settings` sub-tree.
+ *
+ * The settings-bound features (zoom, background colour, grid/axes) inject deep
+ * model tokens such as `d3polytree.definitions.settings.zoom.offset`; a diagram
+ * that omitted `<settings>` would make those tokens throw at injection time.
+ * The source engine relied on every input document providing them — this
+ * normalisation makes the engine fault-tolerant to models that don't, filling
+ * the gaps with the schema defaults rather than failing to boot.
+ */
+export function ensureSettings(definitions: ModelElement, moddle: PfdnModdle): ModelElement {
+  let settings = definitions.settings as ModelElement | undefined;
+  if (!settings) {
+    settings = moddle.create('pfdn:Settings', {});
+    definitions.settings = settings;
+  }
+
+  const zoom = settings.zoom as ModelElement | undefined;
+  if (!zoom) {
+    settings.zoom = moddle.create('pfdn:Zoom', {
+      offset: moddle.create('pfdn:Coordinates', { x: 0, y: 0 }),
+      scale: 1
+    });
+  } else if (!zoom.offset) {
+    zoom.offset = moddle.create('pfdn:Coordinates', { x: 0, y: 0 });
+  }
+
+  if (!settings.grid) {
+    settings.grid = moddle.create('pfdn:Grid', {});
+  }
+
+  return definitions;
+}
+
+/** Create an empty in-memory model (a fresh, normalised `pfdn:Diagram`). */
 export function emptyModel(): ModelHost {
   const moddle = createPfdnModdle();
-  const definitions = moddle.create('pfdn:Diagram', {});
+  const definitions = ensureSettings(moddle.create('pfdn:Diagram', {}), moddle);
   return { definitions, moddle };
 }
 
-/** Parse a `.pfdn` XML document into a model. */
+/** Parse a `.pfdn` XML document into a normalised model. */
 export async function loadModel(xml: string): Promise<ModelHost> {
   const moddle = createPfdnModdle();
   const { rootElement } = await moddle.fromXML(xml, 'pfdn:Diagram');
-  return { definitions: rootElement, moddle };
+  return { definitions: ensureSettings(rootElement, moddle), moddle };
 }
 
 /**
