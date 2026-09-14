@@ -173,8 +173,6 @@ importers:
         specifier: ^5.0.1
         version: 5.0.4
 
-  packages/scroll-tabs: {}
-
   packages/search-panel:
     dependencies:
       eventemitter3:
