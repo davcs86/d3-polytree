@@ -17,3 +17,10 @@ script-less stub; directory excluded from the modern ESLint config.
   interactive-viewer, editor}`; migrate the build to Vite/tsup.
 - **B4** — TypeScript migration.
 - **B5** — modular D3 v1 → v7 (drop the vendored `assets/d3`).
+
+## B2 update
+
+`lib/base/core` (Canvas / ElementRegistry / ElementBuilder / SvgExportingUtils) was **removed**
+here and de-duplicated into **`@d3-polytree/canvas`** (the single source of truth). When this
+package is un-parked (B3), it will consume `@d3-polytree/canvas` as a `workspace:*` dependency
+instead of its former vendored copy.

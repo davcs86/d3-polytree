@@ -8,7 +8,9 @@
     "build-storybook": "storybook build --disable-telemetry"
   },
   "dependencies": {
-    "@d3-polytree/canvas": "workspace:*"
+    "@d3-polytree/canvas": "workspace:*",
+    "d3-selection": "^3.0.0",
+    "eventemitter3": "^5.0.1"
   },
   "devDependencies": {
     "@storybook/html": "^8.4.7",

@@ -1,0 +1,54 @@
+import Ids from 'ids';
+import type { RegisteredElement } from './types';
+
+/**
+ * Tracks diagram elements by id and hands out collision-free ids.
+ *
+ * Ported from the original `d3-canvas` ElementRegistry: id generation still uses
+ * `ids`, but elements are kept in an owned `Map` rather than reaching into the
+ * `ids` internals, which makes the store robust and fully typed.
+ */
+export class ElementRegistry {
+  private readonly _ids = new Ids([8, 24, 86]);
+  private readonly _elements = new Map<string, RegisteredElement>();
+
+  /** Register `element` under an explicit `id`. */
+  claim(id: string, element: RegisteredElement): void {
+    this._ids.claim(id, element);
+    this._elements.set(id, element);
+  }
+
+  /** Assign `element` a `prefix_`-scoped id if it has none, then register it. */
+  claimId(element: RegisteredElement, prefix: string): void {
+    element.id = element.id || this._ids.nextPrefixed(`${prefix}_`, element);
+    this._ids.claim(element.id, element);
+    this._elements.set(element.id, element);
+  }
+
+  /** Release the id held by `element`. */
+  unClaim(element: RegisteredElement): void {
+    if (element.id) {
+      this._ids.unclaim(element.id);
+      this._elements.delete(element.id);
+    }
+  }
+
+  removeElement(element: RegisteredElement): void {
+    this.unClaim(element);
+  }
+
+  removeElementById(id: string): void {
+    this._ids.unclaim(id);
+    this._elements.delete(id);
+  }
+
+  /** Look up an element by id, or `false` when unknown. */
+  get(id: string): RegisteredElement | false {
+    return this._elements.get(id) ?? false;
+  }
+
+  /** Snapshot of all registered elements keyed by id. */
+  getAll(): Record<string, RegisteredElement> {
+    return Object.fromEntries(this._elements);
+  }
+}
