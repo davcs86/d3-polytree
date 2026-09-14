@@ -143,6 +143,9 @@ importers:
       '@d3-polytree/interactive-viewer':
         specifier: workspace:*
         version: link:../interactive-viewer
+      '@d3-polytree/properties-panel':
+        specifier: workspace:*
+        version: link:../properties-panel
       '@d3-polytree/viewer':
         specifier: workspace:*
         version: link:../viewer
@@ -154,6 +157,12 @@ importers:
       '@d3-polytree/core':
         specifier: workspace:*
         version: link:../core
+      '@d3-polytree/search-panel':
+        specifier: workspace:*
+        version: link:../search-panel
+      '@d3-polytree/side-tabs':
+        specifier: workspace:*
+        version: link:../side-tabs
       '@d3-polytree/viewer':
         specifier: workspace:*
         version: link:../viewer

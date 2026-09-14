@@ -71,4 +71,18 @@ describe('@d3-polytree/editor', () => {
     expect(document.body.querySelector(`[element-id="${id}"]`)).toBeNull();
     expect(node.get('status')).toBe(3);
   });
+
+  it('mounts the properties panel tab alongside the search tab', () => {
+    const editor = new Editor({ container: document.body });
+    editor.createEmpty();
+
+    const titles = [...document.body.querySelectorAll('.pfdjs-st-tab')].map((t) =>
+      t.getAttribute('title')
+    );
+    expect(titles).toContain('Search element');
+    expect(titles).toContain('Properties');
+    expect(editor.get('propertiesPanel')).toBeTruthy();
+    expect(editor.get('propertiesProvider')).toBeTruthy();
+  });
+
 });

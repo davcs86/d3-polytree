@@ -28,6 +28,7 @@
   "dependencies": {
     "@d3-polytree/viewer": "workspace:*",
     "@d3-polytree/core": "workspace:*",
-    "@d3-polytree/interactive-viewer": "workspace:*"
+    "@d3-polytree/interactive-viewer": "workspace:*",
+    "@d3-polytree/properties-panel": "workspace:*"
   }
 }
