@@ -8,8 +8,7 @@ export default tseslint.config(
       '**/storybook-static/**',
       '**/.turbo/**',
       '**/node_modules/**',
-      // Legacy packages imported in B1, awaiting modernization (B3/B4/B6).
-      'packages/scroll-tabs/**',
+      // Legacy packages imported in B1, awaiting modernization (B6).
       'packages/icons-amazon/**',
       '!**/.storybook'
     ]
