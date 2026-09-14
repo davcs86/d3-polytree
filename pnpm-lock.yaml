@@ -91,6 +91,16 @@ importers:
       '@d3-polytree/pfdn-moddle':
         specifier: workspace:*
         version: link:../pfdn-moddle
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.4
+    devDependencies:
+      '@types/d3-selection':
+        specifier: ^3.0.11
+        version: 3.0.11
+      d3-selection:
+        specifier: ^3.0.0
+        version: 3.0.0
 
   packages/core-v2beta: {}
 
