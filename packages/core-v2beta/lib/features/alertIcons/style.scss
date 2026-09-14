@@ -1,0 +1,14 @@
+.pfdjs-container {
+  .alertIcon {
+    cursor: pointer;
+  }
+  .innerElement.blink {
+    animation: blinker 2s linear infinite;
+  }
+
+  @keyframes blinker {
+    50% {
+      opacity: 0;
+    }
+  }
+}

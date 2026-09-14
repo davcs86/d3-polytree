@@ -1,0 +1,40 @@
+.pfdjs-container {
+  .pfdjs-palette {
+    position: absolute;
+    margin: 6px;
+    //width: 90%;
+    padding: 3px 6px;
+    background: #fafafa;
+    border: solid 1px #cccccc;
+    border-radius: 2px;
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.3);
+    z-index: 1;
+    .pfdjs-entries {
+      .pfdjs-entries-group {
+        margin: 3px 0;
+        height: 26px;
+        float: left;
+        .pfdjs-entry {
+          float: left;
+          width: 24px;
+          color: #333333;
+          padding: 3px 0;
+          font-size: 20px;
+          cursor: pointer;
+          margin: 0 4px;
+          text-align: center;
+          &:hover {
+            color: #ff4800;
+          }
+        }
+      }
+      .pfdjs-entries-group:not(:last-of-type) {
+        border-right: 1px solid #cccccc;
+        padding-right: 7px;
+        //margin-right: 3px;
+      }
+    }
+  }
+}
+
+
