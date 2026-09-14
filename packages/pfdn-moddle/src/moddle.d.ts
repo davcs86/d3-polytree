@@ -3,7 +3,7 @@
 declare module 'moddle' {
   export interface ModdleElement {
     $type: string;
-    $model: Moddle;
+    $model?: Moddle;
     [key: string]: unknown;
   }
   export class Moddle {

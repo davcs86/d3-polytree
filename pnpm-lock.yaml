@@ -83,9 +83,30 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
 
+  packages/core:
+    dependencies:
+      '@d3-polytree/canvas':
+        specifier: workspace:*
+        version: link:../canvas
+      '@d3-polytree/pfdn-moddle':
+        specifier: workspace:*
+        version: link:../pfdn-moddle
+
   packages/core-v2beta: {}
 
+  packages/editor:
+    dependencies:
+      '@d3-polytree/viewer':
+        specifier: workspace:*
+        version: link:../viewer
+
   packages/icons-amazon: {}
+
+  packages/interactive-viewer:
+    dependencies:
+      '@d3-polytree/viewer':
+        specifier: workspace:*
+        version: link:../viewer
 
   packages/pfdn-moddle:
     dependencies:
@@ -103,6 +124,12 @@ importers:
   packages/search-panel: {}
 
   packages/side-tabs: {}
+
+  packages/viewer:
+    dependencies:
+      '@d3-polytree/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 

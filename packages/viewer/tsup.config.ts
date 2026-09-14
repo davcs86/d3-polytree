@@ -1,0 +1,10 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: ['esm', 'cjs'],
+  dts: true,
+  clean: true,
+  sourcemap: true,
+  external: ['@d3-polytree/core', '@d3-polytree/core', '@d3-polytree/canvas', '@d3-polytree/pfdn-moddle', 'd3-selection']
+});
