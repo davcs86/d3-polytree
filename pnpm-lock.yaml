@@ -91,6 +91,9 @@ importers:
       '@d3-polytree/pfdn-moddle':
         specifier: workspace:*
         version: link:../pfdn-moddle
+      didi:
+        specifier: ^9.0.0
+        version: 9.0.2
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.4
@@ -1305,6 +1308,9 @@ packages:
   detect-indent@6.1.0:
     resolution: {integrity: sha512-reYkTUJAZb9gUuZ2RvVCNhVHdg62RHnJ7WJl8ftMi4diZ6NWlciOzQN88pUhSELEwflJht4oQDv0F0BMlwaYtA==}
     engines: {node: '>=8'}
+
+  didi@9.0.2:
+    resolution: {integrity: sha512-q2+aj+lnJcUweV7A9pdUrwFr4LHVmRPwTmQLtHPFz4aT7IBoryN6Iy+jmFku+oIzr5ebBkvtBCOb87+dJhb7bg==}
 
   dir-glob@3.0.1:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
@@ -3347,6 +3353,8 @@ snapshots:
   delayed-stream@1.0.0: {}
 
   detect-indent@6.1.0: {}
+
+  didi@9.0.2: {}
 
   dir-glob@3.0.1:
     dependencies:
