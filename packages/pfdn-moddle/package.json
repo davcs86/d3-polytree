@@ -1,8 +1,29 @@
 {
   "name": "@d3-polytree/pfdn-moddle",
   "version": "0.0.0",
-  "private": true,
-  "description": "PFDN moddle model — read/write .pfdn diagram XML (imported with history in B1; modernized to TS/ESM + Vitest in B4)",
+  "description": "Read/write Process Flow Diagram Notation (.pfdn) documents — a moddle model for the d3-polytree v2 ecosystem",
   "license": "MIT",
-  "author": "David Castillo"
+  "author": "David Castillo",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "moddle": "^7.0.0",
+    "moddle-xml": "^11.0.0"
+  }
 }
