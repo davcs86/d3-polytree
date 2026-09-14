@@ -98,6 +98,11 @@ export class Zoom {
     this._isZoomable = isZoomable;
   }
 
+  /** Whether interactive zoom is currently enabled. */
+  isZoomable(): boolean {
+    return this._isZoomable;
+  }
+
   setInitialZoom(tX: number, tY: number, s: number, duration?: number): void {
     const drawingLayer = this._canvas.getDrawingLayer();
     const parent = drawingLayer.node()!.parentNode as SVGGElement;
