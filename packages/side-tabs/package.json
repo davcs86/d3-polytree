@@ -1,32 +1,8 @@
 {
-  "name": "d3-polytree-sidetabs",
-  "version": "1.0.0",
-  "description": "Sidetabs for d3-polytree",
-  "main": "lib/index.js",
-  "scripts": {
-    "test": "exit 0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/davcs86/d3-polytree-sidetabs.git"
-  },
-  "author": "David Castillo",
+  "name": "@d3-polytree/side-tabs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Side-tabs UI feature",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/davcs86/d3-polytree-sidetabs/issues"
-  },
-  "homepage": "https://github.com/davcs86/d3-polytree-sidetabs#readme",
-  "devDependencies": {
-    "autoprefixer": "^7.1.1",
-    "css-loader": "^0.25.0",
-    "domify": "^0.2.0",
-    "lodash": "^4.17.4",
-    "min-dom": "^0.2.0",
-    "node-sass": "^3.13.0",
-    "postcss-loader": "^2.0.5",
-    "sass-loader": "^4.0.2",
-    "style-loader": "^0.13.1",
-    "webpack": "^1.13.3",
-    "webpack-dev-server": "^1.16.3"
-  }
+  "author": "David Castillo"
 }

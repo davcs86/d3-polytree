@@ -325,7 +325,7 @@ remain; new ones should be appended below as they arise.
 | O3 | Storybook renderer? | **`@storybook/html-vite`** (components are framework-free DOM/SVG today). | B7 |
 | O4 | `scroll-tabs` — publish or absorb? | **Absorb** into `@d3-polytree/properties-panel` (single consumer); no standalone package. | B6 |
 | O5 | Layout-parity bar? | **Tolerance-based**, enforced by numeric characterization tests + Storybook visual regression (byte-for-byte is not a goal). | B4, B5 |
-| O6 | History preservation when absorbing repos? | **`git filter-repo`** into per-package subdirectories (preserve authorship/history). | B1 |
+| O6 | History preservation when absorbing repos? | **`git filter-repo`** into per-package subdirectories (preserve authorship/history). **Implemented with `git subtree`** — `git-filter-repo` was not installable in the build environment; `subtree` preserves the same authorship/history (verified via `git blame`), satisfying the decision's intent. | B1 |
 | O7 | Minimum browser matrix? | **Evergreen + last 2 versions; drop IE** (retire F13 + `classlist-polyfill`). | B5, B8 |
 | O8 | Bundled-D3 UMD/IIFE build alongside the ESM peer-dep builds? | **Yes** — a secondary artifact for the three top-level components (`viewer`, `interactive-viewer`, `editor`) only; the peer-dep ESM build stays primary. | B3, B9 |
 | O9 | Properties-panel grid replacement (replaces `slickgrid`)? | **Decide via a Storybook spike in B6** — prototype a headless grid (e.g. TanStack Table core) vs a purpose-built typed table, choose on measured bundle-size vs feature fit. This is the one deferred-to-spike decision. | B6 |

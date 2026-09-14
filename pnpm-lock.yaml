@@ -63,7 +63,17 @@ importers:
 
   packages/canvas: {}
 
+  packages/icons-amazon: {}
+
   packages/pfdn-moddle: {}
+
+  packages/properties-panel: {}
+
+  packages/scroll-tabs: {}
+
+  packages/search-panel: {}
+
+  packages/side-tabs: {}
 
 packages:
 
