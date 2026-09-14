@@ -6,8 +6,11 @@ import type { ModellingModelElement } from './types';
 /** The four element classes the orchestrator routes events for. */
 export type ElementClass = 'label' | 'node' | 'zone' | 'link';
 
-/** The model-mutating actions dispatched in response to draw-layer events. */
-export type MutatingAction = 'saveToModel' | 'delete';
+/**
+ * The actions dispatchable on an element handler: `saveToModel` / `delete` in
+ * response to draw-layer events, and `create` for the palette add-handlers.
+ */
+export type MutatingAction = 'saveToModel' | 'delete' | 'create';
 
 /**
  * Orchestrates the modelling layer: it listens for element lifecycle events on

@@ -9,7 +9,10 @@ import { Drag } from './drag';
 import { Exporting } from './exporting';
 import { LocalStorage } from './localStorage';
 import { Upload } from './upload';
+import { AddNodeHandler, AddLabelHandler, AddLinkTool, PaletteProvider, Palette } from './palette';
+import { notificationsModule } from './notifications';
 import { drawingRegistryModule } from '../draw';
+import { modellingModule } from '../modelling';
 import { calculateCenterModule } from '../utils/calculateCenter';
 
 export * from './notifications';
@@ -28,6 +31,15 @@ export { LocalStorage } from './localStorage';
 export type { StorageHost } from './localStorage';
 export { Upload } from './upload';
 export type { UploadHost } from './upload';
+export {
+  BaseAddHandler,
+  AddNodeHandler,
+  AddLabelHandler,
+  AddLinkTool,
+  PaletteProvider,
+  Palette
+} from './palette';
+export type { Tool, PaletteAction, PaletteEntry, PaletteHost } from './palette';
 
 /**
  * didi module contributing the mouse-event bridge: re-emits DOM mouse events on
@@ -101,4 +113,49 @@ export const localStorageModule = {
 export const uploadModule = {
   __init__: ['upload'],
   upload: ['type', Upload]
+};
+
+/** didi module contributing the add-node palette handler. */
+export const addNodeHandlerModule = {
+  __init__: ['addNodeHandler'],
+  addNodeHandler: ['type', AddNodeHandler],
+  __depends__: [drawingRegistryModule, selectionModule, modellingModule]
+};
+
+/** didi module contributing the add-label palette handler. */
+export const addLabelHandlerModule = {
+  __init__: ['addLabelHandler'],
+  addLabelHandler: ['type', AddLabelHandler],
+  __depends__: [drawingRegistryModule, selectionModule, modellingModule]
+};
+
+/** didi module contributing the two-click link tool. */
+export const addLinkToolModule = {
+  __init__: ['addLinkTool'],
+  addLinkTool: ['type', AddLinkTool],
+  __depends__: [modellingModule]
+};
+
+/** didi module supplying the palette entries and tools. */
+export const paletteProviderModule = {
+  __init__: ['paletteProvider'],
+  paletteProvider: ['type', PaletteProvider],
+  __depends__: [
+    addNodeHandlerModule,
+    addLabelHandlerModule,
+    addLinkToolModule,
+    localStorageModule,
+    uploadModule,
+    exportingModule,
+    axesModule,
+    selectionModule,
+    notificationsModule
+  ]
+};
+
+/** didi module contributing the palette toolbar. */
+export const paletteModule = {
+  __init__: ['palette'],
+  palette: ['type', Palette],
+  __depends__: [paletteProviderModule]
 };

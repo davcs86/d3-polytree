@@ -43,6 +43,20 @@ describe('@d3-polytree/editor', () => {
     expect(window.localStorage.getItem('diagram')).toContain('node_1');
   });
 
+  it('renders the palette toolbar and creates a node from the new-node button', () => {
+    const editor = new Editor({ container: document.body });
+    editor.createEmpty();
+
+    const button = document.body.querySelector('[data-action="new-node"]');
+    expect(document.body.querySelector('.pfdjs-palette')).not.toBeNull();
+    expect(button).not.toBeNull();
+
+    const before = document.body.querySelectorAll('.nodeItem').length;
+    button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const after = document.body.querySelectorAll('.nodeItem').length;
+    expect(after).toBe(before + 1);
+  });
+
   it('deletes the selected node, removing its drawing', () => {
     const editor = new Editor({ container: document.body });
     editor.createEmpty();
