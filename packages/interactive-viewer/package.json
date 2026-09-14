@@ -14,7 +14,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./umd": "./dist/interactive-viewer.umd.js"
   },
   "files": [
     "dist"
@@ -30,5 +31,7 @@
     "@d3-polytree/core": "workspace:*",
     "@d3-polytree/side-tabs": "workspace:*",
     "@d3-polytree/search-panel": "workspace:*"
-  }
+  },
+  "unpkg": "./dist/interactive-viewer.umd.js",
+  "jsdelivr": "./dist/interactive-viewer.umd.js"
 }

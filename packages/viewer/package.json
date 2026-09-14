@@ -14,9 +14,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./umd": "./dist/viewer.umd.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
@@ -25,5 +28,7 @@
   },
   "dependencies": {
     "@d3-polytree/core": "workspace:*"
-  }
+  },
+  "unpkg": "./dist/viewer.umd.js",
+  "jsdelivr": "./dist/viewer.umd.js"
 }
