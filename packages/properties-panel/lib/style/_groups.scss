@@ -1,0 +1,21 @@
+.pfdjs-pp-content-group{
+  text-align: left;
+  border-bottom: 1px solid lightgray;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  .pfdjs-pp-field-wrapper{
+    margin: 4px;
+  }
+  label {
+    margin-bottom: 2px;
+    margin-top: 6px;
+    font-size: inherit;
+    display: block;
+  }
+  input, select {
+    width: 100%;
+    font-size: 11px;
+  }
+}
