@@ -29,6 +29,14 @@ interface CanvasLike {
 export interface ViewerOptions {
   /** Host element the diagram is rendered into. */
   container?: HTMLElement;
+  /**
+   * Extra didi modules composed on top of the component's own. They are added
+   * *after* {@link Viewer.getModules}, so a token they redefine wins (last
+   * definition wins) — the same seam the icon packs use — and any `__init__`
+   * they declare runs once the engine boots. Use this to layer in a custom
+   * feature, drawer, or service without subclassing.
+   */
+  modules?: readonly DiagramModule[];
   [key: string]: unknown;
 }
 
@@ -116,7 +124,13 @@ export class Viewer {
     // the file-ops features.
     this._diagram = new Diagram({
       container: this.options.container,
-      modules: [...this.getModules(), { d3polytree: ['value', this] } as DiagramModule]
+      // component modules first, then any caller-supplied modules (last wins),
+      // then the `d3polytree` host value the drawers/modelling resolve against.
+      modules: [
+        ...this.getModules(),
+        ...(this.options.modules ?? []),
+        { d3polytree: ['value', this] } as DiagramModule
+      ]
     });
   }
 }
