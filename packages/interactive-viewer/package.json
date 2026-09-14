@@ -1,7 +1,6 @@
 {
   "name": "@d3-polytree/interactive-viewer",
   "version": "0.0.0",
-  "private": true,
   "description": "Interactive polytree viewer (zoom, pan, search)",
   "license": "MIT",
   "author": "David Castillo",
@@ -33,5 +32,14 @@
     "@d3-polytree/search-panel": "workspace:*"
   },
   "unpkg": "./dist/interactive-viewer.umd.js",
-  "jsdelivr": "./dist/interactive-viewer.umd.js"
+  "jsdelivr": "./dist/interactive-viewer.umd.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree.git",
+    "directory": "packages/interactive-viewer"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/interactive-viewer#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }

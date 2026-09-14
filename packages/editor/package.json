@@ -1,7 +1,6 @@
 {
   "name": "@d3-polytree/editor",
   "version": "0.0.0",
-  "private": true,
   "description": "Polytree editor (create and modify diagrams)",
   "license": "MIT",
   "author": "David Castillo",
@@ -33,5 +32,14 @@
     "@d3-polytree/properties-panel": "workspace:*"
   },
   "unpkg": "./dist/editor.umd.js",
-  "jsdelivr": "./dist/editor.umd.js"
+  "jsdelivr": "./dist/editor.umd.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree.git",
+    "directory": "packages/editor"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/editor#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }

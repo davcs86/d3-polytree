@@ -1,7 +1,6 @@
 {
   "name": "@d3-polytree/core",
   "version": "0.0.0",
-  "private": true,
   "description": "Core diagram engine for the d3-polytree v2 ecosystem (draw/features/modelling) — carved from core-v2beta in B3",
   "license": "MIT",
   "author": "David Castillo",
@@ -52,5 +51,14 @@
     "@types/d3-axis": "^3.0.6",
     "d3-drag": "^3.0.0",
     "@types/d3-drag": "^3.0.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/core#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -15,7 +15,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
@@ -25,5 +27,14 @@
   "dependencies": {
     "moddle": "^7.0.0",
     "moddle-xml": "^11.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree.git",
+    "directory": "packages/pfdn-moddle"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/pfdn-moddle#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }
