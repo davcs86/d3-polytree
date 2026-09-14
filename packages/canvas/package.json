@@ -1,8 +1,9 @@
 {
   "name": "@d3-polytree/canvas",
   "version": "0.0.0",
-  "description": "Base SVG canvas toolbox for the d3-polytree v2 ecosystem (scaffold placeholder)",
+  "description": "Base SVG canvas toolbox (Canvas, ElementRegistry, ElementBuilder, SVG export) for the d3-polytree v2 ecosystem",
   "license": "MIT",
+  "author": "David Castillo",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -20,5 +21,16 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "eventemitter3": "^5.0.1",
+    "ids": "^1.0.5"
+  },
+  "peerDependencies": {
+    "d3-selection": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/d3-selection": "^3.0.11",
+    "d3-selection": "^3.0.0"
   }
 }
