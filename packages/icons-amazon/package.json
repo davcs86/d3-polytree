@@ -1,8 +1,29 @@
 {
   "name": "@d3-polytree/icons-amazon",
   "version": "0.0.0",
-  "private": true,
-  "description": "AWS icon pack for d3-polytree diagrams",
+  "description": "AWS icon pack + icon-pack convention reference for the d3-polytree v2 ecosystem",
   "license": "MIT",
-  "author": "David Castillo"
+  "author": "David Castillo",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "generate": "node scripts/generate-icons.mjs",
+    "build": "node scripts/generate-icons.mjs && tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@d3-polytree/core": "workspace:*"
+  }
 }

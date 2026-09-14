@@ -150,7 +150,11 @@ importers:
         specifier: workspace:*
         version: link:../viewer
 
-  packages/icons-amazon: {}
+  packages/icons-amazon:
+    dependencies:
+      '@d3-polytree/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/interactive-viewer:
     dependencies:
