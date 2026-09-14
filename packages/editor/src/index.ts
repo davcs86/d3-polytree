@@ -13,6 +13,7 @@ import {
   exportingModule,
   localStorageModule,
   uploadModule,
+  paletteModule,
   type DiagramModule,
   type DrawingRegistry,
   type ModellingNodes,
@@ -42,7 +43,8 @@ export class Editor extends InteractiveViewer {
     modellingModule as DiagramModule,
     exportingModule as DiagramModule,
     localStorageModule as DiagramModule,
-    uploadModule as DiagramModule
+    uploadModule as DiagramModule,
+    paletteModule as DiagramModule
   ];
 
   /** The document a fresh editor opens with (used by {@link createDiagram}). */
