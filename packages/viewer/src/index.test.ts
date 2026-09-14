@@ -49,4 +49,17 @@ describe('@d3-polytree/viewer', () => {
     const viewer = new Viewer({ container: document.body });
     expect(() => viewer.get('canvas')).toThrow(/no diagram loaded/);
   });
+
+  it('acts as the d3polytree host and round-trips through export', async () => {
+    const viewer = new Viewer({ container: document.body });
+    await viewer.importDiagram(oneNodeDiagram());
+
+    // the running engine resolves the model tokens off this instance
+    expect(viewer.get('d3polytree.moddle')).toBe(viewer.moddle);
+    expect(viewer.get('d3polytree.definitions')).toBe(viewer.definitions);
+
+    const xml = viewer.exportDiagram();
+    expect(xml.toLowerCase()).toContain('pfdn:node');
+    expect(viewer.exportSVG()).toContain('<svg');
+  });
 });
