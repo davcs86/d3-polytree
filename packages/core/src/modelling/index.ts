@@ -4,12 +4,15 @@ import { ModellingLabels } from './Labels';
 import { ModellingZones } from './Zones';
 import { ModellingNodes } from './Nodes';
 import { ModellingLinks } from './Links';
+import { Modelling } from './Modelling';
 
 export { ModellingElement } from './ModellingElement';
 export { ModellingLabels } from './Labels';
 export { ModellingZones } from './Zones';
 export { ModellingNodes } from './Nodes';
 export { ModellingLinks } from './Links';
+export { Modelling } from './Modelling';
+export type { ElementClass, MutatingAction } from './Modelling';
 export type { CreateParameters, ModellingModelElement } from './types';
 
 /** didi module contributing the label modelling handler. */
@@ -38,4 +41,20 @@ export const modellingLinksModule = {
   __init__: ['modellingLinks'],
   modellingLinks: ['type', ModellingLinks],
   __depends__: [linksModule, modellingLabelsModule, notificationsModule]
+};
+
+/**
+ * didi module contributing the modelling orchestrator — the event-bus glue that
+ * routes element lifecycle events to the handlers above. Pulls in all four
+ * handler modules.
+ */
+export const modellingModule = {
+  __init__: ['modelling'],
+  modelling: ['type', Modelling],
+  __depends__: [
+    modellingLabelsModule,
+    modellingLinksModule,
+    modellingNodesModule,
+    modellingZonesModule
+  ]
 };

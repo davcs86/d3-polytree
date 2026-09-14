@@ -1,0 +1,96 @@
+import type EventEmitter from 'eventemitter3';
+import { getLocalName } from '../utils/localName';
+import type { ModellingElement } from './ModellingElement';
+import type { ModellingModelElement } from './types';
+
+/** The four element classes the orchestrator routes events for. */
+export type ElementClass = 'label' | 'node' | 'zone' | 'link';
+
+/** The model-mutating actions dispatched in response to draw-layer events. */
+export type MutatingAction = 'saveToModel' | 'delete';
+
+/**
+ * Orchestrates the modelling layer: it listens for element lifecycle events on
+ * the bus and routes each to the matching handler's model-mutating action, so
+ * the draw layer stays the single source of lifecycle truth and the model
+ * follows it.
+ *
+ * Ported from `core-v2beta`'s `features/modelling/Modelling.js`. The source's
+ * `element.updated` handler reached into a handler's private drawer field
+ * (`this._elements[name]['_'+name+'s']._builder(...)`); the port routes through
+ * the handler's public {@link ModellingElement.reconcile} instead.
+ */
+export class Modelling {
+  static readonly $inject = [
+    'eventBus',
+    'd3polytree.definitions',
+    'modellingNodes',
+    'modellingLabels',
+    'modellingZones',
+    'modellingLinks'
+  ];
+
+  private readonly _eventBus: EventEmitter;
+  private readonly _elements: Record<ElementClass, ModellingElement>;
+
+  constructor(
+    eventBus: EventEmitter,
+    // `d3polytree.definitions` is injected for parity / forward use; the
+    // orchestrator itself routes purely through the per-element handlers.
+    _definitions: ModellingModelElement,
+    modellingNodes: ModellingElement,
+    modellingLabels: ModellingElement,
+    modellingZones: ModellingElement,
+    modellingLinks: ModellingElement
+  ) {
+    this._eventBus = eventBus;
+    this._elements = {
+      label: modellingLabels,
+      node: modellingNodes,
+      zone: modellingZones,
+      link: modellingLinks
+    };
+    this._init();
+  }
+
+  /** Invoke `action` on the handler for `elementClassName` with `parameters`. */
+  doAction(elementClassName: string, action: MutatingAction, parameters: unknown[]): unknown {
+    const handler = this._elements[elementClassName as ElementClass];
+    if (handler) {
+      const fn = handler[action] as
+        | ((this: ModellingElement, ...args: unknown[]) => unknown)
+        | undefined;
+      if (fn) {
+        return fn.apply(handler, parameters);
+      }
+    }
+    return null;
+  }
+
+  private _init(): void {
+    const route = (event: string, cls: ElementClass, action: MutatingAction): void => {
+      this._eventBus.on(event, (...args: unknown[]) => this.doAction(cls, action, args));
+    };
+
+    route('label.created', 'label', 'saveToModel');
+    route('link.created', 'link', 'saveToModel');
+    route('node.created', 'node', 'saveToModel');
+    route('zone.created', 'zone', 'saveToModel');
+
+    route('label.deleted', 'label', 'delete');
+    route('link.deleted', 'link', 'delete');
+    route('node.deleted', 'node', 'delete');
+    route('zone.deleted', 'zone', 'delete');
+
+    this._eventBus.on(
+      'element.updated',
+      (elementId: string, elementDefinition: ModellingModelElement) => {
+        const localName = getLocalName(elementDefinition);
+        const handler = this._elements[localName as ElementClass];
+        if (handler) {
+          handler.reconcile(elementId, elementDefinition);
+        }
+      }
+    );
+  }
+}
