@@ -27,3 +27,11 @@ export interface ZoneDefinition extends DiagramElement {
   opacity?: number;
   border: ZoneBorder;
 }
+
+/** A link between diagram elements, rendered as a poly-line through waypoints. */
+export interface LinkDefinition extends DiagramElement {
+  waypoint: Point[];
+  lineColor?: string;
+  fillColor?: string;
+  lineWidth?: number;
+}
