@@ -63,6 +63,8 @@ importers:
 
   packages/canvas: {}
 
+  packages/core-v2beta: {}
+
   packages/icons-amazon: {}
 
   packages/pfdn-moddle: {}
