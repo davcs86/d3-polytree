@@ -11,7 +11,6 @@ export default tseslint.config(
       // Legacy packages imported in B1, awaiting modernization (B3/B4/B6).
       'packages/scroll-tabs/**',
       'packages/search-panel/**',
-      'packages/side-tabs/**',
       'packages/properties-panel/**',
       'packages/icons-amazon/**',
       '!**/.storybook'
