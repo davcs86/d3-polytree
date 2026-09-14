@@ -6,7 +6,6 @@
  * draw layer into the `coreModules` didi stack the higher-level packages build on.
  */
 import { canvasModule } from '@d3-polytree/canvas';
-import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
 import { drawingRegistryModule } from './draw';
 
 export { canvasModule } from '@d3-polytree/canvas';
@@ -17,9 +16,8 @@ export { getLocalName } from './utils/localName';
 export type { Descriptored } from './utils/localName';
 export * from './features/notifications';
 export * from './Diagram';
+export * from './model/model';
 
 /** didi modules that make up the core engine (extended as B3 lands more draw/features). */
 export const coreModules: unknown[] = [canvasModule, drawingRegistryModule];
 
-/** Convenience factory for the PFDN model used by the engine. */
-export const createModel = createPfdnModdle;
