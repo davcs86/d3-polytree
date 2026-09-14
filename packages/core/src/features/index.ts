@@ -4,6 +4,7 @@ import { Zoom } from './zoom';
 import { ZoomScroll } from './zoomScroll';
 import { BackgroundColor } from './backgroundColor';
 import { Axes } from './axes';
+import { Outline } from './outline';
 import { calculateCenterModule } from '../utils/calculateCenter';
 
 export * from './notifications';
@@ -14,6 +15,7 @@ export { Zoom } from './zoom';
 export { ZoomScroll } from './zoomScroll';
 export { BackgroundColor } from './backgroundColor';
 export { Axes } from './axes';
+export { Outline } from './outline';
 
 /**
  * didi module contributing the mouse-event bridge: re-emits DOM mouse events on
@@ -56,4 +58,10 @@ export const axesModule = {
   __init__: ['axes'],
   axes: ['type', Axes],
   __depends__: [zoomModule]
+};
+
+/** didi module adding a selection outline to every drawn element. */
+export const outlineModule = {
+  __init__: ['outline'],
+  outline: ['type', Outline]
 };
