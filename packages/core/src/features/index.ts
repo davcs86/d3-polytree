@@ -2,6 +2,7 @@ import { MouseEvents } from './mouseEvents';
 import { Selection } from './selection';
 import { Zoom } from './zoom';
 import { ZoomScroll } from './zoomScroll';
+import { BackgroundColor } from './backgroundColor';
 import { calculateCenterModule } from '../utils/calculateCenter';
 
 export * from './notifications';
@@ -10,6 +11,7 @@ export { Selection } from './selection';
 export type { SelectionEntry } from './selection';
 export { Zoom } from './zoom';
 export { ZoomScroll } from './zoomScroll';
+export { BackgroundColor } from './backgroundColor';
 
 /**
  * didi module contributing the mouse-event bridge: re-emits DOM mouse events on
@@ -39,4 +41,10 @@ export const zoomScrollModule = {
   __init__: ['zoomScroll'],
   zoomScroll: ['type', ZoomScroll],
   __depends__: [zoomModule]
+};
+
+/** didi module painting the canvas background from settings. */
+export const backgroundColorModule = {
+  __init__: ['backgroundColor'],
+  backgroundColor: ['type', BackgroundColor]
 };
