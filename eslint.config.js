@@ -14,7 +14,6 @@ export default tseslint.config(
       'packages/side-tabs/**',
       'packages/properties-panel/**',
       'packages/icons-amazon/**',
-      'packages/core-v2beta/**',
       '!**/.storybook'
     ]
   },

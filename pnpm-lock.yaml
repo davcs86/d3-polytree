@@ -135,8 +135,6 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
 
-  packages/core-v2beta: {}
-
   packages/editor:
     dependencies:
       '@d3-polytree/core':

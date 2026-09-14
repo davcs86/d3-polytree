@@ -45,6 +45,25 @@ The chosen direction is **hybrid, phased-to-consolidation**:
 Track B is **consolidation, not a from-scratch rewrite** — the v2 architecture already exists and
 is the asset being modernized. This materially lowers risk versus the greenfield framing.
 
+> **Status — B3 engine consolidation complete.** The `v2.0-beta` engine (staged as the
+> `@d3-polytree/core-v2beta` import) has been fully carved into TypeScript packages and that
+> staging package is now **retired**:
+>
+> - **`@d3-polytree/canvas`** — the base canvas/registry/exporting layer (de-duplicated with `d3-canvas`).
+> - **`@d3-polytree/pfdn-moddle`** — the `.pfdn` moddle model + XML reader/writer.
+> - **`@d3-polytree/core`** — the full engine: the `draw` layer (nodes/links/labels/zones, icons,
+>   markers, defs, registries), the `model` provider (with settings normalisation), the `modelling`
+>   layer (four element handlers + orchestrator), and **every `features/*` module** — pan/zoom,
+>   grid/axes, background, mouse events, selection, outline, drag, export, localStorage, upload, the
+>   palette (toolbar + add-handlers + link tool), resize, alert icons, tooltip, notifications — each
+>   ported to slim modular **D3 v7** peers, off the removed `d3.event` global and legacy
+>   `min-dom`/`lodash`/`q`/`xml2js`/`d3-tip` deps.
+> - **`@d3-polytree/viewer` / `interactive-viewer` / `editor`** — compose those modules (in the
+>   correct boot order) into working components that render and edit a `.pfdn` document end-to-end.
+>
+> Remaining Track B work is the companion **panels** (search-panel, side-tabs, properties-panel —
+> B6 de-jQuery) and the cross-cutting toolchain/CI/Storybook/distribution items below.
+
 ---
 
 ## 2. Ecosystem inventory
@@ -408,10 +427,10 @@ consolidation phases begin.
 |---|---|---|
 | `d3-polytree@master` | *(stays)* `d3-polytree` v1.x | Maintenance-only; API contract source |
 | `d3-polytree@v2.0-beta` `lib/base/core` | `@d3-polytree/canvas` | De-dup with `d3-canvas` |
-| `d3-polytree@v2.0-beta` `lib/draw` + `lib/features` + `lib/modelling` | `@d3-polytree/core` | DI-wired feature modules |
-| `d3-polytree@v2.0-beta` `lib/Viewer.js` | `@d3-polytree/viewer` | |
-| `d3-polytree@v2.0-beta` `lib/InteractiveViewer.js` | `@d3-polytree/interactive-viewer` | + search-panel |
-| `d3-polytree@v2.0-beta` `lib/Editor.js` | `@d3-polytree/editor` | + properties-panel + side-tabs |
+| `d3-polytree@v2.0-beta` `lib/draw` + `lib/features` + `lib/modelling` | `@d3-polytree/core` | DI-wired feature modules — **ported (B3)**; staging `core-v2beta` retired |
+| `d3-polytree@v2.0-beta` `lib/Viewer.js` | `@d3-polytree/viewer` | **composed (B3)** — renders `.pfdn` end-to-end |
+| `d3-polytree@v2.0-beta` `lib/InteractiveViewer.js` | `@d3-polytree/interactive-viewer` | **composed (B3)**; + search-panel (B6) |
+| `d3-polytree@v2.0-beta` `lib/Editor.js` | `@d3-polytree/editor` | **composed (B3)**; + properties-panel + side-tabs (B6) |
 | `d3-canvas` | `@d3-polytree/canvas` | Single source of truth for the base |
 | `pfdn-moddle` | `@d3-polytree/pfdn-moddle` | Keep tests; `.pfdn` format |
 | `d3-polytree-searchpanel` | `@d3-polytree/search-panel` | Reassess `list.js` |
