@@ -1,8 +1,28 @@
 {
   "name": "@d3-polytree/search-panel",
   "version": "0.0.0",
-  "private": true,
-  "description": "Search panel feature for the diagram viewer",
+  "description": "Searchable diagram-element index (side-tab panel) for the d3-polytree v2 ecosystem",
   "license": "MIT",
-  "author": "David Castillo"
+  "author": "David Castillo",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "eventemitter3": "^5.0.1"
+  }
 }
