@@ -1,0 +1,24 @@
+{
+  "name": "d3-canvas",
+  "description": "A toolbox for displaying svg-based diagrams with D3.js",
+  "main": "dist/D3P.Canvas.js",
+  "authors": [
+    "David Castillo"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "d3",
+    "canvas",
+    "diagram"
+  ],
+  "homepage": "https://github.com/davcs86/d3-canvas",
+  "moduleType": [],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

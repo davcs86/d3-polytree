@@ -1,0 +1,48 @@
+{
+  "name": "d3-canvas",
+  "version": "1.0.0",
+  "description": "A toolbox for displaying svg-based diagrams with D3.js",
+  "main": "dist/D3.Canvas.js",
+  "scripts": {
+    "build-d3": "rollup -c",
+    "prebuild": "npm run build-d3",
+    "build": "webpack --progress --profile --colors --display-error-details"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-canvas.git"
+  },
+  "keywords": [
+    "d3",
+    "canvas",
+    "diagram"
+  ],
+  "author": "David Castillo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/davcs86/d3-canvas/issues"
+  },
+  "homepage": "https://github.com/davcs86/d3-canvas#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "classlist-polyfill": "^1.0.3",
+    "d3-collection": "^1.0.2",
+    "d3-dispatch": "^1.0.2",
+    "d3-force": "^1.0.4",
+    "d3-scale": "^1.0.4",
+    "d3-selection": "^1.0.3",
+    "d3-tip": "^0.7.1",
+    "d3-zoom": "^1.1.1",
+    "didi": "^0.1.1",
+    "eslint": "^3.13.1",
+    "eslint-loader": "~1.5.0",
+    "eventemitter3": "^2.0.3",
+    "ids": "^0.2.0",
+    "lodash": "^4.17.4",
+    "min-dom": "^0.2.0",
+    "ms": "^0.7.3",
+    "rollup": "^0.36.4",
+    "rollup-plugin-node-resolve": "^2.0.0",
+    "webpack": "^2.1.0-beta.27"
+  }
+}
