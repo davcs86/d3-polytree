@@ -22,6 +22,11 @@ import {
   type CreateParameters,
   type Selection
 } from '@d3-polytree/core';
+import {
+  entryFactoryModule,
+  pfdnPropertiesProviderModule,
+  propertiesPanelModule
+} from '@d3-polytree/properties-panel';
 
 /** The document a fresh editor opens with. */
 const INITIAL_DIAGRAM =
@@ -46,7 +51,12 @@ export class Editor extends InteractiveViewer {
     localStorageModule as DiagramModule,
     uploadModule as DiagramModule,
     paletteModule as DiagramModule,
-    resizeElementModule as DiagramModule
+    resizeElementModule as DiagramModule,
+    // the properties panel (registers a side tab; side-tabs + search-panel are
+    // inherited from InteractiveViewer)
+    entryFactoryModule as DiagramModule,
+    pfdnPropertiesProviderModule as DiagramModule,
+    propertiesPanelModule as DiagramModule
   ];
 
   /** The document a fresh editor opens with (used by {@link createDiagram}). */

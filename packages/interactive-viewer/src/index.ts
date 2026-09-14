@@ -18,6 +18,8 @@ import {
   outlineModule,
   type DiagramModule
 } from '@d3-polytree/core';
+import { sideTabsModule } from '@d3-polytree/side-tabs';
+import { searchPanelModule } from '@d3-polytree/search-panel';
 
 export type InteractiveViewerOptions = ViewerOptions;
 
@@ -30,7 +32,11 @@ export class InteractiveViewer extends Viewer {
     axesModule as DiagramModule,
     mouseEventsModule as DiagramModule,
     selectionModule as DiagramModule,
-    outlineModule as DiagramModule
+    outlineModule as DiagramModule,
+    // side panel host + the search panel (subscribes to <class>.created, so it
+    // must boot before the drawers emit — hence it lives in interactionModules)
+    sideTabsModule as DiagramModule,
+    searchPanelModule as DiagramModule
   ];
 
   getModules(): readonly DiagramModule[] {

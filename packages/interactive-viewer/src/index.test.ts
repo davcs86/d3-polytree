@@ -46,4 +46,19 @@ describe('@d3-polytree/interactive-viewer', () => {
     // zoom is a resolvable service on the running engine
     expect(viewer.get('zoom')).toBeTruthy();
   });
+
+  it('mounts the side-tabs panel host with the search-element tab', async () => {
+    const viewer = new InteractiveViewer({ container: document.body });
+    await viewer.importDiagram(oneNodeDiagram());
+
+    // the side-tabs container is mounted and the search panel registered a tab
+    expect(document.body.querySelector('.pfdjs-st-container')).not.toBeNull();
+    const tabs = [...document.body.querySelectorAll('.pfdjs-st-tab')].map((t) =>
+      t.getAttribute('title')
+    );
+    expect(tabs).toContain('Search element');
+    // the panel services are resolvable on the running engine
+    expect(viewer.get('sideTabsProvider')).toBeTruthy();
+    expect(viewer.get('searchPanel')).toBeTruthy();
+  });
 });
