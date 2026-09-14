@@ -50,6 +50,38 @@ describe('@d3-polytree/viewer', () => {
     expect(() => viewer.get('canvas')).toThrow(/no diagram loaded/);
   });
 
+  it('composes caller-supplied modules and eagerly inits them', async () => {
+    const seen: string[] = [];
+    class Probe {
+      static readonly $inject = ['eventBus'];
+      constructor(eventBus: { on: (e: string, fn: (...a: unknown[]) => void) => void }) {
+        eventBus.on('node.created', () => seen.push('node.created'));
+      }
+    }
+    const viewer = new Viewer({
+      container: document.body,
+      modules: [{ __init__: ['probe'], probe: ['type', Probe], answer: ['value', 42] }]
+    });
+    await viewer.importDiagram(oneNodeDiagram());
+
+    // the extra service resolves on the running engine…
+    expect(viewer.get('answer')).toBe(42);
+    // …and its __init__ component was constructed (Probe is resolvable)
+    expect(viewer.get('probe')).toBeInstanceOf(Probe);
+  });
+
+  it('lets a caller module win a token by last definition', async () => {
+    // redefine the `icons` factory (an extension seam the icon packs use):
+    // composed after the core modules, the caller definition wins.
+    const viewer = new Viewer({
+      container: document.body,
+      modules: [{ icons: ['factory', () => ({ custom_only: '<svg />' })] }]
+    });
+    await viewer.importDiagram(oneNodeDiagram());
+    const icons = viewer.get<Record<string, string>>('icons');
+    expect(icons).toEqual({ custom_only: '<svg />' });
+  });
+
   it('acts as the d3polytree host and round-trips through export', async () => {
     const viewer = new Viewer({ container: document.body });
     await viewer.importDiagram(oneNodeDiagram());
