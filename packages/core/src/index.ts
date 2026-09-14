@@ -2,18 +2,19 @@
  * @d3-polytree/core — the diagram engine.
  *
  * B3 carves `core-v2beta`'s `draw` / `features` / `modelling` layers into this
- * package incrementally. This first slice wires the foundation: the base canvas
- * services and the PFDN model, composed into the `coreModules` didi stack that
- * the higher-level packages (viewer/interactive-viewer/editor) build on.
+ * package incrementally. Wires the base canvas services, the PFDN model, and the
+ * draw layer into the `coreModules` didi stack the higher-level packages build on.
  */
 import { canvasModule } from '@d3-polytree/canvas';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
+import { drawingRegistryModule } from './draw';
 
 export { canvasModule } from '@d3-polytree/canvas';
 export { createPfdnModdle, PfdnModdle } from '@d3-polytree/pfdn-moddle';
+export * from './draw';
 
-/** didi modules that make up the core engine (extended as B3 lands draw/features). */
-export const coreModules: unknown[] = [canvasModule];
+/** didi modules that make up the core engine (extended as B3 lands more draw/features). */
+export const coreModules: unknown[] = [canvasModule, drawingRegistryModule];
 
 /** Convenience factory for the PFDN model used by the engine. */
 export const createModel = createPfdnModdle;

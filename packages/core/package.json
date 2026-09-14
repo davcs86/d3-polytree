@@ -16,7 +16,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
@@ -25,6 +27,14 @@
   },
   "dependencies": {
     "@d3-polytree/canvas": "workspace:*",
-    "@d3-polytree/pfdn-moddle": "workspace:*"
+    "@d3-polytree/pfdn-moddle": "workspace:*",
+    "eventemitter3": "^5.0.1"
+  },
+  "peerDependencies": {
+    "d3-selection": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/d3-selection": "^3.0.11",
+    "d3-selection": "^3.0.0"
   }
 }

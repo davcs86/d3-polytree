@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@d3-polytree/canvas', '@d3-polytree/pfdn-moddle', 'd3-selection']
+  external: ['@d3-polytree/canvas', '@d3-polytree/pfdn-moddle', 'eventemitter3', 'd3-selection']
 });
