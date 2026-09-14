@@ -18,6 +18,9 @@ export interface ModellingModelElement extends DiagramElement {
   label?: ModellingModelElement;
   text?: string;
   type?: string;
+  source?: ModellingModelElement;
+  target?: ModellingModelElement;
+  waypoint?: Point[];
 }
 
 /** Parameters accepted by the label/node create flows. */
