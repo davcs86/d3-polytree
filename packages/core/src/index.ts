@@ -12,6 +12,9 @@ import { drawingRegistryModule } from './draw';
 export { canvasModule } from '@d3-polytree/canvas';
 export { createPfdnModdle, PfdnModdle } from '@d3-polytree/pfdn-moddle';
 export * from './draw';
+export * as collections from './utils/collections';
+export { getLocalName } from './utils/localName';
+export type { Descriptored } from './utils/localName';
 
 /** didi modules that make up the core engine (extended as B3 lands more draw/features). */
 export const coreModules: unknown[] = [canvasModule, drawingRegistryModule];
