@@ -63,6 +63,8 @@ importers:
 
   packages/canvas: {}
 
+  packages/pfdn-moddle: {}
+
 packages:
 
   '@asamuzakjp/css-color@3.2.0':

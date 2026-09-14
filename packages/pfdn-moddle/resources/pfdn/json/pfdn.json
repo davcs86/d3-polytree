@@ -1,0 +1,463 @@
+{
+  "name": "Process Flow Diagram Definition",
+  "uri": "http://pfdn",
+  "associations": [],
+  "types": [
+    {
+      "name": "Statusable",
+      "isAbstract": true,
+      "properties": [
+        {
+          "name": "status",
+          "type": "Real",
+          "isAttr": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "Base",
+      "isAbstract": true,
+      "superClass": [
+        "Statusable"
+      ],
+      "properties": [
+        {
+          "name": "id",
+          "type": "String",
+          "isAttr": true,
+          "isId": true
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "isAttr": true
+        }
+      ]
+    },
+    {
+      "name": "Property",
+      "superClass": [
+        "Statusable"
+      ],
+      "properties": [
+        {
+          "name": "name",
+          "type": "String",
+          "isAttr": true
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "isAttr": true,
+          "default": "string"
+        },
+        {
+          "name": "value",
+          "type": "String",
+          "isAttr": true,
+          "default": ""
+        }
+      ]
+    },
+    {
+      "name": "PropertiesSet",
+      "superClass": [
+        "Statusable"
+      ],
+      "properties": [
+        {
+          "name": "id",
+          "type": "String",
+          "isAttr": true,
+          "isId": true
+        },
+        {
+          "name": "property",
+          "type": "Property",
+          "isMany": true,
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Coordinates",
+      "properties": [
+        {
+          "name": "x",
+          "type": "Real",
+          "isAttr": true,
+          "default": 0
+        },
+        {
+          "name": "y",
+          "type": "Real",
+          "isAttr": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "Zoom",
+      "superClass": [
+        "Statusable"
+      ],
+      "properties": [
+        {
+          "name": "offset",
+          "type": "Coordinates",
+          "default": {
+            "x": 0,
+            "y": 0,
+            "scale": 2
+          },
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "scale",
+          "type": "Real",
+          "default": 1
+        }
+      ]
+    },
+    {
+      "name": "Grid",
+      "properties": [
+        {
+          "name": "show",
+          "type": "Boolean",
+          "isAttr": true,
+          "default": true
+        },
+        {
+          "name": "lineColor",
+          "type": "String",
+          "isAttr": true,
+          "default": "#dddddd"
+        },
+        {
+          "name": "size",
+          "type": "Real",
+          "isAttr": true,
+          "default": 25
+        },
+        {
+          "name": "lineWidth",
+          "type": "Real",
+          "isAttr": true,
+          "default": 1
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "superClass": [
+        "Base"
+      ],
+      "properties": [
+        {
+          "name": "author",
+          "type": "String",
+          "default": "No Author",
+          "isAttr": true
+        },
+        {
+          "name": "backgroundColor",
+          "type": "String",
+          "default": "#ffffff",
+          "isAttr": true
+        },
+        {
+          "name": "zoom",
+          "type": "Zoom",
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "grid",
+          "type": "Grid",
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Label",
+      "superClass": [
+        "Base"
+      ],
+      "properties": [
+        {
+          "name": "position",
+          "type": "Coordinates",
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "isReadOnly",
+          "type": "Boolean",
+          "isAttr": true,
+          "default": false
+        },
+        {
+          "name": "text",
+          "type": "String"
+        },
+        {
+          "name": "color",
+          "type": "String",
+          "isAttr": true,
+          "default": "#303030"
+        },
+        {
+          "name": "fontSize",
+          "type": "Real",
+          "isAttr": true,
+          "default": 13
+        }
+      ]
+    },
+    {
+      "name": "Node",
+      "superClass": [
+        "Base"
+      ],
+      "properties": [
+        {
+          "name": "label",
+          "type": "Label",
+          "isAttr": true,
+          "isReference": true
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "isAttr": true,
+          "default": "default"
+        },
+        {
+          "name": "tag",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "propertiesSet",
+          "type": "PropertiesSet",
+          "isAttr": true,
+          "isReference": true
+        },
+        {
+          "name": "position",
+          "type": "Coordinates",
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "size",
+          "type": "Real",
+          "isAttr": true,
+          "default": 25
+        }
+      ]
+    },
+    {
+      "name": "Border",
+      "properties": [
+        {
+          "name": "lineWidth",
+          "type": "Real",
+          "isAttr": true,
+          "default": 1
+        },
+        {
+          "name": "lineColor",
+          "type": "String",
+          "isAttr": true,
+          "default": "#dddddd"
+        }
+      ]
+    },
+    {
+      "name": "Zone",
+      "superClass": [
+        "Base"
+      ],
+      "properties": [
+        {
+          "name": "label",
+          "type": "Label",
+          "isAttr": true,
+          "isReference": true
+        },
+        {
+          "name": "position",
+          "type": "Coordinates",
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "width",
+          "type": "Real",
+          "isAttr": true,
+          "default": 25
+        },
+        {
+          "name": "height",
+          "type": "Real",
+          "isAttr": true,
+          "default": 25
+        },
+        {
+          "name": "fillColor",
+          "type": "String",
+          "isAttr": true,
+          "default": "#dddddd"
+        },
+        {
+          "name": "opacity",
+          "type": "Real",
+          "isAttr": true,
+          "default": 0.6
+        },
+        {
+          "name": "border",
+          "type": "Border",
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Link",
+      "superClass": [
+        "Base"
+      ],
+      "properties": [
+        {
+          "name": "label",
+          "type": "Label",
+          "isAttr": true,
+          "isReference": true
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "isAttr": true,
+          "isReference": true
+        },
+        {
+          "name": "target",
+          "type": "String",
+          "isAttr": true,
+          "isReference": true
+        },
+        {
+          "name": "lineColor",
+          "type": "String",
+          "isAttr": true,
+          "default": "#000000"
+        },
+        {
+          "name": "lineWidth",
+          "type": "Real",
+          "isAttr": true,
+          "default": 4
+        },
+        {
+          "name": "fillColor",
+          "type": "String",
+          "isAttr": true,
+          "default": "#ffffff"
+        },
+        {
+          "name": "waypoint",
+          "type": "Coordinates",
+          "isMany": true,
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "tag",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "propertiesSet",
+          "type": "PropertiesSet",
+          "isAttr": true,
+          "isReference": true
+        }
+      ]
+    },
+    {
+      "name": "Diagram",
+      "superClass": [
+        "Base"
+      ],
+      "properties": [
+        {
+          "name": "settings",
+          "type": "Settings",
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "node",
+          "type": "Node",
+          "isMany": true,
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "link",
+          "type": "Link",
+          "isMany": true,
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "label",
+          "type": "Label",
+          "isMany": true,
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "zone",
+          "type": "Zone",
+          "isMany": true,
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        },
+        {
+          "name": "propertiesSet",
+          "type": "PropertiesSet",
+          "isMany": true,
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        }
+      ]
+    }
+  ],
+  "prefix": "pfdn",
+  "xml": {
+    "tagAlias": "lowerCase"
+  }
+}

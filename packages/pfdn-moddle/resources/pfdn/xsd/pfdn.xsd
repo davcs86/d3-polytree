@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xsd:element name="diagram">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element name="settings">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="name" type="xsd:string"/>
+                            <xsd:element name="zoom">
+                                <xsd:complexType>
+                                    <xsd:sequence>
+                                        <xsd:element name="coordinates"/>
+                                    </xsd:sequence>
+                                </xsd:complexType>
+                            </xsd:element>
+                            <xsd:element name="grid"/>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="node" maxOccurs="unbounded">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="coordinates">
+                                <xsd:complexType>
+                                    <xsd:attribute name="x" type="xsd:int"/>
+                                    <xsd:attribute name="y" type="xsd:int"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                        </xsd:sequence>
+                        <xsd:attribute name="id" type="xsd:string"/>
+                        <xsd:attribute name="label" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="link" maxOccurs="unbounded">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="coordinates" maxOccurs="unbounded">
+                                <xsd:complexType>
+                                    <xsd:attribute name="x" type="xsd:int"/>
+                                    <xsd:attribute name="y" type="xsd:double"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                        </xsd:sequence>
+                        <xsd:attribute name="id" type="xsd:string"/>
+                        <xsd:attribute name="label" type="xsd:string"/>
+                        <xsd:attribute name="source" type="xsd:string"/>
+                        <xsd:attribute name="target" type="xsd:string"/>
+                        <xsd:attribute name="lineColor" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="label" maxOccurs="unbounded">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="coordinates">
+                                <xsd:complexType>
+                                    <xsd:attribute name="x" type="xsd:int"/>
+                                    <xsd:attribute name="y" type="xsd:int"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                            <xsd:element name="text" type="xsd:string"/>
+                        </xsd:sequence>
+                        <xsd:attribute name="id" type="xsd:string"/>
+                        <xsd:attribute name="fontSize" type="xsd:int"/>
+                    </xsd:complexType>
+                </xsd:element>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
+</xsd:schema>

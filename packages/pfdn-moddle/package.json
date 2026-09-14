@@ -1,0 +1,8 @@
+{
+  "name": "@d3-polytree/pfdn-moddle",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PFDN moddle model — read/write .pfdn diagram XML (imported with history in B1; modernized to TS/ESM + Vitest in B4)",
+  "license": "MIT",
+  "author": "David Castillo"
+}
