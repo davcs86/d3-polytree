@@ -13,12 +13,15 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./style.css": "./dist/style.css"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && sass src/style/style.scss dist/style.css --no-source-map --style=compressed --silence-deprecation=import",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
