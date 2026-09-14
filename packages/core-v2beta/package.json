@@ -1,8 +1,0 @@
-{
-  "name": "@d3-polytree/core-v2beta",
-  "version": "0.0.0",
-  "private": true,
-  "description": "v2.0-beta core (Viewer/InteractiveViewer/Editor + base/draw/features/modelling) — staging import; split into core/viewer/interactive-viewer/editor during B2-B3",
-  "license": "MIT",
-  "author": "David Castillo"
-}
