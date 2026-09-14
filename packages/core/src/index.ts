@@ -14,7 +14,7 @@ export * from './draw';
 export * as collections from './utils/collections';
 export { getLocalName } from './utils/localName';
 export type { Descriptored } from './utils/localName';
-export * from './features/notifications';
+export * from './features';
 export * from './modelling';
 export * from './Diagram';
 export * from './model/model';
