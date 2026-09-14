@@ -9,6 +9,8 @@ import { Drag } from './drag';
 import { Exporting } from './exporting';
 import { LocalStorage } from './localStorage';
 import { Upload } from './upload';
+import { ResizeElement } from './resizeElement';
+import { NoticePopup } from './noticePopup';
 import { AddNodeHandler, AddLabelHandler, AddLinkTool, PaletteProvider, Palette } from './palette';
 import { notificationsModule } from './notifications';
 import { drawingRegistryModule } from '../draw';
@@ -31,6 +33,8 @@ export { LocalStorage } from './localStorage';
 export type { StorageHost } from './localStorage';
 export { Upload } from './upload';
 export type { UploadHost } from './upload';
+export { ResizeElement } from './resizeElement';
+export { NoticePopup } from './noticePopup';
 export {
   BaseAddHandler,
   AddNodeHandler,
@@ -158,4 +162,18 @@ export const paletteModule = {
   __init__: ['palette'],
   palette: ['type', Palette],
   __depends__: [paletteProviderModule]
+};
+
+/** didi module adding resize handles to node outlines. */
+export const resizeElementModule = {
+  __init__: ['resizeElement'],
+  resizeElement: ['type', ResizeElement],
+  __depends__: [outlineModule]
+};
+
+/** didi module adding the project notice popup button. */
+export const noticePopupModule = {
+  __init__: ['noticePopup'],
+  noticePopup: ['type', NoticePopup],
+  __depends__: [notificationsModule]
 };
