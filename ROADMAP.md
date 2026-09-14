@@ -315,14 +315,17 @@ Resolved by this revision: **monorepo** (was O3 — confirmed), **include compan
 (confirmed), **npm distribution** (confirmed), **Storybook** (confirmed), **TypeScript** (confirmed),
 **slim modular D3 peer deps** (confirmed).
 
+Decided (@davcs86, 2026-09-14): **O2 — npm scope `@d3-polytree/*`** (scoped);
+**O6 — preserve history via `git filter-repo`** into per-package subdirectories when absorbing repos.
+
 | ID | Question | Blocks | Recommendation |
 |---|---|---|---|
 | O1 | Fate of the v2 model layer — keep `.pfdn`/`moddle` XML, or move to a JSON schema? | B2, B4 | Keep `pfdn-moddle` (proven, tested); optionally add a JSON I/O adapter later |
-| O2 | npm scope — `@d3-polytree/*` vs unscoped `d3-polytree-*` names? | B9 | `@d3-polytree/*` (namespace the ecosystem) |
+| ~~O2~~ | ~~npm scope — scoped vs unscoped?~~ | — | **Decided: `@d3-polytree/*` (scoped).** |
 | O3 | Storybook renderer — `@storybook/html-vite` vs `web-components-vite`? | B7 | `html-vite` (components are vanilla today) |
 | O4 | Keep `scroll-tabs` as a published package or absorb into properties-panel? | B6 | Absorb (single consumer) |
 | O5 | Layout parity bar — byte-for-byte vs "visually equivalent within tolerance"? | B4, B5 | Tolerance-based, enforced by characterization + visual-regression tests |
-| O6 | History preservation when absorbing repos — `git subtree` vs `filter-repo` vs fresh import? | B1 | `git filter-repo` into subdirectories to preserve authorship/history |
+| ~~O6~~ | ~~History preservation when absorbing repos?~~ | — | **Decided: `git filter-repo` into per-package subdirectories** (preserve authorship/history). |
 | O7 | Minimum browser matrix for v2 (drop IE entirely)? | B5, B8 | Evergreen + last 2 versions; drop IE (retire F13/`classlist-polyfill`) |
 | O8 | Ship a bundled-D3 UMD/IIFE build for `<script>`-tag users alongside the ESM peer-dep builds? | B3, B9 | Yes — a secondary artifact per top-level component |
 | O9 | Properties-panel grid replacement — headless grid lib vs purpose-built typed table? | B6 | Prototype both in Storybook; decide on bundle-size/feature fit |
@@ -335,7 +338,7 @@ Resolved by this revision: **monorepo** (was O3 — confirmed), **include compan
 |---|---|---|---|
 | D3 v1→v7 migration introduces interaction regressions | High | High | Storybook visual regression + characterization tests gate B5; migrate interaction-by-interaction |
 | Properties-panel de-jQuery (B6) balloons in scope | High | High | Ship viewer + interactive-viewer first (`v2.0.0`); editor/properties-panel can follow as `v2.1` |
-| History loss when absorbing 8 repos | Medium | Medium | `git filter-repo` into subdirs (O6); verify blame/authorship post-import |
+| History loss when absorbing 8 repos | Medium | Medium | `git filter-repo` into per-package subdirs (decided, O6); verify blame/authorship post-import |
 | `github:` → `workspace:*` breakage during B1 | Medium | Medium | Absorb first, keep old toolchain building in-place, then migrate toolchain (B3) separately |
 | Divergence between `d3-canvas` and its vendored copy hides bugs | Medium | Medium | De-duplicate early (B2) before any refactor touches the base |
 | Consumers depend on v1 global/options shape | Medium | Medium | Track A keeps v1 supported; v1→v2 migration guide (B9/7.6) |
@@ -351,9 +354,10 @@ Resolved by this revision: **monorepo** (was O3 — confirmed), **include compan
    step. *(A1 / F2 / F3)*
 3. **Add GitHub Actions** on `master` — `install → build` on Linux to prevent F1-class regressions. *(A4)*
 4. **Commit lockfile; gitignore `dist/`.** *(A3 / F12)*
-5. **Stand up the monorepo skeleton** (pnpm + Turborepo + Changesets + shared TS/ESLint/Vitest/Storybook
-   scaffolding) on a `v2` branch — no code moved yet. *(B0)*
-6. **Resolve O2/O6** (npm scope + history-preservation method) before absorbing repos. *(B1)*
+5. **Stand up the monorepo skeleton** on a `v2` branch under the `@d3-polytree/*` scope (O2): pnpm +
+   Turborepo + Changesets + shared TS/ESLint/Vitest/Storybook scaffolding — no code moved yet. *(B0)*
+6. **Absorb the 8 repos with `git filter-repo`** (O6) into `packages/*` subdirectories, preserving
+   authorship/history, then swap `github:` cross-deps for `workspace:*`. *(B1)*
 
 Each is small, independently reviewable, and moves the ecosystem toward a green baseline before the
 consolidation phases begin.
