@@ -4,11 +4,20 @@
   "private": true,
   "description": "Storybook dev harness, visual-regression baseline and docs site for @d3-polytree/*",
   "scripts": {
+    "build-storybook": "storybook build --disable-telemetry",
     "storybook": "storybook dev -p 6006 --disable-telemetry",
-    "build-storybook": "storybook build --disable-telemetry"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@d3-polytree/canvas": "workspace:*",
+    "@d3-polytree/core": "workspace:*",
+    "@d3-polytree/editor": "workspace:*",
+    "@d3-polytree/icons-amazon": "workspace:*",
+    "@d3-polytree/interactive-viewer": "workspace:*",
+    "@d3-polytree/properties-panel": "workspace:*",
+    "@d3-polytree/search-panel": "workspace:*",
+    "@d3-polytree/side-tabs": "workspace:*",
+    "@d3-polytree/viewer": "workspace:*",
     "d3-selection": "^3.0.0",
     "eventemitter3": "^5.0.1"
   },
