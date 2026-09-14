@@ -35,6 +35,15 @@ describe('Canvas', () => {
     expect(canvas.getTransform()).toEqual({ a: 1, d: 1, e: 0, f: 0 });
   });
 
+  it('falls back to identity when the transform cannot be consolidated', () => {
+    const { canvas } = makeCanvas();
+    // With a transform attribute set but no SVG layout engine (jsdom), the
+    // matrix cannot be consolidated; getTransform must not throw.
+    canvas.getDrawingLayer().attr('transform', 'translate(5, 7) scale(2)');
+    expect(() => canvas.getTransform()).not.toThrow();
+    expect(canvas.getTransform()).toEqual({ a: 1, d: 1, e: 0, f: 0 });
+  });
+
   it('removes its container on d3canvas.destroy', () => {
     const { canvas, bus } = makeCanvas();
     const container = canvas.getContainer();

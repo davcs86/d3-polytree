@@ -32,10 +32,16 @@
     "eventemitter3": "^5.0.1"
   },
   "peerDependencies": {
-    "d3-selection": "^3.0.0"
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "d3-transition": "^3.0.0"
   },
   "devDependencies": {
     "@types/d3-selection": "^3.0.11",
-    "d3-selection": "^3.0.0"
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "@types/d3-zoom": "^3.0.8",
+    "d3-transition": "^3.0.0",
+    "@types/d3-transition": "^3.0.9"
   }
 }
