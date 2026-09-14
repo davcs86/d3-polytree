@@ -11,6 +11,9 @@ import { LocalStorage } from './localStorage';
 import { Upload } from './upload';
 import { ResizeElement } from './resizeElement';
 import { NoticePopup } from './noticePopup';
+import { AlertIcons } from './alertIcons';
+import { Tooltip } from './tooltip';
+import { defsModule } from '../draw';
 import { AddNodeHandler, AddLabelHandler, AddLinkTool, PaletteProvider, Palette } from './palette';
 import { notificationsModule } from './notifications';
 import { drawingRegistryModule } from '../draw';
@@ -35,6 +38,10 @@ export { Upload } from './upload';
 export type { UploadHost } from './upload';
 export { ResizeElement } from './resizeElement';
 export { NoticePopup } from './noticePopup';
+export { AlertIcons } from './alertIcons';
+export type { AlertType } from './alertIcons';
+export { Tooltip } from './tooltip';
+export type { TooltipFn } from './tooltip';
 export {
   BaseAddHandler,
   AddNodeHandler,
@@ -176,4 +183,17 @@ export const noticePopupModule = {
   __init__: ['noticePopup'],
   noticePopup: ['type', NoticePopup],
   __depends__: [notificationsModule]
+};
+
+/** didi module showing blinking alert badges on nodes. */
+export const alertIconsModule = {
+  __init__: ['alertIcons'],
+  alertIcons: ['type', AlertIcons],
+  __depends__: [defsModule, notificationsModule, drawingRegistryModule]
+};
+
+/** didi module showing hover tooltips on nodes when zoomed out. */
+export const tooltipModule = {
+  __init__: ['tooltip'],
+  tooltip: ['type', Tooltip]
 };
