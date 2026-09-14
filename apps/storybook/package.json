@@ -1,0 +1,19 @@
+{
+  "name": "@d3-polytree/storybook",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Storybook dev harness, visual-regression baseline and docs site for @d3-polytree/*",
+  "scripts": {
+    "storybook": "storybook dev -p 6006 --disable-telemetry",
+    "build-storybook": "storybook build --disable-telemetry"
+  },
+  "dependencies": {
+    "@d3-polytree/canvas": "workspace:*"
+  },
+  "devDependencies": {
+    "@storybook/html": "^8.4.7",
+    "@storybook/html-vite": "^8.4.7",
+    "storybook": "^8.4.7",
+    "vite": "^5.4.11"
+  }
+}
