@@ -104,7 +104,10 @@ export class Canvas {
     }
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttributeNS(null, 'transform', transform);
-    const matrix = g.transform.baseVal.consolidate()?.matrix;
+    // `SVGGraphicsElement.transform` is not implemented in every environment
+    // (e.g. jsdom); fall back to identity rather than throwing.
+    const baseVal = (g as SVGGraphicsElement).transform?.baseVal;
+    const matrix = baseVal?.consolidate?.()?.matrix;
     return matrix ? { a: matrix.a, d: matrix.d, e: matrix.e, f: matrix.f } : identity;
   }
 
