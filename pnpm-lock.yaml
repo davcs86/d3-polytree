@@ -50,6 +50,30 @@ importers:
       '@d3-polytree/canvas':
         specifier: workspace:*
         version: link:../../packages/canvas
+      '@d3-polytree/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@d3-polytree/editor':
+        specifier: workspace:*
+        version: link:../../packages/editor
+      '@d3-polytree/icons-amazon':
+        specifier: workspace:*
+        version: link:../../packages/icons-amazon
+      '@d3-polytree/interactive-viewer':
+        specifier: workspace:*
+        version: link:../../packages/interactive-viewer
+      '@d3-polytree/properties-panel':
+        specifier: workspace:*
+        version: link:../../packages/properties-panel
+      '@d3-polytree/search-panel':
+        specifier: workspace:*
+        version: link:../../packages/search-panel
+      '@d3-polytree/side-tabs':
+        specifier: workspace:*
+        version: link:../../packages/side-tabs
+      '@d3-polytree/viewer':
+        specifier: workspace:*
+        version: link:../../packages/viewer
       d3-selection:
         specifier: ^3.0.0
         version: 3.0.0
