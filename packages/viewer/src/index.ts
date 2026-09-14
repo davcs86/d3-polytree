@@ -8,7 +8,6 @@
  */
 import {
   Diagram,
-  createModelModule,
   emptyModel,
   loadModel,
   labelsModule,
@@ -18,6 +17,14 @@ import {
   type DiagramModule,
   type ModelHost
 } from '@d3-polytree/core';
+
+type ModelDefinitions = ModelHost['definitions'];
+type ModelModdle = ModelHost['moddle'];
+
+/** The minimal canvas surface the viewer uses for SVG export. */
+interface CanvasLike {
+  getSVGStr(): string;
+}
 
 export interface ViewerOptions {
   /** Host element the diagram is rendered into. */
@@ -35,6 +42,10 @@ export class Viewer {
   ];
 
   readonly options: ViewerOptions;
+  /** The loaded diagram root — exposed so this instance is the `d3polytree` host. */
+  definitions: ModelDefinitions | null = null;
+  /** The moddle instance backing {@link definitions}. */
+  moddle: ModelModdle | null = null;
   private _diagram: Diagram | null = null;
   private _host: ModelHost | null = null;
 
@@ -62,6 +73,19 @@ export class Viewer {
     return this._host;
   }
 
+  /** Serialize the current diagram to a `.pfdn` XML string. */
+  exportDiagram(): string {
+    if (!this.moddle || !this.definitions) {
+      throw new Error('no diagram loaded');
+    }
+    return this.moddle.toXML(this.definitions);
+  }
+
+  /** The current rendered SVG as a string. */
+  exportSVG(): string {
+    return this.get<CanvasLike>('canvas').getSVGStr();
+  }
+
   /** Resolve a service from the running engine. */
   get<T>(name: string, strict?: boolean): T {
     if (!this._diagram) {
@@ -75,6 +99,8 @@ export class Viewer {
     this._diagram?.destroy();
     this._diagram = null;
     this._host = null;
+    this.definitions = null;
+    this.moddle = null;
   }
 
   private _boot(host: ModelHost): void {
@@ -82,9 +108,15 @@ export class Viewer {
       this.destroy();
     }
     this._host = host;
+    this.definitions = host.definitions;
+    this.moddle = host.moddle;
+    // Register this instance as the `d3polytree` host: didi's property-path
+    // resolution then supplies `d3polytree.definitions[.settings…]` and
+    // `d3polytree.moddle` to the drawers/modelling, and the IO methods above to
+    // the file-ops features.
     this._diagram = new Diagram({
       container: this.options.container,
-      modules: [...this.getModules(), createModelModule(host)]
+      modules: [...this.getModules(), { d3polytree: ['value', this] } as DiagramModule]
     });
   }
 }
