@@ -167,7 +167,11 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0(moddle@7.2.0)
 
-  packages/properties-panel: {}
+  packages/properties-panel:
+    dependencies:
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.4
 
   packages/scroll-tabs: {}
 
