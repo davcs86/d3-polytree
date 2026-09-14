@@ -1,295 +1,392 @@
 # d3-polytree — Modernization Roadmap
 
 > **Status:** Proposal / RFC · **Owner:** @davcs86 · **Last updated:** 2026-09-14
-> **Strategy:** Hybrid, phased-to-rewrite · **Language target:** TypeScript · **D3:** slim, modular peer dependency
+> **Strategy:** Hybrid, phased-to-consolidation · **Language target:** TypeScript
+> **Distribution:** monorepo → scoped npm packages · **D3:** slim, modular peer dependency
+> **Dev/docs harness:** Storybook
 
-This document is the single source of truth for modernizing `d3-polytree`. It captures a
-full audit of the current code, defines the target architecture, and sequences the work into
-milestones with explicit exit criteria so the effort is executable and reviewable rather than
-open-ended. It is intentionally opinionated to minimize rework: decisions are recorded inline,
-and open questions are flagged for resolution before the phase that depends on them.
+This document is the single source of truth for modernizing the `d3-polytree` **ecosystem**. It
+captures a full audit of the shipping code and the existing `v2.0-beta` prototype, inventories the
+constellation of first-party repositories that make up v2, defines the target monorepo
+architecture, and sequences the work into milestones with explicit exit criteria. It is
+intentionally opinionated to minimize rework; decisions are recorded inline and open questions are
+flagged for resolution before the phase that depends on them.
 
 ---
 
 ## 1. Executive summary
 
-`d3-polytree` is a browser library that renders interactive [polytree](https://en.wikipedia.org/wiki/Polytree)
-diagrams (directed, layered node/link graphs with grouping, tooltips, drag, zoom, floating
-labels, and per-node data tables) on top of D3. The current implementation is functional but
-is built on a **fully end-of-life stack**: D3 v3, Grunt + Browserify, JSHint, Bootstrap 3, and
-a browser-bundled Node XML parser (`xml2js`) that **requires manual patching of `node_modules`
-on every install**. There are **zero tests**, **no CI**, **no type definitions**, and a **latent
-case-sensitivity bug** that breaks the build on Linux.
+`d3-polytree` renders interactive [polytree](https://en.wikipedia.org/wiki/Polytree) / process-flow
+diagrams on top of D3. There are effectively **two codebases** today:
 
-The chosen direction is **hybrid, phased-to-rewrite**:
+- **`master` (v1)** — a single ~839-LOC `SimpleNetwork` class on a **fully end-of-life stack**
+  (D3 v3, Grunt/Browserify, JSHint, Bootstrap 3) with a browser-bundled Node XML parser that
+  **requires hand-patching `node_modules` on every install**, a **latent Linux-only build break**,
+  zero tests, and no CI. This is what npm/bower consumers get today.
+- **`v2.0-beta` + companion repos** — a far more advanced, **diagram-js/bpmn-js-derived**
+  rewrite: modular D3 (v1-era submodules), a `didi` dependency-injection kernel, a `moddle`-based
+  model layer (`pfdn-moddle`) with an XML file format (`.pfdn`), a feature-module architecture
+  (`lib/draw/*`, `lib/features/*`), and **three shipping components — Viewer, Interactive Viewer,
+  and Editor**. Its logic is sound and modern *in shape*; only its **toolchain is frozen at mid-2017**
+  (webpack 3, rollup 0.45, node-sass 4, ESLint 3/4) and it is **fragmented across eight
+  repositories** wired together by `github:` dependencies.
 
-- **Track A — Stabilize (`v1.x` maintenance):** make the *existing* codebase correct, buildable,
-  and reproducible without changing its public API. This unblocks current consumers and buys
-  time for Track B.
-- **Track B — Rewrite (`v2.0`):** a greenfield, TypeScript, ESM-first package with modern
-  modular D3 (v7) as a slim peer dependency, aligned with the `v2.0-beta` component split
-  (viewer / interactive-viewer / modeler). A documented migration bridge connects v1 → v2.
+The chosen direction is **hybrid, phased-to-consolidation**:
 
-The two tracks run in parallel after Track A ships, with a strict rule: **no new features land
-on v1** — v1 receives correctness and security fixes only; all feature investment goes to v2.
+- **Track A — Stabilize `v1.x`:** make the *shipping* `master` code correct, buildable, and
+  reproducible **without changing its public API**, so current consumers are unblocked.
+- **Track B — Consolidate & modernize v2 into a monorepo:** unify the eight first-party repos into
+  **one workspace** published as **scoped npm packages** (`@d3-polytree/*`), migrate the frozen
+  toolchain to a modern one (Vite/tsup + pnpm + Turborepo + Changesets), convert to **TypeScript**,
+  upgrade modular **D3 v1 → v7** as slim **peer** dependencies, retire the jQuery-era stack in the
+  properties panel, and stand up **Storybook** as the development harness, visual-regression net,
+  and published documentation site.
+
+Track B is **consolidation, not a from-scratch rewrite** — the v2 architecture already exists and
+is the asset being modernized. This materially lowers risk versus the greenfield framing.
 
 ---
 
-## 2. Current-state audit
+## 2. Ecosystem inventory
 
-### 2.1 Repository inventory
+Eight first-party repositories make up the v2 system (all companion repos last pushed 2017). The
+monorepo's job is to absorb them.
 
-| Path | Role | Notes |
-|---|---|---|
-| `index.js` | Package entry | `module.exports = require('./lib/SimpleNetwork')` |
-| `lib/SimpleNetwork.js` | Core class (~839 LOC) | Layout, rendering, interaction — the entire engine |
-| `lib/utils/helper.js` | Link-path geometry (~350 LOC) | Bezier routing, side-connector math |
-| `lib/utils/dblClick.js` | Double-click gesture | Uses removed D3 v3 `d3.dispatch`/`d3.rebind`/`d3.mouse` |
-| `lib/utils/lightbox.js` | Modal overlay | `innerHTML` injection via `min-dom` |
-| `lib/utils/styles.scss` | Styles | Depends on Bootstrap 3 table classes |
-| `lib/icons/{index.js,default.svg}` | Icon registry | Parsed at runtime by `xml2js` |
-| `tasks/bundle.js`, `GruntFile.js` | Build | Grunt + Browserify + uglify-js 2 |
-| `dist/*` | Committed build output | 30k-line bundle checked into VCS |
-| `bower.json`, `.jshintrc` | Legacy config | Bower + JSHint (both EOL) |
+| Repo | Role in v2 | Current stack / notable deps | Disposition |
+|---|---|---|---|
+| **`d3-polytree`** `@master` | v1 legacy viewer (shipping) | D3 v3, Grunt, JSHint | Maintain as `v1.x` (Track A); source of the v1 API contract |
+| **`d3-polytree`** `@v2.0-beta` | v2 core: Viewer / InteractiveViewer / Editor, base canvas, `draw/*`, `features/*`, `modelling/*` | modular D3 v1, `didi`, `moddle`, `min-dom`, webpack 3, rollup 0.45 | Becomes `@d3-polytree/{core,viewer,interactive-viewer,editor}` |
+| **`d3-canvas`** | Base SVG canvas toolbox: `Canvas`, `ElementRegistry`, `ElementBuilder`, `SvgExportingUtils` | modular D3 v1, `didi`, `eventemitter3`, `ids` | **Already vendored** into v2 `lib/base/core/*`; promote to `@d3-polytree/canvas` (single source of truth) |
+| **`pfdn-moddle`** | PFDN model descriptor — read/write `.pfdn` diagram XML | `moddle`, `moddle-xml`; **has a mocha/chai test suite** | `@d3-polytree/pfdn-moddle` (keep as the file-format package) |
+| **`d3-polytree-searchpanel`** | Search panel feature | `list.js`, `min-dom`, webpack 1 | `@d3-polytree/search-panel` |
+| **`d3-polytree-sidetabs`** | Side-tabs UI feature | `min-dom`, `domify`, webpack 1 | `@d3-polytree/side-tabs` |
+| **`d3-polytree-propertiespanel`** | Editor properties/editing panel | **`jquery` 1.11, `jquery-ui`, `slickgrid`, `spectrum-colorpicker`, `choices.js`, `scroll-tabs`** | `@d3-polytree/properties-panel` — **heaviest modernization liability** (see §7.5) |
+| **`scroll-tabs`** (fork) | Tab-scrolling component used by properties-panel | `min-dom`, karma/phantomjs tests | Absorb into `properties-panel`, or publish as `@d3-polytree/scroll-tabs` |
+| **`d3-polytree-amazon`** | AWS icon pack (~300 SVGs) + custom bundle example | depends on `d3-polytree#v2.0-beta` + `d3-canvas`, `svg-inline-loader` | `@d3-polytree/icons-amazon` — template for an **icon-pack package convention** |
 
-### 2.2 Findings (ranked by severity)
+### 2.1 First-party dependency graph (v2)
+
+```mermaid
+graph TD
+  amazon["@d3-polytree/icons-amazon"] --> viewer
+  amazon --> iviewer
+  amazon --> editor
+  editor["@d3-polytree/editor"] --> core
+  iviewer["@d3-polytree/interactive-viewer"] --> core
+  viewer["@d3-polytree/viewer"] --> core
+  editor --> pp["@d3-polytree/properties-panel"]
+  iviewer --> sp["@d3-polytree/search-panel"]
+  editor --> st["@d3-polytree/side-tabs"]
+  pp --> scrolltabs["@d3-polytree/scroll-tabs"]
+  core["@d3-polytree/core (draw + features + modelling)"] --> canvas["@d3-polytree/canvas"]
+  core --> moddle["@d3-polytree/pfdn-moddle"]
+  canvas --> d3["modular D3 v7 (peer deps)"]
+```
+
+### 2.2 Architectural lineage
+
+The v2 design is derived from the **bpmn.io / diagram-js** ecosystem (confirmed by @davcs86's forks
+of `diagram-js`, `bpmn-js`, `bpmn-js-properties-panel`). The `didi` (DI) + `moddle` (model) +
+`min-dom` + `ids` + `eventemitter3` stack, the feature-module pattern, and the palette/handlers
+structure are all diagram-js idioms. **This is an advantage:** those patterns are well-proven, still
+maintained upstream, and their modern TypeScript equivalents (current `diagram-js`, `didi`, `moddle`)
+give us a migration reference and a supported dependency path.
+
+---
+
+## 3. Current-state audit
+
+### 3.1 `master` (v1) — findings
 
 Severity: **S1** = broken/insecure/blocks build · **S2** = major maintainability/architecture ·
 **S3** = hygiene/DX.
 
 | # | Sev | Finding | Evidence | Impact |
 |---|-----|---------|----------|--------|
-| F1 | **S1** | **Case-sensitivity bug.** Import path casing does not match the file on disk. | `lib/SimpleNetwork.js:14` `require('./utils/lightBox')` vs file `lib/utils/lightbox.js` | Resolves on macOS/Windows (case-insensitive FS) but **throws `MODULE_NOT_FOUND` on Linux** — i.e. CI, Docker, most cloud builds. |
-| F2 | **S1** | **Non-reproducible build.** README instructs hand-editing `node_modules/xml2js/lib/xml2js.js` (lines 11 & 19) after every `npm install`. | `README.md` "Known issue" | Build cannot run unattended; onboarding and CI are impossible without a manual patch step. |
-| F3 | **S1** | **Node XML parser shipped to the browser.** `xml2js` (+ `events`, `timers-browserify`, `Buffer` shims) is bundled solely to parse 8 lines of *static* SVG at runtime. | `SimpleNetwork.js:45,484-498`; `icons/index.js` | Bloats bundle, drags in Node polyfills, and is the root cause of F2. Icons are known at build time — no runtime XML parsing is warranted. |
-| F4 | **S1** | **End-of-life core dependency: D3 v3.5.16.** Render path uses APIs *removed* in D3 v4+. | `d3.behavior.zoom/drag`, `d3.layout.force`, `d3.transform`, `d3.event.translate/scale`, `zoom.event()`, `d3.rebind`, `d3.mouse`, `.attr({})`/`.style({})` object form | Cannot coexist with any modern D3 consumer; blocks every downstream security patch in the D3 line. |
-| F5 | **S2** | **Module-global mutable state.** `processedIcons` (and `rawIcons`) are module-scoped and shared across all instances; `defineIcons()` mutates the shared map. | `SimpleNetwork.js:46-47,494,704-711` | Multiple `SimpleNetwork` instances on one page corrupt each other's icon view-box registry. |
-| F6 | **S2** | **XSS surface.** Unsanitized data is injected as HTML. | `SimpleNetwork.js:736-754` (`.html()` string-built `attachedData` table); `lib/utils/lightbox.js` (`domify`/`innerHTML` of `content`) | Any untrusted `label`/`attachedData`/lightbox content executes in the host page. |
-| F7 | **S2** | **Dead toolchain.** Grunt 0.4.5, Browserify 13, uglify-js 2, JSHint, `sassify`, `svg-browserify`, `load-grunt-tasks`, `time-grunt`. | `package.json` devDeps, `GruntFile.js`, `tasks/bundle.js` | No ESM output, no tree-shaking, no modern sourcemaps; `new Buffer()` (deprecated) in `tasks/bundle.js:32`. |
-| F8 | **S2** | **No tests, no CI.** `"test": "echo 0"`; `.jshintrc` declares Jasmine globals but no specs exist. | `package.json:7`, `.jshintrc` | Every change is unverified; the geometry engine (`helper.js`) is pure and highly testable but untested. |
-| F9 | **S2** | **Identity incoherence.** Package name `d3-simple-networks` (v1.0.0), bower name `d3-polytree`, repo `d3-polytree`, dist `d3-simple-networks.js`, global `D3SimpleNetwork`. | `package.json:2`, `bower.json:2`, `README.md` | Not installable by a single canonical name; confuses discovery and npm publishing. |
-| F10 | **S2** | **Force layout misuse.** A `d3.layout.force` simulation is created, then `force.stop()` is called on the first tick; nodes are `fixed:true`. | `SimpleNetwork.js:599,610-613,761-791` | Pays the cost/complexity of a physics simulation for what is a deterministic layered layout. Simplifiable. |
-| F11 | **S3** | **Heavy deps for trivial use.** Full `bootstrap-sass` 3 (EOL) for table CSS; `base-64` + `utf8` for base64 that `btoa`/`TextEncoder` now do natively; `d3-tip` 0.6; `lodash` 4 (replaceable by native ES + optional micro-deps). | `package.json` deps; `SimpleNetwork.js:167-174` | Large footprint; native platform APIs exist for all of these. |
-| F12 | **S3** | **Committed build artifacts.** `dist/` (incl. a 30k-line bundle) is tracked in git. | `dist/*` | Noisy diffs, merge conflicts, drift between source and dist. |
-| F13 | **S3** | **Legacy-browser cruft in the hot path.** IE10/IE11 `marker-end` "A"-toggle hack runs on every tick. | `SimpleNetwork.js:574-581` | Dead complexity; IE is fully deprecated. |
-| F14 | **S3** | **No a11y.** SVG has no `role`/`aria-*`/`<title>`/`<desc>`; interactions are mouse-only. | `SimpleNetwork.js` render code | Not screen-reader or keyboard accessible. |
-| F15 | **S3** | **Distribution gaps.** No `package-lock.json`, no `exports` map, no `types`, no `sideEffects`, no `.editorconfig`/Prettier, `bower.json` still primary, D3 pinned as a hard dep rather than peer. | root config | Poor consumer DX and non-deterministic installs. |
+| F1 | **S1** | **Case-sensitivity build break.** Import casing ≠ file on disk. | `lib/SimpleNetwork.js:14` `require('./utils/lightBox')` vs file `lib/utils/lightbox.js` | Resolves on macOS/Windows but throws `MODULE_NOT_FOUND` on **Linux/CI/Docker**. *(verified)* |
+| F2 | **S1** | **Non-reproducible build.** README requires hand-editing `node_modules/xml2js` after every install. | `README.md` "Known issue" | Build cannot run unattended; CI impossible without a manual patch. |
+| F3 | **S1** | **Node XML parser shipped to the browser** solely to parse 8 lines of *static* SVG at runtime. | `SimpleNetwork.js:45,488-489` (`xml2js.Parser`/`parseString`) | Bundle bloat + Node polyfills; root cause of F2. *(verified)* |
+| F4 | **S1** | **EOL core: D3 v3.5.16**, using APIs removed in D3 v4+. | `d3.behavior.*`, `d3.layout.force`, `d3.transform`, `d3.event.*`, `d3.rebind`, `.attr({})` object form | Cannot coexist with modern D3; blocks all downstream security patches. |
+| F5 | **S2** | **Module-global mutable state** shared across instances. | `SimpleNetwork.js:46-47,494` (`processedIcons`) | Multiple instances on one page corrupt each other's icon registry. |
+| F6 | **S2** | **XSS surface** via unsanitized HTML injection. | `SimpleNetwork.js:736-754` (`.html()` table); `lib/utils/lightbox.js` (`innerHTML`) | Untrusted labels/`attachedData`/lightbox content execute in the host page. |
+| F7 | **S2** | **Dead toolchain** (Grunt/Browserify/uglify-js 2/JSHint); `new Buffer()` in `tasks/bundle.js:32`. | `package.json`, `GruntFile.js` | No ESM, no tree-shaking, no modern sourcemaps. |
+| F8 | **S2** | **No tests, no CI** (`"test": "echo 0"`). | `package.json:7` | Every change unverified; the pure geometry engine is highly testable but untested. |
+| F9 | **S2** | **Identity incoherence:** name `d3-simple-networks` vs bower `d3-polytree` vs dist `d3-simple-networks.js` vs global `D3SimpleNetwork`. | `package.json:2`, `bower.json:2` | Not installable under one canonical name. |
+| F10 | **S2** | **Force-layout misuse:** a `d3.layout.force` sim is created then `force.stop()`-ed on tick; nodes are `fixed`. | `SimpleNetwork.js:599,610-613` | Pays physics-sim cost for a deterministic layered layout. |
+| F11 | **S3** | **Heavy deps for trivial use:** full Bootstrap 3 (table CSS), `base-64`+`utf8` (native `btoa`/`TextEncoder` exist), `d3-tip` 0.6, `lodash` 4. | `package.json` deps | Oversized footprint; native APIs available. |
+| F12 | **S3** | **Committed `dist/`** (30k-line bundle tracked in git). | `dist/*` | Noisy diffs, source/dist drift. |
+| F13 | **S3** | **IE10/IE11 `marker-end` hack** runs every tick. | `SimpleNetwork.js:574-581` | Dead complexity. |
+| F14 | **S3** | **No a11y** (no `role`/`aria`/`<title>`; mouse-only). | render code | Not screen-reader/keyboard accessible. |
+| F15 | **S3** | **Distribution gaps:** no lockfile, no `exports`/`types`/`sideEffects`, bower primary, D3 a hard dep not peer. | root config | Poor DX, non-deterministic installs. |
 
-### 2.3 What is worth preserving
+### 3.2 `v2.0-beta` + companion repos — findings
 
-- **`helper.js` link-routing geometry** is genuinely valuable domain logic (side-connector
-  quadrant assignment, arrow spacing, dual-bezier routing). It is D3-independent and should be
-  **ported near-verbatim** into v2 with a test harness wrapped around it first.
-- **The layered `calculateLevels`/`calculateNodes` algorithm** (topological leveling of the
-  polytree) is the conceptual core and should be preserved as a pure module.
-- **The public options shape** (`nodes` adjacency map, `groups`, `floatingLabels`, `attachedData`,
-  `tableHeaders`, `onNodeClick`) defines the v1 contract the migration bridge must honor.
+| # | Sev | Finding | Impact |
+|---|-----|---------|--------|
+| G1 | **S2** | **Frozen 2017 toolchain** across all repos: webpack 1–3, rollup 0.45, node-sass 4, ESLint 3/4, uglify-js 2/3. | Won't build reliably on modern Node; no ESM/`exports`; slow, unmaintained loaders. |
+| G2 | **S2** | **Fragmentation via `github:` deps.** Packages reference each other and unreleased forks (`d3-canvas`, `pfdn-moddle`, `scroll-tabs`, `pfdn-moddle`) by git URL, not semver. | No reproducible dependency resolution; a change ripples across repos by hand. Not published to npm. |
+| G3 | **S2** | **`d3-canvas` duplicated.** Its `lib/core/*` is copy-vendored into v2 `lib/base/core/*`. | Two divergent copies of the base canvas; bug fixes must be applied twice. |
+| G4 | **S2** | **jQuery-era properties panel.** `jquery` 1.11 + `jquery-ui` + `slickgrid` + `spectrum-colorpicker` + `choices.js`. | Largest bundle and biggest security/maintenance liability; several deps unmaintained. |
+| G5 | **S2** | **Modular D3 at v1.** `d3-selection/zoom/drag/force/scale/dispatch/collection` pinned to 1.x. | Three majors behind v7; `d3-collection` is deprecated/removed in v7 (migrate to `Map`/`Set` + `d3-array`). |
+| G6 | **S3** | **Runtime `xml2js` persists in v2** devDeps for icon parsing. | Same class of issue as F3; move icon parsing to build time. |
+| G7 | **S3** | **Duplicated per-repo config** (`.eslintrc`, `postcss.config.js`, sass setup). | Drift; a monorepo collapses this to shared config. |
+| G8 | **S3** | **No unit tests** except `pfdn-moddle` (mocha/chai) and `scroll-tabs` (karma). | Consolidation should carry `pfdn-moddle`'s tests forward and backfill the rest. |
 
----
+### 3.3 What is worth preserving
 
-## 3. Guiding principles
-
-1. **Correctness before modernity.** Ship the case-fix and reproducible build (Track A) before
-   any rewrite work begins — a green baseline is a prerequisite for safe refactoring.
-2. **Pure core, thin shell.** Layout and geometry are pure, framework-free, and unit-tested;
-   D3/DOM is a rendering adapter at the edge. This is the fault-isolation boundary that keeps
-   the engine testable and the D3 upgrade contained.
-3. **D3 as a slim peer dependency.** Depend only on the submodules actually used
-   (`d3-selection`, `d3-zoom`, `d3-drag`, `d3-force`/`d3-scale` as needed, `d3-array`) and
-   declare them as **peer** dependencies so consumers control the D3 version and dedupe.
-4. **Types are the contract.** Author in strict TypeScript; ship `.d.ts`. The options object
-   becomes a typed, validated public API.
-5. **No unattended manual steps.** Everything (install → build → test → publish) runs in CI
-   from a clean checkout with a committed lockfile.
-6. **Security by default.** No `innerHTML`/`.html()` with unsanitized input; render text as text.
-7. **Backward-compatibility is explicit, not accidental.** v2 either honors the v1 options via a
-   compat adapter or documents the break in a migration guide — never silent.
+- **The v2 architecture itself** — DI kernel, feature modules, model layer, three-component split.
+  This is the core asset; modernization dresses it in a current toolchain and types.
+- **`pfdn-moddle` + its test suite and the `.pfdn` file format** — the serialization contract.
+- **The base canvas** (`d3-canvas` / `lib/base/core`) — de-duplicate into one package.
+- **v1's pure geometry** (`helper.js` link routing, `calculateLevels`/`calculateNodes`) — port into
+  `@d3-polytree/core` behind tests if v2 doesn't already supersede it.
+- **The AWS icon pack** — as the template for an icon-pack package convention.
 
 ---
 
-## 4. Target architecture (v2)
+## 4. Guiding principles
+
+1. **Correctness before modernity.** Ship the v1 case-fix + reproducible build (Track A) before
+   Track B consolidation begins — a green baseline is a prerequisite for safe migration.
+2. **One workspace, many packages.** All first-party code lives in a single monorepo; each unit
+   ships as an independently versioned, semver'd npm package. No more `github:` cross-deps.
+3. **Pure core, thin shell.** Model/geometry/layout are framework-free and unit-tested; D3/DOM is a
+   rendering adapter at the edge — the fault-isolation boundary that contains the D3 v1→v7 upgrade.
+4. **D3 as slim peer dependencies.** Depend only on the submodules actually used, declared **peer**,
+   so consumers control the D3 version and dedupe a single copy.
+5. **Types are the contract.** Author in strict TypeScript; ship `.d.ts` for every package.
+6. **Storybook is the harness.** Every visual package has stories; Storybook is dev environment,
+   visual-regression baseline, and the public docs/demo site (retiring hand-built `docs/*.html`,
+   JSFiddle, and CodePen).
+7. **Security & a11y by default.** No `innerHTML` with unsanitized input; retire jQuery-era deps;
+   add ARIA/keyboard support.
+8. **Reproducible everywhere.** Committed lockfile; install → build → test → storybook → publish all
+   run in CI from a clean checkout with zero manual steps.
+
+---
+
+## 5. Target architecture (v2 monorepo)
 
 ```
-packages/                         # (optional) monorepo; see §7 open question O3
-  core/                           # framework-free, pure TS — no D3, no DOM
-    layout/
-      levels.ts                   # topological leveling  (ex-calculateLevels)
-      positions.ts                # deterministic coordinates (ex-calculateNodes)
-    routing/
-      linkPath.ts                 # bezier routing         (ex-helper.calculateLinkPath)
-      sides.ts                    # quadrant/side math     (ex-helper side logic)
-    model/
-      graph.ts                    # normalized graph model + validation
-      options.ts                  # typed options + defaults + schema validation
-    index.ts
-  render-svg/                     # D3/DOM adapter — the only place D3 is imported
-    renderer.ts                   # selection lifecycle (enter/update/exit)
-    interactions/
-      zoom.ts                     # d3-zoom
-      drag.ts                     # d3-drag
-      dblclick.ts                 # native pointer-events (retire d3.dispatch/rebind)
-    icons.ts                      # build-time icon registry (no runtime XML parsing)
-    tooltip.ts                    # replace d3-tip (self-owned, ~30 LOC)
-    lightbox.ts                   # safe DOM construction (no innerHTML)
-    styles.css                    # plain CSS custom properties (drop Bootstrap)
-    index.ts
-  viewer/                         # static viewer (no zoom)      ── v2.0-beta component 1
-  interactive-viewer/             # viewer + zoom + search panel ── v2.0-beta component 2
-  modeler/                        # authoring/editing UI          ── v2.0-beta component 3
+d3-polytree/                      # monorepo root (pnpm workspace + Turborepo)
+  package.json                    # workspaces, shared scripts
+  pnpm-workspace.yaml
+  turbo.json                      # task graph / caching
+  tsconfig.base.json              # shared strict TS config
+  eslint.config.js                # shared flat ESLint config (replaces per-repo .eslintrc)
+  .changeset/                     # Changesets versioning
+  packages/
+    canvas/                       # @d3-polytree/canvas   (ex d3-canvas + v2 lib/base/core, de-duped)
+    pfdn-moddle/                  # @d3-polytree/pfdn-moddle (moddle model + .pfdn XML I/O + tests)
+    core/                         # @d3-polytree/core     (draw/* + features/* + modelling/*, DI wiring)
+    viewer/                       # @d3-polytree/viewer
+    interactive-viewer/           # @d3-polytree/interactive-viewer
+    editor/                       # @d3-polytree/editor
+    search-panel/                 # @d3-polytree/search-panel   (retire list.js or replace)
+    side-tabs/                    # @d3-polytree/side-tabs
+    properties-panel/             # @d3-polytree/properties-panel (de-jQuery; absorbs scroll-tabs)
+    icons-amazon/                 # @d3-polytree/icons-amazon   (icon-pack convention)
+  apps/
+    storybook/                    # dev harness + visual-regression + published docs site
+    playground/                   # optional standalone example app
 ```
 
-**Key architectural changes vs v1**
+**Key architectural changes vs the frozen v2.0-beta**
 
-- **Icons resolved at build time.** SVG icons imported as strings/`<symbol>` fragments via the
-  bundler; the registry is a plain typed map. Eliminates `xml2js`, `events`, `timers-browserify`,
-  `Buffer`, and the manual patch (kills F2, F3).
-- **Deterministic layout replaces the force simulation.** The layered coordinates are already
-  computed analytically; drop `d3.layout.force` and keep an optional `d3-force` collision pass
-  only if overlap resolution is desired (addresses F10).
-- **Instance-scoped state.** All registries (`processedIcons`, marker defs) live on the instance,
-  not the module (kills F5).
-- **Text is text.** Node labels, tables, and tooltips use `textContent`/DOM nodes; `attachedData`
-  tables are built with `document.createElement`, not string concatenation (kills F6).
-- **Own the micro-widgets.** Replace `d3-tip` and `min-dom` with ~60 LOC of typed, dependency-free
-  helpers (kills part of F11 and the deep `min-dom/lib/*` imports).
+- **De-duplicate the base canvas** — one `@d3-polytree/canvas`; delete the vendored copy (fixes G3).
+- **Build-time icons** — resolve SVG via the bundler (`?raw`/inline) into typed `<symbol>` maps;
+  drop runtime `xml2js` (fixes G6/F3).
+- **Modular D3 v7 peer deps** — replace v1 submodules; migrate `d3-collection` → native `Map`/`Set`
+  + `d3-array` (fixes G5).
+- **Instance-scoped state** — no module-global registries (fixes F5-class issues).
+- **Text is text** — DOM/`textContent` construction, no unsanitized HTML (fixes F6).
+- **De-jQuery the properties panel** — replace jQuery-UI/slickgrid/spectrum/choices with modern,
+  framework-free equivalents (see §7.5) (fixes G4).
 
 ---
 
-## 5. Roadmap — phases & milestones
+## 6. Roadmap — phases & milestones
 
 Effort estimates are order-of-magnitude for one experienced maintainer and are **relative**, not
-calendar commitments.
+calendar commitments (S < M < L < XL).
 
 ### Track A — Stabilize v1.x (blocking; do first)
 
-> Goal: a correct, reproducible, CI-verified `v1.1.0` that current consumers can rely on, with
-> **no public API change**.
+> Goal: a correct, reproducible, CI-verified `v1.1.0` current consumers can rely on, **no API change**.
 
 | Phase | Deliverable | Exit criteria | Effort |
 |---|---|---|---|
-| **A0 — Baseline** | Green checkout | `npm ci` works from scratch on Linux; document exact current behavior with a smoke demo | S |
-| **A1 — Critical fixes** | `v1.1.0` | **F1** import casing fixed; **F2/F3** `xml2js` runtime parsing removed (icons pre-parsed at build or shipped as `<symbol>` strings) so no `node_modules` patch is needed; build runs unattended | M |
-| **A2 — Security patch** | `v1.1.1` | **F6** `.html()`/lightbox injection replaced with safe DOM/text; add basic input escaping | S |
-| **A3 — Build reproducibility** | committed `package-lock.json`; `dist/` removed from VCS and produced by CI | Clean-room build reproduces byte-stable-ish bundle; **F12** resolved | S |
-| **A4 — CI + smoke tests** | GitHub Actions | Lint + build + a minimal render smoke test (jsdom or Playwright) run on every PR; **F8** partially addressed | M |
-| **A5 — Identity** | canonical name decision | Resolve **F9**: single package name across `package.json`/dist/global/README; deprecate `bower.json`; publish to npm under the canonical name | S |
+| **A0 — Baseline** | Green checkout | `npm ci` works on Linux; smoke demo documents current behavior | S |
+| **A1 — Critical fixes** | `v1.1.0` | **F1** casing fixed; **F2/F3** runtime `xml2js` removed (icons pre-parsed at build); unattended build | M |
+| **A2 — Security patch** | `v1.1.1` | **F6** `.html()`/lightbox injection replaced with safe DOM/text | S |
+| **A3 — Reproducibility** | committed lockfile; `dist/` out of VCS (built by CI) | Clean-room build reproduces; **F12** resolved | S |
+| **A4 — CI + smoke tests** | GitHub Actions | lint + build + minimal render smoke test on every PR (**F8** partial) | M |
+| **A5 — Identity** | canonical name | **F9** resolved across manifests/dist/global/README; deprecate bower; publish to npm | S |
 
-**Track A explicitly does NOT:** upgrade D3, convert to TS, or change the options API. Those are
-Track B. Keeping A surgical is what makes it safe to ship quickly.
+**Track A explicitly does NOT** upgrade D3, convert to TS, or change the API — those are Track B.
 
-### Track B — Greenfield v2.0 (parallel after A ships)
-
-> Goal: TypeScript, ESM-first, modular-D3 rewrite aligned with the `v2.0-beta` component split,
-> with a documented v1→v2 migration path.
+### Track B — Consolidate & modernize the v2 monorepo (parallel after A ships)
 
 | Phase | Deliverable | Exit criteria | Effort |
 |---|---|---|---|
-| **B0 — Scaffolding** | New toolchain | Vite/tsup (lib mode) or Rollup; TypeScript strict; ESLint + Prettier; Vitest; ESM+CJS+`.d.ts` outputs with an `exports` map, `types`, and `sideEffects` (**F7, F15**) | M |
-| **B1 — Pure core** | `core/` package | Port `calculateLevels`, `calculateNodes`, and `helper.js` geometry to typed pure functions **behind a full unit-test suite written first** (characterization tests captured from v1) | L |
-| **B2 — Options & model** | Typed public API | `options.ts` with defaults + runtime validation; normalized graph model; documented types | M |
-| **B3 — SVG renderer** | `render-svg/` | Migrate rendering to D3 v7 modular APIs (`d3-selection`/`zoom`/`drag`); instance-scoped state (**F5**); native dblclick (**retire F13 IE hacks**); own tooltip/lightbox (**F6, F11**); build-time icons (**F3**) | L |
-| **B4 — Components** | viewer / interactive-viewer / modeler | Each component built on `core` + `render-svg`; feature-parity checklist vs v1 for the viewer; search panel for interactive-viewer; editing for modeler | XL |
-| **B5 — A11y & theming** | Accessible, themeable | SVG `role`/`<title>`/`<desc>`, keyboard nav, focus states; CSS custom properties replace Bootstrap (**F14, F11**) | M |
-| **B6 — Migration bridge** | `v1→v2` guide + compat adapter | An adapter that accepts the v1 options object and drives v2, or a documented codemod/migration guide; example app upgraded | M |
-| **B7 — Release** | `v2.0.0` | Published to npm with provenance; docs site/README; live examples replacing the JSFiddle demo; semver policy stated | M |
+| **B0 — Monorepo scaffold** | pnpm + Turborepo workspace | Empty-but-wired workspace: shared `tsconfig.base`, flat ESLint, Prettier, Vitest, Changesets, Turbo task graph; CI green on an empty build | M |
+| **B1 — Absorb repos (history-preserving)** | 8 repos → `packages/*` | Each repo imported via `git subtree`/`git filter-repo` **preserving history**; `github:` cross-deps replaced with `workspace:*`; builds still pass on old toolchain in-place | M |
+| **B2 — De-duplicate & model** | `@d3-polytree/canvas`, `@d3-polytree/pfdn-moddle` | Vendored `lib/base/core` deleted in favor of `canvas` (**G3**); `pfdn-moddle` tests run green in the workspace (**G8**) | M |
+| **B3 — Toolchain migration** | modern build per package | Vite/tsup lib mode → ESM+CJS+`.d.ts`, `exports`/`types`/`sideEffects` maps; node-sass→dart-sass/PostCSS; drop webpack 1–3/rollup 0.45/uglify (**G1, F7, F15**); build-time icons (**G6**) | L |
+| **B4 — TypeScript migration** | typed packages | Incremental JS→TS (allowJs bridge) starting at `canvas`/`core`; strict mode; public `.d.ts` for every package; typed options API | L |
+| **B5 — D3 v7 + native collections** | modern D3 | Modular D3 v1→v7 as **peer deps**; `d3-collection`→`Map`/`Set`+`d3-array` (**G5**); interaction parity verified via Storybook visual tests | L |
+| **B6 — De-jQuery properties panel** | modern `properties-panel` | Replace jquery-ui/slickgrid/spectrum/choices/scroll-tabs (**G4**, §7.5); absorb `scroll-tabs`; feature-parity checklist vs 2017 panel | XL |
+| **B7 — Storybook** | dev/docs harness | Stories for viewer, interactive-viewer, editor, search-panel, side-tabs, properties-panel, icon packs; visual-regression wired (**§7.1**) | M |
+| **B8 — a11y + theming** | accessible, themeable | SVG `role`/`<title>`/`<desc>`, keyboard nav/focus; CSS custom properties; drop normalize/Bootstrap remnants (**F14, F11**) | M |
+| **B9 — Release** | `@d3-polytree/*` on npm | Changesets-driven versioning/changelog/publish with provenance; migration guide (v1→v2 and beta→v2); Storybook deployed as docs site; JSFiddle/CodePen replaced | M |
 
-### Dependency graph (what blocks what)
+### 6.1 Dependency graph (what blocks what)
 
 ```
-A0 → A1 → A2 → A4 → A5   (A3 parallel to A2/A4)
-A1 (build reproducible) ─────────────┐
+A0 → A1 → A2 → A4 → A5        (A3 parallel)
+A1 (reproducible build) ─────────────┐
                                      ▼
-B0 → B1 → B2 → B3 → B4 → B5 → B6 → B7
-             (B1 tests gate all downstream refactors)
+B0 → B1 → B2 → B3 → B4 → B5 → B7 → B8 → B9
+                    └────→ B6 ────────┘   (B6 can run parallel after B4; gates B9)
 ```
 
 ---
 
-## 6. Cross-cutting workstreams
+## 7. Cross-cutting workstreams
 
-### 6.1 Testing strategy
-- **Unit (Vitest):** `core/` geometry and layout are pure → aim for high coverage here first; the
-  `helper.js` routing math is the highest-value target (many branches, zero current coverage).
-- **Characterization tests:** before porting, snapshot v1 outputs (layout coordinates, generated
-  path `d` strings) for a set of fixture graphs; assert v2 reproduces them within tolerance.
-- **Component/DOM (Vitest + jsdom, or Playwright component tests):** renderer enter/update/exit,
-  drag/zoom interactions, tooltip show/hide.
-- **Visual regression (Playwright screenshots):** guards the geometry against subtle regressions.
+### 7.1 Storybook (dev harness · visual regression · docs)
+- **Renderer:** `@storybook/html-vite` (the components are framework-free vanilla SVG/DOM;
+  no React). Reassess only if a component is reimplemented in a framework.
+- **Stories per package:** each visual package exposes stories driving its public API with controls
+  (args) for options — doubles as living documentation of the typed options.
+- **Visual regression:** Storybook test-runner + Playwright snapshots in CI (or Chromatic if a
+  hosted service is preferred) — this is the primary safety net for the D3 v1→v7 migration (B5).
+- **Docs site:** Storybook static build deployed (GitHub Pages) as the canonical demo/docs,
+  retiring `docs/*.html`, JSFiddle, and CodePen.
 
-### 6.2 Tooling & CI
-- **Build:** `tsup` or Vite library mode → ESM + CJS + `.d.ts`, external/peer D3.
-- **Lint/format:** ESLint (typescript-eslint) + Prettier; delete `.jshintrc`.
-- **CI (GitHub Actions):** `install → typecheck → lint → test → build` on PR; **release** workflow
-  (Changesets) for versioning, changelog, and npm publish with provenance on tag.
-- **Repo hygiene:** `.editorconfig`, `.nvmrc`/`engines`, committed lockfile, `dist/` gitignored.
+### 7.2 Testing strategy
+- **Unit (Vitest):** model (`pfdn-moddle` — carry existing mocha specs over or port to Vitest),
+  geometry/layout, DI wiring. Pure modules first — highest ROI.
+- **Characterization tests:** snapshot v1/beta layout coordinates and generated path `d` strings for
+  fixture diagrams; assert parity within tolerance after each migration step.
+- **Component/DOM:** enter/update/exit, drag/zoom/selection interactions (jsdom or Playwright CT).
+- **Visual regression:** via Storybook (§7.1).
 
-### 6.3 Distribution & versioning
-- **Canonical name:** decide `d3-polytree` (recommended — matches repo/domain) and align every
-  artifact. Deprecate the `d3-simple-networks` name on npm with a pointer.
-- **Package fields:** `"type": "module"`, `exports` map (import/require/types), `"sideEffects"`
-  (CSS files listed), `"peerDependencies"` for the D3 submodules, `"files"` allowlist.
-- **Semver:** v1.x = fixes only; v2.0 = breaking; document a support window for v1.
-- **Retire Bower.**
+### 7.3 Monorepo tooling & CI
+- **Package manager:** pnpm workspaces (strict, fast, `workspace:*` protocol).
+- **Task runner:** Turborepo (cached `build`/`test`/`lint`/`storybook` task graph).
+- **Versioning/release:** Changesets → per-package semver, changelogs, `npm publish --provenance`.
+- **Shared config:** one `tsconfig.base.json`, one flat `eslint.config.js`, one Prettier config
+  (collapses G7); `.editorconfig`, `.nvmrc`/`engines`, committed `pnpm-lock.yaml`.
+- **CI (GitHub Actions):** `install → typecheck → lint → test → build → storybook build → visual
+  regression` on PR; release workflow on tag.
 
-### 6.4 Documentation
-- README rewrite (install, quick start, typed options reference, examples).
-- Migration guide v1→v2.
-- Replace the single JSFiddle with in-repo runnable examples (and optionally a docs site).
+### 7.4 Distribution & versioning
+- **Scope:** publish under `@d3-polytree/*` (recommended) — reserves an npm org and namespaces the
+  ecosystem. See O2.
+- **Package fields:** `"type": "module"`, `exports` (import/require/types), `"sideEffects"` (CSS
+  listed), `"peerDependencies"` for D3 submodules, `"files"` allowlist.
+- **Semver:** v1.x = fixes only; `@d3-polytree/*` v2.0 = the modernized line; document a v1 support
+  window. Retire Bower everywhere.
+
+### 7.5 De-jQuery migration (properties-panel, B6)
+The 2017 properties panel is the single largest liability. Proposed replacements (framework-free):
+
+| Legacy dep | Purpose | Modern replacement (candidate) |
+|---|---|---|
+| `jquery` / `jquery-ui` | DOM + widgets | native DOM + small typed helpers (`min-dom` successor) |
+| `slickgrid` | data grid (spreadsheet entries) | headless grid (e.g. a lightweight virtualized grid) or a purpose-built typed table |
+| `spectrum-colorpicker` | color picker | native `<input type="color">` or a small vanilla picker |
+| `choices.js` | select/autocomplete | native `<select>` + a small combobox, or a maintained vanilla lib |
+| `scroll-tabs` | scrollable tab strip | absorb + reimplement with `ResizeObserver`/`scrollIntoView` |
+
+Each replacement is gated by a Storybook story and a feature-parity check against the 2017 panel.
+
+### 7.6 Documentation
+- Per-package READMEs + typed options reference (surfaced via Storybook docs).
+- Two migration guides: **v1 → v2** and **v2.0-beta → v2** (github-dep → npm, D3 v1 → v7).
+- Storybook docs site replaces ad-hoc demos.
 
 ---
 
-## 7. Open questions (resolve before the dependent phase)
+## 8. Open questions (resolve before the dependent phase)
+
+Resolved by this revision: **monorepo** (was O3 — confirmed), **include companion repos**
+(confirmed), **npm distribution** (confirmed), **Storybook** (confirmed), **TypeScript** (confirmed),
+**slim modular D3 peer deps** (confirmed).
 
 | ID | Question | Blocks | Recommendation |
 |---|---|---|---|
-| O1 | Canonical package name — `d3-polytree` vs keep `d3-simple-networks`? | A5 | `d3-polytree` |
-| O2 | Is byte-for-byte layout parity a hard requirement, or is "visually equivalent within tolerance" acceptable for v2? | B1, B3 | Tolerance-based parity via characterization tests |
-| O3 | Monorepo (viewer/interactive-viewer/modeler as separate packages) vs single package with subpath exports? | B0, B4 | Single package + subpath exports first; split later only if consumers need it |
-| O4 | Minimum browser support matrix for v2 (drop IE entirely, confirm evergreen-only)? | B3 (retire F13) | Evergreen + last 2 versions; drop IE |
-| O5 | Keep a bundled-D3 build variant for `<script>`-tag / no-bundler users alongside the ESM peer-dep build? | B0, B7 | Ship an optional UMD/IIFE bundle with D3 included as a secondary artifact |
-| O6 | Does the `modeler` component need persistence/serialization (save/load diagrams), and in what format? | B4 | Define a versioned JSON schema derived from the v1 options shape |
+| O1 | Fate of the v2 model layer — keep `.pfdn`/`moddle` XML, or move to a JSON schema? | B2, B4 | Keep `pfdn-moddle` (proven, tested); optionally add a JSON I/O adapter later |
+| O2 | npm scope — `@d3-polytree/*` vs unscoped `d3-polytree-*` names? | B9 | `@d3-polytree/*` (namespace the ecosystem) |
+| O3 | Storybook renderer — `@storybook/html-vite` vs `web-components-vite`? | B7 | `html-vite` (components are vanilla today) |
+| O4 | Keep `scroll-tabs` as a published package or absorb into properties-panel? | B6 | Absorb (single consumer) |
+| O5 | Layout parity bar — byte-for-byte vs "visually equivalent within tolerance"? | B4, B5 | Tolerance-based, enforced by characterization + visual-regression tests |
+| O6 | History preservation when absorbing repos — `git subtree` vs `filter-repo` vs fresh import? | B1 | `git filter-repo` into subdirectories to preserve authorship/history |
+| O7 | Minimum browser matrix for v2 (drop IE entirely)? | B5, B8 | Evergreen + last 2 versions; drop IE (retire F13/`classlist-polyfill`) |
+| O8 | Ship a bundled-D3 UMD/IIFE build for `<script>`-tag users alongside the ESM peer-dep builds? | B3, B9 | Yes — a secondary artifact per top-level component |
+| O9 | Properties-panel grid replacement — headless grid lib vs purpose-built typed table? | B6 | Prototype both in Storybook; decide on bundle-size/feature fit |
 
 ---
 
-## 8. Risk register
+## 9. Risk register
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| D3 v3→v7 rewrite introduces subtle interaction regressions | High | High | Characterization + visual-regression tests gate B3; migrate interaction-by-interaction |
-| Geometry port (`helper.js`) drifts from v1 behavior | Medium | High | Write tests against v1 output **before** porting (B1 gates downstream) |
-| Scope creep in `modeler` (B4) stalls the whole v2 | High | Medium | Ship `viewer` first as `v2.0.0`; modeler can follow as `v2.1` |
-| Consumers depend on the current global `D3SimpleNetwork`/options shape | Medium | Medium | Compat adapter + migration guide (B6); keep v1.x supported during transition |
-| Peer-dep D3 causes version-mismatch friction for some users | Medium | Low | Provide the bundled UMD variant (O5); document supported D3 range |
-| "Track A only" temptation — rewrite never starts | Medium | Medium | Enforce "no new features on v1"; all feature demand routes to v2 backlog |
+| D3 v1→v7 migration introduces interaction regressions | High | High | Storybook visual regression + characterization tests gate B5; migrate interaction-by-interaction |
+| Properties-panel de-jQuery (B6) balloons in scope | High | High | Ship viewer + interactive-viewer first (`v2.0.0`); editor/properties-panel can follow as `v2.1` |
+| History loss when absorbing 8 repos | Medium | Medium | `git filter-repo` into subdirs (O6); verify blame/authorship post-import |
+| `github:` → `workspace:*` breakage during B1 | Medium | Medium | Absorb first, keep old toolchain building in-place, then migrate toolchain (B3) separately |
+| Divergence between `d3-canvas` and its vendored copy hides bugs | Medium | Medium | De-duplicate early (B2) before any refactor touches the base |
+| Consumers depend on v1 global/options shape | Medium | Medium | Track A keeps v1 supported; v1→v2 migration guide (B9/7.6) |
+| Peer-dep D3 version friction | Medium | Low | Ship bundled UMD variant (O8); document supported D3 range |
+| "Track A only" — v2 consolidation never starts | Medium | Medium | "No new features on v1"; all feature demand routes to the v2 backlog |
 
 ---
 
-## 9. Immediate next actions (first PRs)
+## 10. Immediate next actions (first PRs)
 
 1. **Fix F1** (import casing) — one-line change; unblocks Linux/CI. *(A1)*
-2. **Remove runtime `xml2js`** — pre-parse icons at build time or ship as `<symbol>` strings;
-   delete the README manual-patch step. *(A1/F2/F3)*
-3. **Add GitHub Actions** — `install → build` on Linux to prevent F1-class regressions. *(A4)*
-4. **Commit `package-lock.json`; gitignore `dist/`.** *(A3/F12)*
-5. **Resolve O1** (canonical name) and align `package.json`/README. *(A5/F9)*
+2. **Remove runtime `xml2js`** on `master` — pre-parse icons at build; delete the README manual-patch
+   step. *(A1 / F2 / F3)*
+3. **Add GitHub Actions** on `master` — `install → build` on Linux to prevent F1-class regressions. *(A4)*
+4. **Commit lockfile; gitignore `dist/`.** *(A3 / F12)*
+5. **Stand up the monorepo skeleton** (pnpm + Turborepo + Changesets + shared TS/ESLint/Vitest/Storybook
+   scaffolding) on a `v2` branch — no code moved yet. *(B0)*
+6. **Resolve O2/O6** (npm scope + history-preservation method) before absorbing repos. *(B1)*
 
-Each is small, independently reviewable, and moves the repo to a green baseline before Track B
-scaffolding (B0) begins.
+Each is small, independently reviewable, and moves the ecosystem toward a green baseline before the
+consolidation phases begin.
 
 ---
 
-## Appendix A — File-by-file disposition
+## Appendix A — Repo → package disposition
 
-| File | Track A action | Track B disposition |
+| Source repo | Target package | Notes |
 |---|---|---|
-| `index.js` | keep | replaced by `src/index.ts` + `exports` map |
-| `lib/SimpleNetwork.js` | fix F1/F5/F6 in place | decomposed into `core/` + `render-svg/` |
-| `lib/utils/helper.js` | keep (add tests if cheap) | ported to `core/routing/*` (typed, tested) |
-| `lib/utils/dblClick.js` | keep | replaced by native pointer-event dblclick |
-| `lib/utils/lightbox.js` | fix F6 (safe DOM) | reimplemented in `render-svg/lightbox.ts` |
-| `lib/utils/styles.scss` | keep | plain CSS + custom properties, drop Bootstrap |
-| `lib/icons/*` | pre-parse at build | build-time icon registry |
-| `tasks/*`, `GruntFile.js` | keep minimal | deleted (replaced by tsup/Vite) |
-| `bower.json` | keep for now | deleted |
-| `.jshintrc` | keep for now | deleted (ESLint) |
-| `dist/*` | remove from VCS | produced by CI only |
+| `d3-polytree@master` | *(stays)* `d3-polytree` v1.x | Maintenance-only; API contract source |
+| `d3-polytree@v2.0-beta` `lib/base/core` | `@d3-polytree/canvas` | De-dup with `d3-canvas` |
+| `d3-polytree@v2.0-beta` `lib/draw` + `lib/features` + `lib/modelling` | `@d3-polytree/core` | DI-wired feature modules |
+| `d3-polytree@v2.0-beta` `lib/Viewer.js` | `@d3-polytree/viewer` | |
+| `d3-polytree@v2.0-beta` `lib/InteractiveViewer.js` | `@d3-polytree/interactive-viewer` | + search-panel |
+| `d3-polytree@v2.0-beta` `lib/Editor.js` | `@d3-polytree/editor` | + properties-panel + side-tabs |
+| `d3-canvas` | `@d3-polytree/canvas` | Single source of truth for the base |
+| `pfdn-moddle` | `@d3-polytree/pfdn-moddle` | Keep tests; `.pfdn` format |
+| `d3-polytree-searchpanel` | `@d3-polytree/search-panel` | Reassess `list.js` |
+| `d3-polytree-sidetabs` | `@d3-polytree/side-tabs` | |
+| `d3-polytree-propertiespanel` | `@d3-polytree/properties-panel` | De-jQuery (B6) |
+| `scroll-tabs` | absorbed into `@d3-polytree/properties-panel` | Or `@d3-polytree/scroll-tabs` (O4) |
+| `d3-polytree-amazon` | `@d3-polytree/icons-amazon` | Icon-pack convention template |
+
+## Appendix B — v1 file-by-file disposition (Track A)
+
+| File | Track A action |
+|---|---|
+| `lib/SimpleNetwork.js` | fix F1/F5/F6 in place |
+| `lib/utils/helper.js` | keep (add tests if cheap) — geometry may be ported to `@d3-polytree/core` |
+| `lib/utils/dblClick.js` | keep |
+| `lib/utils/lightbox.js` | fix F6 (safe DOM) |
+| `lib/icons/*` | pre-parse at build (kills runtime `xml2js`) |
+| `tasks/*`, `GruntFile.js` | keep minimal for v1.x |
+| `bower.json`, `.jshintrc` | keep for v1.x; deleted in v2 |
+| `dist/*` | remove from VCS; produced by CI |
