@@ -15,7 +15,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
@@ -32,5 +34,14 @@
   "devDependencies": {
     "@types/d3-selection": "^3.0.11",
     "d3-selection": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree.git",
+    "directory": "packages/canvas"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/canvas#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }

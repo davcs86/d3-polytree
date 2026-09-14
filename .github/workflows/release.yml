@@ -1,0 +1,53 @@
+name: Release
+
+# On every push to v2, Changesets either opens/updates a "Version Packages" PR
+# (when unreleased changesets are present) or, once that PR is merged and the
+# versions are bumped, publishes the changed @d3-polytree/* packages to npm.
+#
+# Requires a repository secret `NPM_TOKEN` (an npm automation token with publish
+# rights on the @d3-polytree scope). Until it is set, the version step still
+# runs; the publish step is a no-op that fails to authenticate — set the secret
+# before merging the first Version Packages PR.
+on:
+  push:
+    branches: [v2]
+
+# Never let two releases run concurrently against the same branch.
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write # push the version commit / tags
+  pull-requests: write # open the Version Packages PR
+  id-token: write # npm provenance
+
+jobs:
+  release:
+    name: version · publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Release Pull Request or publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm run version-packages
+          publish: pnpm run release
+          title: 'Release: version packages'
+          commit: 'chore: version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -27,5 +27,14 @@
   },
   "dependencies": {
     "eventemitter3": "^5.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree.git",
+    "directory": "packages/properties-panel"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/properties-panel#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -15,7 +15,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "generate": "node scripts/generate-icons.mjs",
@@ -25,5 +27,14 @@
   },
   "dependencies": {
     "@d3-polytree/core": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree.git",
+    "directory": "packages/icons-amazon"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/icons-amazon#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }
