@@ -10,7 +10,6 @@ export default tseslint.config(
       '**/node_modules/**',
       // Legacy packages imported in B1, awaiting modernization (B3/B4/B6).
       'packages/scroll-tabs/**',
-      'packages/properties-panel/**',
       'packages/icons-amazon/**',
       '!**/.storybook'
     ]
