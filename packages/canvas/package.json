@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/canvas",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Base SVG canvas toolbox (Canvas, ElementRegistry, ElementBuilder, SVG export) for the d3-polytree v2 ecosystem",
   "license": "MIT",
   "author": "David Castillo",

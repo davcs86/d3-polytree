@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/side-tabs",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Collapsible tabbed side panel feature for the d3-polytree v2 ecosystem",
   "license": "MIT",
   "author": "David Castillo",
