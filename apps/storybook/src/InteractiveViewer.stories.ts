@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { InteractiveViewer } from '@d3-polytree/interactive-viewer';
 import { SAMPLE_DIAGRAM } from './sample';
-// Ship the panel styling compiled from each package (decision: dart-sass CSS).
-import '@d3-polytree/side-tabs/style.css';
-import '@d3-polytree/search-panel/style.css';
+// The side-tabs + search-panel styling now ships with the interactive viewer.
+import '@d3-polytree/interactive-viewer/style.css';
 
 function mount(render: (host: HTMLElement) => Promise<void>): HTMLElement {
   const host = document.createElement('div');

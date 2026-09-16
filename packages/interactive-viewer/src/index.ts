@@ -18,8 +18,14 @@ import {
   outlineModule,
   type DiagramModule
 } from '@d3-polytree/core';
-import { sideTabsModule } from '@d3-polytree/side-tabs';
-import { searchPanelModule } from '@d3-polytree/search-panel';
+// The side-tabs host and the search panel used to be their own packages; they
+// are now folded in here (they have no consumer outside the components) and
+// re-exported below so `sideTabsModule` / `searchPanelModule` stay importable.
+import { sideTabsModule } from './side-tabs';
+import { searchPanelModule } from './search-panel';
+
+export * from './side-tabs';
+export * from './search-panel';
 
 export type InteractiveViewerOptions = ViewerOptions;
 

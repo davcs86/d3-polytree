@@ -3,9 +3,8 @@ import type { DiagramModule } from '@d3-polytree/core';
 import { Editor } from '@d3-polytree/editor';
 import { awsIconsModule } from '@d3-polytree/icons-amazon';
 import { AWS_DIAGRAM } from './sample';
-import '@d3-polytree/side-tabs/style.css';
-import '@d3-polytree/search-panel/style.css';
-import '@d3-polytree/properties-panel/style.css';
+import '@d3-polytree/interactive-viewer/style.css';
+import '@d3-polytree/editor/style.css';
 
 /**
  * The icon-pack convention in practice: an editor whose module list is extended

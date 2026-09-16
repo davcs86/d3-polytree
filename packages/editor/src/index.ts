@@ -22,11 +22,15 @@ import {
   type CreateParameters,
   type Selection
 } from '@d3-polytree/core';
+// The properties panel used to be its own package; it is now folded in here
+// (the editor was its only consumer) and re-exported below.
 import {
   entryFactoryModule,
   pfdnPropertiesProviderModule,
   propertiesPanelModule
-} from '@d3-polytree/properties-panel';
+} from './properties-panel';
+
+export * from './properties-panel';
 
 /** The document a fresh editor opens with. */
 const INITIAL_DIAGRAM =

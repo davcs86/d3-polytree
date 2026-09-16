@@ -62,15 +62,6 @@ importers:
       '@d3-polytree/interactive-viewer':
         specifier: workspace:*
         version: link:../../packages/interactive-viewer
-      '@d3-polytree/properties-panel':
-        specifier: workspace:*
-        version: link:../../packages/properties-panel
-      '@d3-polytree/search-panel':
-        specifier: workspace:*
-        version: link:../../packages/search-panel
-      '@d3-polytree/side-tabs':
-        specifier: workspace:*
-        version: link:../../packages/side-tabs
       '@d3-polytree/viewer':
         specifier: workspace:*
         version: link:../../packages/viewer
@@ -170,12 +161,12 @@ importers:
       '@d3-polytree/interactive-viewer':
         specifier: workspace:*
         version: link:../interactive-viewer
-      '@d3-polytree/properties-panel':
-        specifier: workspace:*
-        version: link:../properties-panel
       '@d3-polytree/viewer':
         specifier: workspace:*
         version: link:../viewer
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.4
 
   packages/icons-amazon:
     dependencies:
@@ -185,18 +176,18 @@ importers:
 
   packages/interactive-viewer:
     dependencies:
+      '@d3-polytree/canvas':
+        specifier: workspace:*
+        version: link:../canvas
       '@d3-polytree/core':
         specifier: workspace:*
         version: link:../core
-      '@d3-polytree/search-panel':
-        specifier: workspace:*
-        version: link:../search-panel
-      '@d3-polytree/side-tabs':
-        specifier: workspace:*
-        version: link:../side-tabs
       '@d3-polytree/viewer':
         specifier: workspace:*
         version: link:../viewer
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.4
 
   packages/pfdn-moddle:
     dependencies:
@@ -206,27 +197,6 @@ importers:
       moddle-xml:
         specifier: ^11.0.0
         version: 11.0.0(moddle@7.2.0)
-
-  packages/properties-panel:
-    dependencies:
-      eventemitter3:
-        specifier: ^5.0.1
-        version: 5.0.4
-
-  packages/search-panel:
-    dependencies:
-      eventemitter3:
-        specifier: ^5.0.1
-        version: 5.0.4
-
-  packages/side-tabs:
-    dependencies:
-      '@d3-polytree/canvas':
-        specifier: workspace:*
-        version: link:../canvas
-      eventemitter3:
-        specifier: ^5.0.1
-        version: 5.0.4
 
   packages/viewer:
     dependencies:
