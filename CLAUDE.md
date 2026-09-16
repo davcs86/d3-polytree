@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-The `v2` branch of **d3-polytree**: a pnpm + Turborepo monorepo publishing the scoped
-**`@d3-polytree/*`** packages — a TypeScript/ESM toolkit for interactive polytree / process-flow
-diagrams on modular **D3 v7**. The legacy v1 viewer lives on the **`master`** branch; do work here on
-**`v2`** (it is the base branch for PRs and Changesets). `ROADMAP.md` is the authoritative plan and
-decisions log (O1–O10); consult it before large structural changes.
+The **d3-polytree** monorepo, on the default **`main`** branch: a pnpm + Turborepo monorepo
+publishing the scoped **`@d3-polytree/*`** packages — a TypeScript/ESM toolkit for interactive
+polytree / process-flow diagrams on modular **D3 v7**. The legacy v1 viewer is preserved on the
+**`v1`** branch; `main` is the base branch for PRs and Changesets. `ROADMAP.md` is the authoritative
+plan and decisions log (O1–O10); consult it before large structural changes.
 
 ## Commands
 
@@ -108,7 +108,7 @@ the reference. `icons-amazon` generates `src/icons.generated.ts` from `src/svg/`
 
 Versioning/publishing is **Changesets** + `.github/workflows/release.yml`, publishing **tokenlessly**
 via npm **Trusted Publishing (OIDC)** — there is no `NPM_TOKEN`. Record changes with `pnpm changeset`;
-merging to `v2` opens a *Version Packages* PR; merging that publishes the bumped packages. Constraints
+merging to `main` opens a *Version Packages* PR; merging that publishes the bumped packages. Constraints
 that are load-bearing (don't regress them):
 
 - Publishing must go through **pnpm** (it rewrites `workspace:*` to real versions). OIDC therefore

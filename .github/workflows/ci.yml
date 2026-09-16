@@ -1,8 +1,8 @@
-name: CI (v2)
+name: CI
 
 on:
   push:
-    branches: [v2]
+    branches: [main]
   pull_request:
 
 jobs:

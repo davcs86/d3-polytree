@@ -1,6 +1,6 @@
 name: Release
 
-# On every push to v2, Changesets either opens/updates a "Version Packages" PR
+# On every push to main, Changesets either opens/updates a "Version Packages" PR
 # (when unreleased changesets are present) or, once that PR is merged and the
 # versions are bumped, publishes the changed @d3-polytree/* packages to npm.
 #
@@ -18,7 +18,7 @@ name: Release
 #     setup on the npm side; see the PR description).
 on:
   push:
-    branches: [v2]
+    branches: [main]
 
 # Never let two releases run concurrently against the same branch.
 concurrency: ${{ github.workflow }}-${{ github.ref }}
