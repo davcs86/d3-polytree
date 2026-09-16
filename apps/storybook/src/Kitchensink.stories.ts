@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import type { DiagramModule, DrawingSelection, ModellingModelElement } from '@d3-polytree/core';
 import { Editor } from '@d3-polytree/editor';
-import '@d3-polytree/side-tabs/style.css';
-import '@d3-polytree/search-panel/style.css';
-import '@d3-polytree/properties-panel/style.css';
+import '@d3-polytree/interactive-viewer/style.css';
+import '@d3-polytree/editor/style.css';
 
 /**
  * The kitchensink: the three ways to extend the library, wired into one live

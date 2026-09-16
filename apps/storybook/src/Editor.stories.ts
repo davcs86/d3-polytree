@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Editor } from '@d3-polytree/editor';
 import { SAMPLE_DIAGRAM } from './sample';
-// The editor layers all three panels; ship each package's compiled CSS.
-import '@d3-polytree/side-tabs/style.css';
-import '@d3-polytree/search-panel/style.css';
-import '@d3-polytree/properties-panel/style.css';
+// Panel styling now ships with the components: side-tabs + search-panel with
+// the interactive viewer, properties panel with the editor.
+import '@d3-polytree/interactive-viewer/style.css';
+import '@d3-polytree/editor/style.css';
 
 function mount(render: (host: HTMLElement) => Promise<void>): HTMLElement {
   const host = document.createElement('div');

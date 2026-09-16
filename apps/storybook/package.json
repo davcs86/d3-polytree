@@ -14,9 +14,6 @@
     "@d3-polytree/editor": "workspace:*",
     "@d3-polytree/icons-amazon": "workspace:*",
     "@d3-polytree/interactive-viewer": "workspace:*",
-    "@d3-polytree/properties-panel": "workspace:*",
-    "@d3-polytree/search-panel": "workspace:*",
-    "@d3-polytree/side-tabs": "workspace:*",
     "@d3-polytree/viewer": "workspace:*",
     "d3-selection": "^3.0.0",
     "eventemitter3": "^5.0.1"

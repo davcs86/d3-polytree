@@ -93,10 +93,10 @@ graph TD
   editor["@d3-polytree/editor"] --> core
   iviewer["@d3-polytree/interactive-viewer"] --> core
   viewer["@d3-polytree/viewer"] --> core
-  editor --> pp["@d3-polytree/properties-panel"]
-  iviewer --> sp["@d3-polytree/search-panel"]
-  editor --> st["@d3-polytree/side-tabs"]
-  pp --> scrolltabs["@d3-polytree/scroll-tabs"]
+  editor --> iviewer
+  %% Panels folded into their components (O10): side-tabs + search-panel are now
+  %% internal to interactive-viewer; properties-panel (which absorbed scroll-tabs
+  %% per O4) is now internal to editor. No standalone panel/scroll-tabs packages.
   core["@d3-polytree/core (draw + features + modelling)"] --> canvas["@d3-polytree/canvas"]
   core --> moddle["@d3-polytree/pfdn-moddle"]
   canvas --> d3["modular D3 v7 (peer deps)"]
@@ -348,6 +348,7 @@ remain; new ones should be appended below as they arise.
 | O7 | Minimum browser matrix? | **Evergreen + last 2 versions; drop IE** (retire F13 + `classlist-polyfill`). | B5, B8 |
 | O8 | Bundled-D3 UMD/IIFE build alongside the ESM peer-dep builds? | **Yes** — a secondary artifact for the three top-level components (`viewer`, `interactive-viewer`, `editor`) only; the peer-dep ESM build stays primary. | B3, B9 |
 | O9 | Properties-panel grid replacement (replaces `slickgrid`)? | **Decide via a Storybook spike in B6** — prototype a headless grid (e.g. TanStack Table core) vs a purpose-built typed table, choose on measured bundle-size vs feature fit. This is the one deferred-to-spike decision. | B6 |
+| O10 | Keep the panels (`side-tabs`, `search-panel`, `properties-panel`) as standalone packages, or fold them into their components? | **Fold** (@davcs86, 2026-09-16, post-0.1.0): `side-tabs` + `search-panel` → `@d3-polytree/interactive-viewer`; `properties-panel` → `@d3-polytree/editor`. They had no consumer outside the components. Their modules/types are re-exported from the parents and their CSS ships as the parents' `./style.css`. The three standalone packages are discontinued (deprecate the published 0.1.0 on npm). | B6, B9 |
 
 ### 8.1 Rationale — O1 (keep `pfdn-moddle`)
 

@@ -14,22 +14,23 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./umd": "./dist/interactive-viewer.umd.js"
+    "./umd": "./dist/interactive-viewer.umd.js",
+    "./style.css": "./dist/style.css"
   },
   "files": [
     "dist"
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && sass src/style.scss dist/style.css --no-source-map --style=compressed --silence-deprecation=import",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@d3-polytree/viewer": "workspace:*",
     "@d3-polytree/core": "workspace:*",
-    "@d3-polytree/side-tabs": "workspace:*",
-    "@d3-polytree/search-panel": "workspace:*"
+    "@d3-polytree/canvas": "workspace:*",
+    "eventemitter3": "^5.0.1"
   },
   "unpkg": "./dist/interactive-viewer.umd.js",
   "jsdelivr": "./dist/interactive-viewer.umd.js",
