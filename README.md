@@ -8,6 +8,10 @@ modular **D3 v7**. TypeScript, ESM-first, published to npm.
 > modernized, TypeScript monorepo. See [`ROADMAP.md`](./ROADMAP.md) for the
 > full modernization plan and the decisions log (O1–O10).
 
+**[▶ Live Storybook](https://davcs86.github.io/d3-polytree/)** — interactive demos of every component
+(viewer, interactive-viewer, editor, canvas, icon pack) and the **Guides/Kitchensink** worked example,
+published from `main` via GitHub Pages.
+
 ## Packages
 
 | Package | Role |
@@ -65,8 +69,8 @@ const auditModule = {
 new Editor({ container, modules: [awsIconsModule, auditModule] });
 ```
 
-The Storybook **Guides/Kitchensink** story shows a custom feature module, a custom node-type drawer,
-and the programmatic API end to end.
+The Storybook **[Guides/Kitchensink](https://davcs86.github.io/d3-polytree/?path=/story/guides-kitchensink--extending-the-library)**
+story shows a custom feature module, a custom node-type drawer, and the programmatic API end to end.
 
 ## `<script>` (UMD) usage
 
@@ -83,7 +87,8 @@ and the programmatic API end to end.
 - **pnpm** workspaces · **Turborepo** task graph · **Changesets** releases
 - **TypeScript** (strict) · **tsup** builds (ESM + CJS + `.d.ts`, plus UMD for the components)
 - **Vitest** (jsdom) · **ESLint** (flat) + **Prettier** · **dart-sass** for panel CSS
-- **Storybook** (`@storybook/html-vite`) — dev harness, visual-regression baseline, docs site
+- **Storybook** (`@storybook/html-vite`) — dev harness, visual-regression baseline, and the
+  [published docs site](https://davcs86.github.io/d3-polytree/) (GitHub Pages, deployed from `main`)
 
 ```sh
 pnpm install

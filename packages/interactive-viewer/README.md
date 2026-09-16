@@ -3,6 +3,8 @@
 The [`@d3-polytree/viewer`](../viewer) plus interaction: **pan/zoom**, the background grid,
 pointer-driven **selection/outline**, and the **side-tabs host + searchable element index**.
 
+**[▶ Live demo](https://davcs86.github.io/d3-polytree/?path=/story/components-interactiveviewer--sample-diagram)** in Storybook.
+
 ```sh
 pnpm add @d3-polytree/interactive-viewer d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag
 ```

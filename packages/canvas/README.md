@@ -3,6 +3,8 @@
 Base SVG canvas toolbox for the d3-polytree v2 ecosystem — the diagram-js-style foundation the
 viewer/editor build on.
 
+**[▶ Live demo](https://davcs86.github.io/d3-polytree/?path=/story/canvas-base--default)** in Storybook.
+
 Exports:
 
 - **`Canvas`** — a `<div>`-wrapped `<svg>` with a root `<g>` layer; container/SVG/transform/size

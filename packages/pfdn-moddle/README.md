@@ -13,8 +13,9 @@ const { xml } = await moddle.toXML(rootElement);       // serialize
 ```
 
 Defines the `pfdn:` types — `Diagram`, `Node`, `Link`, `Label`, `Zone`, `Coordinates`, settings — that
-the engine reads and writes. Part of the [d3-polytree](https://github.com/davcs86/d3-polytree)
-monorepo.
+the engine reads and writes. See the model rendered in the
+**[live Storybook](https://davcs86.github.io/d3-polytree/)**. Part of the
+[d3-polytree](https://github.com/davcs86/d3-polytree) monorepo.
 
 ## License
 
