@@ -4,8 +4,8 @@ Monorepo for the **`@d3-polytree/*`** v2 ecosystem — an interactive
 [polytree](https://en.wikipedia.org/wiki/Polytree) / process-flow diagram toolkit built on slim,
 modular **D3 v7**. TypeScript, ESM-first, published to npm.
 
-> **v1** (the legacy `SimpleNetwork` viewer) remains maintained on the **`master`** branch. This
-> **`v2`** branch is the modernized, TypeScript monorepo. See [`ROADMAP.md`](./ROADMAP.md) for the
+> **v1** (the legacy `SimpleNetwork` viewer) is preserved on the **`v1`** branch. **`main`** is this
+> modernized, TypeScript monorepo. See [`ROADMAP.md`](./ROADMAP.md) for the
 > full modernization plan and the decisions log (O1–O10).
 
 ## Packages
@@ -100,7 +100,7 @@ pnpm changeset        # record a version bump
 
 Versioning and publishing are automated with **Changesets** + the `Release` GitHub Actions workflow.
 Publishing is **tokenless** via npm **Trusted Publishing (OIDC)** — no long-lived npm token. Merge a
-changeset to `v2`, merge the generated **Version Packages** PR, and the changed packages publish
+changeset to `main`, merge the generated **Version Packages** PR, and the changed packages publish
 themselves.
 
 ## License
