@@ -16,7 +16,9 @@ Contains:
 
 Most users consume the engine through a component ([`viewer`](../viewer),
 [`interactive-viewer`](../interactive-viewer), [`editor`](../editor)) rather than directly; each
-feature is a didi module you can also compose à la carte.
+feature is a didi module you can also compose à la carte. See it running in the
+**[live Storybook](https://davcs86.github.io/d3-polytree/)** (the component and Guides/Kitchensink
+stories exercise the engine end to end).
 
 **Peer dependencies:** `d3-selection`, `d3-zoom`, `d3-transition`, `d3-scale`, `d3-axis`, `d3-drag`.
 

@@ -4,6 +4,8 @@ The **static, read-only** polytree viewer — boots the [`@d3-polytree/core`](..
 loaded `.pfdn` document and renders it. No pan/zoom or interaction (see
 [`@d3-polytree/interactive-viewer`](../interactive-viewer) and [`@d3-polytree/editor`](../editor)).
 
+**[▶ Live demo](https://davcs86.github.io/d3-polytree/?path=/story/components-viewer--sample-diagram)** in Storybook.
+
 ```sh
 pnpm add @d3-polytree/viewer d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag
 ```

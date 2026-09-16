@@ -4,6 +4,8 @@ The full polytree **editor** — the [`@d3-polytree/interactive-viewer`](../inte
 editing layer: element dragging, the create/save/delete modelling flows, the palette toolbar, and the
 **properties panel**.
 
+**[▶ Live demo](https://davcs86.github.io/d3-polytree/?path=/story/components-editor--initial-diagram)** in Storybook.
+
 ```sh
 pnpm add @d3-polytree/editor d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag
 ```
@@ -24,7 +26,8 @@ const xml = editor.exportDiagram();                            // serialize to .
 The **properties-panel** feature is bundled into this package and re-exported (`propertiesPanelModule`,
 `entryFactoryModule`, `pfdnPropertiesProviderModule`). Layer in custom engine modules — a feature, a
 custom node-type drawer, an [icon pack](../icons-amazon) — through the `modules` constructor option;
-see the Storybook **Guides/Kitchensink** story. Ships ESM + CJS + `.d.ts`, a self-contained **UMD**
+see the Storybook **[Guides/Kitchensink](https://davcs86.github.io/d3-polytree/?path=/story/guides-kitchensink--extending-the-library)**
+story. Ships ESM + CJS + `.d.ts`, a self-contained **UMD**
 bundle (global `d3PolytreeEditor`), and compiled **CSS** at `./style.css`. Part of the
 [d3-polytree](https://github.com/davcs86/d3-polytree) monorepo.
 

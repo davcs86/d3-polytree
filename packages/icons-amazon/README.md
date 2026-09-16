@@ -3,6 +3,8 @@
 An **AWS icon pack** for d3-polytree, and the reference implementation of the **icon-pack
 convention**.
 
+**[▶ Live demo](https://davcs86.github.io/d3-polytree/?path=/story/icon-packs-amazon--aws-topology)** in Storybook.
+
 An icon pack is just a didi module whose `icons` factory spreads the engine's base icons and then its
 own. Composed *after* the core modules (via the `modules` option), it extends the node-icon set
 without replacing the defaults:
