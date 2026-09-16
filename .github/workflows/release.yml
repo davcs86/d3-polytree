@@ -45,6 +45,12 @@ jobs:
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
+      # The OIDC token exchange for Trusted Publishing runs through the npm CLI,
+      # which must be >= 11.5.1. Node 22 ships npm 10.x, so upgrade it here or the
+      # exchange yields no credential and the publish 404s (unauthenticated PUT).
+      - name: Ensure npm supports Trusted Publishing (OIDC)
+        run: npm install -g npm@latest
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
