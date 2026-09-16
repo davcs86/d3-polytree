@@ -4,10 +4,18 @@ name: Release
 # (when unreleased changesets are present) or, once that PR is merged and the
 # versions are bumped, publishes the changed @d3-polytree/* packages to npm.
 #
-# Requires a repository secret `NPM_TOKEN` (an npm automation token with publish
-# rights on the @d3-polytree scope). Until it is set, the version step still
-# runs; the publish step is a no-op that fails to authenticate — set the secret
-# before merging the first Version Packages PR.
+# Tokenless: publishing uses npm Trusted Publishing (OIDC) — GitHub's OIDC
+# identity is exchanged for a short-lived npm credential at publish time, so
+# there is no long-lived NPM_TOKEN secret. Requirements, all satisfied here:
+#   - `id-token: write` permission (below) — the OIDC token.
+#   - `registry-url` on setup-node — required for the OIDC exchange.
+#   - Node >= 22.14 — OIDC support in the toolchain.
+#   - pnpm 10 — performs the OIDC exchange natively via npm-registry-fetch
+#     (pnpm 9 predates it; pnpm 11 has a known OIDC 404 regression). The version
+#     comes from the repo's `packageManager` field, which pnpm/action-setup reads.
+#   - Each published package must have a Trusted Publisher configured on npmjs.com
+#     pointing at this repo + workflow file `release.yml` (a one-time, per-package
+#     setup on the npm side; see the PR description).
 on:
   push:
     branches: [v2]
@@ -18,7 +26,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions:
   contents: write # push the version commit / tags
   pull-requests: write # open the Version Packages PR
-  id-token: write # npm provenance
+  id-token: write # mint the OIDC token for Trusted Publishing
 
 jobs:
   release:
@@ -33,7 +41,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
@@ -48,6 +56,6 @@ jobs:
           title: 'Release: version packages'
           commit: 'chore: version packages'
         env:
+          # Only GitHub auth for opening the Version PR — no npm token: the
+          # publish authenticates to npm via OIDC (id-token above).
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

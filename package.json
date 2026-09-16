@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/davcs86/d3-polytree.git"
   },
-  "packageManager": "pnpm@9.15.9",
+  "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=20"
   },
