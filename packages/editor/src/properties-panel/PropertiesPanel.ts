@@ -1,7 +1,16 @@
 import type EventEmitter from 'eventemitter3';
+import type { CommandStack, CommandContext } from '@d3-polytree/core';
 import type { EntryResource } from './EntryFactory';
 import type { PropertiesProvider } from './PfdnPropertiesProvider';
 import { debounce, deepGet, deepSet, type Definition } from './utils';
+
+/** The memento for an `element.updateProperties` command. */
+interface UpdatePropsContext extends CommandContext {
+  scope: EntryResource;
+  definition: Definition;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+}
 
 /** The side-tab registration surface the panel needs (structural). */
 export interface SideTabRegistration {
@@ -47,12 +56,14 @@ export class PropertiesPanel {
     'sideTabsProvider',
     'eventBus',
     'propertiesProvider',
-    'd3polytree.definitions.settings'
+    'd3polytree.definitions.settings',
+    'commandStack'
   ];
 
   private readonly _eventBus: EventEmitter;
   private readonly _propertiesProvider: PropertiesProvider;
   private readonly _diagramSettings: Definition;
+  private readonly _commandStack: CommandStack;
   private _entries: Record<string, TrackedEntry> = {};
 
   private _container: HTMLElement | null = null;
@@ -63,13 +74,33 @@ export class PropertiesPanel {
     sideTabsProvider: SideTabsRegistrar,
     eventBus: EventEmitter,
     propertiesProvider: PropertiesProvider,
-    diagramSettings: Definition
+    diagramSettings: Definition,
+    commandStack: CommandStack
   ) {
     this._eventBus = eventBus;
     this._propertiesProvider = propertiesProvider;
     this._diagramSettings = diagramSettings;
+    this._commandStack = commandStack;
+    this._registerUpdatePropertiesCommand();
     this._registerSideTab(sideTabsProvider);
     this._registerSelectionListener();
+  }
+
+  /**
+   * Register the `element.updateProperties` command. Its apply logic is
+   * editor-specific (a property `scope` plus the provider's drawing update), so
+   * the panel — which owns both — registers it on the shared stack rather than
+   * the core modelling orchestrator.
+   */
+  private _registerUpdatePropertiesCommand(): void {
+    const apply = (ctx: UpdatePropsContext, props: Record<string, unknown>): void => {
+      ctx.scope.set(ctx.definition, props);
+      this._propertiesProvider.updateDrawing(ctx.definition);
+    };
+    this._commandStack.registerHandler('element.updateProperties', {
+      execute: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).after),
+      revert: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).before)
+    });
   }
 
   private _registerSideTab(provider: SideTabsRegistrar): void {
@@ -166,10 +197,17 @@ export class PropertiesPanel {
     if (!entry) {
       return;
     }
-    const props: Record<string, unknown> = {};
-    deepSet(props, entryId, newValue);
-    entry.scope.set(entry.definition, props);
-    this._propertiesProvider.updateDrawing(entry.definition);
+    const after: Record<string, unknown> = {};
+    deepSet(after, entryId, newValue);
+    // Capture the prior value of the same path so the edit is undoable.
+    const before: Record<string, unknown> = {};
+    deepSet(before, entryId, deepGet(entry.definition, entryId));
+    this._commandStack.execute('element.updateProperties', {
+      scope: entry.scope,
+      definition: entry.definition,
+      before,
+      after
+    } satisfies UpdatePropsContext);
   }
 
   private _selectTab(tabId: string | null): void {
