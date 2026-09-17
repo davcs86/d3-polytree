@@ -36,7 +36,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 1 — Scaffold the `command/` layer: `CommandStack` service, `CommandHandler` contract, `commandStackModule`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/core/src/command/CommandStack.ts` — create
 - `packages/core/src/command/CommandHandler.ts` — create
@@ -62,7 +62,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 2 — Boot latch, failure semantics, and stack quarantine
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/core/src/command/CommandStack.ts` — modify
 - `packages/core/src/command/CommandStack.test.ts` — modify
@@ -354,3 +354,6 @@ value read directly this session. Plan is execution-ready.
 ## Deviation Log
 
 _Populated during execution. Step bodies above are immutable (DN-5); record any divergence here with the step number, what changed, and why._
+
+- **Steps 1 & 2 — implemented in one commit.** Splitting them yields a non-testable intermediate: Step 1's tests (execute/undo/redo, nested-join, redo-truncation) require the stack to record, which is governed by Step 2's boot latch (`_enabled`). Both step bodies were implemented as written; the boot-latch enable/quarantine and the failure/quarantine semantics landed together. Files: `packages/core/src/command/{CommandHandler,CommandStack,index}.ts`, `packages/core/src/command/CommandStack.test.ts` (8 tests), `packages/core/src/index.ts`. Verified: `pnpm --filter @d3-polytree/core exec vitest run src/command/CommandStack.test.ts` (8 pass), `pnpm --filter @d3-polytree/core typecheck` clean (after building upstream `canvas`/`pfdn-moddle` dist), `eslint packages/core/src/command` clean.
+- **Rollout — two phases on one branch, not two GitHub PRs.** The plan's PR-1/PR-2 split is honored as a two-phase commit sequence on the single designated branch `claude/senior-fe-expertise-features-9s1wub` (branch constraint from the task); the tree is kept green at the Step-9 (PR-1) boundary before Step 10 begins.
