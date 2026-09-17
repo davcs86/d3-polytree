@@ -17,9 +17,10 @@ import {
   resizeElementModule,
   type DiagramModule,
   type DrawingRegistry,
-  type ModellingNodes,
   type ModellingModelElement,
   type CreateParameters,
+  type CommandStack,
+  type CreateContext,
   type Selection
 } from '@d3-polytree/core';
 // The properties panel used to be its own package; it is now folded in here
@@ -81,9 +82,16 @@ export class Editor extends InteractiveViewer {
     ];
   }
 
-  /** Create a node (and its associated label) at an optional position. */
+  /**
+   * Create a node (and its associated label) at an optional position.
+   *
+   * Routed through the command stack so it persists and is undoable (since B10
+   * the draw-layer `.created` event no longer persists on its own).
+   */
   createNode(parameters: CreateParameters = {}): ModellingModelElement {
-    return this.get<ModellingNodes>('modellingNodes').create(parameters);
+    const ctx: CreateContext = { className: 'node', parameters: [parameters] };
+    this.get<CommandStack>('commandStack').execute('element.create', ctx);
+    return ctx.created as ModellingModelElement;
   }
 
   /** Select an element by definition (e.g. to prepare a delete). */

@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { CommandStack } from '@d3-polytree/core';
+import type { CommandStack, ModellingModelElement } from '@d3-polytree/core';
 import { Editor } from './index';
+
+type Def = ModellingModelElement;
+function xy(def: Def): { x: number; y: number } {
+  return def.position as { x: number; y: number };
+}
 
 /**
  * The B10 fidelity harness (design-buddy plan Step 3), exercised end-to-end
@@ -17,23 +22,17 @@ function assertGestureRoundTrip(editor: Editor, cs: CommandStack, gesture: () =>
   expect(editor.exportDiagram()).toBe(before); // execute → revert is byte-identical
 }
 
-interface Def {
-  id: string;
-  position: { x: number; y: number };
-  label?: Def;
-  get(name: string): unknown;
-  set(name: string, value: unknown): void;
-}
 interface AppendHandler {
   append(parameters?: { position?: { x: number; y: number } }): Def;
 }
 
 /** Build an element.move item (node only) mirroring the drag dispatcher. */
 function nodeMove(def: Def, to: { x: number; y: number }) {
+  const p = xy(def);
   return {
     def,
     className: 'node' as const,
-    from: { position: { x: def.position.x, y: def.position.y }, status: Number(def.get('status') ?? 0) },
+    from: { position: { x: p.x, y: p.y }, status: Number(def.get('status') ?? 0) },
     to: { position: to, status: 2 }
   };
 }
@@ -149,7 +148,8 @@ describe('@d3-polytree/editor command round-trips', () => {
   it('element.move restores a node AND its associated label on undo', () => {
     const addNode = editor.get<AppendHandler>('addNodeHandler');
     const n = addNode.append({ position: { x: 10, y: 10 } });
-    const label = n.label!;
+    const label = n.label as Def;
+    const lp = xy(label);
     const before = editor.exportDiagram();
 
     cs.execute('element.move', {
@@ -158,10 +158,7 @@ describe('@d3-polytree/editor command round-trips', () => {
           ...nodeMove(n, { x: 90, y: 70 }),
           label: {
             def: label,
-            from: {
-              position: { x: label.position.x, y: label.position.y },
-              status: Number(label.get('status') ?? 0)
-            },
+            from: { position: { x: lp.x, y: lp.y }, status: Number(label.get('status') ?? 0) },
             to: { position: { x: 90, y: 110 }, status: 2 }
           }
         }
@@ -181,8 +178,8 @@ describe('@d3-polytree/editor command round-trips', () => {
 
     const selection = editor.get<SelectionService>('selection');
     const registry = editor.get<Registry>('drawingRegistry');
-    selection.select(registry.get(n1.id), n1, {});
-    selection.select(registry.get(n2.id), n2, { ctrlKey: true });
+    selection.select(registry.get(n1.id as string), n1, {});
+    selection.select(registry.get(n2.id as string), n2, { ctrlKey: true });
 
     editor.deleteSelected();
     expect(editor.exportDiagram()).not.toBe(before);

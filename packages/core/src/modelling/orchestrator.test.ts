@@ -6,11 +6,6 @@ import type { ModellingElement } from './ModellingElement';
 import type { ModellingModelElement } from './types';
 import type { CommandStack } from '../command';
 
-/** A command-stack double: the orchestrator only registers handlers on it. */
-function fakeCommandStack(): CommandStack {
-  return { registerHandler: vi.fn() } as unknown as CommandStack;
-}
-
 interface SpyHandler {
   saveToModel: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
@@ -21,11 +16,17 @@ function spyHandler(): SpyHandler {
   return { saveToModel: vi.fn(), delete: vi.fn(), reconcile: vi.fn() };
 }
 
+/** A command-stack double capturing registrations and dispatches. */
+function fakeCommandStack(): CommandStack {
+  return { registerHandler: vi.fn(), execute: vi.fn() } as unknown as CommandStack;
+}
+
 describe('@d3-polytree/core modelling orchestrator', () => {
   let bus: EventEmitter;
   let moddle: ReturnType<typeof createPfdnModdle>;
   let definitions: ModellingModelElement;
   let handlers: Record<ElementClass, SpyHandler>;
+  let commandStack: CommandStack;
   let modelling: Modelling;
 
   beforeEach(() => {
@@ -33,6 +34,7 @@ describe('@d3-polytree/core modelling orchestrator', () => {
     moddle = createPfdnModdle();
     definitions = moddle.create('pfdn:Diagram', {}) as unknown as ModellingModelElement;
     handlers = { node: spyHandler(), label: spyHandler(), zone: spyHandler(), link: spyHandler() };
+    commandStack = fakeCommandStack();
     modelling = new Modelling(
       bus,
       definitions,
@@ -40,37 +42,30 @@ describe('@d3-polytree/core modelling orchestrator', () => {
       handlers.label as unknown as ModellingElement,
       handlers.zone as unknown as ModellingElement,
       handlers.link as unknown as ModellingElement,
-      fakeCommandStack()
+      commandStack
     );
   });
 
-  const created: Array<[string, ElementClass]> = [
-    ['label.created', 'label'],
-    ['link.created', 'link'],
-    ['node.created', 'node'],
-    ['zone.created', 'zone']
-  ];
-  const deleted: Array<[string, ElementClass]> = [
-    ['label.deleted', 'label'],
-    ['link.deleted', 'link'],
-    ['node.deleted', 'node'],
-    ['zone.deleted', 'zone']
-  ];
-
-  it.each(created)('routes %s to the %s handler saveToModel', (event, cls) => {
-    const element = {};
-    const definition = {};
-    bus.emit(event, element, definition);
-    expect(handlers[cls].saveToModel).toHaveBeenCalledWith(element, definition);
-    expect(handlers[cls].delete).not.toHaveBeenCalled();
+  it('registers the modelling commands on the stack at construction', () => {
+    const registered = (commandStack.registerHandler as unknown as { mock: { calls: string[][] } })
+      .mock.calls.map((c) => c[0]);
+    expect(registered).toEqual(
+      expect.arrayContaining([
+        'element.create',
+        'element.delete',
+        'elements.delete',
+        'element.resize',
+        'element.move'
+      ])
+    );
   });
 
-  it.each(deleted)('routes %s to the %s handler delete', (event, cls) => {
-    const element = {};
-    const definition = {};
-    bus.emit(event, element, definition);
-    expect(handlers[cls].delete).toHaveBeenCalledWith(element, definition);
-    expect(handlers[cls].saveToModel).not.toHaveBeenCalled();
+  it('no longer mutates the model on draw-layer .created / .deleted (they are notifications)', () => {
+    // Post-O11 the events stay for observers, but model mutation rides commands.
+    bus.emit('node.created', {}, {});
+    bus.emit('node.deleted', {}, {});
+    expect(handlers.node.saveToModel).not.toHaveBeenCalled();
+    expect(handlers.node.delete).not.toHaveBeenCalled();
   });
 
   it('routes element.updated to the handler for the element local name', () => {
@@ -80,37 +75,22 @@ describe('@d3-polytree/core modelling orchestrator', () => {
     expect(handlers.label.reconcile).not.toHaveBeenCalled();
   });
 
-  it('doAction returns null for an unknown element class', () => {
-    expect(modelling.doAction('mystery', 'saveToModel' as MutatingAction, [])).toBeNull();
+  it('turns a selection-delete intent into one composite elements.delete command', () => {
+    const a = moddle.create('pfdn:Node', { id: 'A' }) as unknown as ModellingModelElement;
+    const b = moddle.create('pfdn:Node', { id: 'B' }) as unknown as ModellingModelElement;
+    bus.emit('elements.delete', [{ definition: a }, { definition: b }]);
+
+    expect(commandStack.execute).toHaveBeenCalledTimes(1);
+    const [command, ctx] = (commandStack.execute as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0] as [string, { items: Array<{ def: ModellingModelElement; className: string }> }];
+    expect(command).toBe('elements.delete');
+    expect(ctx.items).toEqual([
+      { def: a, className: 'node' },
+      { def: b, className: 'node' }
+    ]);
   });
 
-  it('drives a real handler: node.created persists into the definition list', () => {
-    const realBus = new EventEmitter();
-    const added: ModellingModelElement[] = [];
-    // a minimal real-shaped handler exercising the base saveToModel path
-    const nodeHandler = {
-      saveToModel(_el: unknown, def: ModellingModelElement) {
-        (definitions.get('node') as ModellingModelElement[]).push(def);
-        added.push(def);
-      },
-      delete: vi.fn(),
-      reconcile: vi.fn()
-    } as unknown as ModellingElement;
-
-    new Modelling(
-      realBus,
-      definitions,
-      nodeHandler,
-      handlers.label as unknown as ModellingElement,
-      handlers.zone as unknown as ModellingElement,
-      handlers.link as unknown as ModellingElement,
-      fakeCommandStack()
-    );
-
-    const node = moddle.create('pfdn:Node', { id: 'N9' }) as unknown as ModellingModelElement;
-    realBus.emit('node.created', {}, node);
-
-    expect(added).toContain(node);
-    expect(definitions.get('node')).toContain(node);
+  it('doAction (deprecated shim) still delegates and returns null for an unknown class', () => {
+    expect(modelling.doAction('mystery', 'saveToModel' as MutatingAction, [])).toBeNull();
   });
 });

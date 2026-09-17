@@ -63,7 +63,14 @@ export class Modelling {
     this._init();
   }
 
-  /** Invoke `action` on the handler for `elementClassName` with `parameters`. */
+  /**
+   * Invoke `action` on the handler for `elementClassName` with `parameters`.
+   *
+   * @deprecated Since B10 model mutation flows through the `commandStack`
+   * (decision O11); the palette and interaction features dispatch commands
+   * instead of calling this. Retained for one minor for any external caller,
+   * and removed before 1.0.
+   */
   doAction(elementClassName: string, action: MutatingAction, parameters: unknown[]): unknown {
     const handler = this._elements[elementClassName as ElementClass];
     if (handler) {
@@ -78,19 +85,11 @@ export class Modelling {
   }
 
   private _init(): void {
-    const route = (event: string, cls: ElementClass, action: MutatingAction): void => {
-      this._eventBus.on(event, (...args: unknown[]) => this.doAction(cls, action, args));
-    };
-
-    route('label.created', 'label', 'saveToModel');
-    route('link.created', 'link', 'saveToModel');
-    route('node.created', 'node', 'saveToModel');
-    route('zone.created', 'zone', 'saveToModel');
-
-    route('label.deleted', 'label', 'delete');
-    route('link.deleted', 'link', 'delete');
-    route('node.deleted', 'node', 'delete');
-    route('zone.deleted', 'zone', 'delete');
+    // The draw-layer `<class>.created` / `.deleted` events remain, but as pure
+    // NOTIFICATIONS only — MouseEvents, outline, selection etc. still observe
+    // them. Model mutation no longer rides them (decision O11): create/delete/
+    // move/resize are dispatched as commands. Only the reconcile notification
+    // and the selection-delete intent are wired here.
 
     this._eventBus.on(
       'element.updated',
