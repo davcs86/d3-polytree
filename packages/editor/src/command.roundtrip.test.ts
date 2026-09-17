@@ -57,6 +57,44 @@ describe('@d3-polytree/editor command round-trips', () => {
   it('boots with an empty, non-dirty undo stack (boot latch)', () => {
     expect(cs.canUndo()).toBe(false);
     expect(cs.canRedo()).toBe(false);
+    expect(editor.canUndo()).toBe(false);
+  });
+
+  it('emits document.changed with a dirty flag on edit and back to clean on undo', () => {
+    const changes: boolean[] = [];
+    editor.get<{ on(e: string, cb: (p: { dirty: boolean }) => void): void }>('eventBus').on(
+      'document.changed',
+      (p) => changes.push(p.dirty)
+    );
+    editor.get<AppendHandler>('addNodeHandler').append({ position: { x: 1, y: 2 } });
+    expect(changes.at(-1)).toBe(true); // dirty after an edit
+    editor.undo();
+    expect(changes.at(-1)).toBe(false); // clean back at the baseline
+  });
+
+  it('undoes and redoes via Ctrl+Z / Ctrl+Shift+Z on the container', () => {
+    editor.get<AppendHandler>('addNodeHandler').append({ position: { x: 3, y: 4 } });
+    const withNode = editor.exportDiagram();
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }));
+    const undone = editor.exportDiagram();
+    expect(undone).not.toBe(withNode);
+
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, shiftKey: true })
+    );
+    expect(editor.exportDiagram()).toBe(withNode); // redo restored it
+  });
+
+  it('ignores undo keystrokes originating in a text input', () => {
+    editor.get<AppendHandler>('addNodeHandler').append({ position: { x: 3, y: 4 } });
+    const withNode = editor.exportDiagram();
+
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
+
+    expect(editor.exportDiagram()).toBe(withNode); // typing Ctrl+Z in a field did not undo
   });
 
   it('element.create (palette add-node) round-trips through undo', () => {

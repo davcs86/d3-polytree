@@ -241,7 +241,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 10 — Component surface: `undo()`/`redo()` + `document.changed` dirty flag
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/viewer/src/index.ts` — modify
 - `packages/interactive-viewer/src/index.ts` — modify (re-export types if needed)
@@ -263,7 +263,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 11 — Keyboard binding: Ctrl+Z / Ctrl+Shift+Z in `InteractiveViewer`/`Editor`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/interactive-viewer/src/index.ts` — modify
 
@@ -360,4 +360,5 @@ _Populated during execution. Step bodies above are immutable (DN-5); record any 
 - **Step 4 — driver.** The create round-trip is driven via `editor.get('addNodeHandler').append(...)` (the real palette dispatcher, now rerouted through `commandStack.execute('element.create')`), since `editor.createNode()` calls the handler directly and bypasses the stack. Whether `createNode` should also route through the stack is a totality question tracked for the PR-2 phase.
 - **Step 5 — Selection stays decoupled from the command stack.** The plan's Step 5 instruction wired `commandStack` into `Selection.$inject`. That would break `InteractiveViewer`, which composes `Selection` but has **no** `commandStack`/modelling (a stack there has no `element.delete` handler, so `execute` would throw). Instead: `Selection.deleteSelected` emits ONE batched `elements.delete` **intent** event carrying the snapshot (Selection keeps `$inject = ['eventBus']`); the `Modelling` orchestrator — which owns the stack and handlers and exists only in `Editor` — subscribes and dispatches a composite `elements.delete` command whose child `element.delete` executes join one transaction. In `InteractiveViewer` the intent has no subscriber, so delete is inert there exactly as before. The one-transaction / multi-select-single-undo requirement is met (verified by an editor round-trip test); `features.test.ts`'s delete assertion updated to the new intent event.
 - **Step 8 — `Editor.createNode` rerouted early.** Removing the `.created → saveToModel` route means an element created by calling the handler directly is no longer persisted. `Editor.createNode` did exactly that, so it was rerouted through `commandStack.execute('element.create')` now (plan had this as a PR-2 "totality" follow-up). Side benefit: `createNode` is now undoable and consistent with the palette path. The `INITIAL_DIAGRAM`/`importDiagram` boot path is unaffected — `loadModel` populates the collections directly, so the boot render (now notification-only) needs no `saveToModel`.
+- **Steps 10–11 — undo/redo + keyboard on `Editor`, not the base `Viewer`.** The plan put `undo()`/`redo()`/`document.changed` on `Viewer` and the keyboard binding on `InteractiveViewer`. But only `Editor` composes `modellingModule`, so only `Editor` has a `commandStack`; calling `get('commandStack')` on a `Viewer`/`InteractiveViewer` (which have no editing) would throw, and neither has any undoable mutation. So `undo()`/`redo()`/`canUndo()`/`canRedo()` and the Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y keydown binding (with an input-focus guard and a "no document open" guard, removed in `destroy()`) live on `Editor`, the editing surface. `document.changed` (with a `dirty` flag) is emitted by the core `CommandStack` itself on every change, so it is available wherever a stack lives; save-baseline reset / debounce is deferred (design Open Risk).
 - **Rollout — two phases on one branch, not two GitHub PRs.** The plan's PR-1/PR-2 split is honored as a two-phase commit sequence on the single designated branch `claude/senior-fe-expertise-features-9s1wub` (branch constraint from the task); the tree is kept green at the Step-9 (PR-1) boundary before Step 10 begins.

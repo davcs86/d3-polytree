@@ -198,9 +198,11 @@ export class CommandStack {
   }
 
   private _emitChanged(): void {
-    this._eventBus.emit('commandStack.changed', {
-      canUndo: this.canUndo(),
-      canRedo: this.canRedo()
-    });
+    const canUndo = this.canUndo();
+    this._eventBus.emit('commandStack.changed', { canUndo, canRedo: this.canRedo() });
+    // A document is dirty once it has an undoable change past the boot baseline
+    // (the stack records nothing until `d3canvas.init`). Save-baseline reset /
+    // debounce is a deferred refinement (design Open Risk).
+    this._eventBus.emit('document.changed', { dirty: canUndo });
   }
 }
