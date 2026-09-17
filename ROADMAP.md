@@ -1,6 +1,6 @@
 # d3-polytree — Modernization Roadmap
 
-> **Status:** Proposal / RFC · **Owner:** @davcs86 · **Last updated:** 2026-09-14
+> **Status:** Proposal / RFC · **Owner:** @davcs86 · **Last updated:** 2026-09-17
 > **Strategy:** Hybrid, phased-to-consolidation · **Language target:** TypeScript
 > **Distribution:** monorepo → scoped npm packages · **D3:** slim, modular peer dependency
 > **Dev/docs harness:** Storybook
@@ -258,6 +258,7 @@ calendar commitments (S < M < L < XL).
 | **B7 — Storybook** | dev/docs harness | Stories for viewer, interactive-viewer, editor, search-panel, side-tabs, properties-panel, icon packs; visual-regression wired (**§7.1**) | M |
 | **B8 — a11y + theming** | accessible, themeable | SVG `role`/`<title>`/`<desc>`, keyboard nav/focus; CSS custom properties; drop normalize/Bootstrap remnants (**F14, F11**) | M |
 | **B9 — Release** | `@d3-polytree/*` on npm | Changesets-driven versioning/changelog/publish with provenance; migration guide (v1→v2 and beta→v2); Storybook deployed as docs site; JSFiddle/CodePen replaced | M |
+| **B10 — Transactional modelling** | `commandStack` in `@d3-polytree/core` | Every model mutation flows through `commandStack.execute`; `execute`/`revert` round-trips are XML-identical; multi-element gestures are one undo entry; `undo()`/`redo()` on the components; `document.changed` dirty flag. Full spec in **§12**; decided in **O11** | L |
 
 ### 6.1 Dependency graph (what blocks what)
 
@@ -349,6 +350,9 @@ remain; new ones should be appended below as they arise.
 | O8 | Bundled-D3 UMD/IIFE build alongside the ESM peer-dep builds? | **Yes** — a secondary artifact for the three top-level components (`viewer`, `interactive-viewer`, `editor`) only; the peer-dep ESM build stays primary. | B3, B9 |
 | O9 | Properties-panel grid replacement (replaces `slickgrid`)? | **Decide via a Storybook spike in B6** — prototype a headless grid (e.g. TanStack Table core) vs a purpose-built typed table, choose on measured bundle-size vs feature fit. This is the one deferred-to-spike decision. | B6 |
 | O10 | Keep the panels (`side-tabs`, `search-panel`, `properties-panel`) as standalone packages, or fold them into their components? | **Fold** (@davcs86, 2026-09-16, post-0.1.0): `side-tabs` + `search-panel` → `@d3-polytree/interactive-viewer`; `properties-panel` → `@d3-polytree/editor`. They had no consumer outside the components. Their modules/types are re-exported from the parents and their CSS ships as the parents' `./style.css`. The three standalone packages are discontinued (deprecate the published 0.1.0 on npm). | B6, B9 |
+| O11 | Should model mutation stay an event side-effect, or move behind a command stack? | **Full reroute to a `commandStack`** (@davcs86, 2026-09-17). Draw-layer `<class>.created/.deleted` events remain *notifications* (the boot-order invariant depends on them), but they no longer mutate; the four modelling handlers become registered `CommandHandler`s and every interaction feature becomes a command dispatcher. An additive stack layered over the existing event routing was rejected: two mutation paths let the undo stack silently desync from the document, which is worse than no undo. Spec in §12. | B10, C3, C4, C5 |
+| O12 | Is breaking the pre-1.0 public API acceptable to land O11? | **Yes** (@davcs86, 2026-09-17). Packages are at `0.1.0`; `Modelling.doAction` degrades to a deprecated shim removed before 1.0, `ModellingElement` is re-expressed in handler terms, and the change ships as a Changesets **minor** with a migration note. Freezing the API here would force an adapter layer that buys nothing at this version. | B10 |
+| O13 | Do commands need to be collaboration-ready (serializable, replayable) from day one? | **Not implemented now, but not designed out** (@davcs86, 2026-09-17). B10 ships local-only undo/redo. Command *contexts* are nonetheless specified as plain serializable payloads (ids + values, never live element handles), so a CRDT adapter (C5) is a later adapter rather than a rewrite of the vocabulary. | B10, C5 |
 
 ### 8.1 Rationale — O1 (keep `pfdn-moddle`)
 
@@ -419,6 +423,187 @@ remain; new ones should be appended below as they arise.
 
 Each is small, independently reviewable, and moves the ecosystem toward a green baseline before the
 consolidation phases begin.
+
+---
+
+## 11. Post-consolidation feature backlog (C-series)
+
+Track A and Track B take the ecosystem from *end-of-life* to *modern and published*. They are
+**remediation**, not capability: at the end of B9 the library does roughly what the 2017 beta did,
+correctly. The C-series is the first backlog of genuinely **new** capability, derived from an audit
+of the consolidated tree (2026-09-17) rather than from the v1/beta inventory.
+
+Audit findings that define the surface — each verified against the working tree, not assumed:
+
+| # | Finding | Evidence |
+|---|---|---|
+| H1 | **No transactional boundary around mutation.** Model writes are fire-and-forget side effects of draw-layer events; nothing records what changed, nothing can invert it. | `core/src/modelling/Modelling.ts` `_init()` routes `<class>.created/.deleted` straight to `saveToModel`/`delete` |
+| H2 | **Multi-element gestures are not atomic.** Deleting a selection of N emits N unrelated mutations; a throw partway leaves a torn document. | `core/src/features/selection.ts` `deleteSelected()` |
+| H3 | **No accessibility of any kind.** No roles, no labels, no focus management, no keyboard path — the diagram is mouse-only and opaque to assistive tech. | `grep -rn "keydown\|tabindex\|aria-\|role="` over `packages/*/src` returns **zero** matches |
+| H4 | **No layout engine.** Node coordinates are authored by hand into the `.pfdn`; v1's `calculateLevels`/`calculateNodes` geometry was never ported (§3.3 flagged this and it remains open). | `model` supplies `Coordinates`; no solver exists in `core` |
+| H5 | **Links are unrouted polylines.** Waypoints are read from the model and stringified; there is no routing, port assignment, or obstacle avoidance. | `core/src/draw/Links.ts` `generateWayPointPath()` |
+| H6 | **No rendering performance strategy.** Every element is resident in the DOM; no frame batching, no spatial index, no viewport culling, no level-of-detail, no off-main-thread work. | `grep -rn "requestAnimationFrame\|Worker\|cull\|virtual"` over `packages/*/src` returns **zero** matches |
+| H7 | **CI verifies that it builds, not that it works.** The pipeline ends at `build-storybook`; there is no visual-regression net (B7's stated purpose), no a11y assertion, no performance budget. | `.github/workflows/ci.yml` |
+
+### 11.1 The backlog
+
+Tiered by architectural depth. **Unlocks** names the items that become cheap once it lands;
+**Gated by** names the hard prerequisite.
+
+| ID | Capability | Why it is load-bearing | Gated by | Effort |
+|---|---|---|---|---|
+| **C1** | **CommandStack + transactional undo/redo** (→ phase **B10**, spec §12) | Closes H1 + H2. The prerequisite for every other mutating feature: without an invertible, atomic mutation primitive, auto-layout, diff-apply, and collaboration each have to invent their own. Also yields the dirty flag that autosave and an unsaved-changes guard need. | — | L |
+| **C2** | **Keyboard-first accessibility (WCAG 2.2 AA)** | Closes H3. Roving `tabindex` over a **topological** traversal order (not DOM order), arrow-key spatial navigation by direction cone, an `aria-live` region announcing selection and mutation, per-element `<title>`/`<desc>`, focus rings drawn *in SVG* (CSS `outline` is unreliable on SVG), a real Escape hatch out of `role="application"`, and a `prefers-reduced-motion` guard on transitions. Announcements are driven off C1's command stream. | C1 (for announcements), C8 (to gate) | L |
+| **C3** | **`@d3-polytree/layout` — layered auto-layout** | Closes H4 and makes H5 tractable. A pure Sugiyama pipeline: cycle-break (cheap and assertable on a polytree) → layer assignment (longest-path, Coffman-Graham when width is bounded) → crossing reduction (median + transpose) → Brandes–Köpf coordinate assignment. Zero DOM and zero D3, so it is exactly unit-testable on numeric fixtures and hostable in a Worker behind a typed `postMessage` protocol with a transferable `Float64Array` position buffer. Emits one command, so auto-layout is a single undo. | C1 | L |
+| **C4** | **Orthogonal link routing + port assignment** | Closes H5. Turns waypoints from authored data into solver output; obstacle-avoiding orthogonal routes with stable port ordering, degrading to the current polyline when a route is pinned by the user. | C3 | M |
+| **C5** | **Semantic `.pfdn` diff + visual merge** | `diff(a, b)` over the moddle tree producing typed ops (added / removed / moved / retyped / reattached), rendered as a review overlay with ghosted prior positions, plus a three-way helper for git conflicts. Pure and fixture-testable. Retroactively *earns* the O1 decision to keep an XML document format. | C1 (to apply a diff atomically) | M |
+| **C6** | **CRDT collaboration adapter (`@d3-polytree/collab-yjs`)** | Y.Doc projection of the moddle tree, awareness-driven remote cursors and selection halos, and **origin-tagged** ops so remote changes never enter the local undo stack. Viable only because O13 keeps command contexts serializable. | C1, O13 | XL |
+| **C7** | **Custom Element + React adapter** | `<d3-polytree-editor>` with attribute/property reflection, shadow-DOM style encapsulation, and `ElementInternals` form association of the serialized document; plus a thin React wrapper bridging the event bus through `useSyncExternalStore` so React 18/19 concurrent rendering cannot tear. The largest single adoption unlock in this table. | — | M |
+| **C8** | **Visual regression + interaction + a11y gates in CI** | Closes H7 and completes B7's stated purpose. Storybook test-runner + Playwright, made deterministic by a seeded `ids` source, disabled transitions, and pinned fonts; `@axe-core/playwright` asserted per story. This is what makes every other item in this table safe to land. | C9 (seeded ids) | M |
+| **C9** | **Deterministic IDs + `@d3-polytree/ssr`** | Make the `ids` seed injectable, then render `.pfdn` → static SVG string in Node with no browser, for thumbnails, OG images, PDF pipelines, and golden-file tests. Determinism is the precondition for C8. | — | M |
+| **C10** | **Spatial index, viewport culling, perf budget** | Closes H6. Quadtree over element bounding boxes, culling driven off the zoom transform, RAF-coalesced enter/update/exit, level-of-detail below a zoom threshold, optional canvas overlay past ~5k elements — enforced by a CI frame-time assertion on a 10k-node fixture. | C8 (to measure) | L |
+| **C11** | **JSON adapter + generated runtime validator** | The additive JSON path O1 explicitly left open, over the *same* moddle model, plus a runtime validator generated from `pfdn.json` so consumers get typed, validated documents without touching XML. | — | M |
+| **C12** | **Typed event bus** | Replace the stringly-typed `eventemitter3` surface with a declaration-merged event map so `on`/`emit` are checked against payload types. Small diff, disproportionate effect on DX and on the safety of C1's rerouting. | — | S |
+| **C13** | **Theming: CSS custom properties, dark mode, forced-colors** | B8's other half. Tokenised colors with `color-mix()` derivations, a dark scheme, and `forced-colors` support — the visual counterpart to C2. | — | M |
+
+### 11.2 Sequencing
+
+```
+C12 ──→ C1 ──┬──→ C3 ──→ C4
+             ├──→ C5
+             ├──→ C6
+             └──→ C2
+C9 ──→ C8 ──→ C10
+C7, C11, C13   (independent)
+```
+
+**C12 → C1 first.** Typing the bus before rerouting mutation means the compiler, not review, catches
+a dispatcher wired to the wrong payload. **C9 → C8 next**, because a visual-regression net that is
+not deterministic is a flake generator, and every subsequent item wants that net underneath it.
+
+---
+
+## 12. RFC — CommandStack (C1 / phase B10)
+
+> Decided: **O11** (full reroute), **O12** (pre-1.0 breaking changes accepted), **O13** (serializable
+> contexts, collaboration deferred).
+
+### 12.1 Problem
+
+Model mutation today is a side effect of a notification:
+
+- `Modelling._init()` subscribes to `label|link|node|zone.created` / `.deleted` and `element.updated`,
+  and dispatches straight into `saveToModel` / `delete` / `reconcile` on the matching handler.
+- `Selection.deleteSelected()` iterates the selection and emits one `.deleted` per entry.
+- `Drag`, `ResizeElement`, and the palette add-handlers all mutate through that same path.
+
+Four consequences follow directly, and none is fixable without a mutation primitive:
+
+1. **No undo/redo.** Nothing captures what changed, so nothing can invert it.
+2. **No atomicity.** Deleting a multi-selection is N independent mutations (H2). A throw partway
+   through leaves the document torn, with no rollback and no record of how far it got.
+3. **No dirty tracking.** `localStorage` autosave and `exporting` cannot tell a modified document
+   from an untouched one, so neither can offer an unsaved-changes guard.
+4. **No op stream.** Auto-layout (C3), diff-apply (C5), and collaboration (C6) each need to apply a
+   batch of changes as one reversible unit. Without this, each invents its own half-solution.
+
+### 12.2 Design
+
+**Service.** `commandStack` (type `CommandStack`), contributed by `commandStackModule`:
+
+```ts
+execute(command: string, context: CommandContext): void;
+undo(): void;
+redo(): void;
+canUndo(): boolean;
+canRedo(): boolean;
+clear(): void;
+registerHandler(command: string, handler: Constructor<CommandHandler>): void;
+```
+
+**Handler contract.** Handlers are didi-resolvable types registered against a command name:
+
+```ts
+interface CommandHandler<C extends CommandContext = CommandContext> {
+  canExecute?(context: C): boolean;
+  preExecute?(context: C): void;   // may execute() sub-commands into this transaction
+  execute(context: C): DirtyElements;
+  revert(context: C): DirtyElements;  // the exact inverse of execute
+  postExecute?(context: C): void;
+}
+```
+
+The **context object is the memento**: `execute` captures prior values onto the same context it was
+handed, and `revert` restores from them. There is no separate snapshot store, and no structural clone
+of the document. Per O13, a context holds ids and plain values only — never live element handles or
+D3 selections — so it stays serializable for a future collaboration adapter.
+
+`DirtyElements` is the set of model elements a command touched. The stack emits it as
+`elements.changed`, and the draw layer reconciles exactly those — replacing today's implicit coupling
+where a drawer already having rendered is what keeps the view in sync.
+
+**Transactions.** A top-level `execute()` opens a transaction; any `execute()` issued from within
+`preExecute`/`postExecute` joins it rather than opening its own. On close the whole transaction is
+pushed as **one** stack entry, so a multi-select delete or a full auto-layout run is a single Ctrl+Z.
+`revert` walks that entry's commands in reverse order.
+
+**Redo.** The stack is a pointer into an array. `execute` after `undo` truncates the redo tail.
+
+**Failure semantics (the fault-tolerance argument).** An exception inside `execute` reverts the
+commands already applied in that transaction, discards the entry, and rethrows. The document is
+never left half-mutated, and the stack never records a transaction that did not fully apply.
+
+**Command vocabulary (v1 set).** `element.create`, `element.delete`, `element.move`,
+`element.resize`, `element.updateProperties`, `link.create`, `link.reconnect`,
+`link.updateWaypoints`, and composites such as `elements.align` that fan out in `preExecute`.
+
+### 12.3 Rerouting
+
+- The four modelling handlers (`modellingNodes` / `Labels` / `Zones` / `Links`) are refactored into
+  `CommandHandler` implementations registered against the vocabulary above.
+- `Modelling` stops being an event→mutation router and becomes the registration site plus a thin
+  façade; `doAction` survives as a deprecated shim for one minor, then is removed (O12).
+- Draw-layer `<class>.created` / `.deleted` events **remain**, as notifications only. The boot-order
+  invariant documented in `CLAUDE.md` — features that must observe the initial render register ahead
+  of the drawers — is unchanged and still load-bearing.
+- `Drag`, `ResizeElement`, `Selection.deleteSelected`, and the palette add-handlers become command
+  *dispatchers*.
+
+**Boot-time hazard — the riskiest detail in this RFC.** The initial render currently round-trips every
+loaded element through `saveToModel`. Once mutation is command-driven, the boot render must not enter
+the stack, or every opened document starts with N undoable entries and `canUndo()` true on an
+untouched file. Mitigation: the stack stays disabled until boot completes, and a test asserts
+`canUndo() === false` immediately after `importDiagram`.
+
+### 12.4 Public API impact (breaking, accepted under O12)
+
+- `Modelling.doAction(cls, action, params)` → deprecated shim, removed before 1.0.
+- `ModellingElement` gains the handler shape; `saveToModel` / `delete` / `reconcile` are re-expressed
+  in terms of it.
+- New exports from `@d3-polytree/core`: `commandStackModule`, `CommandStack`, `CommandHandler`,
+  and the command-context types.
+- `Viewer` subclasses gain `undo()` / `redo()` and a `document.changed` event carrying a dirty flag.
+- Shipped as a Changesets **minor** across `core` and the three components, with a migration note.
+
+### 12.5 Testing
+
+- **Round-trip property test, per handler.** For each fixture document and each command,
+  `execute → revert` must restore a byte-identical `moddle.toXML()`. This single invariant is the
+  whole safety net, and it is mechanically checkable across the entire vocabulary.
+- **Transaction tests.** A multi-select delete produces exactly one stack entry; a handler that
+  throws mid-transaction leaves the document and the stack unchanged.
+- **Boot test.** `importDiagram` leaves `canUndo() === false` (§12.3).
+- **Ordering test.** The existing folded-panel guards must still pass — proof that turning the
+  created/deleted events into pure notifications did not disturb the boot-order invariant.
+
+### 12.6 Exit criteria
+
+- Every model mutation in the workspace flows through `commandStack.execute`, enforced by a lint rule
+  banning direct writes to `definitions.*` outside a registered handler.
+- `execute`/`revert` round-trips are XML-identical for every command in the v1 vocabulary.
+- Ctrl+Z / Ctrl+Shift+Z wired in `interactive-viewer`; undo/redo palette entries in `editor`.
+- `document.changed` drives `localStorage` autosave and an unsaved-changes guard.
+- Storybook story demonstrating atomic multi-select delete and undo of an auto-layout run.
 
 ---
 
