@@ -38,6 +38,7 @@ export class Modelling {
 
   private readonly _eventBus: EventEmitter;
   private readonly _elements: Record<ElementClass, ModellingElement>;
+  private readonly _commandStack: CommandStack;
 
   constructor(
     eventBus: EventEmitter,
@@ -49,6 +50,7 @@ export class Modelling {
     commandStack: CommandStack
   ) {
     this._eventBus = eventBus;
+    this._commandStack = commandStack;
     this._elements = {
       label: modellingLabels,
       node: modellingNodes,
@@ -98,6 +100,22 @@ export class Modelling {
         if (handler) {
           handler.reconcile(elementId, elementDefinition);
         }
+      }
+    );
+
+    // A selection delete is a single transaction: the Selection feature emits
+    // the intent (decoupled from the command stack, so it works in a viewer that
+    // has no stack); the orchestrator — which owns the stack and handlers — turns
+    // it into one composite `elements.delete` command.
+    this._eventBus.on(
+      'elements.delete',
+      (snapshot: Array<{ definition: ModellingModelElement }>) => {
+        this._commandStack.execute('elements.delete', {
+          items: snapshot.map((v) => ({
+            def: v.definition,
+            className: getLocalName(v.definition) as ElementClass
+          }))
+        });
       }
     );
   }

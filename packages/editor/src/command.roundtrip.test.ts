@@ -17,8 +17,17 @@ function assertGestureRoundTrip(editor: Editor, cs: CommandStack, gesture: () =>
   expect(editor.exportDiagram()).toBe(before); // execute → revert is byte-identical
 }
 
+interface Def {
+  id: string;
+}
 interface AppendHandler {
-  append(parameters?: { position?: { x: number; y: number } }): unknown;
+  append(parameters?: { position?: { x: number; y: number } }): Def;
+}
+interface SelectionService {
+  select(element: unknown, definition: Def, event: { ctrlKey?: boolean }): void;
+}
+interface Registry {
+  get(id: string): unknown;
 }
 
 describe('@d3-polytree/editor command round-trips', () => {
@@ -67,5 +76,33 @@ describe('@d3-polytree/editor command round-trips', () => {
     cs.undo();
     expect((defs.node ?? []).length).toBe(0);
     expect((defs.label ?? []).length).toBe(0);
+  });
+
+  it('element.delete (deleteSelected) round-trips through undo', () => {
+    const addNode = editor.get<AppendHandler>('addNodeHandler');
+    const node = addNode.append({ position: { x: 0, y: 0 } });
+    const afterCreate = editor.exportDiagram();
+
+    editor.select(node);
+    assertGestureRoundTrip(editor, cs, () => editor.deleteSelected());
+    expect(editor.exportDiagram()).toBe(afterCreate); // delete undone; create remains
+  });
+
+  it('a multi-select delete is a SINGLE undo entry restoring the whole selection', () => {
+    const addNode = editor.get<AppendHandler>('addNodeHandler');
+    const n1 = addNode.append({ position: { x: 0, y: 0 } });
+    const n2 = addNode.append({ position: { x: 60, y: 60 } });
+    const before = editor.exportDiagram();
+
+    const selection = editor.get<SelectionService>('selection');
+    const registry = editor.get<Registry>('drawingRegistry');
+    selection.select(registry.get(n1.id), n1, {});
+    selection.select(registry.get(n2.id), n2, { ctrlKey: true });
+
+    editor.deleteSelected();
+    expect(editor.exportDiagram()).not.toBe(before);
+
+    cs.undo(); // ONE undo restores BOTH nodes (one transaction)
+    expect(editor.exportDiagram()).toBe(before);
   });
 });

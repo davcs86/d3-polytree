@@ -1,5 +1,4 @@
 import type EventEmitter from 'eventemitter3';
-import { getLocalName } from '../utils/localName';
 import type { DrawingSelection } from '../draw';
 import type { ModellingModelElement } from '../modelling/types';
 
@@ -68,10 +67,16 @@ export class Selection {
   }
 
   deleteSelected(): void {
-    this._snapshot().forEach((v) => {
-      this._unSelectElement(v.element, v.definition);
-      this._eventBus.emit(`${getLocalName(v.definition)}.deleted`, v.element, v.definition);
-    });
+    const snapshot = this._snapshot();
+    if (snapshot.length === 0) {
+      return;
+    }
+    snapshot.forEach((v) => this._unSelectElement(v.element, v.definition));
+    // Emit one delete intent for the whole selection; the modelling orchestrator
+    // (which owns the command stack) turns it into a single undoable transaction.
+    // Decoupled from the stack on purpose: a viewer without modelling simply has
+    // no subscriber, so the gesture is inert there (as it was before).
+    this._eventBus.emit('elements.delete', snapshot);
   }
 
   getSelectedElements(): SelectionEntry[] {

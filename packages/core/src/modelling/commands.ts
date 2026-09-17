@@ -83,6 +83,80 @@ export function createElementCommand(
   };
 }
 
+/** `element.delete` — soft-delete an element (and cascade its read-only label). */
+export interface DeleteContext extends CommandContext {
+  def: ModellingModelElement;
+  className: ElementClass;
+  /** Set by `execute` (the memento): prior status of the element and its label. */
+  prevStatus?: number;
+  label?: ModellingModelElement;
+  labelPrevStatus?: number;
+  labelPrevReadOnly?: boolean;
+}
+
+/** Build the `element.delete` command handler. */
+export function deleteElementCommand(
+  handlers: ElementHandlers,
+  labelHandler: ModellingElement
+): CommandHandler<DeleteContext> {
+  return {
+    // An associated read-only label is never deleted on its own (source parity).
+    canExecute: (ctx) => !(ctx.className === 'label' && ctx.def.isReadOnly === true),
+    execute(ctx) {
+      const def = ctx.def;
+      ctx.prevStatus = def.get('status') as number;
+      const label = def.get('label') as ModellingModelElement | undefined;
+      if (ctx.className !== 'label' && label && label.$instanceOf('pfdn:Label')) {
+        // cascade: capture then soft-delete the associated label too
+        ctx.label = label;
+        ctx.labelPrevStatus = label.get('status') as number;
+        ctx.labelPrevReadOnly = label.isReadOnly;
+        label.isReadOnly = false;
+        label.set('status', 3);
+        labelHandler.reconcile(label.id as string, undefined);
+      }
+      def.set('status', 3);
+      handlers[ctx.className].reconcile(def.id as string, undefined);
+    },
+    revert(ctx) {
+      const def = ctx.def;
+      // Restore all model props first, then reconcile (drawings re-render from
+      // fully-restored state).
+      def.set('status', ctx.prevStatus);
+      if (ctx.label) {
+        ctx.label.set('status', ctx.labelPrevStatus);
+        ctx.label.isReadOnly = ctx.labelPrevReadOnly;
+      }
+      handlers[ctx.className].reconcile(def.id as string, def);
+      if (ctx.label) {
+        labelHandler.reconcile(ctx.label.id as string, ctx.label);
+      }
+    }
+  };
+}
+
+/** `elements.delete` — a composite that deletes a whole selection as ONE entry. */
+export interface DeleteBatchContext extends CommandContext {
+  items: { def: ModellingModelElement; className: ElementClass }[];
+}
+
+/** Build the composite: each child `element.delete` joins this transaction. */
+export function deleteBatchCommand(commandStack: CommandStack): CommandHandler<DeleteBatchContext> {
+  return {
+    preExecute(ctx) {
+      for (const item of ctx.items) {
+        commandStack.execute('element.delete', {
+          def: item.def,
+          className: item.className
+        } as DeleteContext);
+      }
+    },
+    // The children did the work; the composite is just the transaction boundary.
+    execute() {},
+    revert() {}
+  };
+}
+
 /**
  * Register every implemented modelling command on the stack. Called by the
  * {@link Modelling} orchestrator (the registration site) at construction.
@@ -95,5 +169,13 @@ export function registerModellingCommands(
   commandStack.registerHandler(
     'element.create',
     createElementCommand(handlers, definitions, handlers.label) as CommandHandler
+  );
+  commandStack.registerHandler(
+    'element.delete',
+    deleteElementCommand(handlers, handlers.label) as CommandHandler
+  );
+  commandStack.registerHandler(
+    'elements.delete',
+    deleteBatchCommand(commandStack) as CommandHandler
   );
 }
