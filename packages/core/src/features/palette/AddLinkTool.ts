@@ -2,7 +2,8 @@ import { pointer, type Selection } from 'd3-selection';
 import type EventEmitter from 'eventemitter3';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { DrawingSelection, Point } from '../../draw';
-import type { Modelling } from '../../modelling';
+import type { CommandStack } from '../../command';
+import type { CreateContext } from '../../modelling/commands';
 import type { ModellingModelElement } from '../../modelling/types';
 import type { Tool } from './Tool';
 
@@ -19,20 +20,20 @@ interface PickedNode {
  * `d3.mouse` onto d3's `pointer(event, node)`.
  */
 export class AddLinkTool implements Tool {
-  static readonly $inject = ['eventBus', 'canvas', 'modelling'];
+  static readonly $inject = ['eventBus', 'canvas', 'commandStack'];
 
   active = false;
 
   private readonly _eventBus: EventEmitter;
   private readonly _canvas: Canvas;
-  private readonly _modelling: Modelling;
+  private readonly _commandStack: CommandStack;
   private readonly _fakeLink: Selection<SVGPathElement, unknown, null, undefined>;
   private _selectedNodes: PickedNode[] = [];
 
-  constructor(eventBus: EventEmitter, canvas: Canvas, modelling: Modelling) {
+  constructor(eventBus: EventEmitter, canvas: Canvas, commandStack: CommandStack) {
     this._eventBus = eventBus;
     this._canvas = canvas;
-    this._modelling = modelling;
+    this._commandStack = commandStack;
 
     this._fakeLink = this._canvas
       .getDrawingLayer()
@@ -110,9 +111,10 @@ export class AddLinkTool implements Tool {
   }
 
   private _appendLink(): void {
-    this._modelling.doAction('link', 'create', [
-      this._selectedNodes[0].definition,
-      this._selectedNodes[1].definition
-    ]);
+    const ctx: CreateContext = {
+      className: 'link',
+      parameters: [this._selectedNodes[0].definition, this._selectedNodes[1].definition]
+    };
+    this._commandStack.execute('element.create', ctx);
   }
 }

@@ -4,6 +4,12 @@ import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
 import { Modelling, type ElementClass, type MutatingAction } from './Modelling';
 import type { ModellingElement } from './ModellingElement';
 import type { ModellingModelElement } from './types';
+import type { CommandStack } from '../command';
+
+/** A command-stack double: the orchestrator only registers handlers on it. */
+function fakeCommandStack(): CommandStack {
+  return { registerHandler: vi.fn() } as unknown as CommandStack;
+}
 
 interface SpyHandler {
   saveToModel: ReturnType<typeof vi.fn>;
@@ -33,7 +39,8 @@ describe('@d3-polytree/core modelling orchestrator', () => {
       handlers.node as unknown as ModellingElement,
       handlers.label as unknown as ModellingElement,
       handlers.zone as unknown as ModellingElement,
-      handlers.link as unknown as ModellingElement
+      handlers.link as unknown as ModellingElement,
+      fakeCommandStack()
     );
   });
 
@@ -96,7 +103,8 @@ describe('@d3-polytree/core modelling orchestrator', () => {
       nodeHandler,
       handlers.label as unknown as ModellingElement,
       handlers.zone as unknown as ModellingElement,
-      handlers.link as unknown as ModellingElement
+      handlers.link as unknown as ModellingElement,
+      fakeCommandStack()
     );
 
     const node = moddle.create('pfdn:Node', { id: 'N9' }) as unknown as ModellingModelElement;

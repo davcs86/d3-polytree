@@ -1,5 +1,7 @@
 import type EventEmitter from 'eventemitter3';
 import { getLocalName } from '../utils/localName';
+import type { CommandStack } from '../command';
+import { registerModellingCommands } from './commands';
 import type { ModellingElement } from './ModellingElement';
 import type { ModellingModelElement } from './types';
 
@@ -30,7 +32,8 @@ export class Modelling {
     'modellingNodes',
     'modellingLabels',
     'modellingZones',
-    'modellingLinks'
+    'modellingLinks',
+    'commandStack'
   ];
 
   private readonly _eventBus: EventEmitter;
@@ -38,13 +41,12 @@ export class Modelling {
 
   constructor(
     eventBus: EventEmitter,
-    // `d3polytree.definitions` is injected for parity / forward use; the
-    // orchestrator itself routes purely through the per-element handlers.
-    _definitions: ModellingModelElement,
+    definitions: ModellingModelElement,
     modellingNodes: ModellingElement,
     modellingLabels: ModellingElement,
     modellingZones: ModellingElement,
-    modellingLinks: ModellingElement
+    modellingLinks: ModellingElement,
+    commandStack: CommandStack
   ) {
     this._eventBus = eventBus;
     this._elements = {
@@ -53,6 +55,9 @@ export class Modelling {
       zone: modellingZones,
       link: modellingLinks
     };
+    // The orchestrator is the command registration site: it owns the handler
+    // map, so it wires each modelling command onto the stack.
+    registerModellingCommands(commandStack, this._elements, definitions);
     this._init();
   }
 

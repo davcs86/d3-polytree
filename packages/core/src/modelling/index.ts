@@ -1,5 +1,6 @@
 import { labelsModule, linksModule, nodesModule, zonesModule } from '../draw';
 import { notificationsModule } from '../features/notifications';
+import { commandStackModule } from '../command';
 import { ModellingLabels } from './Labels';
 import { ModellingZones } from './Zones';
 import { ModellingNodes } from './Nodes';
@@ -7,6 +8,7 @@ import { ModellingLinks } from './Links';
 import { Modelling } from './Modelling';
 
 export { ModellingElement } from './ModellingElement';
+export * from './commands';
 export { ModellingLabels } from './Labels';
 export { ModellingZones } from './Zones';
 export { ModellingNodes } from './Nodes';
@@ -52,6 +54,7 @@ export const modellingModule = {
   __init__: ['modelling'],
   modelling: ['type', Modelling],
   __depends__: [
+    commandStackModule,
     modellingLabelsModule,
     modellingLinksModule,
     modellingNodesModule,

@@ -85,7 +85,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 3 — `toXML` round-trip test harness utility
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/core/src/command/roundtrip.testutil.ts` — create
 
@@ -105,7 +105,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 4 — `element.create` handler + reroute the palette add-handlers
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/core/src/modelling/ModellingElement.ts` — modify
 - `packages/core/src/modelling/index.ts` — modify
@@ -356,4 +356,6 @@ value read directly this session. Plan is execution-ready.
 _Populated during execution. Step bodies above are immutable (DN-5); record any divergence here with the step number, what changed, and why._
 
 - **Steps 1 & 2 — implemented in one commit.** Splitting them yields a non-testable intermediate: Step 1's tests (execute/undo/redo, nested-join, redo-truncation) require the stack to record, which is governed by Step 2's boot latch (`_enabled`). Both step bodies were implemented as written; the boot-latch enable/quarantine and the failure/quarantine semantics landed together. Files: `packages/core/src/command/{CommandHandler,CommandStack,index}.ts`, `packages/core/src/command/CommandStack.test.ts` (8 tests), `packages/core/src/index.ts`. Verified: `pnpm --filter @d3-polytree/core exec vitest run src/command/CommandStack.test.ts` (8 pass), `pnpm --filter @d3-polytree/core typecheck` clean (after building upstream `canvas`/`pfdn-moddle` dist), `eslint packages/core/src/command` clean.
+- **Step 3 — harness location.** The `toXML` round-trip harness is implemented as a local helper (`assertGestureRoundTrip`) inside the editor package's `command.roundtrip.test.ts`, not as a `core/src/command/roundtrip.testutil.ts` module. Reason: the harness must drive real gestures through the assembled engine, and the only package that assembles it is `editor` (via `Editor`); `core` cannot import the component it composes, and hand-assembling the full drawer+DI stack in a core test would duplicate `Editor`. The harness logic is unchanged (snapshot `exportDiagram()` → gesture → assert changed → `commandStack.undo()` → assert restored). Consequently the per-gesture round-trip tests (Steps 4–7) live in `editor` too.
+- **Step 4 — driver.** The create round-trip is driven via `editor.get('addNodeHandler').append(...)` (the real palette dispatcher, now rerouted through `commandStack.execute('element.create')`), since `editor.createNode()` calls the handler directly and bypasses the stack. Whether `createNode` should also route through the stack is a totality question tracked for the PR-2 phase.
 - **Rollout — two phases on one branch, not two GitHub PRs.** The plan's PR-1/PR-2 split is honored as a two-phase commit sequence on the single designated branch `claude/senior-fe-expertise-features-9s1wub` (branch constraint from the task); the tree is kept green at the Step-9 (PR-1) boundary before Step 10 begins.
