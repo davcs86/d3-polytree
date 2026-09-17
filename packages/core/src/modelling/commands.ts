@@ -195,6 +195,59 @@ export function resizeElementCommand(handlers: ElementHandlers): CommandHandler<
   };
 }
 
+/** `element.move` — a batched, undoable move of a whole selection. */
+export interface Placement {
+  position: { x: number; y: number };
+  status: number;
+}
+
+function applyPlacement(def: ModellingModelElement, p: Placement): void {
+  const pos = def.position as Point;
+  pos.x = p.position.x;
+  pos.y = p.position.y;
+  def.set('status', p.status);
+}
+
+export interface MoveItem {
+  def: ModellingModelElement;
+  className: ElementClass;
+  from: Placement;
+  to: Placement;
+  /** The dragged element's associated label moves in lockstep. */
+  label?: { def: ModellingModelElement; from: Placement; to: Placement };
+}
+
+export interface MoveContext extends CommandContext {
+  items: MoveItem[];
+}
+
+/**
+ * Build the `element.move` command. Links are NOT in the memento: their
+ * waypoints are a pure function of node positions, so restoring positions and
+ * reconciling re-drives the live router (which subscribes to `node.updated`).
+ * All positions are written before any reconcile, so a shared incident link
+ * reroutes against fully-restored endpoints (never an intermediate state).
+ */
+export function moveElementsCommand(handlers: ElementHandlers): CommandHandler<MoveContext> {
+  const applyAll = (which: 'from' | 'to') => (ctx: MoveContext): void => {
+    // 1. write every position/status first
+    for (const it of ctx.items) {
+      applyPlacement(it.def, it[which]);
+      if (it.label) {
+        applyPlacement(it.label.def, it.label[which]);
+      }
+    }
+    // 2. then reconcile every touched drawing (each node.updated reroutes its links)
+    for (const it of ctx.items) {
+      handlers[it.className].reconcile(it.def.id as string, it.def);
+      if (it.label) {
+        handlers.label.reconcile(it.label.def.id as string, it.label.def);
+      }
+    }
+  };
+  return { execute: applyAll('to'), revert: applyAll('from') };
+}
+
 /**
  * Register every implemented modelling command on the stack. Called by the
  * {@link Modelling} orchestrator (the registration site) at construction.
@@ -217,4 +270,5 @@ export function registerModellingCommands(
     deleteBatchCommand(commandStack) as CommandHandler
   );
   commandStack.registerHandler('element.resize', resizeElementCommand(handlers) as CommandHandler);
+  commandStack.registerHandler('element.move', moveElementsCommand(handlers) as CommandHandler);
 }

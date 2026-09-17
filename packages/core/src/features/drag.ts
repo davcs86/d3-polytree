@@ -3,6 +3,9 @@ import type EventEmitter from 'eventemitter3';
 import type { Canvas } from '@d3-polytree/canvas';
 import { getLocalName } from '../utils/localName';
 import type { DrawingRegistry, DrawingSelection, DiagramElement, Point } from '../draw';
+import type { CommandStack } from '../command';
+import type { ElementClass } from '../modelling';
+import type { MoveItem, Placement } from '../modelling/commands';
 import type { ModellingModelElement } from '../modelling/types';
 import type { Selection } from './selection';
 
@@ -21,24 +24,61 @@ type DragEvent = D3DragEvent<SVGGElement, DiagramElement, DiagramElement>;
  * and unit-tested without synthesising pointer gestures.
  */
 export class Drag {
-  static readonly $inject = ['canvas', 'eventBus', 'drawingRegistry', 'selection'];
+  static readonly $inject = ['canvas', 'eventBus', 'drawingRegistry', 'selection', 'commandStack'];
 
   private readonly _canvas: Canvas;
   private readonly _eventBus: EventEmitter;
   private readonly _drawingRegistry: DrawingRegistry;
   private readonly _selection: Selection;
+  private readonly _commandStack: CommandStack;
+  /** The pre-gesture placement of each moved element, captured at drag start. */
+  private _origin: Array<{ item: MoveItem }> = [];
 
   constructor(
     canvas: Canvas,
     eventBus: EventEmitter,
     drawingRegistry: DrawingRegistry,
-    selection: Selection
+    selection: Selection,
+    commandStack: CommandStack
   ) {
     this._canvas = canvas;
     this._eventBus = eventBus;
     this._drawingRegistry = drawingRegistry;
     this._selection = selection;
+    this._commandStack = commandStack;
     this._init();
+  }
+
+  /** Read an element's current placement from the model (never the DOM). */
+  private _placement(def: ModellingModelElement): Placement {
+    const pos = def.position as Point;
+    return { position: { x: pos.x, y: pos.y }, status: Number(def.get('status') ?? 0) };
+  }
+
+  /**
+   * Snapshot the placement of every selected non-link element (and its label)
+   * at drag start — the live drag overwrites the model in place, so this is the
+   * only chance to record the "from" state for an undoable move.
+   */
+  captureMoveOrigin(): void {
+    this._origin = this._selection
+      .getSelectedElements()
+      .filter((v) => getLocalName(v.definition) !== 'link')
+      .map((v) => {
+        const label = v.definition.label as ModellingModelElement | undefined;
+        const from = this._placement(v.definition);
+        return {
+          item: {
+            def: v.definition,
+            className: getLocalName(v.definition) as ElementClass,
+            from,
+            to: from,
+            label: label
+              ? { def: label, from: this._placement(label), to: this._placement(label) }
+              : undefined
+          } satisfies MoveItem
+        };
+      });
   }
 
   /** Move every selected non-link element (and its label) by (dx, dy). */
@@ -58,13 +98,25 @@ export class Drag {
     });
   }
 
-  /** Emit `<class>.moved` for every selected non-link element. */
+  /**
+   * Commit the drag: dispatch one batched, undoable `element.move` carrying the
+   * captured origin (`from`) and the current model state (`to`). The command
+   * reconciles each moved node, whose `node.updated` re-drives the link router —
+   * so waypoints are recomputed, never stored. Links were excluded at capture.
+   */
   notifyMovedSelected(): void {
-    this._selection.getSelectedElements().forEach((v) => {
-      if (getLocalName(v.definition) !== 'link') {
-        this._eventBus.emit(`${getLocalName(v.definition)}.moved`, v.element, v.definition);
-      }
-    });
+    if (this._origin.length === 0) {
+      return;
+    }
+    const items: MoveItem[] = this._origin.map(({ item }) => ({
+      ...item,
+      to: this._placement(item.def),
+      label: item.label
+        ? { def: item.label.def, from: item.label.from, to: this._placement(item.label.def) }
+        : undefined
+    }));
+    this._origin = [];
+    this._commandStack.execute('element.move', { items });
   }
 
   private _applyOffset(
@@ -92,6 +144,7 @@ export class Drag {
       d3drag<SVGGElement, DiagramElement>().on('start', (event: DragEvent) => {
         this._selection.select(element, definition, event.sourceEvent as { ctrlKey?: boolean });
         if (!this._canvas.getRootLayer().classed('no-drag')) {
+          this.captureMoveOrigin();
           event
             .on('drag', (e: DragEvent) => this.applyOffsetToSelected(e.dx, e.dy))
             .on('end', () => this.notifyMovedSelected());

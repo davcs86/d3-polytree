@@ -7,6 +7,8 @@ import { DrawingRegistry, type DrawingSelection } from '../draw';
 import type { ModellingModelElement } from '../modelling/types';
 import { Selection } from './selection';
 import { Drag } from './drag';
+import type { CommandStack } from '../command';
+import type { MoveContext } from '../modelling/commands';
 
 /** A real `<g>` element positioned at (x, y). */
 function drawing(x: number, y: number): D3Selection<SVGGElement, unknown, null, undefined> {
@@ -20,9 +22,10 @@ function setup() {
   const canvas = new Canvas({ container: document.body }, bus);
   const registry = new DrawingRegistry();
   const selection = new Selection(bus);
-  const drag = new Drag(canvas, bus, registry, selection);
+  const commandStack = { execute: vi.fn() } as unknown as CommandStack;
+  const drag = new Drag(canvas, bus, registry, selection, commandStack);
   const moddle = createPfdnModdle();
-  return { bus, canvas, registry, selection, drag, moddle };
+  return { bus, canvas, registry, selection, drag, moddle, commandStack };
 }
 
 function node(
@@ -79,8 +82,8 @@ describe('@d3-polytree/core Drag', () => {
     expect(labelEl.attr('x')).toBe('3');
   });
 
-  it('emits <class>.moved on commit but skips links', () => {
-    const { bus, selection, drag, moddle } = setup();
+  it('commits one element.move for the moved nodes, skipping links', () => {
+    const { selection, drag, moddle, commandStack } = setup();
     const nodeEl = drawing(0, 0);
     const nodeDef = node(moddle, 'N1', 0, 0);
     const linkEl = drawing(0, 0);
@@ -88,15 +91,17 @@ describe('@d3-polytree/core Drag', () => {
     selection.select(nodeEl as unknown as DrawingSelection, nodeDef);
     selection.select(linkEl as unknown as DrawingSelection, linkDef, { ctrlKey: true });
 
-    const nodeMoved = vi.fn();
-    const linkMoved = vi.fn();
-    bus.on('node.moved', nodeMoved);
-    bus.on('link.moved', linkMoved);
-
+    drag.captureMoveOrigin(); // as the d3-drag 'start' handler does
     drag.applyOffsetToSelected(2, 2);
     drag.notifyMovedSelected();
 
-    expect(nodeMoved).toHaveBeenCalled();
-    expect(linkMoved).not.toHaveBeenCalled();
+    expect(commandStack.execute).toHaveBeenCalledTimes(1);
+    const [command, ctx] = (commandStack.execute as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0] as [string, MoveContext];
+    expect(command).toBe('element.move');
+    // the link was filtered out at capture; only the node is in the batch
+    expect(ctx.items.map((i) => i.def)).toEqual([nodeDef]);
+    expect(ctx.items[0].to.position).toEqual({ x: 2, y: 2 });
+    expect(ctx.items[0].from.position).toEqual({ x: 0, y: 0 });
   });
 });

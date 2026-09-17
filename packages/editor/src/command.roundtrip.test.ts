@@ -19,9 +19,23 @@ function assertGestureRoundTrip(editor: Editor, cs: CommandStack, gesture: () =>
 
 interface Def {
   id: string;
+  position: { x: number; y: number };
+  label?: Def;
+  get(name: string): unknown;
+  set(name: string, value: unknown): void;
 }
 interface AppendHandler {
   append(parameters?: { position?: { x: number; y: number } }): Def;
+}
+
+/** Build an element.move item (node only) mirroring the drag dispatcher. */
+function nodeMove(def: Def, to: { x: number; y: number }) {
+  return {
+    def,
+    className: 'node' as const,
+    from: { position: { x: def.position.x, y: def.position.y }, status: Number(def.get('status') ?? 0) },
+    to: { position: to, status: 2 }
+  };
 }
 interface SelectionService {
   select(element: unknown, definition: Def, event: { ctrlKey?: boolean }): void;
@@ -112,6 +126,51 @@ describe('@d3-polytree/editor command round-trips', () => {
 
     cs.undo();
     expect(editor.exportDiagram()).toBe(before); // size + position restored
+  });
+
+  it('element.move restores incident-link waypoints on undo (both endpoints moved)', () => {
+    const addNode = editor.get<AppendHandler>('addNodeHandler');
+    const a = addNode.append({ position: { x: 0, y: 0 } });
+    const b = addNode.append({ position: { x: 120, y: 120 } });
+    // connect a -> b through the create command, so the link has waypoints
+    cs.execute('element.create', { className: 'link', parameters: [a, b] });
+    const before = editor.exportDiagram(); // includes the link's waypoints
+
+    // move BOTH endpoints in one batched command (the shared-link fixture)
+    assertGestureRoundTrip(editor, cs, () =>
+      cs.execute('element.move', {
+        items: [nodeMove(a, { x: 40, y: 30 }), nodeMove(b, { x: 220, y: 200 })]
+      })
+    );
+    // waypoints were recomputed from restored positions, byte-identical
+    expect(editor.exportDiagram()).toBe(before);
+  });
+
+  it('element.move restores a node AND its associated label on undo', () => {
+    const addNode = editor.get<AppendHandler>('addNodeHandler');
+    const n = addNode.append({ position: { x: 10, y: 10 } });
+    const label = n.label!;
+    const before = editor.exportDiagram();
+
+    cs.execute('element.move', {
+      items: [
+        {
+          ...nodeMove(n, { x: 90, y: 70 }),
+          label: {
+            def: label,
+            from: {
+              position: { x: label.position.x, y: label.position.y },
+              status: Number(label.get('status') ?? 0)
+            },
+            to: { position: { x: 90, y: 110 }, status: 2 }
+          }
+        }
+      ]
+    });
+    expect(editor.exportDiagram()).not.toBe(before);
+
+    cs.undo();
+    expect(editor.exportDiagram()).toBe(before); // node + label position/status restored
   });
 
   it('a multi-select delete is a SINGLE undo entry restoring the whole selection', () => {

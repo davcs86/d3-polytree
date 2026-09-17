@@ -178,7 +178,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 7 — `element.move` handler + reroute `Drag` (batched node+label capture, replay waypoints)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/core/src/modelling/ModellingElement.ts` — modify (or a node/label move handler)
 - `packages/core/src/modelling/Modelling.ts` — modify
