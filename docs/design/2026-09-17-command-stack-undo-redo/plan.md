@@ -222,7 +222,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 9 — eslint `no-restricted-syntax` tripwire (defense-in-depth, not the proof)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `eslint.config.js` — modify
 
