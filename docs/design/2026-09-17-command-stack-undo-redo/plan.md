@@ -3,9 +3,9 @@
 **Status**: `pending`
 **Created**: 2026-09-17
 **Design**: [design.md](./design.md)
-**Test harness**: `pnpm --filter @d3-polytree/core exec vitest run <file>` / `-t "<name>"` (cited `CLAUDE.md:30-31`); full `pnpm test` (`package.json:20`); lint `pnpm lint` (`package.json:21`), typecheck `pnpm typecheck` (`package.json:19`). No coverage threshold declared.
+**Test harness**: `pnpm --filter @d3-polytree/core exec vitest run <file>` / `-t "<name>"` (cited `CLAUDE.md:30-31`); full `pnpm test` (`package.json:19`); lint `pnpm lint` (`package.json:21`), typecheck `pnpm typecheck` (`package.json:20`). No coverage threshold declared.
 **Total Steps**: 13
-**Review**: `not-reviewed`
+**Review**: `passed-with-warnings @ 2026-09-17`
 
 ---
 
@@ -45,14 +45,14 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Evidence**:
 - didi `*Module` provider pattern to mirror: `modelling/index.ts:19-60` — `{ __init__: ['x'], x: ['type', X], __depends__: [...] }` (recon.md Patterns to REUSE).
-- Core export site: `packages/core/src/index.ts:11` re-exports `./draw`, `./features`, `./modelling`, `./Diagram`, `./model/model` (recon area-C digest).
+- Core export site: `packages/core/src/index.ts:13-20` re-exports `./draw`, `./features`, `./modelling` (line 18), `./Diagram`, `./model/model` (recon area-C digest).
 - eventBus is provided as `['type', EventEmitter]` (`packages/canvas/src/module.ts:15`); resolved by token `eventBus`.
 
 **Instructions**:
 - `CommandHandler.ts`: export `interface CommandContext { [k: string]: unknown }` (a plain memento — ids + plain values only, O13) and `interface CommandHandler<C extends CommandContext = CommandContext> { canExecute?(c: C): boolean; preExecute?(c: C): void; execute(c: C): void; revert(c: C): void; postExecute?(c: C): void }`.
 - `CommandStack.ts`: `export class CommandStack` with `static readonly $inject = ['eventBus']`. Internal `_stack: {command:string; context:CommandContext}[][]` (each entry is a transaction = array of commands), `_pointer` (index into `_stack`), `_handlers = new Map<string, CommandHandler>()`, `_enabled = false`, and transaction bookkeeping `_txn: {command,context}[] | null`. Implement `registerHandler(name, handler)`, `execute(command, context)` (if a `_txn` is open, run the handler's execute and push to `_txn` — i.e. nested joins; else open a `_txn`, run, close, and if enabled push as one entry truncating the redo tail at `_pointer`), `undo()`/`redo()` (walk the entry, revert-in-reverse / execute-in-order), `canUndo()`/`canRedo()` (`_enabled && pointer in range`), `clear()`. Leave the latch + failure semantics to Step 2 (here `_enabled` starts false and nothing flips it yet).
 - `command/index.ts`: `export const commandStackModule = { __init__: ['commandStack'], commandStack: ['type', CommandStack] as const }; export * from './CommandStack'; export * from './CommandHandler';`
-- `index.ts`: add `export * from './command';` after the existing `./modelling` re-export (`index.ts:11`).
+- `index.ts`: add `export * from './command';` after the existing `./modelling` re-export (`index.ts:18`).
 
 **Verification**: `pnpm --filter @d3-polytree/core typecheck` passes; `pnpm --filter @d3-polytree/core build` emits the new exports. Nothing consumes the service yet, so `pnpm test` stays green.
 
@@ -68,7 +68,7 @@ the reroute is total before any undo/redo is user-reachable.
 - `packages/core/src/command/CommandStack.test.ts` — modify
 
 **Evidence**:
-- Latch signal: `Diagram` emits `d3canvas.init` **after** `createInjector` builds the injector (drawers + their boot `saveToModel` run synchronously inside `bootstrap` at `Diagram.ts:42,64`), and `d3canvas.destroy`/`d3canvas.clear` on teardown (`Diagram.ts:65,74,78`).
+- Latch signal: `Diagram` emits `d3canvas.init` **after** `createInjector` builds the injector (drawers + their boot `saveToModel` run synchronously inside `bootstrap` at `Diagram.ts:42,64`), the init emit at `Diagram.ts:65`, and `d3canvas.destroy`/`d3canvas.clear` on teardown (`Diagram.ts:74,78`).
 - Failure policy (design "Render channel, failure semantics"): best-effort unwind on execute-throw; on revert-throw, best-effort continue + quarantine + fatal `document.inconsistent` (design.md; `ROADMAP.md:552-554`).
 
 **Instructions**:
@@ -121,7 +121,7 @@ the reroute is total before any undo/redo is user-reachable.
 **Instructions**:
 - Give `ModellingElement` a `createCommand(): CommandHandler` (or equivalent) whose `execute` runs the existing create + `collections.add`, capturing the created element id(s) (node **and** its associated label) onto the context; `revert` calls `collections.remove` for both and reconciles them with `undefined`.
 - In `Modelling` (registration site), on construction call `commandStack.registerHandler('element.create', …)` per element class (inject `commandStack` into `Modelling.$inject`).
-- Change `BaseAddHandler._create` and `AddLinkTool._appendLink` to `commandStack.execute('element.create', { className, parameters })` instead of `modelling.doAction(..., 'create', ...)`. Keep `doAction` working for now (Step 8 removes it).
+- Change `BaseAddHandler._create` and `AddLinkTool._appendLink` to `commandStack.execute('element.create', { className, parameters })` instead of `modelling.doAction(..., 'create', ...)`. Add `'commandStack'` to `BaseAddHandler.$inject` (currently `['drawingRegistry','selection','canvas','modelling']`, `AddNodeHandler.ts:9`) and `AddLinkTool.$inject` (currently `['eventBus','canvas','modelling']`, `AddLinkTool.ts:22`), storing it on the instance. Keep `doAction` working for now (Step 8 removes it).
 - Preserve current return-value behavior of `_create` (it returns the created def) so palette callers are unaffected.
 
 **Verification**: `pnpm --filter @d3-polytree/core exec vitest run src/features/palette/palette.test.ts` and `src/modelling/` green; `pnpm --filter @d3-polytree/core typecheck`; `pnpm lint`.
@@ -168,7 +168,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Instructions**:
 - Add a resize `CommandHandler`: context memento `{ id, from:{size,position:{x,y}}, to:{size,position:{x,y}} }` (all from model props, never `getBBox`/`attr`); `execute` idempotently applies `to`; `revert` applies `from` and reconciles the node. Register `element.resize`.
-- In `_setCornerToDrag`'s `'start'` handler (`resizeElement.ts:133`), snapshot `{ size: Number(definition.size), position: { x, y } }` from the **model** before the first tick. Change `commit` (`resizeElement.ts:55`) to `commandStack.execute('element.resize', { id, from: snapshot, to: currentFromModel })` instead of emitting `element.updated`. Inject `commandStack` into `ResizeElement.$inject` (currently `['eventBus','canvas']`).
+- Snapshot the origin at drag start. Note `_setCornerToDrag`'s `'start'` closure (`resizeElement.ts:133`) has only `event` in scope — `definition` is not reachable there. So capture inside `_createCorners` (which has `definition`, `resizeElement.ts:40-42`): extend `_setCornerToDrag` to also take a `startFn`, and pass a `startFn` that reads `{ size: Number(definition.size), position: { x: (definition.position as Point).x, y: (definition.position as Point).y } }` from the **model** into a closure variable before the first tick. Change `commit` (`resizeElement.ts:55`) to `commandStack.execute('element.resize', { id: definition.id, from: snapshot, to: { size: Number(definition.size), position: {...} } })` (both read from model props) instead of emitting `element.updated`. Inject `commandStack` into `ResizeElement.$inject` (currently `['eventBus','canvas']`, `resizeElement.ts:29`).
 
 **Verification**: `pnpm --filter @d3-polytree/core exec vitest run src/features/resizeElement.test.ts` green (extend it to assert the model size/position commit + revert, which `resizeElement.test.ts:48,66` does not currently cover); `pnpm lint`.
 
@@ -211,7 +211,7 @@ the reroute is total before any undo/redo is user-reachable.
 - After Steps 4–7, create/delete/move/resize no longer flow through the `.created`/`.deleted` mutation routes.
 
 **Instructions**:
-- Remove the now-dead `*.created`→`saveToModel` and `*.deleted`→`delete` routes from `_init()`; **keep** the `element.updated`→`reconcile` subscription (still the notification path for external reconciles) and keep the draw-layer `.created`/`.deleted` events as pure notifications (boot-order invariant, `CLAUDE.md:73`). Keep `Modelling` as the `commandStack` registration site.
+- Remove the now-dead `*.created`→`saveToModel` and `*.deleted`→`delete` routes from `_init()`; **keep** the `element.updated`→`reconcile` subscription (still the notification path for external reconciles) and keep the draw-layer `.created`/`.deleted` events as pure notifications (boot-order invariant, `CLAUDE.md:71`). Keep `Modelling` as the `commandStack` registration site.
 - Reduce `doAction` to a deprecated shim that delegates to `commandStack.execute` (mark `@deprecated`, remove before 1.0 per O12); do not delete it (a consumer may still call it in this minor).
 
 **Verification**: `pnpm --filter @d3-polytree/core exec vitest run src/modelling/orchestrator.test.ts` green (update routing assertions at `orchestrator.test.ts:53,61` to reflect the removed routes); full `pnpm test`; `pnpm typecheck`; `pnpm lint`.
@@ -320,6 +320,36 @@ the reroute is total before any undo/redo is user-reachable.
 **Test**: `packages/editor/src/index.test.ts` (extend): `canUndo()===false` post-import; a create→undo→redo cycle round-trips `toXML`. Run: `pnpm --filter @d3-polytree/editor exec vitest run src/index.test.ts`, then `pnpm test`.
 
 ---
+
+## Review Log
+
+### 2026-09-17 — plan-review — passed-with-warnings
+
+Reviewer verdict: **PASS WITH WARNINGS**, **0 blockers**. Design fidelity, host-rule compliance,
+and step/dependency structure all passed; every step's evidence is real and populated. Five
+warnings, all citation/instruction imprecisions (no fabricated references, no design deviation) —
+**all addressed** (none waived), each verified against the file directly before amending:
+
+- **Header test/typecheck citations swapped** → fixed: `pnpm test`→`package.json:19`,
+  `pnpm typecheck`→`package.json:20` (verified: 18=build, 19=test, 20=typecheck, 21=lint).
+- **Step 1 `index.ts:11` mis-cited** → fixed to `index.ts:18` (verified: line 11 is
+  `export { canvasModule }`; the `./modelling` re-export is line 18; the new `./command` export
+  anchors there).
+- **Boot-order rule `CLAUDE.md:73` off by 2** → fixed to `CLAUDE.md:71` (verified: `:67`
+  last-def-wins, `:71` "Boot order = event-subscription order").
+- **Step 2 `Diagram.ts:65` mislabeled as destroy/clear** → fixed: `:65` is the `d3canvas.init`
+  emit; `d3canvas.destroy`/`clear` are `:74,78`.
+- **Step 4 missing `$inject` wiring instruction** → added: wire `'commandStack'` into
+  `BaseAddHandler`/`AddLinkTool` `$inject`.
+- **Step 6 snapshot placement** (`_setCornerToDrag`'s `'start'` closure lacks `definition`) →
+  fixed: capture inside `_createCorners` via an added `startFn`, reading `{size, position}` from
+  the model.
+
+No step body's design intent changed; only citations and two instruction details were made precise.
+Amendments were self-verified against the cited files (spot-check reads of `package.json`,
+`packages/core/src/index.ts`, `CLAUDE.md`, `packages/core/src/features/resizeElement.ts`, and the
+palette handler `$inject` lines) rather than a full reviewer re-run, since each is a correction to a
+value read directly this session. Plan is execution-ready.
 
 ## Deviation Log
 
