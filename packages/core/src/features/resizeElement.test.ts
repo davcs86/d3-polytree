@@ -8,6 +8,12 @@ import type { ModellingModelElement } from '../modelling/types';
 import { ResizeElement } from './resizeElement';
 import { NoticePopup } from './noticePopup';
 import type { NotificationService } from './notifications';
+import type { CommandStack } from '../command';
+
+/** A command-stack double: ResizeElement only dispatches on drag-commit. */
+function fakeCommandStack(): CommandStack {
+  return { execute: vi.fn() } as unknown as CommandStack;
+}
 
 /** A node `<g>` with an inner svg, plus its outline rect. */
 function nodeDrawing(size: number) {
@@ -34,7 +40,7 @@ describe('@d3-polytree/core ResizeElement', () => {
     bus = new EventEmitter();
     canvas = new Canvas({ container: document.body }, bus);
     moddle = createPfdnModdle();
-    new ResizeElement(bus, canvas);
+    new ResizeElement(bus, canvas, fakeCommandStack());
   });
 
   function node(): ModellingModelElement {

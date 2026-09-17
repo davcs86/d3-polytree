@@ -88,6 +88,32 @@ describe('@d3-polytree/editor command round-trips', () => {
     expect(editor.exportDiagram()).toBe(afterCreate); // delete undone; create remains
   });
 
+  it('element.resize round-trips through undo', () => {
+    const addNode = editor.get<AppendHandler>('addNodeHandler');
+    const node = addNode.append({ position: { x: 0, y: 0 } }) as unknown as {
+      id: string;
+      size: number;
+      position: { x: number; y: number };
+    };
+    const before = editor.exportDiagram();
+
+    // Drive the element.resize command as the resize dispatcher does on commit:
+    // capture `from` from the model, mutate live, then execute with `from`/`to`.
+    const from = { size: Number(node.size), position: { x: node.position.x, y: node.position.y } };
+    node.size = 60;
+    node.position.y = -35;
+    cs.execute('element.resize', {
+      def: node,
+      className: 'node',
+      from,
+      to: { size: 60, position: { x: node.position.x, y: -35 } }
+    });
+    expect(editor.exportDiagram()).not.toBe(before);
+
+    cs.undo();
+    expect(editor.exportDiagram()).toBe(before); // size + position restored
+  });
+
   it('a multi-select delete is a SINGLE undo entry restoring the whole selection', () => {
     const addNode = editor.get<AppendHandler>('addNodeHandler');
     const n1 = addNode.append({ position: { x: 0, y: 0 } });

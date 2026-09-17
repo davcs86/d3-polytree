@@ -156,7 +156,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 ### Step 6 — `element.resize` handler + reroute `ResizeElement` (capture at drag start)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/core/src/modelling/ModellingElement.ts` — modify (or a node-specific handler)
 - `packages/core/src/modelling/Modelling.ts` — modify

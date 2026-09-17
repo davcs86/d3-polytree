@@ -1,9 +1,23 @@
 import type { CommandContext, CommandHandler, CommandStack } from '../command';
+import type { Point } from '../draw';
 import * as collections from '../utils/collections';
 import { getLocalName } from '../utils/localName';
 import type { ModellingElement } from './ModellingElement';
 import type { ElementClass } from './Modelling';
 import type { ModellingModelElement } from './types';
+
+/** A node's resizable geometry — the memento for `element.resize`. */
+export interface Geometry {
+  size: number;
+  position: { x: number; y: number };
+}
+
+function applyGeometry(def: ModellingModelElement, g: Geometry): void {
+  def.size = g.size;
+  const pos = def.position as Point;
+  pos.x = g.position.x;
+  pos.y = g.position.y;
+}
 
 /**
  * The command handlers that carry every model mutation, and their registration.
@@ -157,6 +171,30 @@ export function deleteBatchCommand(commandStack: CommandStack): CommandHandler<D
   };
 }
 
+/** `element.resize` — restore a node's size + position on revert. */
+export interface ResizeContext extends CommandContext {
+  def: ModellingModelElement;
+  className: ElementClass;
+  from: Geometry;
+  to: Geometry;
+}
+
+/** Build the `element.resize` command handler. */
+export function resizeElementCommand(handlers: ElementHandlers): CommandHandler<ResizeContext> {
+  return {
+    execute(ctx) {
+      // The live drag already wrote `to`; re-applying is idempotent and makes
+      // redo work from any state.
+      applyGeometry(ctx.def, ctx.to);
+      handlers[ctx.className].reconcile(ctx.def.id as string, ctx.def);
+    },
+    revert(ctx) {
+      applyGeometry(ctx.def, ctx.from);
+      handlers[ctx.className].reconcile(ctx.def.id as string, ctx.def);
+    }
+  };
+}
+
 /**
  * Register every implemented modelling command on the stack. Called by the
  * {@link Modelling} orchestrator (the registration site) at construction.
@@ -178,4 +216,5 @@ export function registerModellingCommands(
     'elements.delete',
     deleteBatchCommand(commandStack) as CommandHandler
   );
+  commandStack.registerHandler('element.resize', resizeElementCommand(handlers) as CommandHandler);
 }
