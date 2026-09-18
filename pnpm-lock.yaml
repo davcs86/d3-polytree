@@ -198,6 +198,21 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0(moddle@7.2.0)
 
+  packages/ssr:
+    dependencies:
+      '@d3-polytree/canvas':
+        specifier: workspace:*
+        version: link:../canvas
+      '@d3-polytree/core':
+        specifier: workspace:*
+        version: link:../core
+      '@d3-polytree/viewer':
+        specifier: workspace:*
+        version: link:../viewer
+      jsdom:
+        specifier: 25.0.1
+        version: 25.0.1
+
   packages/viewer:
     dependencies:
       '@d3-polytree/core':

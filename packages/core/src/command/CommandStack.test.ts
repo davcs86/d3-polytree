@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { CommandStack } from './CommandStack';
 import type { CommandContext, CommandHandler } from './CommandHandler';
 
@@ -22,12 +23,12 @@ function addHandler(model: Model): CommandHandler {
 }
 
 describe('@d3-polytree/core CommandStack', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let stack: CommandStack;
   let model: Model;
 
   beforeEach(() => {
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     stack = new CommandStack(bus);
     model = { value: 0 };
     stack.registerHandler('add', addHandler(model));
@@ -35,7 +36,7 @@ describe('@d3-polytree/core CommandStack', () => {
   });
 
   it('is disabled until d3canvas.init — canUndo() is false on a fresh boot', () => {
-    const b2 = new EventEmitter();
+    const b2 = new EventEmitter<DiagramEventMap>();
     const s2 = new CommandStack(b2);
     const m2: Model = { value: 0 };
     s2.registerHandler('add', addHandler(m2));
@@ -151,5 +152,28 @@ describe('@d3-polytree/core CommandStack', () => {
     stack.undo();
     stack.redo();
     expect(changed).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('DiagramEventMap (compile-time contract, core surface)', () => {
+  // Checked by `tsc --noEmit` (tsconfig include: ["src"]). Each @ts-expect-error
+  // fails the typecheck before the bus is typed and passes after — a real
+  // fail-before/pass-after test for this type-only change.
+  it('enforces core event names and payloads at emit sites', () => {
+    const bus = new EventEmitter<DiagramEventMap>();
+
+    // correct usages compile
+    bus.emit('commandStack.changed', { canUndo: true, canRedo: false });
+    bus.emit('document.changed', { dirty: true });
+    bus.emit('element.updated', 'id-1', {});
+
+    // @ts-expect-error 'commandStack.changed' requires { canUndo, canRedo }
+    bus.emit('commandStack.changed', { canUndo: true });
+    // @ts-expect-error 'element.updated' first arg is the id string
+    bus.emit('element.updated', 123, {});
+    // @ts-expect-error unknown event names are rejected
+    bus.emit('command.stack.changd', {});
+
+    expect(bus).toBeInstanceOf(EventEmitter);
   });
 });

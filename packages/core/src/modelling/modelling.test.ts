@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
 import { DrawingRegistry, type BaseElement } from '../draw';
 import type { NotificationParams, NotificationService } from '../features/notifications';
@@ -37,14 +38,14 @@ describe('@d3-polytree/core modelling handlers', () => {
   let moddle: ReturnType<typeof createPfdnModdle>;
   let definitions: ModellingModelElement;
   let registry: DrawingRegistry;
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let notes: CapturingNotifications;
 
   beforeEach(() => {
     moddle = createPfdnModdle();
     definitions = moddle.create('pfdn:Diagram', {}) as unknown as ModellingModelElement;
     registry = new DrawingRegistry();
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     notes = new CapturingNotifications();
   });
 

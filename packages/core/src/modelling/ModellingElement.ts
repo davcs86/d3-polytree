@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { BaseElement } from '../draw';
 import type { DrawingRegistry } from '../draw';
 import type { NotificationService } from '../features/notifications';
@@ -23,14 +24,14 @@ export abstract class ModellingElement {
   protected readonly _drawer: BaseElement;
   protected readonly _drawingRegistry: DrawingRegistry;
   protected readonly _notifications: NotificationService;
-  protected readonly _eventBus: EventEmitter;
+  protected readonly _eventBus: EventEmitter<DiagramEventMap>;
 
   constructor(
     definitions: ModellingModelElement,
     drawer: BaseElement,
     drawingRegistry: DrawingRegistry,
     notifications: NotificationService,
-    eventBus: EventEmitter
+    eventBus: EventEmitter<DiagramEventMap>
   ) {
     this._definitions = definitions;
     this._drawer = drawer;

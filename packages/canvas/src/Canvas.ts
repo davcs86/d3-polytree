@@ -1,6 +1,7 @@
 import { select } from 'd3-selection';
 import type EventEmitter from 'eventemitter3';
 import { getSvgString } from './SvgExportingUtils';
+import type { DiagramEventMap } from './events';
 import type { CanvasConfig, CanvasSize, GroupSelection, SvgSelection, TransformMatrix } from './types';
 
 function ensurePx(value: number | string): string {
@@ -30,13 +31,13 @@ function createContainer(options: CanvasConfig): HTMLElement {
 export class Canvas {
   static readonly $inject = ['config', 'eventBus'];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private _container!: HTMLElement;
   private _svg!: SvgSelection;
   private _rootLayer!: GroupSelection;
   private _drawingLayer!: GroupSelection;
 
-  constructor(config: CanvasConfig | undefined, eventBus: EventEmitter) {
+  constructor(config: CanvasConfig | undefined, eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
     this._init(config ?? {});
   }

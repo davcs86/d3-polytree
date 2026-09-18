@@ -3,6 +3,7 @@ import { axisBottom, axisRight, type Axis } from 'd3-axis';
 import { zoomIdentity } from 'd3-zoom';
 import type { Selection } from 'd3-selection';
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { ModellingModelElement } from '../modelling/types';
 import type { Zoom } from './zoom';
@@ -32,7 +33,7 @@ export class Axes {
 
   private readonly _options: GridModel;
   private readonly _canvas: Canvas;
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _zoom: Zoom;
   private _isVisible: boolean;
 
@@ -44,7 +45,7 @@ export class Axes {
   private _gX: GSelection | null = null;
   private _gY: GSelection | null = null;
 
-  constructor(options: GridModel, canvas: Canvas, eventBus: EventEmitter, zoom: Zoom) {
+  constructor(options: GridModel, canvas: Canvas, eventBus: EventEmitter<DiagramEventMap>, zoom: Zoom) {
     this._options = options;
     this._isVisible = options.show ?? true;
     this._canvas = canvas;

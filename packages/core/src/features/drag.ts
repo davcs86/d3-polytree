@@ -1,5 +1,6 @@
 import { drag as d3drag, type D3DragEvent } from 'd3-drag';
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
 import { getLocalName } from '../utils/localName';
 import type { DrawingRegistry, DrawingSelection, DiagramElement, Point } from '../draw';
@@ -27,7 +28,7 @@ export class Drag {
   static readonly $inject = ['canvas', 'eventBus', 'drawingRegistry', 'selection', 'commandStack'];
 
   private readonly _canvas: Canvas;
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _drawingRegistry: DrawingRegistry;
   private readonly _selection: Selection;
   private readonly _commandStack: CommandStack;
@@ -36,7 +37,7 @@ export class Drag {
 
   constructor(
     canvas: Canvas,
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     drawingRegistry: DrawingRegistry,
     selection: Selection,
     commandStack: CommandStack
@@ -136,7 +137,7 @@ export class Drag {
     if (def.get('status') !== 1) {
       def.set('status', 2);
     }
-    this._eventBus.emit(`${getLocalName(def)}.moving`, elem, def);
+    this._eventBus.emit(`${getLocalName(def) as ElementClass}.moving`, elem, def);
   }
 
   private _setElemToDrag(element: DrawingSelection, definition: ModellingModelElement): void {

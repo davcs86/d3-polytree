@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/core';
 import type { CommandStack, CommandContext } from '@d3-polytree/core';
 import type { EntryResource } from './EntryFactory';
 import type { PropertiesProvider } from './PfdnPropertiesProvider';
@@ -60,7 +61,7 @@ export class PropertiesPanel {
     'commandStack'
   ];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _propertiesProvider: PropertiesProvider;
   private readonly _diagramSettings: Definition;
   private readonly _commandStack: CommandStack;
@@ -72,7 +73,7 @@ export class PropertiesPanel {
 
   constructor(
     sideTabsProvider: SideTabsRegistrar,
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     propertiesProvider: PropertiesProvider,
     diagramSettings: Definition,
     commandStack: CommandStack

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { select, type Selection } from 'd3-selection';
 import { Canvas } from '@d3-polytree/canvas';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
@@ -31,13 +32,13 @@ function nodeDrawing(size: number) {
 }
 
 describe('@d3-polytree/core ResizeElement', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let canvas: Canvas;
   let moddle: ReturnType<typeof createPfdnModdle>;
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     canvas = new Canvas({ container: document.body }, bus);
     moddle = createPfdnModdle();
     new ResizeElement(bus, canvas, fakeCommandStack());
@@ -88,7 +89,7 @@ describe('@d3-polytree/core NoticePopup', () => {
   });
 
   it('adds a notice button that opens a notification', () => {
-    const canvas = new Canvas({ container: document.body }, new EventEmitter());
+    const canvas = new Canvas({ container: document.body }, new EventEmitter<DiagramEventMap>());
     const notify = vi.fn();
     const notifications = {
       info: vi.fn(),

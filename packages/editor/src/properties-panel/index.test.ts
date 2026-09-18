@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/core';
 import { CommandStack } from '@d3-polytree/core';
 import { EntryFactory } from './EntryFactory';
 import { PfdnPropertiesProvider } from './PfdnPropertiesProvider';
@@ -40,7 +41,7 @@ function settingsDef(): Definition {
 describe('@d3-polytree/properties-panel EntryFactory', () => {
   let factory: EntryFactory;
   beforeEach(() => {
-    factory = new EntryFactory(new EventEmitter());
+    factory = new EntryFactory(new EventEmitter<DiagramEventMap>());
   });
 
   const render = (html: string): HTMLElement => {
@@ -90,10 +91,10 @@ describe('@d3-polytree/properties-panel EntryFactory', () => {
 
 describe('@d3-polytree/properties-panel PfdnPropertiesProvider', () => {
   let provider: PfdnPropertiesProvider;
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
 
   beforeEach(() => {
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     provider = new PfdnPropertiesProvider({ default: '', task: '' }, new EntryFactory(bus), bus);
   });
 
@@ -141,13 +142,13 @@ class FakeRegistrar implements SideTabsRegistrar {
 }
 
 describe('@d3-polytree/properties-panel PropertiesPanel', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let registrar: FakeRegistrar;
   let provider: PfdnPropertiesProvider;
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     registrar = new FakeRegistrar();
     provider = new PfdnPropertiesProvider({ default: '' }, new EntryFactory(bus), bus);
   });
@@ -169,7 +170,7 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
     const content = registrar.open();
     const node = nodeDef();
 
-    bus.emit('selection.changed', [], [{ definition: node }]);
+    bus.emit('selection.changed', [], [{ element: node, definition: node }]);
 
     const nameInput = content.querySelector('input[name="name"]') as HTMLInputElement;
     expect(nameInput.value).toBe('Alpha');
@@ -189,7 +190,7 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
     new PropertiesPanel(registrar, bus, provider, settingsDef(), stack);
     const content = registrar.open();
     const node = nodeDef();
-    bus.emit('selection.changed', [], [{ definition: node }]);
+    bus.emit('selection.changed', [], [{ element: node, definition: node }]);
 
     const nameInput = content.querySelector('input[name="name"]') as HTMLInputElement;
     nameInput.value = 'Renamed';
@@ -212,5 +213,21 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
     expect(
       content.querySelector('.pfdjs-pp-content[data-tab-target="format"]')?.classList.contains('open')
     ).toBe(true);
+  });
+});
+
+describe('DiagramEventMap (compile-time contract, editor surface)', () => {
+  it('enforces editor event names and payloads at emit sites', () => {
+    const typed = new EventEmitter<DiagramEventMap>();
+
+    typed.emit('PropertiesPanel.propertyChanged', 'name', {});
+    typed.emit('canvas.resized');
+
+    // @ts-expect-error propertyId (first arg) must be a string
+    typed.emit('PropertiesPanel.propertyChanged', 123, {});
+    // @ts-expect-error event-name typo is rejected
+    typed.emit('PropertiesPanel.propertyChangd', 'name', {});
+
+    expect(typed).toBeInstanceOf(EventEmitter);
   });
 });

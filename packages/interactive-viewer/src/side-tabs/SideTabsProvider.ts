@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 
 /** An action bound to a side tab: a click callback, or a map of gesture → callback. */
 export type SideTabAction =
@@ -21,10 +22,10 @@ export interface SideTabEntry {
 export class SideTabsProvider {
   static readonly $inject = ['eventBus'];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private _registeredSideTabs: SideTabEntry[] = [];
 
-  constructor(eventBus: EventEmitter) {
+  constructor(eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
   }
 

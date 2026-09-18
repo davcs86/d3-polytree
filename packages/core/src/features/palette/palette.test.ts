@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { Canvas } from '@d3-polytree/canvas';
 import { Palette } from './Palette';
 import { PaletteProvider, type PaletteProvider as PP } from './PaletteProvider';
@@ -9,7 +10,7 @@ describe('@d3-polytree/core Palette', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    canvas = new Canvas({ container: document.body }, new EventEmitter());
+    canvas = new Canvas({ container: document.body }, new EventEmitter<DiagramEventMap>());
   });
 
   it('renders grouped entry buttons and delegates clicks to their actions', () => {
@@ -51,7 +52,7 @@ describe('@d3-polytree/core Palette', () => {
 
 describe('@d3-polytree/core PaletteProvider', () => {
   function build() {
-    const bus = new EventEmitter();
+    const bus = new EventEmitter<DiagramEventMap>();
     const host = { createDiagram: vi.fn() };
     const localStorage = { save: vi.fn() };
     const upload = { openDialog: vi.fn() };

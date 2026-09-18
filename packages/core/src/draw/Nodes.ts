@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas, ElementBuilder, ElementRegistry } from '@d3-polytree/canvas';
 import { BaseElement } from './BaseElement';
 import type { DrawingRegistry } from './DrawingRegistry';
@@ -23,7 +24,7 @@ export class Nodes extends BaseElement {
   constructor(
     nodes: NodeDefinition[] | undefined,
     canvas: Canvas,
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     iconLoader: IconLoader,
     elementBuilder: ElementBuilder,
     elementRegistry: ElementRegistry,

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
 import type { DrawingSelection } from '../draw';
 import type { ModellingModelElement } from '../modelling/types';
@@ -29,11 +30,11 @@ function sel(): FakeSelection {
 }
 
 describe('@d3-polytree/core MouseEvents', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let moddle: ReturnType<typeof createPfdnModdle>;
 
   beforeEach(() => {
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     moddle = createPfdnModdle();
     new MouseEvents(bus);
   });
@@ -54,12 +55,12 @@ describe('@d3-polytree/core MouseEvents', () => {
 });
 
 describe('@d3-polytree/core Selection', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let moddle: ReturnType<typeof createPfdnModdle>;
   let selection: Selection;
 
   beforeEach(() => {
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     moddle = createPfdnModdle();
     selection = new Selection(bus);
   });

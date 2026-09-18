@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { select } from 'd3-selection';
 import { Canvas } from '@d3-polytree/canvas';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
@@ -72,13 +73,13 @@ describe('@d3-polytree/core AlertIcons', () => {
 });
 
 describe('@d3-polytree/core Tooltip', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let canvas: Canvas;
   let moddle: ReturnType<typeof createPfdnModdle>;
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     canvas = new Canvas({ container: document.body }, bus);
     moddle = createPfdnModdle();
   });
@@ -101,6 +102,6 @@ describe('@d3-polytree/core Tooltip', () => {
     bus.emit('node.mouseover', {}, node, new MouseEvent('mouseover'));
     expect(fn).not.toHaveBeenCalled();
 
-    expect(() => bus.emit('node.mouseout')).not.toThrow();
+    expect(() => bus.emit('node.mouseout', {}, node, new MouseEvent('mouseout'))).not.toThrow();
   });
 });

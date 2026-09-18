@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { select, type Selection } from 'd3-selection';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
 import type { DrawingSelection } from '../draw';
@@ -15,12 +16,12 @@ function drawing(): Selection<SVGGElement, unknown, null, undefined> {
 }
 
 describe('@d3-polytree/core Outline', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let moddle: ReturnType<typeof createPfdnModdle>;
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     moddle = createPfdnModdle();
     new Outline(bus);
   });

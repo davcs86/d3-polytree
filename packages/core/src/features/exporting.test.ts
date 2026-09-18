@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { Canvas } from '@d3-polytree/canvas';
 import { Exporting, type ExportHost } from './exporting';
 
@@ -16,7 +17,7 @@ describe('@d3-polytree/core Exporting', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    canvas = new Canvas({ container: document.body }, new EventEmitter());
+    canvas = new Canvas({ container: document.body }, new EventEmitter<DiagramEventMap>());
     host = {
       exportDiagram: () => '<pfdn:diagram/>',
       exportSVG: () => '<svg><g/></svg>'

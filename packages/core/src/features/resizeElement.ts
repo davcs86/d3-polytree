@@ -1,6 +1,7 @@
 import { drag as d3drag, type D3DragEvent } from 'd3-drag';
 import { pointer, select, type Selection } from 'd3-selection';
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { DrawingSelection, Point } from '../draw';
 import type { CommandStack } from '../command';
@@ -30,11 +31,11 @@ const OUTLINE_PADDING = 6;
 export class ResizeElement {
   static readonly $inject = ['eventBus', 'canvas', 'commandStack'];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _canvas: Canvas;
   private readonly _commandStack: CommandStack;
 
-  constructor(eventBus: EventEmitter, canvas: Canvas, commandStack: CommandStack) {
+  constructor(eventBus: EventEmitter<DiagramEventMap>, canvas: Canvas, commandStack: CommandStack) {
     this._eventBus = eventBus;
     this._canvas = canvas;
     this._commandStack = commandStack;

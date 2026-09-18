@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { BaseElement, DrawingRegistry, Point } from '../draw';
 import type { NotificationService } from '../features/notifications';
 import type { PfdnModdle } from '@d3-polytree/pfdn-moddle';
@@ -35,7 +36,7 @@ export class ModellingNodes extends ModellingElement {
     moddle: PfdnModdle,
     drawingRegistry: DrawingRegistry,
     notifications: NotificationService,
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     nodes: BaseElement,
     modellingLabels: ModellingLabels
   ) {

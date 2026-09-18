@@ -1,6 +1,8 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { getLocalName } from '../utils/localName';
 import type { DrawingSelection } from '../draw';
+import type { ElementClass } from '../modelling';
 import type { ModellingModelElement } from '../modelling/types';
 
 /** DOM mouse events re-broadcast on the bus for each drawn element. */
@@ -28,9 +30,9 @@ const MOUSE_EVENTS = [
 export class MouseEvents {
   static readonly $inject = ['eventBus'];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
 
-  constructor(eventBus: EventEmitter) {
+  constructor(eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
     this._init();
   }
@@ -38,9 +40,9 @@ export class MouseEvents {
   private _addListeners(
     element: DrawingSelection,
     definition: ModellingModelElement,
-    className?: string
+    className?: ElementClass
   ): void {
-    const type = className ?? getLocalName(definition);
+    const type: ElementClass = className ?? (getLocalName(definition) as ElementClass);
     MOUSE_EVENTS.forEach((kind) => {
       element.on(kind, (event: Event) => {
         this._eventBus.emit(`${type}.${kind}`, element, definition, event);

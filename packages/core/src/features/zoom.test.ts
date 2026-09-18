@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { Canvas } from '@d3-polytree/canvas';
 import { emptyModel } from '../model/model';
 import { CalculateCenter } from '../utils/calculateCenter';
@@ -8,7 +9,7 @@ import { Zoom } from './zoom';
 import { ZoomScroll } from './zoomScroll';
 
 function setup() {
-  const bus = new EventEmitter();
+  const bus = new EventEmitter<DiagramEventMap>();
   const { definitions } = emptyModel();
   const canvas = new Canvas({ container: document.body }, bus);
   const calculateCenter = new CalculateCenter(canvas);

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import EventEmitter from 'eventemitter3';
 import { Canvas } from '@d3-polytree/canvas';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 
 interface CanvasArgs {
   width: number;
@@ -20,7 +21,7 @@ const meta: Meta<CanvasArgs> = {
     host.style.width = `${width}px`;
     host.style.height = `${height}px`;
 
-    const bus = new EventEmitter();
+    const bus = new EventEmitter<DiagramEventMap>();
     const canvas = new Canvas({ container: host, width, height }, bus);
     canvas
       .getRootLayer()

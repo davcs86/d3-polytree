@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { getLocalName } from '../utils/localName';
 import type { DrawingSelection } from '../draw';
 import type { Point } from '../draw';
@@ -24,9 +25,9 @@ const OUTLINE_PADDING = 6;
 export class Outline {
   static readonly $inject = ['eventBus'];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
 
-  constructor(eventBus: EventEmitter) {
+  constructor(eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
     this._init();
   }

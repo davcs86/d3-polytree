@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { NotificationService } from '../notifications';
 import type { Axes } from '../axes';
 import type { Selection } from '../selection';
@@ -62,7 +63,7 @@ export class PaletteProvider {
 
   constructor(
     host: PaletteHost,
-    _eventBus: EventEmitter,
+    _eventBus: EventEmitter<DiagramEventMap>,
     localStorage: LocalStorage,
     upload: Upload,
     exporting: Exporting,

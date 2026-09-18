@@ -2,8 +2,11 @@ export { Canvas } from './Canvas';
 export { ElementRegistry } from './ElementRegistry';
 export { ElementBuilder } from './ElementBuilder';
 export type { ElementBuildFn } from './ElementBuilder';
+export { IdsIdGenerator, SequentialIdGenerator } from './IdGenerator';
+export type { IdGenerator } from './IdGenerator';
 export { getSvgString } from './SvgExportingUtils';
 export { canvasModule } from './module';
+export type { DiagramEventMap, ElementClassName, MouseKind } from './events';
 export type {
   CanvasConfig,
   CanvasSize,

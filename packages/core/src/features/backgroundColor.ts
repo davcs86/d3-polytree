@@ -1,5 +1,6 @@
 import type { Selection } from 'd3-selection';
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { ModellingModelElement } from '../modelling/types';
 
@@ -20,10 +21,10 @@ export class BackgroundColor {
 
   private readonly _canvas: Canvas;
   private readonly _settings: SettingsModel;
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private _bgRect: Selection<SVGRectElement, unknown, null, undefined> | null = null;
 
-  constructor(canvas: Canvas, settings: SettingsModel, eventBus: EventEmitter) {
+  constructor(canvas: Canvas, settings: SettingsModel, eventBus: EventEmitter<DiagramEventMap>) {
     this._canvas = canvas;
     this._settings = settings;
     this._eventBus = eventBus;

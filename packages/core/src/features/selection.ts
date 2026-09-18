@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { DrawingSelection } from '../draw';
 import type { ModellingModelElement } from '../modelling/types';
 
@@ -20,10 +21,10 @@ export interface SelectionEntry {
 export class Selection {
   static readonly $inject = ['eventBus'];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _currentSelection = new Map<string, SelectionEntry>();
 
-  constructor(eventBus: EventEmitter) {
+  constructor(eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
     this._init();
   }
