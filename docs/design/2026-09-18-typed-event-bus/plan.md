@@ -25,7 +25,7 @@ Build in dependency order canvas → core → interactive-viewer → editor (tur
 
 ### Step 1 — canvas: define `DiagramEventMap` and type the canvas bus
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/canvas/src/events.ts` — create
 - `packages/canvas/src/index.ts` — modify
@@ -168,4 +168,7 @@ Two warnings, disposed at the user gate:
 
 ## Deviation Log
 
-_Populated during execution. Step bodies above are immutable (DN-5); record any divergence here with the step number, what changed, and why._
+- **Step 1 — test-bus retype is required after all (corrects the review's "no test retype needed").** `new EventEmitter()` (untyped `EventEmitter<string|symbol>`) is NOT assignable to an `EventEmitter<DiagramEventMap>` constructor parameter — `tsc` rejects it because `eventNames()` returns the wider `(string|symbol)[]` (TS2345). The reviewer's "Could not evaluate → resolved" note (untyped methods use `any[]`) held only for the emit/on *arg* positions, not for whole-emitter assignability. Fix applied: any test/helper that constructs a bus and passes it to a now-typed constructor uses `new EventEmitter<DiagramEventMap>()`. Applied to `packages/canvas/src/Canvas.test.ts` `makeCanvas`; the same fix is applied per-package in Steps 2–4 wherever a test constructs a bus for a typed ctor (extends each step's Files with its `*.test.ts` / `drawerTestUtils.ts`).
+- **Step 1 — `DiagramEventMap` authored as a `type` alias (intersection of template-literal mapped types + a `LiteralEvents` interface), not a single `interface`.** An `interface` cannot express the `${ElementClassName}.${…}` mapped keys. Verified the `type` alias survives the tsup/rollup-dts bundle intact (`packages/canvas/dist/index.d.ts` emits the full map, no `declare module`), so the Option-B dts-robustness property the design relied on is preserved.
+
+_Step bodies above are immutable (DN-5); divergence recorded here with the step number, what changed, and why._

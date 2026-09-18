@@ -6,6 +6,7 @@ export { IdsIdGenerator, SequentialIdGenerator } from './IdGenerator';
 export type { IdGenerator } from './IdGenerator';
 export { getSvgString } from './SvgExportingUtils';
 export { canvasModule } from './module';
+export type { DiagramEventMap, ElementClassName, MouseKind } from './events';
 export type {
   CanvasConfig,
   CanvasSize,

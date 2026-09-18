@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import EventEmitter from 'eventemitter3';
 import { Canvas } from './Canvas';
+import type { DiagramEventMap } from './events';
 
-function makeCanvas(): { canvas: Canvas; bus: EventEmitter } {
-  const bus = new EventEmitter();
+function makeCanvas(): { canvas: Canvas; bus: EventEmitter<DiagramEventMap> } {
+  const bus = new EventEmitter<DiagramEventMap>();
   const canvas = new Canvas({ container: document.body, width: 400, height: 300 }, bus);
   return { canvas, bus };
 }
@@ -50,5 +51,29 @@ describe('Canvas', () => {
     expect(container.parentNode).toBe(document.body);
     bus.emit('d3canvas.destroy');
     expect(container.parentNode).toBeNull();
+  });
+});
+
+describe('DiagramEventMap (compile-time contract)', () => {
+  // These assertions are checked by `tsc --noEmit` (tsconfig include: ["src"]).
+  // Each @ts-expect-error fails the typecheck BEFORE the bus is typed (the
+  // wrong emit produced no error, so the directive would be unused) and passes
+  // AFTER — a real fail-before/pass-after test for a type-only change.
+  it('enforces event names and payload shapes at emit sites', () => {
+    const bus = new EventEmitter<DiagramEventMap>();
+
+    // correct usages compile
+    bus.emit('canvas.resized');
+    bus.emit('document.changed', { dirty: true });
+    bus.emit('selection.changed', [], []);
+
+    // @ts-expect-error 'canvas.resized' carries no payload
+    bus.emit('canvas.resized', 1);
+    // @ts-expect-error unknown event names are rejected
+    bus.emit('totally.not.an.event');
+    // @ts-expect-error 'document.changed' requires { dirty: boolean }
+    bus.emit('document.changed', { dirty: 'nope' });
+
+    expect(bus).toBeInstanceOf(EventEmitter);
   });
 });
