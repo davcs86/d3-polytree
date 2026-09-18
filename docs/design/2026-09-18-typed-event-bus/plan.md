@@ -90,7 +90,7 @@ Build in dependency order canvas → core → interactive-viewer → editor (tur
 
 ### Step 3 — interactive-viewer: type search-panel + side-tabs bus sites
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/interactive-viewer/src/search-panel/SearchPanel.ts` — modify
 - `packages/interactive-viewer/src/side-tabs/SideTabs.ts` — modify

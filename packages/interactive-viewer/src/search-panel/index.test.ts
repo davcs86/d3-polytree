@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { SearchPanel, type SideTabRegistration, type SideTabsRegistrar } from './SearchPanel';
 
 /** A side-tabs registrar double that captures the tab and drives its content. */
@@ -29,12 +30,12 @@ function node(id: string, name: string, type = 'default') {
 }
 
 describe('@d3-polytree/search-panel', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let registrar: FakeRegistrar;
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     registrar = new FakeRegistrar();
   });
 
@@ -88,5 +89,21 @@ describe('@d3-polytree/search-panel', () => {
 
     expect(zoom).toHaveBeenCalledWith({ drawn: true }, def);
     expect(click).toHaveBeenCalledWith({ drawn: true }, def, null);
+  });
+});
+
+describe('DiagramEventMap (compile-time contract, interactive-viewer surface)', () => {
+  it('enforces interactive-viewer event names at emit sites', () => {
+    const typed = new EventEmitter<DiagramEventMap>();
+
+    typed.emit('sidetab.registered', {});
+    typed.emit('zoom.to.element', {}, {});
+
+    // @ts-expect-error event-name typo is rejected
+    typed.emit('sidetab.registerd', {});
+    // @ts-expect-error 'zoom.to.element' takes (selection, model), not zero args
+    typed.emit('zoom.to.element');
+
+    expect(typed).toBeInstanceOf(EventEmitter);
   });
 });

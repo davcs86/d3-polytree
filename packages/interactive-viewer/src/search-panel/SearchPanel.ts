@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap, ElementClassName } from '@d3-polytree/canvas';
 
 /** The side-tab registration surface this panel needs (structural — avoids a
  * hard build dependency on `@d3-polytree/side-tabs`; the token is supplied at
@@ -46,12 +47,12 @@ interface SearchItem {
 export class SearchPanel {
   static readonly $inject = ['sideTabsProvider', 'eventBus'];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _items = new Map<string, SearchItem>();
   private _searchInput: HTMLInputElement | null = null;
   private _listEl: HTMLUListElement | null = null;
 
-  constructor(sideTabsProvider: SideTabsRegistrar, eventBus: EventEmitter) {
+  constructor(sideTabsProvider: SideTabsRegistrar, eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
     this._registerSideTab(sideTabsProvider);
     this._init();
@@ -134,7 +135,7 @@ export class SearchPanel {
       return;
     }
     this._eventBus.emit('zoom.to.element', item.element, item.definition);
-    const clickEvent = `${item.definition.$descriptor.ns.localName.toLowerCase()}.click`;
+    const clickEvent = `${item.definition.$descriptor.ns.localName.toLowerCase()}.click` as `${ElementClassName}.click`;
     this._eventBus.emit(clickEvent, item.element, item.definition, null);
   }
 

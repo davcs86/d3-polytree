@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { Canvas } from '@d3-polytree/canvas';
 import { SideTabs } from './SideTabs';
 import { SideTabsProvider } from './SideTabsProvider';
 
 function setup() {
-  const bus = new EventEmitter();
+  const bus = new EventEmitter<DiagramEventMap>();
   const canvas = new Canvas({ container: document.body }, bus);
   const provider = new SideTabsProvider(bus);
   return { bus, canvas, provider };
@@ -13,7 +14,7 @@ function setup() {
 
 describe('@d3-polytree/side-tabs SideTabsProvider', () => {
   it('registers tabs in order and at an index, emitting on each', () => {
-    const bus = new EventEmitter();
+    const bus = new EventEmitter<DiagramEventMap>();
     const provider = new SideTabsProvider(bus);
     const registered = vi.fn();
     bus.on('sidetab.registered', registered);

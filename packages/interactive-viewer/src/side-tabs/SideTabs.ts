@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { SideTabEntry, SideTabsProvider } from './SideTabsProvider';
 
@@ -20,14 +21,14 @@ export class SideTabs {
 
   private readonly _canvas: Canvas;
   private readonly _sideTabsProvider: SideTabsProvider;
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
 
   private _container!: HTMLElement;
   private _tabsEl!: HTMLElement;
   private _contentsEl!: HTMLElement;
   private _actions: SideTabEntry[] = [];
 
-  constructor(canvas: Canvas, sideTabsProvider: SideTabsProvider, eventBus: EventEmitter) {
+  constructor(canvas: Canvas, sideTabsProvider: SideTabsProvider, eventBus: EventEmitter<DiagramEventMap>) {
     this._canvas = canvas;
     this._sideTabsProvider = sideTabsProvider;
     this._eventBus = eventBus;
