@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { InteractiveViewer } from '@d3-polytree/interactive-viewer';
 import { SAMPLE_DIAGRAM } from './sample';
+import { deterministicModules } from './deterministic';
 // The side-tabs + search-panel styling now ships with the interactive viewer.
 import '@d3-polytree/interactive-viewer/style.css';
 
@@ -34,7 +35,7 @@ export default meta;
 export const SampleDiagram: StoryObj = {
   render: () =>
     mount(async (host) => {
-      const viewer = new InteractiveViewer({ container: host });
+      const viewer = new InteractiveViewer({ container: host, modules: deterministicModules() });
       await viewer.importDiagram(SAMPLE_DIAGRAM);
     })
 };

@@ -1,0 +1,116 @@
+name: E2E · visual-regression · a11y · interaction
+
+# The C8 quality net (roadmap §11). Runs Storybook through Playwright for:
+#   - pixel visual-regression (tolerance-based, O5),
+#   - axe-core accessibility regression gating, and
+#   - live-engine interaction round-trips (closing H7).
+#
+# Rendering is pinned to the official Playwright container so baselines are
+# byte-stable across runs and machines. Baselines can only be generated inside
+# this image, so the job SEEDS them automatically on the first push to a branch
+# (committing the PNGs from within the container) and GATES on every run
+# thereafter. Seeding is self-limiting: it only fires when baselines are absent,
+# so it never loops.
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Regenerate and commit visual baselines'
+        type: boolean
+        default: false
+
+# Keep the @playwright/test version (apps/storybook/package.json) in lockstep
+# with this image tag — the two must match for baselines to line up.
+env:
+  PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.56.1-noble
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  e2e:
+    name: playwright (pinned container)
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    steps:
+      - uses: actions/checkout@v4
+
+      # The container runs as root; mark the workspace safe so git can commit.
+      - name: Trust workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Build Storybook
+        run: pnpm build-storybook
+
+      # Decide mode: explicit dispatch → update; missing baselines on a push →
+      # seed; everything else → compare (the gate).
+      - name: Determine mode
+        id: mode
+        shell: bash
+        run: |
+          dir="apps/storybook/playwright/__screenshots__"
+          has_baselines=false
+          if [ -d "$dir" ] && [ -n "$(ls -A "$dir" 2>/dev/null)" ]; then
+            has_baselines=true
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.update_snapshots }}" = "true" ]; then
+            echo "mode=update" >> "$GITHUB_OUTPUT"
+          elif [ "$has_baselines" = "false" ] && [ "${{ github.event_name }}" = "push" ]; then
+            echo "mode=seed" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=compare" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run e2e (compare / gate)
+        if: steps.mode.outputs.mode == 'compare'
+        run: pnpm --filter @d3-polytree/storybook test:e2e
+
+      - name: Seed or update baselines
+        if: steps.mode.outputs.mode == 'seed' || steps.mode.outputs.mode == 'update'
+        run: pnpm --filter @d3-polytree/storybook test:e2e:update-snapshots
+
+      - name: Commit baselines
+        if: steps.mode.outputs.mode == 'seed' || steps.mode.outputs.mode == 'update'
+        shell: bash
+        run: |
+          git add apps/storybook/playwright/__screenshots__
+          if git diff --cached --quiet; then
+            echo "No baseline changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(e2e): seed visual-regression baselines (pinned container)"
+          # Push to the branch that triggered this run; the follow-up run compares.
+          git push origin "HEAD:${{ github.ref_name }}"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/storybook/playwright-report
+          retention-days: 14
+          if-no-files-found: ignore

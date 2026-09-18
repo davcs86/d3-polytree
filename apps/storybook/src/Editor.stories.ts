@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Editor } from '@d3-polytree/editor';
 import { SAMPLE_DIAGRAM } from './sample';
+import { deterministicModules } from './deterministic';
 // Panel styling now ships with the components: side-tabs + search-panel with
 // the interactive viewer, properties panel with the editor.
 import '@d3-polytree/interactive-viewer/style.css';
@@ -36,7 +37,7 @@ export default meta;
 export const InitialDiagram: StoryObj = {
   render: () =>
     mount(async (host) => {
-      const editor = new Editor({ container: host });
+      const editor = new Editor({ container: host, modules: deterministicModules() });
       await editor.createDiagram();
     })
 };
@@ -45,7 +46,7 @@ export const InitialDiagram: StoryObj = {
 export const SampleDiagram: StoryObj = {
   render: () =>
     mount(async (host) => {
-      const editor = new Editor({ container: host });
+      const editor = new Editor({ container: host, modules: deterministicModules() });
       await editor.importDiagram(SAMPLE_DIAGRAM);
     })
 };

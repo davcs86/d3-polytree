@@ -8,6 +8,10 @@ export default tseslint.config(
       '**/storybook-static/**',
       '**/.turbo/**',
       '**/node_modules/**',
+      // Playwright e2e outputs (C8) — reports, traces, and binary baselines.
+      '**/playwright-report/**',
+      '**/test-results/**',
+      '**/playwright/__screenshots__/**',
       // Legacy packages imported in B1, awaiting modernization (B6).
       // raw SVG catalogue (assets only, no source)
       'packages/icons-amazon/catalog/**',
