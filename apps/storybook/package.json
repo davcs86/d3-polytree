@@ -6,7 +6,10 @@
   "scripts": {
     "build-storybook": "storybook build --disable-telemetry",
     "storybook": "storybook dev -p 6006 --disable-telemetry",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:update-snapshots": "playwright test --update-snapshots",
+    "test:e2e:update-a11y": "UPDATE_A11Y=1 playwright test a11y --workers=1"
   },
   "dependencies": {
     "@d3-polytree/canvas": "workspace:*",
@@ -19,8 +22,11 @@
     "eventemitter3": "^5.0.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "1.56.1",
     "@storybook/html": "^8.4.7",
     "@storybook/html-vite": "^8.4.7",
+    "http-server": "^14.1.1",
     "storybook": "^8.4.7",
     "vite": "^5.4.11"
   }

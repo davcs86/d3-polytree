@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Viewer } from '@d3-polytree/viewer';
 import { SAMPLE_DIAGRAM } from './sample';
+import { deterministicModules } from './deterministic';
 
 /** A sized host the component renders into; the import populates it a tick later. */
 function mount(render: (host: HTMLElement) => Promise<void>): HTMLElement {
@@ -32,7 +33,7 @@ export default meta;
 export const SampleDiagram: StoryObj = {
   render: () =>
     mount(async (host) => {
-      const viewer = new Viewer({ container: host });
+      const viewer = new Viewer({ container: host, modules: deterministicModules() });
       await viewer.importDiagram(SAMPLE_DIAGRAM);
     })
 };

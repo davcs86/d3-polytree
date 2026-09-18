@@ -9,6 +9,12 @@ storybook-static
 .turbo
 coverage
 
+# Playwright e2e (C8): reports and traces are transient; committed PNG baselines
+# under playwright/__screenshots__ are intentionally tracked and NOT ignored.
+playwright-report
+test-results
+.playwright
+
 # Logs
 *.log
 npm-debug.log*
