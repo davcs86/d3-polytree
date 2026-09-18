@@ -1,5 +1,12 @@
 # @d3-polytree/viewer
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [f9712bb]
+  - @d3-polytree/core@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes

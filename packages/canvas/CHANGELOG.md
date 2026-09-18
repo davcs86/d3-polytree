@@ -1,5 +1,44 @@
 # @d3-polytree/canvas
 
+## 0.2.0
+
+### Minor Changes
+
+- f9712bb: Deterministic ids + server-side rendering (C9).
+
+  - **canvas:** `ElementRegistry` now resolves its id source through an injected
+    `idGenerator` DI token (default `IdsIdGenerator`, backward-compatible). Adds
+    the `IdGenerator` interface plus `IdsIdGenerator` (random, the prior default)
+    and `SequentialIdGenerator` (deterministic `node_1`, `node_2`, … with author-id
+    pre-claim) so consumers can swap in reproducible id generation.
+  - **ssr (new package):** `@d3-polytree/ssr` exposes `renderToSvg(pfdnXml)` — hosts
+    a read-only Viewer against a jsdom DOM wired to a deterministic id generator and
+    returns a standalone SVG string in Node, with no real browser. Serial-only
+    (a module-level mutex; installs DOM globals add-only and restores them), the
+    basis for golden-file/visual-regression tests, thumbnails, and OG images.
+
+- f9712bb: Typed event bus (C12).
+
+  The shared `eventemitter3` bus is now typed by a single consolidated
+  `DiagramEventMap` (exported from `@d3-polytree/canvas`, re-exported from
+  `@d3-polytree/core`): `on`/`emit` are checked against a declared event name and
+  its argument tuple. The change is compile-time only — the runtime DI token and
+  the single shared instance are unchanged, so it is additive at runtime.
+
+  - **canvas** — new `DiagramEventMap`, `ElementClassName`, `MouseKind` exports;
+    `Canvas`'s bus typed `EventEmitter<DiagramEventMap>`.
+  - **core** — every feature/drawer/modelling bus site typed; `_className`
+    narrowed to `ElementClass`; event types re-exported for downstream consumers.
+  - **interactive-viewer / editor** — search-panel, side-tabs, and
+    properties-panel bus sites typed.
+
+  Precise payload checking is delivered for canvas-expressible events (`{ svg }`,
+  `{ dirty }`, `{ canUndo, canRedo }`, string ids) plus the event name and arity
+  for every event; the drawn-selection/model payload slots are intentionally
+  permissive (the datum types live in `core` and cannot be named from `canvas`).
+  Consumers reading the bus via `viewer.get('eventBus')` can annotate it
+  `EventEmitter<DiagramEventMap>` for typed `on`/`emit`.
+
 ## 0.1.0
 
 ### Minor Changes

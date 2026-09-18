@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/icons-amazon",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AWS icon pack + icon-pack convention reference for the d3-polytree v2 ecosystem",
   "license": "MIT",
   "author": "David Castillo",
