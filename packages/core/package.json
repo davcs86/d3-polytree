@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@d3-polytree/canvas": "workspace:*",
+    "@d3-polytree/layout": "workspace:*",
     "@d3-polytree/pfdn-moddle": "workspace:*",
     "didi": "^9.0.0",
     "eventemitter3": "^5.0.1"

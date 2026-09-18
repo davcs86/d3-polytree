@@ -24,6 +24,30 @@ export const SAMPLE_DIAGRAM = `<?xml version="1.0" encoding="UTF-8"?>
 </pfdn:diagram>`;
 
 /**
+ * Six nodes wired into a small DAG but authored at deliberately overlapping
+ * positions — the "before" state for the auto-layout story. Running
+ * `editor.autoLayout()` re-places them into tidy layers.
+ */
+export const LAYOUT_DIAGRAM = `<?xml version="1.0" encoding="UTF-8"?>
+<pfdn:diagram xmlns:pfdn="http://pfdn" xmlns="http://pfdn">
+  <settings author="d3-polytree" name="Auto-layout demo" status="1">
+    <zoom><offset x="0" y="0" /><scale>1</scale></zoom><grid />
+  </settings>
+  <node id="root" type="default" size="40" status="1"><position x="200" y="200" /></node>
+  <node id="a" type="default" size="40" status="1"><position x="212" y="206" /></node>
+  <node id="b" type="default" size="40" status="1"><position x="190" y="212" /></node>
+  <node id="c" type="default" size="40" status="1"><position x="206" y="196" /></node>
+  <node id="d" type="default" size="40" status="1"><position x="196" y="202" /></node>
+  <node id="e" type="default" size="40" status="1"><position x="202" y="216" /></node>
+  <link id="l1" source="root" target="a" status="1"><waypoint x="220" y="220" /><waypoint x="232" y="226" /></link>
+  <link id="l2" source="root" target="b" status="1"><waypoint x="220" y="220" /><waypoint x="210" y="232" /></link>
+  <link id="l3" source="a" target="c" status="1"><waypoint x="232" y="226" /><waypoint x="226" y="216" /></link>
+  <link id="l4" source="a" target="d" status="1"><waypoint x="232" y="226" /><waypoint x="216" y="222" /></link>
+  <link id="l5" source="b" target="d" status="1"><waypoint x="210" y="232" /><waypoint x="216" y="222" /></link>
+  <link id="l6" source="d" target="e" status="1"><waypoint x="216" y="222" /><waypoint x="222" y="236" /></link>
+</pfdn:diagram>`;
+
+/**
  * Three nodes typed to AWS icon keys, to demonstrate the icon-pack convention:
  * with `awsIconsModule` composed, the `type` attribute resolves to the pack's
  * SVG symbol; without it, the same document falls back to the default icon.

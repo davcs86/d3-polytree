@@ -15,13 +15,16 @@ import {
   uploadModule,
   paletteModule,
   resizeElementModule,
+  autoLayoutModule,
+  type AutoLayout,
   type DiagramModule,
   type DrawingRegistry,
   type ModellingModelElement,
   type CreateParameters,
   type CommandStack,
   type CreateContext,
-  type Selection
+  type Selection,
+  type LayoutOptions
 } from '@d3-polytree/core';
 // The properties panel used to be its own package; it is now folded in here
 // (the editor was its only consumer) and re-exported below.
@@ -55,6 +58,7 @@ export class Editor extends InteractiveViewer {
     exportingModule as DiagramModule,
     localStorageModule as DiagramModule,
     uploadModule as DiagramModule,
+    autoLayoutModule as DiagramModule,
     paletteModule as DiagramModule,
     resizeElementModule as DiagramModule,
     // the properties panel (registers a side tab; side-tabs + search-panel are
@@ -147,6 +151,14 @@ export class Editor extends InteractiveViewer {
   /** Delete the current selection (cascading to associated labels). */
   deleteSelected(): void {
     this.get<Selection>('selection').deleteSelected();
+  }
+
+  /**
+   * Auto-layout the diagram (layered/Sugiyama), committed as one undoable move.
+   * Resolves once positions are applied — the solver may run on a Worker.
+   */
+  autoLayout(options?: LayoutOptions): Promise<void> {
+    return this.get<AutoLayout>('autoLayout').apply(options);
   }
 
   /** Undo the last edit (a whole gesture is one step). No-op if nothing to undo. */

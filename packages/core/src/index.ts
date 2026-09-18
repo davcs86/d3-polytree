@@ -11,6 +11,19 @@ import { drawingRegistryModule } from './draw';
 export { canvasModule } from '@d3-polytree/canvas';
 export type { DiagramEventMap, ElementClassName, MouseKind } from '@d3-polytree/canvas';
 export { createPfdnModdle, PfdnModdle } from '@d3-polytree/pfdn-moddle';
+// Re-export the layout solver surface so consumers (editor UI, worker wiring)
+// reach it through core without a direct @d3-polytree/layout dependency.
+export {
+  createSyncLayoutRunner,
+  WorkerLayoutRunner,
+  type LayoutRunner,
+  type LayoutGraph,
+  type LayoutResult,
+  type LayoutOptions,
+  type LayoutDirection,
+  type LayoutNode,
+  type LayoutEdge
+} from '@d3-polytree/layout';
 export * from './draw';
 export * as collections from './utils/collections';
 export { getLocalName } from './utils/localName';

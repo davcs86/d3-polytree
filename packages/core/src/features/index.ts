@@ -13,6 +13,7 @@ import { ResizeElement } from './resizeElement';
 import { NoticePopup } from './noticePopup';
 import { AlertIcons } from './alertIcons';
 import { Tooltip } from './tooltip';
+import { autoLayoutModule } from './autoLayout';
 import { defsModule } from '../draw';
 import { AddNodeHandler, AddLabelHandler, AddLinkTool, PaletteProvider, Palette } from './palette';
 import { notificationsModule } from './notifications';
@@ -42,6 +43,7 @@ export { AlertIcons } from './alertIcons';
 export type { AlertType } from './alertIcons';
 export { Tooltip } from './tooltip';
 export type { TooltipFn } from './tooltip';
+export { AutoLayout, autoLayoutModule } from './autoLayout';
 export {
   BaseAddHandler,
   AddNodeHandler,
@@ -160,7 +162,8 @@ export const paletteProviderModule = {
     exportingModule,
     axesModule,
     selectionModule,
-    notificationsModule
+    notificationsModule,
+    autoLayoutModule
   ]
 };
 
