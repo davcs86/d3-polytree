@@ -5,7 +5,7 @@
 **Design**: [design.md](./design.md)
 **Test harness**: `turbo run test` (vitest/jsdom) — `package.json:19`, `.github/workflows/ci.yml:31-32`; `dependsOn: ^build` — `turbo.json:11-12`. Typecheck: `turbo run typecheck` (tsc --noEmit, `include: ["src"]` so `.test.ts` is compile-checked) — `package.json:20`, `packages/*/tsconfig.json`.
 **Total Steps**: 5
-**Review**: `not-reviewed`
+**Review**: `passed-with-warnings @ 2026-09-18`
 
 ---
 
@@ -104,7 +104,7 @@ Build in dependency order canvas → core → interactive-viewer → editor (tur
 
 **Instructions**:
 1. Retype the `_eventBus` field/param at all six sites to `EventEmitter<DiagramEventMap>` (`import type { DiagramEventMap } from '@d3-polytree/canvas';`).
-2. `SearchPanel.ts:137`: cast the interpolated click key so it resolves to `${ElementClassName}.click` — `const clickEvent = \`${localName}.click\` as \`${ElementClassName}.click\`` (import `ElementClassName` from `@d3-polytree/canvas`), keeping the `null` 3rd arg (the `.click` payload is `{ ctrlKey?: boolean } | null`). The `sidetab.registered` and `zoom.to.element`/`*.created`/`*.deleted` sites are literal keys — no cast, just the field retype.
+2. `SearchPanel.ts:137`: the existing expression is `const clickEvent = \`${item.definition.$descriptor.ns.localName.toLowerCase()}.click\``. Do NOT rewrite the interpolation — **append** an `as \`${ElementClassName}.click\`` cast to that existing expression so the key resolves to a literal-union member (import `ElementClassName` from `@d3-polytree/canvas`), preserving the `$descriptor.ns.localName.toLowerCase()` access and the `null` 3rd arg at `:138` (the `.click` payload is `{ ctrlKey?: boolean } | null`). The `sidetab.registered` and `zoom.to.element`/`*.created`/`*.deleted` sites are literal keys — no cast, just the field retype.
 
 **Verification**: `pnpm --filter @d3-polytree/canvas build && pnpm --filter @d3-polytree/core build` first, then `pnpm --filter @d3-polytree/interactive-viewer build && … typecheck && … test` green; `pnpm --filter @d3-polytree/interactive-viewer exec eslint src`.
 
@@ -157,6 +157,14 @@ Build in dependency order canvas → core → interactive-viewer → editor (tur
 **Test**: N/A (config-only; the per-package type-tests in Steps 1–4 and the full `pnpm typecheck` are the behavioral gate).
 
 ---
+
+## Review Log
+
+**2026-09-18 — verdict: passed-with-warnings** (design-buddy plan-review, full criteria A–D). No blockers: every cited `path:line` resolves; Step 2's ~30-site `EventEmitter` inventory is complete (no missed field that would break mid-step typecheck); the single-instance rule (`module.ts:20` untouched), boot-order rule, and cross-package-dist rule are all honored; no rejected alternative reintroduced (no `declare module` augmentation, no `DiagramEventModel` shadow — plan reuses `RegisteredElement`). Reviewer also resolved (not left open) that untyped `new EventEmitter()` in test files / `drawerTestUtils.ts:20` stays assignable to `EventEmitter<DiagramEventMap>` ctor params (eventemitter3's untyped methods use `any[]`), so no omitted test-file retype breaks typecheck.
+
+Two warnings, disposed at the user gate:
+- **W1 — FIXED (pre-execution amendment).** Step 3 instruction 2 paraphrased `SearchPanel.ts:137` as `\`${localName}.click\``; the real expression is `\`${item.definition.$descriptor.ns.localName.toLowerCase()}.click\``. Amended the instruction to **append** the `as \`${ElementClassName}.click\`` cast to the existing expression (not rewrite the interpolation), preserving the `$descriptor…toLowerCase()` access.
+- **W2 — WAIVED.** Element-slot Datum widening (`DrawingSelection = Selection<…, DiagramElement>` → the map's `GroupSelection = Selection<…, unknown>`) is not compile-proven in the plan text. Waived: `GroupSelection` is the design's decided slot type (canvas cannot import core's `DiagramElement`), assignability rests on d3-selection method bivariance (standard), and each step's `pnpm typecheck` is the real gate — a genuine incompatibility fails the step rather than shipping.
 
 ## Deviation Log
 
