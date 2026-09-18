@@ -115,4 +115,29 @@ that are load-bearing (don't regress them):
   needs **pnpm 10** (pnpm 9 has no OIDC; pnpm 11 has an OIDC 404 regression).
 - The release job upgrades npm to **≥ 11.5.1** (`npm install -g npm@latest`) — the OIDC token exchange
   goes through the npm CLI — and needs `id-token: write` + setup-node `registry-url` + Node ≥ 22.14.
-- Each package has a Trusted Publisher configured on npmjs.com pointing at this repo + `release.yml`.
+- Each package has a Trusted Publisher configured on npmjs.com pointing at this repo + `release.yml`,
+  with the **environment field empty** (`release.yml` declares no `environment:`; a value there fails
+  the match and the publish 404s).
+
+**A brand-new package must be bootstrapped by hand — Trusted Publishing cannot create one.** The
+Trusted Publisher lives on the package's settings page, which presupposes the package exists, so the
+first publish of a new `@d3-polytree/*` package always fails with `E404 Not Found - PUT` (the registry
+masks authorization failures as not-found). Upstream: [npm/cli#8544]. Adding a publishable package is
+therefore a four-step chore, done once:
+
+```sh
+pnpm install --frozen-lockfile && pnpm build
+npm login                                   # OIDC is not available for the name yet
+cd packages/<pkg> && pnpm publish --access public   # pnpm, NOT npm — rewrites workspace:*
+# then: npmjs.com -> the package -> Settings -> Trusted Publisher (repo + release.yml, env empty)
+```
+
+`scripts/preflight-trusted-publishing.mjs` runs from the `release` script and probes the registry for
+every publishable package, so a missing bootstrap is reported as a job-summary annotation naming the
+package and these steps instead of a buried `E404`. It is a *diagnostic, never a gate*: it always exits
+0, so the packages that do have a Trusted Publisher still publish — mirroring the run where only
+`@d3-polytree/ssr` failed and the other six shipped. It lives in the `release` script rather than as a
+workflow step because `changesets/action` invokes `publish:` only on the publish path, never on the
+push that merely opens or updates the Version Packages PR.
+
+[npm/cli#8544]: https://github.com/npm/cli/issues/8544

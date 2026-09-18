@@ -25,7 +25,7 @@
     "build-storybook": "pnpm --filter @d3-polytree/storybook build-storybook",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build && changeset publish"
+    "release": "node scripts/preflight-trusted-publishing.mjs && turbo run build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.11",

@@ -108,6 +108,13 @@ Publishing is **tokenless** via npm **Trusted Publishing (OIDC)** — no long-li
 changeset to `main`, merge the generated **Version Packages** PR, and the changed packages publish
 themselves.
 
+One exception: a **brand-new package** cannot publish itself. A Trusted Publisher is configured on a
+package's settings page on npmjs.com, which presupposes the package already exists, so a new name's
+first publish must be done once by hand (`pnpm publish --access public` from the package directory —
+pnpm, not npm, so the `workspace:*` deps get rewritten), after which its Trusted Publisher is
+configured and every later release is tokenless. The release job probes for this and reports it in the
+run summary. See the *Releases* section of `CLAUDE.md` for the full procedure.
+
 ## License
 
 MIT
