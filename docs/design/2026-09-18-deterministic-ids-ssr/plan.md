@@ -5,7 +5,7 @@
 **Design**: [design.md](./design.md)
 **Test harness**: `pnpm --filter @d3-polytree/<pkg> exec vitest run <file>` (`CLAUDE.md:30-31`); full `pnpm test` (`package.json:19`); lint `pnpm lint` (`package.json:21`), typecheck `pnpm typecheck` (`package.json:20`). No coverage threshold declared.
 **Total Steps**: 4
-**Review**: `not-reviewed`
+**Review**: `passed-with-warnings @ 2026-09-18`
 
 ---
 
@@ -43,14 +43,14 @@ on.
 - Canvas index export list (`index.ts:1-14`).
 
 **Instructions**:
-- `IdGenerator.ts`: export `interface IdGenerator { nextPrefixed(prefix: string, element?: unknown): string; claim(id: string, element?: unknown): void; unclaim(id: string): void }`. Export `class IdsIdGenerator implements IdGenerator` wrapping `private readonly _ids = new Ids([8, 24, 86])` and delegating the three methods verbatim (import `Ids from 'ids'`, matching `ElementRegistry.ts:1`) — this is the behavior-preserving default. Export `class SequentialIdGenerator implements IdGenerator`: a `private readonly _claimed = new Set<string>()` and `private readonly _counters = new Map<string, number>()`; `claim(id)` → `_claimed.add(id)`; `unclaim(id)` → `_claimed.delete(id)`; `nextPrefixed(prefix)` → increment the per-prefix counter and loop `const candidate = \`${prefix}${n}\`` while `_claimed.has(candidate)`, then `claim(candidate)` and return it. (Note `ElementRegistry.claimId` passes the prefix already including the trailing `_`, e.g. `node_`, so `nextPrefixed('node_')` yields `node_1`.)
+- `IdGenerator.ts`: export `interface IdGenerator { nextPrefixed(prefix: string, element?: unknown): string; claim(id: string, element?: unknown): void; unclaim(id: string): void }`. Export `class IdsIdGenerator implements IdGenerator` wrapping `private readonly _ids = new Ids([8, 24, 86])` and delegating the three methods verbatim (import `Ids from 'ids'`, matching `ElementRegistry.ts:1`) — this is the behavior-preserving default. Export `class SequentialIdGenerator implements IdGenerator`: a `private readonly _claimed = new Set<string>()` and `private readonly _counters = new Map<string, number>()`; `claim(id)` → `_claimed.add(id)`; `unclaim(id)` → `_claimed.delete(id)`; `nextPrefixed(prefix)` → increment the per-prefix counter and loop `const candidate = \`${prefix}${n}\`` while `_claimed.has(candidate)`, then `claim(candidate)` and return it — so a candidate matching an already-claimed id is skipped, never re-emitted. (Note `ElementRegistry.claimId` passes the prefix already including the trailing `_`, e.g. `node_`, so `nextPrefixed('node_')` yields `node_1`.)
 - `ElementRegistry.ts`: replace the inline field with `static readonly $inject = ['idGenerator'];` and `constructor(private readonly _ids: IdGenerator = new IdsIdGenerator()) {}` (import `IdGenerator`/`IdsIdGenerator` from `./IdGenerator`; drop `import Ids from 'ids'`). All `this._ids.<m>` call sites are unchanged (interface mirrors the `ids` method names).
 - `module.ts`: add `idGenerator: ['type', IdsIdGenerator],` to `canvasModule` (import `IdsIdGenerator`). Keep `elementRegistry: ['type', ElementRegistry]` — didi now resolves its `$inject: ['idGenerator']` from this token.
 - `index.ts`: add `export { IdsIdGenerator, SequentialIdGenerator } from './IdGenerator'; export type { IdGenerator } from './IdGenerator';`.
 
 **Verification**: `pnpm --filter @d3-polytree/canvas typecheck`; `pnpm --filter @d3-polytree/canvas exec vitest run` (all existing canvas tests green via the default arg); then rebuild canvas and `pnpm --filter @d3-polytree/core exec vitest run src/Diagram.test.ts` (the `get('elementRegistry')` boot path resolves the new token). `pnpm lint`.
 
-**Test**: `packages/canvas/src/IdGenerator.test.ts` (new). Assert: `IdsIdGenerator.nextPrefixed('node_')` returns distinct ids (smoke); `SequentialIdGenerator` yields `node_1,node_2` then `label_1`; after `claim('node_2')`, `nextPrefixed('node_')` skips to `node_2`→ actually returns `node_1` then (on reaching 2) `node_3` — assert a pre-claimed id is never re-emitted; `unclaim` frees it. Also assert `new ElementRegistry()` still works (default) and `new ElementRegistry(new SequentialIdGenerator())` mints `node_1` via `claimId({}, 'node')`. Run: `pnpm --filter @d3-polytree/canvas exec vitest run src/IdGenerator.test.ts`.
+**Test**: `packages/canvas/src/IdGenerator.test.ts` (new). Assert: `IdsIdGenerator.nextPrefixed('node_')` returns distinct ids (smoke); `SequentialIdGenerator` yields `node_1,node_2` then `label_1`; with a fresh `SequentialIdGenerator`, `claim('node_2')` then repeated `nextPrefixed('node_')` yields `node_1` then `node_3` (never the claimed `node_2`); `unclaim('node_2')` then frees it for reuse. Also assert `new ElementRegistry()` still works (default arg) and `new ElementRegistry(new SequentialIdGenerator())` mints `node_1` via `claimId({}, 'node_')`. Run: `pnpm --filter @d3-polytree/canvas exec vitest run src/IdGenerator.test.ts`.
 
 ---
 
@@ -107,7 +107,7 @@ on.
 
 **Verification**: rebuild upstream (`pnpm --filter @d3-polytree/canvas --filter @d3-polytree/pfdn-moddle --filter @d3-polytree/core --filter @d3-polytree/viewer build`), then `pnpm --filter @d3-polytree/ssr exec vitest run`. `pnpm typecheck`; `pnpm lint`.
 
-**Test**: `packages/ssr/src/renderToSvg.test.ts` (new). Assert: (a) `renderToSvg(EDITOR_INITIAL_DIAGRAM_XML)` returns a string starting with `<svg` and containing `element-id="node_1"` (the author-set id preserved); (b) **determinism** — rendering the same xml twice yields byte-identical strings; (c) **deterministic generation** — a diagram with an id-less node renders with a `node_1`-style id and is stable across two renders; (d) **no collision** — a mixed-id diagram (author `node_1` + an id-less node) does not emit a duplicate `node_1` (pre-claim skips it); (e) globals restored — after `renderToSvg`, `('document' in globalThis)` matches its pre-call state (in the vitest jsdom env `document` pre-exists, so it must remain; assert `renderToSvg` did not delete a pre-existing global). Use a small inline `.pfdn` fixture string. Run: `pnpm --filter @d3-polytree/ssr exec vitest run src/renderToSvg.test.ts`.
+**Test**: `packages/ssr/src/renderToSvg.test.ts` (new). Assert: (a) `renderToSvg(FIXTURE_XML)` — where `FIXTURE_XML` is a small inline `.pfdn` string defined in the test file, carrying an author-set `<node id="node_1" …>` — returns a string starting with `<svg` and containing `element-id="node_1"` (the author-set id preserved); (b) **determinism** — rendering the same xml twice yields byte-identical strings; (c) **deterministic generation** — a diagram with an id-less node renders with a `node_1`-style id and is stable across two renders; (d) **no collision** — a mixed-id diagram (author `node_1` + an id-less node) does not emit a duplicate `node_1` (pre-claim skips it); (e) globals restored — after `renderToSvg`, `('document' in globalThis)` matches its pre-call state (in the vitest jsdom env `document` pre-exists, so it must remain; assert `renderToSvg` did not delete a pre-existing global). All fixtures are inline `.pfdn` strings in the test file (ssr has no editor dependency). Run: `pnpm --filter @d3-polytree/ssr exec vitest run src/renderToSvg.test.ts`.
 
 ---
 
@@ -124,13 +124,34 @@ on.
 
 **Instructions**:
 - Add a changeset for `@d3-polytree/canvas` **minor**: "Add an injectable `IdGenerator` (default `IdsIdGenerator`, deterministic `SequentialIdGenerator`) and an `idGenerator` DI token; `ElementRegistry` now accepts an injected generator (back-compatible default)."
-- Add a changeset for `@d3-polytree/ssr` — as a new package its first publish is handled by Changesets; add a **minor** (or patch) entry describing the initial `renderToSvg`. (Match how other new packages were introduced; if the repo seeds new packages at `0.1.0` without a changeset, note that and skip.)
+- Add a changeset for `@d3-polytree/ssr` **minor** (initial `0.1.0`, per the design): "New package: render a `.pfdn` document to a static SVG string in Node via `renderToSvg`."
 
 **Verification**: full CI mirror — `pnpm install --frozen-lockfile` (or `pnpm install` if the lockfile changed from the new dep, then commit the lockfile) `&& pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook`, all green (`CLAUDE.md:34-35`).
 
 **Test**: N/A (changesets + verification only).
 
 ---
+
+## Review Log
+
+### 2026-09-18 — plan-review — passed-with-warnings
+
+Reviewer verdict: **PASS WITH WARNINGS**, **0 blockers**. Every code-checkable citation resolves; the
+plan faithfully implements the approved design (injectable `$inject`+token, add-only jsdom install,
+double-parse pre-claim, collision-safe generator, serial mutex, jsdom direct dep) and reintroduces no
+rejected alternative or host-rule violation; the reviewer independently confirmed the collision logic
+(after `claim('node_2')` the generator emits `node_1` then `node_3`, never `node_2`) and back-compat
+of the default-arg constructor. Three warnings, all cosmetic/execution-detail — **all addressed**
+(none waived):
+
+- **Step 3 Test referenced a non-existent `EDITOR_INITIAL_DIAGRAM_XML`** (editor exposes only a private
+  `INITIAL_DIAGRAM`, and ssr has no editor dep) → fixed: the test uses inline `.pfdn` fixture strings
+  defined in the test file.
+- **Step 4 ssr changeset was left conditional** → fixed: committed to a `@d3-polytree/ssr` **minor**
+  changeset at initial `0.1.0`, per the design.
+- **Step 1 Test prose for the pre-claim case was garbled** → reworded to state the invariant plainly.
+
+Plan is execution-ready.
 
 ## Deviation Log
 
