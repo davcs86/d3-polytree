@@ -3,6 +3,8 @@ import type { Canvas } from '@d3-polytree/canvas';
 import type { DrawingRegistry, Point } from '../../draw';
 import type { GroupSelection } from '@d3-polytree/canvas';
 import type { Modelling } from '../../modelling';
+import type { CreateContext } from '../../modelling/commands';
+import type { CommandStack } from '../../command';
 import type { CreateParameters, ModellingModelElement } from '../../modelling/types';
 import type { Selection } from '../selection';
 
@@ -18,7 +20,8 @@ export abstract class BaseAddHandler {
     protected readonly _drawingRegistry: DrawingRegistry,
     protected readonly _selection: Selection,
     protected readonly _canvas: Canvas,
-    protected readonly _modelling: Modelling
+    protected readonly _modelling: Modelling,
+    protected readonly _commandStack: CommandStack
   ) {}
 
   private _getElemOfReference(): GroupSelection {
@@ -46,7 +49,11 @@ export abstract class BaseAddHandler {
   }
 
   protected _create(parameters: CreateParameters): ModellingModelElement {
-    return this._modelling.doAction(this._className, 'create', [parameters]) as ModellingModelElement;
+    // Route creation through the command stack so it is undoable; `execute`
+    // populates `ctx.created` (the memento) with the minted element.
+    const ctx: CreateContext = { className: this._className, parameters: [parameters] };
+    this._commandStack.execute('element.create', ctx);
+    return ctx.created as ModellingModelElement;
   }
 
   /** Create an element at the viewport centre and select it. */

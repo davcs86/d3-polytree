@@ -1,5 +1,7 @@
 import type EventEmitter from 'eventemitter3';
 import { getLocalName } from '../utils/localName';
+import type { CommandStack } from '../command';
+import { registerModellingCommands } from './commands';
 import type { ModellingElement } from './ModellingElement';
 import type { ModellingModelElement } from './types';
 
@@ -30,33 +32,45 @@ export class Modelling {
     'modellingNodes',
     'modellingLabels',
     'modellingZones',
-    'modellingLinks'
+    'modellingLinks',
+    'commandStack'
   ];
 
   private readonly _eventBus: EventEmitter;
   private readonly _elements: Record<ElementClass, ModellingElement>;
+  private readonly _commandStack: CommandStack;
 
   constructor(
     eventBus: EventEmitter,
-    // `d3polytree.definitions` is injected for parity / forward use; the
-    // orchestrator itself routes purely through the per-element handlers.
-    _definitions: ModellingModelElement,
+    definitions: ModellingModelElement,
     modellingNodes: ModellingElement,
     modellingLabels: ModellingElement,
     modellingZones: ModellingElement,
-    modellingLinks: ModellingElement
+    modellingLinks: ModellingElement,
+    commandStack: CommandStack
   ) {
     this._eventBus = eventBus;
+    this._commandStack = commandStack;
     this._elements = {
       label: modellingLabels,
       node: modellingNodes,
       zone: modellingZones,
       link: modellingLinks
     };
+    // The orchestrator is the command registration site: it owns the handler
+    // map, so it wires each modelling command onto the stack.
+    registerModellingCommands(commandStack, this._elements, definitions);
     this._init();
   }
 
-  /** Invoke `action` on the handler for `elementClassName` with `parameters`. */
+  /**
+   * Invoke `action` on the handler for `elementClassName` with `parameters`.
+   *
+   * @deprecated Since B10 model mutation flows through the `commandStack`
+   * (decision O11); the palette and interaction features dispatch commands
+   * instead of calling this. Retained for one minor for any external caller,
+   * and removed before 1.0.
+   */
   doAction(elementClassName: string, action: MutatingAction, parameters: unknown[]): unknown {
     const handler = this._elements[elementClassName as ElementClass];
     if (handler) {
@@ -71,19 +85,11 @@ export class Modelling {
   }
 
   private _init(): void {
-    const route = (event: string, cls: ElementClass, action: MutatingAction): void => {
-      this._eventBus.on(event, (...args: unknown[]) => this.doAction(cls, action, args));
-    };
-
-    route('label.created', 'label', 'saveToModel');
-    route('link.created', 'link', 'saveToModel');
-    route('node.created', 'node', 'saveToModel');
-    route('zone.created', 'zone', 'saveToModel');
-
-    route('label.deleted', 'label', 'delete');
-    route('link.deleted', 'link', 'delete');
-    route('node.deleted', 'node', 'delete');
-    route('zone.deleted', 'zone', 'delete');
+    // The draw-layer `<class>.created` / `.deleted` events remain, but as pure
+    // NOTIFICATIONS only — MouseEvents, outline, selection etc. still observe
+    // them. Model mutation no longer rides them (decision O11): create/delete/
+    // move/resize are dispatched as commands. Only the reconcile notification
+    // and the selection-delete intent are wired here.
 
     this._eventBus.on(
       'element.updated',
@@ -93,6 +99,22 @@ export class Modelling {
         if (handler) {
           handler.reconcile(elementId, elementDefinition);
         }
+      }
+    );
+
+    // A selection delete is a single transaction: the Selection feature emits
+    // the intent (decoupled from the command stack, so it works in a viewer that
+    // has no stack); the orchestrator — which owns the stack and handlers — turns
+    // it into one composite `elements.delete` command.
+    this._eventBus.on(
+      'elements.delete',
+      (snapshot: Array<{ definition: ModellingModelElement }>) => {
+        this._commandStack.execute('elements.delete', {
+          items: snapshot.map((v) => ({
+            def: v.definition,
+            className: getLocalName(v.definition) as ElementClass
+          }))
+        });
       }
     );
   }

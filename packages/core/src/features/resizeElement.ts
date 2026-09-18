@@ -3,6 +3,8 @@ import { pointer, select, type Selection } from 'd3-selection';
 import type EventEmitter from 'eventemitter3';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { DrawingSelection, Point } from '../draw';
+import type { CommandStack } from '../command';
+import type { Geometry, ResizeContext } from '../modelling/commands';
 import type { ModellingModelElement } from '../modelling/types';
 
 type OutlineSelection = Selection<SVGGraphicsElement, unknown, null, undefined>;
@@ -26,15 +28,23 @@ const OUTLINE_PADDING = 6;
  * orchestrator reconciles the drawing).
  */
 export class ResizeElement {
-  static readonly $inject = ['eventBus', 'canvas'];
+  static readonly $inject = ['eventBus', 'canvas', 'commandStack'];
 
   private readonly _eventBus: EventEmitter;
   private readonly _canvas: Canvas;
+  private readonly _commandStack: CommandStack;
 
-  constructor(eventBus: EventEmitter, canvas: Canvas) {
+  constructor(eventBus: EventEmitter, canvas: Canvas, commandStack: CommandStack) {
     this._eventBus = eventBus;
     this._canvas = canvas;
+    this._commandStack = commandStack;
     this._init();
+  }
+
+  /** Read a node's current geometry from the model (never from the DOM). */
+  private _geometry(definition: ModellingModelElement): Geometry {
+    const pos = definition.position as Point;
+    return { size: Number(definition.size), position: { x: pos.x, y: pos.y } };
   }
 
   private _createCorners(
@@ -52,8 +62,25 @@ export class ResizeElement {
     const swCorner = corner(container, 'resize-drag-sw', -2.5, outlineSize - 2.5);
     const seCorner = corner(container, 'resize-drag-se', outlineSize - 2.5, outlineSize - 2.5);
 
+    // Capture the pre-gesture geometry from the model at drag start (the live
+    // drag overwrites it in place per tick, so `commit` cannot recover it), and
+    // dispatch one undoable `element.resize` on release.
+    let origin: Geometry | null = null;
+    const start = (): void => {
+      origin = this._geometry(definition);
+    };
     const commit = (): void => {
-      this._eventBus.emit('element.updated', definition.id, definition);
+      if (!origin) {
+        return;
+      }
+      const ctx: ResizeContext = {
+        def: definition,
+        className: 'node',
+        from: origin,
+        to: this._geometry(definition)
+      };
+      this._commandStack.execute('element.resize', ctx);
+      origin = null;
     };
 
     const setInnerSize = (size: number): void => {
@@ -75,7 +102,8 @@ export class ResizeElement {
         (definition.position as Point).y = newY;
         this._updateOutlineAndCorners(outline, container, newSize + OUTLINE_PADDING);
       },
-      commit
+      commit,
+      start
     );
 
     // bottom-left handle — measured against the NE corner
@@ -93,7 +121,8 @@ export class ResizeElement {
         (definition.position as Point).x = newX;
         this._updateOutlineAndCorners(outline, container, newSize + OUTLINE_PADDING);
       },
-      commit
+      commit,
+      start
     );
 
     // bottom-right handle — measured against the NW corner
@@ -106,7 +135,8 @@ export class ResizeElement {
         setInnerSize(newSize);
         this._updateOutlineAndCorners(outline, container, newSize + OUTLINE_PADDING);
       },
-      commit
+      commit,
+      start
     );
   }
 
@@ -127,11 +157,13 @@ export class ResizeElement {
   private _setCornerToDrag(
     corner: CornerSelection,
     draggedFn: (event: CornerDragEvent) => void,
-    commitFn: () => void
+    commitFn: () => void,
+    startFn: () => void
   ): void {
     corner.call(
       d3drag<SVGRectElement, unknown>().on('start', (event: CornerDragEvent) => {
         if (!this._canvas.getRootLayer().classed('no-drag')) {
+          startFn();
           event.on('drag', draggedFn).on('end', commitFn);
         }
       })

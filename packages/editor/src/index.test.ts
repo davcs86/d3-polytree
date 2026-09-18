@@ -43,6 +43,21 @@ describe('@d3-polytree/editor', () => {
     expect(window.localStorage.getItem('diagram')).toContain('node_1');
   });
 
+  it('imports a diagram with an empty undo stack (boot render never enters it)', async () => {
+    const editor = new Editor({ container: document.body });
+    await editor.createDiagram();
+    // the boot latch means the initial render recorded nothing
+    expect(editor.canUndo()).toBe(false);
+
+    // and a subsequent edit is undoable back to that clean baseline
+    const before = editor.exportDiagram();
+    editor.createNode({ position: { x: 200, y: 200 } });
+    expect(editor.canUndo()).toBe(true);
+    editor.undo();
+    expect(editor.exportDiagram()).toBe(before);
+    expect(editor.canUndo()).toBe(false);
+  });
+
   it('renders the palette toolbar and creates a node from the new-node button', () => {
     const editor = new Editor({ container: document.body });
     editor.createEmpty();

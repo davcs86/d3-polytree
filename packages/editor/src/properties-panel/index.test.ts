@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import { CommandStack } from '@d3-polytree/core';
 import { EntryFactory } from './EntryFactory';
 import { PfdnPropertiesProvider } from './PfdnPropertiesProvider';
 import { PropertiesPanel, type SideTabRegistration, type SideTabsRegistrar } from './PropertiesPanel';
@@ -152,7 +153,7 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
   });
 
   it('registers the Properties side tab at index 1 and renders the default (settings) tabs', () => {
-    new PropertiesPanel(registrar, bus, provider, settingsDef());
+    new PropertiesPanel(registrar, bus, provider, settingsDef(), new CommandStack(bus));
     const content = registrar.open();
 
     expect(registrar.tab?.title).toBe('Properties');
@@ -164,7 +165,7 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
   });
 
   it('re-renders for the selected element and edits its model on change', () => {
-    new PropertiesPanel(registrar, bus, provider, settingsDef());
+    new PropertiesPanel(registrar, bus, provider, settingsDef(), new CommandStack(bus));
     const content = registrar.open();
     const node = nodeDef();
 
@@ -182,8 +183,26 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
     expect(updated).toHaveBeenCalledWith('N1', node);
   });
 
+  it('routes a property edit through the command stack so it is undoable', () => {
+    const stack = new CommandStack(bus);
+    bus.emit('d3canvas.init'); // enable recording
+    new PropertiesPanel(registrar, bus, provider, settingsDef(), stack);
+    const content = registrar.open();
+    const node = nodeDef();
+    bus.emit('selection.changed', [], [{ definition: node }]);
+
+    const nameInput = content.querySelector('input[name="name"]') as HTMLInputElement;
+    nameInput.value = 'Renamed';
+    nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(node.name).toBe('Renamed');
+    expect(stack.canUndo()).toBe(true);
+
+    stack.undo();
+    expect(node.name).toBe('Alpha'); // the prior value was captured and restored
+  });
+
   it('switches tabs on click', () => {
-    new PropertiesPanel(registrar, bus, provider, settingsDef());
+    new PropertiesPanel(registrar, bus, provider, settingsDef(), new CommandStack(bus));
     const content = registrar.open();
 
     const formatTab = content.querySelector('.tab-sheet[data-tab-target="format"]') as HTMLElement;

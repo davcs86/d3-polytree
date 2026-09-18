@@ -105,18 +105,24 @@ describe('@d3-polytree/core Selection', () => {
     expect(selection.getSelectedElements()).toHaveLength(0);
   });
 
-  it('deleteSelected emits <localName>.deleted for each and clears', () => {
-    const el = sel();
-    const def = node('N1');
-    bus.emit('node.click', el as unknown as DrawingSelection, def, {});
+  it('deleteSelected emits one elements.delete intent for the selection and clears', () => {
+    const a = sel();
+    const b = sel();
+    const defA = node('A');
+    const defB = node('B');
+    bus.emit('node.click', a as unknown as DrawingSelection, defA, {});
+    bus.emit('node.click', b as unknown as DrawingSelection, defB, { ctrlKey: true });
 
-    const deleted = vi.fn();
-    bus.on('node.deleted', deleted);
+    const deleteIntent = vi.fn();
+    bus.on('elements.delete', deleteIntent);
 
     selection.deleteSelected();
 
-    expect(deleted).toHaveBeenCalledWith(el, def);
-    expect(el.classes.has('selected')).toBe(false);
+    // one batched intent carrying both selected definitions
+    expect(deleteIntent).toHaveBeenCalledTimes(1);
+    const snapshot = deleteIntent.mock.calls[0][0] as Array<{ definition: ModellingModelElement }>;
+    expect(snapshot.map((v) => v.definition)).toEqual([defA, defB]);
+    expect(a.classes.has('selected')).toBe(false);
     expect(selection.getSelectedElements()).toHaveLength(0);
   });
 });
