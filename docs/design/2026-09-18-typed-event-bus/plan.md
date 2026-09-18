@@ -1,6 +1,6 @@
 # Implementation Plan: typed-event-bus
 
-**Status**: `pending`
+**Status**: `done`
 **Created**: 2026-09-18
 **Design**: [design.md](./design.md)
 **Test harness**: `turbo run test` (vitest/jsdom) — `package.json:19`, `.github/workflows/ci.yml:31-32`; `dependsOn: ^build` — `turbo.json:11-12`. Typecheck: `turbo run typecheck` (tsc --noEmit, `include: ["src"]` so `.test.ts` is compile-checked) — `package.json:20`, `packages/*/tsconfig.json`.
@@ -139,7 +139,7 @@ Build in dependency order canvas → core → interactive-viewer → editor (tur
 
 ### Step 5 — Changesets minor + full CI mirror
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `.changeset/<slug>.md` — create
 
@@ -179,5 +179,7 @@ Two warnings, disposed at the user gate:
 
 - **Step 4 — editor imports `DiagramEventMap` from `@d3-polytree/core`, not `@d3-polytree/canvas`.** The plan/design said "import from `@d3-polytree/canvas`", but editor's `package.json` has no direct `canvas` dependency (only `viewer`/`core`/`interactive-viewer`), so `tsc` could not resolve the module (TS2307). Rather than add a new dependency + lockfile edit, re-exported the event types from **core**'s `index.ts` (`export type { DiagramEventMap, ElementClassName, MouseKind } from '@d3-polytree/canvas';`) — core already imports canvas and is a direct editor dep — and pointed editor's imports at `@d3-polytree/core`. Good API hygiene (core surfaces the bus contract to its consumers); zero dependency-graph change. (interactive-viewer kept its `@d3-polytree/canvas` import in Step 3 — it *does* declare canvas directly.)
 - **Step 4 — minimal type-only fixes:** `PfdnPropertiesProvider` emits `element.updated` with `definition.id!` / `label.id!` (moddle ids are optional in the type but always present for an element being updated; the subscriber requires `string`, so the slot cannot loosen without breaking listener contravariance — a non-null assertion is the truthful, runtime-neutral fix); the `properties-panel/index.test.ts` `selection.changed` emits given the required `element` entry field; and the plan's optional cleanup done — `command.roundtrip.test.ts:65`'s hand-typed `{ on(...) }` bus replaced with `get<EventEmitter<DiagramEventMap>>('eventBus')`.
+
+- **Step 5 — `apps/storybook` also needed the test-bus retype (missed by the plan's Files lists and the review).** `apps/storybook/src/Canvas.stories.ts:24` constructs `new EventEmitter()` and passes it to `Canvas` (now typed), failing the storybook `typecheck` gate (which CI runs — `apps/storybook/CLAUDE.md`: "keep story types clean or CI fails"). Fixed with `new EventEmitter<DiagramEventMap>()`. Storybook is `private`/Changesets-ignored, so it is correctly absent from the changeset. This is the same whole-emitter-assignability deviation logged for Step 1, extended to the one story that builds a bus directly.
 
 _Step bodies above are immutable (DN-5); divergence recorded here with the step number, what changed, and why._
