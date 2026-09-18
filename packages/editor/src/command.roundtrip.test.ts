@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { CommandStack, ModellingModelElement } from '@d3-polytree/core';
+import type EventEmitter from 'eventemitter3';
+import type { CommandStack, DiagramEventMap, ModellingModelElement } from '@d3-polytree/core';
 import { Editor } from './index';
 
 type Def = ModellingModelElement;
@@ -62,10 +63,9 @@ describe('@d3-polytree/editor command round-trips', () => {
 
   it('emits document.changed with a dirty flag on edit and back to clean on undo', () => {
     const changes: boolean[] = [];
-    editor.get<{ on(e: string, cb: (p: { dirty: boolean }) => void): void }>('eventBus').on(
-      'document.changed',
-      (p) => changes.push(p.dirty)
-    );
+    editor
+      .get<EventEmitter<DiagramEventMap>>('eventBus')
+      .on('document.changed', (p) => changes.push(p.dirty));
     editor.get<AppendHandler>('addNodeHandler').append({ position: { x: 1, y: 2 } });
     expect(changes.at(-1)).toBe(true); // dirty after an edit
     editor.undo();

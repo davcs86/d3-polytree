@@ -9,6 +9,7 @@ import { canvasModule } from '@d3-polytree/canvas';
 import { drawingRegistryModule } from './draw';
 
 export { canvasModule } from '@d3-polytree/canvas';
+export type { DiagramEventMap, ElementClassName, MouseKind } from '@d3-polytree/canvas';
 export { createPfdnModdle, PfdnModdle } from '@d3-polytree/pfdn-moddle';
 export * from './draw';
 export * as collections from './utils/collections';

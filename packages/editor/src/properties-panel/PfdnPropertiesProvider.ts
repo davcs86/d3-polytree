@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/core';
 import type { EntryFactory, EntryResource } from './EntryFactory';
 import { is, startCase, type Definition } from './utils';
 
@@ -131,9 +132,9 @@ export class PfdnPropertiesProvider implements PropertiesProvider {
 
   private readonly _icons: IconMap;
   private readonly _entryFactory: EntryFactory;
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
 
-  constructor(icons: IconMap, entryFactory: EntryFactory, eventBus: EventEmitter) {
+  constructor(icons: IconMap, entryFactory: EntryFactory, eventBus: EventEmitter<DiagramEventMap>) {
     this._icons = icons;
     this._entryFactory = entryFactory;
     this._eventBus = eventBus;
@@ -144,11 +145,11 @@ export class PfdnPropertiesProvider implements PropertiesProvider {
       this._eventBus.emit('canvas.resized');
       return;
     }
-    this._eventBus.emit('element.updated', definition.id, definition);
+    this._eventBus.emit('element.updated', definition.id!, definition);
     if (is(definition, 'pfdn:Link') || is(definition, 'pfdn:Node')) {
       const label = definition.label;
       if (label) {
-        this._eventBus.emit('element.updated', label.id, label);
+        this._eventBus.emit('element.updated', label.id!, label);
       }
     }
   }
