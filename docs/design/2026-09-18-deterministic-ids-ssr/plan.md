@@ -28,7 +28,7 @@ on.
 
 ### Step 1 — Deterministic/injectable id generation in `@d3-polytree/canvas`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 - `packages/canvas/src/IdGenerator.ts` — create
 - `packages/canvas/src/ElementRegistry.ts` — modify
@@ -156,3 +156,5 @@ Plan is execution-ready.
 ## Deviation Log
 
 _Populated during execution. Step bodies above are immutable (DN-5); record any divergence here with the step number, what changed, and why._
+
+- **Step 1 test — `claimId` prefix.** The plan Test prose used `claimId({}, 'node_')`, but `ElementRegistry.claimId(el, prefix)` appends the `_` itself (`nextPrefixed(`_`)`), so real callers pass the bare class name (`BaseElement` passes `'node'`). The test uses `claimId(el, 'node')` accordingly. Code unchanged; only the test call matches the real API.

@@ -1,16 +1,21 @@
-import Ids from 'ids';
+import { IdsIdGenerator, type IdGenerator } from './IdGenerator';
 import type { RegisteredElement } from './types';
 
 /**
  * Tracks diagram elements by id and hands out collision-free ids.
  *
- * Ported from the original `d3-canvas` ElementRegistry: id generation still uses
- * `ids`, but elements are kept in an owned `Map` rather than reaching into the
- * `ids` internals, which makes the store robust and fully typed.
+ * Ported from the original `d3-canvas` ElementRegistry: elements are kept in an
+ * owned `Map` rather than reaching into the id generator's internals, which
+ * makes the store robust and fully typed. The id generator is injected (default
+ * {@link IdsIdGenerator} — random, unchanged behavior); SSR/tests supply a
+ * deterministic one via the `idGenerator` DI token (last-definition-wins).
  */
 export class ElementRegistry {
-  private readonly _ids = new Ids([8, 24, 86]);
+  static readonly $inject = ['idGenerator'];
+
   private readonly _elements = new Map<string, RegisteredElement>();
+
+  constructor(private readonly _ids: IdGenerator = new IdsIdGenerator()) {}
 
   /** Register `element` under an explicit `id`. */
   claim(id: string, element: RegisteredElement): void {
