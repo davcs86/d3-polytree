@@ -97,12 +97,26 @@ describe('@d3-polytree/core Drag', () => {
     drag.notifyMovedSelected();
 
     expect(commandStack.execute).toHaveBeenCalledTimes(1);
-    const [command, ctx] = (commandStack.execute as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0] as [string, MoveContext];
+    const [command, ctx] = (commandStack.execute as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0] as [string, MoveContext];
     expect(command).toBe('element.move');
     // the link was filtered out at capture; only the node is in the batch
     expect(ctx.items.map((i) => i.def)).toEqual([nodeDef]);
     expect(ctx.items[0].to.position).toEqual({ x: 2, y: 2 });
     expect(ctx.items[0].from.position).toEqual({ x: 0, y: 0 });
+  });
+
+  it('does not commit a zero-delta gesture (a plain click)', () => {
+    const { selection, drag, moddle, commandStack } = setup();
+    const nodeEl = drawing(0, 0);
+    const nodeDef = node(moddle, 'N1', 0, 0);
+    selection.select(nodeEl as unknown as DrawingSelection, nodeDef);
+
+    // A click is d3-drag 'start' + 'end' with no 'drag' between — capture the
+    // origin, then release without any applyOffsetToSelected in between.
+    drag.captureMoveOrigin();
+    drag.notifyMovedSelected();
+
+    expect(commandStack.execute).not.toHaveBeenCalled();
   });
 });
