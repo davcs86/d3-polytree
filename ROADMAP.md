@@ -1,6 +1,6 @@
 # d3-polytree — Modernization Roadmap
 
-> **Status:** Proposal / RFC · **Owner:** @davcs86 · **Last updated:** 2026-09-17
+> **Status:** Proposal / RFC · **Owner:** @davcs86 · **Last updated:** 2026-09-18
 > **Strategy:** Hybrid, phased-to-consolidation · **Language target:** TypeScript
 > **Distribution:** monorepo → scoped npm packages · **D3:** slim, modular peer dependency
 > **Dev/docs harness:** Storybook
@@ -41,6 +41,12 @@ The chosen direction is **hybrid, phased-to-consolidation**:
   upgrade modular **D3 v1 → v7** as slim **peer** dependencies, retire the jQuery-era stack in the
   properties panel, and stand up **Storybook** as the development harness, visual-regression net,
   and published documentation site.
+
+- **Track D — Host-app integrations:** put the diagrams where process documentation is actually
+  written. A single Google Workspace Add-on serving **Docs, Slides, and Drive**, built on a
+  host-agnostic embed contract so the next host (Notion, Confluence, Office) is a new adapter
+  rather than a new integration. Post-consolidation; gated on C-series prerequisites. Spec in §13.
+  *(The letter follows the C-series backlog — there is no Track C.)*
 
 Track B is **consolidation, not a from-scratch rewrite** — the v2 architecture already exists and
 is the asset being modernized. This materially lowers risk versus the greenfield framing.
@@ -205,8 +211,11 @@ d3-polytree/                      # monorepo root (pnpm workspace + Turborepo)
     side-tabs/                    # @d3-polytree/side-tabs
     properties-panel/             # @d3-polytree/properties-panel (de-jQuery; absorbs scroll-tabs)
     icons-amazon/                 # @d3-polytree/icons-amazon   (icon-pack convention)
+    ssr/                          # @d3-polytree/ssr      (C9 — .pfdn → static SVG in Node)
+    embed/                        # @d3-polytree/embed    (Track D — host-agnostic embed contract)
   apps/
     storybook/                    # dev harness + visual-regression + published docs site
+    gws-addon/                    # Track D — Google Workspace Add-on (Docs + Slides + Drive)
     playground/                   # optional standalone example app
 ```
 
@@ -260,6 +269,23 @@ calendar commitments (S < M < L < XL).
 | **B9 — Release** | `@d3-polytree/*` on npm | Changesets-driven versioning/changelog/publish with provenance; migration guide (v1→v2 and beta→v2); Storybook deployed as docs site; JSFiddle/CodePen replaced | M |
 | **B10 — Transactional modelling** | `commandStack` in `@d3-polytree/core` | Every model mutation flows through `commandStack.execute`; `execute`/`revert` round-trips are XML-identical; multi-element gestures are one undo entry; `undo()`/`redo()` on the components; `document.changed` dirty flag. Full spec in **§12**; decided in **O11** | L |
 
+### Track D — Host-app integrations (post-consolidation; Google Workspace first)
+
+> Goal: a published Google Workspace Add-on that inserts, re-opens, and refreshes `.pfdn` diagrams
+> inside **Docs, Slides, and Drive**, built so the second host is an adapter, not a rewrite.
+> Decided in **O14–O16**; full spec in **§13**.
+
+| Phase | Deliverable | Exit criteria | Effort |
+|---|---|---|---|
+| **D0 — Embed contract** | `@d3-polytree/embed` | Host-agnostic `DiagramRenderer` / `RenderRequest` / `RenderedImage` types, the identity-token codec, and the sidecar resolver — all pure and unit-tested; a browser `CanvasRasterizer` implementing the interface; the parity harness against `@d3-polytree/ssr` exists and its gap is documented, not hidden (**§13.3**) | M |
+| **D1 — Google Docs add-on** | `apps/gws-addon` | Insert / open-for-edit / update-in-place in Docs; alt-text identity + Drive sidecar (**§13.2**); adopt-on-copy; relink on token miss; **non-restricted OAuth scopes only** (**§13.5**) | L |
+| **D2 — Slides + Drive surfaces** | one manifest, three hosts | Slides page-element insert/replace on the same core; Drive third-party editor (`open_url`/`new_url`, `.pfdn` MIME registration, `drive.install`); no host-specific logic above the `embed` contract | M |
+| **D3 — Marketplace listing** | public add-on | OAuth consent + brand review passed; privacy policy published; install → insert → edit → refresh smoke test green on a clean account in all three hosts | M |
+| **D4 — Hosted render** *(conditional)* | server `DiagramRenderer` | **Two** gates, not one: measured need (batch-refresh latency, Apps Script quota ceiling, or a non-browser caller) **and** `@d3-polytree/ssr` having real geometry (**§13.3**); parity test green; the Apps Script path stays as fallback | L |
+
+**Track D explicitly does NOT** put interactive content inside a document — Docs and Slides host
+images only (**§13.1**). Interactivity lives in the add-on sidebar, beside the document.
+
 ### 6.1 Dependency graph (what blocks what)
 
 ```
@@ -268,6 +294,9 @@ A1 (reproducible build) ─────────────┐
                                      ▼
 B0 → B1 → B2 → B3 → B4 → B5 → B7 → B8 → B9
                     └────→ B6 ────────┘   (B6 can run parallel after B4; gates B9)
+
+C7 (custom element) ─┬─→ D0 → D1 → D2 → D3
+C9 (landed, ssr) ────┘             └─────→ D4   (conditional — see §13.3)
 ```
 
 ---
@@ -353,6 +382,9 @@ remain; new ones should be appended below as they arise.
 | O11 | Should model mutation stay an event side-effect, or move behind a command stack? | **Full reroute to a `commandStack`** (@davcs86, 2026-09-17). Draw-layer `<class>.created/.deleted` events remain *notifications* (the boot-order invariant depends on them), but they no longer mutate; the four modelling handlers become registered `CommandHandler`s and every interaction feature becomes a command dispatcher. An additive stack layered over the existing event routing was rejected: two mutation paths let the undo stack silently desync from the document, which is worse than no undo. Spec in §12. | B10, C3, C4, C5 |
 | O12 | Is breaking the pre-1.0 public API acceptable to land O11? | **Yes** (@davcs86, 2026-09-17). Packages are at `0.1.0`; `Modelling.doAction` degrades to a deprecated shim removed before 1.0, `ModellingElement` is re-expressed in handler terms, and the change ships as a Changesets **minor** with a migration note. Freezing the API here would force an adapter layer that buys nothing at this version. | B10 |
 | O13 | Do commands need to be collaboration-ready (serializable, replayable) from day one? | **Not implemented now, but not designed out** (@davcs86, 2026-09-17). B10 ships local-only undo/redo. Command *contexts* are nonetheless specified as plain serializable payloads (ids + values, never live element handles), so a CRDT adapter (C5) is a later adapter rather than a rewrite of the vocabulary. | B10, C5 |
+| O14 | How wide is the Google surface — a Docs-only add-on, or Workspace-wide? | **Workspace-wide: Docs + Slides + Drive** (@davcs86, 2026-09-18), as **one** add-on manifest with a per-host `homepageTrigger`, plus a Drive third-party editor so `.pfdn` opens natively from Drive. Docs ships first (D1) and the other two hosts follow (D2), but the embed contract is designed for three hosts from the start — retrofitting a second host onto a Docs-shaped core is exactly the rework this decision avoids. | D0, D1, D2 |
+| O15 | Where does rendering and the document round-trip run — Apps Script client-side, or a hosted service? | **Apps Script + client-side render first; hosted `@d3-polytree/ssr` only as a measured escalation** (@davcs86, 2026-09-18). Phase 1 owns no server, so there is no uptime, no data egress, and no diagram content transiting first-party infrastructure. D4 promotes rendering server-side only on **two** gates — measured need *and* `@d3-polytree/ssr` gaining real geometry, which it does not have today (§13.3). Both renderers sit behind one `DiagramRenderer` interface in `@d3-polytree/embed` so the escalation is a swap, not a rewrite. Rationale in **§8.3**. | D0, D1, D4 |
+| O16 | Where does the Google work live in this plan — a C-series row, or its own track? | **Its own Track D** (@davcs86, 2026-09-18), because host integrations are a different *kind* of work from the C-series: they are gated on external review cycles we do not control (§9), they carry an ops/scopes surface no C-item has, and they are expected to recur per host. C7 (Custom Element) and C9 (deterministic SSR) become its prerequisites. The letter follows the C-series backlog; there is no Track C. | D0, C7 |
 
 ### 8.1 Rationale — O1 (keep `pfdn-moddle`)
 
@@ -392,6 +424,31 @@ remain; new ones should be appended below as they arise.
    (`viewer`, `interactive-viewer`, `editor`), each one extra target in the same Vite build. The
    peer-dep ESM build stays primary and canonical for app developers who dedupe a single D3.
 
+### 8.3 Rationale — O15 (client-side render first, hosted render as an escalation)
+
+1. **The cheapest service to operate is the one that does not exist.** A hosted renderer means a
+   production HTTP service with its own auth, uptime, patch cadence, and abuse surface — and every
+   user's diagram content crossing it. The Apps Script path has none of that: the `.pfdn` never
+   leaves the user's Google account, which also collapses the privacy story the Marketplace review
+   (D3) will ask about into a single sentence.
+2. **The browser is the reference renderer, and the server is not — yet.** `@d3-polytree/ssr` (C9)
+   renders through jsdom, whose geometry is degenerate *on purpose*: `getBBox` returns a zero box
+   and `transform.baseVal` is identity (the intentional shims documented in `CLAUDE.md`). That
+   makes its output deterministic — which is all C9 needed for golden files — but **geometrically
+   flat**, so it is not today a fidelity-equivalent substitute for a real browser render. Choosing
+   it for phase 1 would ship a visible regression to close an ops problem we do not yet have.
+3. **The artifact already exists.** The self-contained UMD bundle (O8) is precisely what an
+   HtmlService sidebar can load under its sandboxed CSP, and the icon-pack convention already
+   inlines `<symbol>` defs — which is what keeps `canvas.toDataURL()` from throwing on a tainted
+   canvas (§13.3). Phase 1 consumes work that has already landed rather than commissioning new work.
+4. **The escalation is pre-designed, not hoped for.** `DiagramRenderer` is one interface with two
+   implementations and a golden-file parity test between them. D4 therefore changes a binding, not
+   an architecture — and the parity test is the objective signal for *when* it may be changed.
+5. **The limits are known and bounded.** Apps Script's 6-minute execution ceiling and
+   `google.script.run` payload limits constrain batch operations, not the single insert/edit/refresh
+   path that is 95% of use. When a batch refresh-all is measured to exceed them, that measurement —
+   not a prediction — opens D4.
+
 ---
 
 ## 9. Risk register
@@ -406,6 +463,10 @@ remain; new ones should be appended below as they arise.
 | Consumers depend on v1 global/options shape | Medium | Medium | Track A keeps v1 supported; v1→v2 migration guide (B9/7.6) |
 | Peer-dep D3 version friction | Medium | Low | Ship bundled UMD variant (O8); document supported D3 range |
 | "Track A only" — v2 consolidation never starts | Medium | Medium | "No new features on v1"; all feature demand routes to the v2 backlog |
+| Marketplace OAuth/brand review gates D3 on a calendar we don't control | High | Medium | Stay entirely out of **restricted** scopes (§13.5) so no CASA assessment is triggered; D1/D2 are usable as a private/unlisted add-on while review runs, so review blocks *listing*, not *shipping* |
+| Alt-text identity token edited by a user or dropped by an export path | Medium | Medium | The token is a hint, never an authority: validate, then offer an explicit **relink**; a content hash detects staleness; never mutate a sidecar the current document doesn't own (§13.2) |
+| Client-side rasterization hits Apps Script CSP or quota ceilings | Medium | Medium | Pre-specified D4 escape hatch behind the `DiagramRenderer` seam (O15); batch paths chunked from the start rather than retrofitted |
+| Google reshapes the add-on surface (CardService/HtmlService deprecations) | Medium | Medium | Host-specific code confined to `apps/gws-addon`; everything above the `@d3-polytree/embed` contract is host-agnostic and survives the host changing |
 
 ---
 
@@ -444,6 +505,7 @@ Audit findings that define the surface — each verified against the working tre
 | H5 | **Links are unrouted polylines.** Waypoints are read from the model and stringified; there is no routing, port assignment, or obstacle avoidance. | `core/src/draw/Links.ts` `generateWayPointPath()` |
 | H6 | **No rendering performance strategy.** Every element is resident in the DOM; no frame batching, no spatial index, no viewport culling, no level-of-detail, no off-main-thread work. | `grep -rn "requestAnimationFrame\|Worker\|cull\|virtual"` over `packages/*/src` returns **zero** matches |
 | H7 | **CI verifies that it builds, not that it works.** The pipeline ends at `build-storybook`; there is no visual-regression net (B7's stated purpose), no a11y assertion, no performance budget. | `.github/workflows/ci.yml` |
+| H8 | **No host-application embed path.** The components mount into a DOM node the *consumer* already controls, which assumes the consumer is building an app. Nothing addresses a diagram by stable identity, nothing produces a document-insertable image, and there is no custom-element wrapper to host in a third-party frame — so the editors where process documentation actually gets written are unreachable. **Defines Track D (§13).** | `grep -rn "customElements.define" packages/ apps/` returns **zero**; `@d3-polytree/ssr` exports `renderToSvg` only — no rasterizer, no identity or refresh contract |
 
 ### 11.1 The backlog
 
@@ -458,7 +520,7 @@ Tiered by architectural depth. **Unlocks** names the items that become cheap onc
 | **C4** | **Orthogonal link routing + port assignment** | Closes H5. Turns waypoints from authored data into solver output; obstacle-avoiding orthogonal routes with stable port ordering, degrading to the current polyline when a route is pinned by the user. | C3 | M |
 | **C5** | **Semantic `.pfdn` diff + visual merge** | `diff(a, b)` over the moddle tree producing typed ops (added / removed / moved / retyped / reattached), rendered as a review overlay with ghosted prior positions, plus a three-way helper for git conflicts. Pure and fixture-testable. Retroactively *earns* the O1 decision to keep an XML document format. | C1 (to apply a diff atomically) | M |
 | **C6** | **CRDT collaboration adapter (`@d3-polytree/collab-yjs`)** | Y.Doc projection of the moddle tree, awareness-driven remote cursors and selection halos, and **origin-tagged** ops so remote changes never enter the local undo stack. Viable only because O13 keeps command contexts serializable. | C1, O13 | XL |
-| **C7** | **Custom Element + React adapter** | `<d3-polytree-editor>` with attribute/property reflection, shadow-DOM style encapsulation, and `ElementInternals` form association of the serialized document; plus a thin React wrapper bridging the event bus through `useSyncExternalStore` so React 18/19 concurrent rendering cannot tear. The largest single adoption unlock in this table. | — | M |
+| **C7** | **Custom Element + React adapter** | `<d3-polytree-editor>` with attribute/property reflection, shadow-DOM style encapsulation, and `ElementInternals` form association of the serialized document; plus a thin React wrapper bridging the event bus through `useSyncExternalStore` so React 18/19 concurrent rendering cannot tear. The largest single adoption unlock in this table. **Now also a Track D prerequisite (O16):** the custom element is what the add-on sidebar hosts, which promotes C7 from an adoption nicety to a path dependency. | — | M |
 | **C8** | **Visual regression + interaction + a11y gates in CI** | Closes H7 and completes B7's stated purpose. Storybook test-runner + Playwright, made deterministic by a seeded `ids` source, disabled transitions, and pinned fonts; `@axe-core/playwright` asserted per story. This is what makes every other item in this table safe to land. | C9 (seeded ids) | M |
 | **C9** | **Deterministic IDs + `@d3-polytree/ssr`** | Make the `ids` seed injectable, then render `.pfdn` → static SVG string in Node with no browser, for thumbnails, OG images, PDF pipelines, and golden-file tests. Determinism is the precondition for C8. | — | M |
 | **C10** | **Spatial index, viewport culling, perf budget** | Closes H6. Quadtree over element bounding boxes, culling driven off the zoom transform, RAF-coalesced enter/update/exit, level-of-detail below a zoom threshold, optional canvas overlay past ~5k elements — enforced by a CI frame-time assertion on a 10k-node fixture. | C8 (to measure) | L |
@@ -474,12 +536,18 @@ C12 ──→ C1 ──┬──→ C3 ──→ C4
              ├──→ C6
              └──→ C2
 C9 ──→ C8 ──→ C10
-C7, C11, C13   (independent)
+C7 ──┬──→ Track D:  D0 ──→ D1 ──→ D2 ──→ D3
+C9 ──┘                            └─────→ D4   (conditional, §13.3)
+C11, C13   (independent)
 ```
 
 **C12 → C1 first.** Typing the bus before rerouting mutation means the compiler, not review, catches
 a dispatcher wired to the wrong payload. **C9 → C8 next**, because a visual-regression net that is
 not deterministic is a flake generator, and every subsequent item wants that net underneath it.
+
+**C7 is no longer independent.** The Track D sidebar hosts `<d3-polytree-editor>`, so C7 moves onto
+the critical path to the Google Workspace add-on (O16), alongside C9 — which has landed as
+`@d3-polytree/ssr`. Track D is sequenced in §6 and specified in §13.
 
 ---
 
@@ -604,6 +672,176 @@ untouched file. Mitigation: the stack stays disabled until boot completes, and a
 - Ctrl+Z / Ctrl+Shift+Z wired in `interactive-viewer`; undo/redo palette entries in `editor`.
 - `document.changed` drives `localStorage` autosave and an unsaved-changes guard.
 - Storybook story demonstrating atomic multi-select delete and undo of an auto-layout run.
+
+---
+
+## 13. Track D — Host-app integrations (Google Workspace)
+
+> Decided: **O14** (Docs + Slides + Drive), **O15** (Apps Script and client-side rendering first;
+> hosted rendering is a measured escalation), **O16** (its own track, behind a host-agnostic
+> contract). Closes **H8**. Sequenced in **§6**.
+
+### 13.1 The constraint that shapes everything
+
+Google Docs and Slides host **images**, not applications. The Docs API's `InsertInlineImage` and the
+Slides API's `createImage` take a raster asset — **PNG/JPEG/GIF only; SVG is not an accepted
+document image type** — and that is the entire embedding surface. There is no inline SVG, no iframe,
+and no script in a document body. Interactivity, where it exists at all, lives in an add-on
+**sidebar or dialog** beside the document.
+
+Three consequences follow, and they are the whole design:
+
+1. **The document holds a rendering, not a diagram.** The `.pfdn` source must live somewhere durable
+   *outside* the document body, and the inserted image must carry enough identity to find its source
+   again (§13.2).
+2. **Rasterization is mandatory, not a convenience.** Because SVG is not insertable, an SVG→PNG step
+   sits on the critical path. `@d3-polytree/ssr` (C9) emits SVG strings and stops there — so D0 must
+   add a rasterizer regardless of which renderer is chosen (§13.3).
+3. **Editing is a round trip**, and every leg of it can break: open sidebar → edit a live
+   `<d3-polytree-editor>` (C7) → re-render → replace the image in place → write the source back.
+   The identity and failure semantics below are therefore load-bearing, not polish.
+
+### 13.2 Diagram identity — the hard problem
+
+Neither Docs nor Slides offers a private metadata slot on an embedded image that survives what users
+actually do: copy/paste within a document, "Make a copy", another account opening the file, or an
+export/import round trip. The candidates:
+
+| Carrier | Survives copy/paste | Survives "Make a copy" | Survives another user | Verdict |
+|---|---|---|---|---|
+| `PropertiesService` document properties | yes | **no** | yes | Loses every link on the operation users perform most |
+| Named range around the image | yes | no | yes | Docs drops ranges on several paste paths |
+| The image URL | n/a | n/a | n/a | Docs **rehosts** inserted images on its own CDN and rewrites the URL |
+| Image **alt text** (`description`) | yes | yes | yes | **Chosen** — the only field that rides with the image itself |
+
+**Decision.** The image's alt-text `description` carries an opaque token
+`d3-polytree:1:<driveFileId>:<contentHash>`, and the `.pfdn` source lives as a Drive file in an
+add-on-owned folder, reachable under the per-file **`drive.file`** scope. The alt-text `title` is
+left alone: it is the accessible name assistive technology reads aloud, and C2's entire argument
+forbids us from squatting on it.
+
+Three rules make this safe rather than merely clever:
+
+- **The token is a hint, never an authority.** It is validated before use; on a miss the add-on
+  surfaces an explicit **relink** affordance instead of silently mutating a different diagram. Users
+  can and will edit alt text.
+- **The hash detects staleness.** `contentHash` over the `.pfdn` lets the sidebar tell "this image is
+  older than its source" (someone else edited the sidecar) from "this image is current", and offer a
+  refresh rather than clobbering newer work.
+- **Adopt on copy, never mutate what you don't own.** Copying a document duplicates the image and its
+  token but *not* the Drive sidecar, so the copy points at a file its new owner may not be able to
+  read. The first edit in that state clones the sidecar into the editing user's Drive, rewrites the
+  token, and only then proceeds.
+
+### 13.3 Runtime — client-side first, by measurement (O15)
+
+Phase 1 is an **Apps Script Workspace Add-on**: a single manifest with `addOns.common.homepageTrigger`
+plus per-host `addOns.docs` / `addOns.slides` / `addOns.drive` entries, CardService for the add-on
+chrome, an HtmlService sidebar hosting the editor, and `google.script.run` as the only channel back
+into the document. Rendering runs entirely inside the sidebar iframe:
+`XMLSerializer` → `Image` → `OffscreenCanvas` → PNG blob → base64 → `google.script.run`.
+
+Two constraints bound that path, and both are already satisfied by work that has landed:
+
+- **Canvas tainting.** `drawImage` of a serialized SVG taints the canvas — and `toDataURL` then
+  throws `SecurityError` — if the SVG references *anything* external. Every `<use>` href and font
+  must resolve inside the same document. The icon-pack convention already inlines `<symbol>` defs
+  into `<defs>`, and C9's exporter is standing proof that it round-trips.
+- **CSP.** HtmlService serves sandboxed `IFRAME` content, so the component bundle must be served as
+  an Apps Script HTML file rather than fetched from a CDN. The self-contained **UMD build (O8)** is
+  exactly that artifact — a second, independent justification for a decision originally taken for
+  the JSFiddle/CodePen audience.
+
+**Why the hosted renderer is not phase 1 — and would not be a drop-in today.** `@d3-polytree/ssr`
+renders through jsdom, whose geometry is degenerate *by design*: `getBBox` returns a zero box and
+`transform.baseVal` is identity (the deliberate shims documented in `CLAUDE.md`). The output is
+**deterministic**, which is all C9 needed for golden files, but it is **geometrically flat** — not a
+fidelity-equivalent substitute for a browser render. D4 is therefore gated on **two** conditions,
+not one:
+
+1. **Measured need** — batch refresh-all latency against the Apps Script execution ceiling (6 minutes
+   on consumer accounts, 30 on Workspace), a `google.script.run` payload limit, or a non-browser
+   caller such as an export pipeline; and
+2. **`@d3-polytree/ssr` acquiring real geometry** — a headless-browser backend, or genuine text
+   metrics and bbox computation.
+
+**The seam that keeps D4 a swap rather than a rewrite.** Both renderers implement one interface,
+defined in `@d3-polytree/embed` and owned by D0:
+
+```ts
+interface DiagramRenderer {
+  render(req: RenderRequest): Promise<RenderedImage>;  // PNG bytes + intrinsic size + content hash
+}
+```
+
+A golden-file **parity test** runs one fixture set through the browser rasterizer and through the
+Node renderer, asserting agreement within O5's tolerance bar. That test is what converts D4 from an
+architectural decision into a configuration change — and today it is also the test that *fails*,
+which is the point: the gap in condition (2) is measured and visible in CI rather than discovered
+during a migration.
+
+### 13.4 Package & app layout
+
+| Unit | Contents | Purity |
+|---|---|---|
+| `@d3-polytree/embed` (new, D0) | `DiagramRenderer` / `RenderRequest` / `RenderedImage`; the identity-token codec; the sidecar resolver; staleness and adopt-on-copy policy | **Pure** — zero Google APIs, zero DOM in the policy layer; unit-tested on fixtures |
+| `@d3-polytree/embed/browser` (D0) | `CanvasRasterizer` — the browser `DiagramRenderer` (serialize → canvas → PNG) | Browser-only, thin |
+| `@d3-polytree/ssr` (C9, landed) | `renderToSvg`; the parity counterpart, and D4's future backend | Node-only |
+| `apps/gws-addon` (D1–D3) | The Apps Script project (`clasp` + TypeScript → bundled `.gs`), `appsscript.json`, CardService chrome, HtmlService sidebar, per-host insert/replace adapters | **All Google-specific code lives here and nowhere else** |
+
+The split is the fault-isolation boundary: host APIs change on Google's schedule, so everything above
+`@d3-polytree/embed` must be portable to the next host without edits — which is what makes O14's
+three surfaces one integration instead of three.
+
+### 13.5 OAuth scopes — staying out of the restricted tier
+
+An architectural constraint, not a checklist item. The scope set is deliberately confined to:
+
+| Scope | Why | Tier |
+|---|---|---|
+| `…/auth/documents.currentonly` | Read/insert/replace in the **active** document only | Non-sensitive |
+| `…/auth/presentations.currentonly` | Same, for Slides (D2) | Non-sensitive |
+| `…/auth/drive.file` | Per-file access to sidecars the add-on itself created | Recommended (not restricted) |
+| `…/auth/drive.install` | Registers the Drive third-party editor (D2 only) | Non-sensitive |
+
+Nothing here is a **restricted** Drive scope (`drive`, `drive.readonly`), so D3 does not trigger a
+**CASA security assessment** — the single largest schedule risk in a Marketplace listing. The
+`drive.file` sidecar design in §13.2 is what buys that exemption; choosing document-embedded storage
+or a full-Drive scope would have forfeited it. This is why the scope table sits in the spec rather
+than in a launch checklist.
+
+### 13.6 Failure semantics
+
+- **Render fails** → the document is not touched. No partial image, no token written.
+- **Image replaced, sidecar write fails** → the token still resolves to the *previous* revision and
+  the hash mismatch marks the image stale; the sidebar offers retry. A torn state is detectable,
+  never silent.
+- **Token resolves to a file the user cannot read** → relink or adopt (§13.2); never a silent no-op
+  and never a write to another owner's sidecar.
+- **Quota exhausted mid-batch** → the batch is chunked and resumable by design, so a refresh-all
+  reports "37 of 120 refreshed" rather than failing opaquely.
+
+### 13.7 Testing
+
+- **Contract tests** on `@d3-polytree/embed`: token encode/decode round trip, tamper and truncation
+  rejection, staleness detection, adopt-on-copy state machine — all pure, no Google APIs.
+- **Parity test** (§13.3): identical fixtures through both `DiagramRenderer` implementations. It is
+  expected to fail on geometry until D4's precondition is met, and it is the gate that opens D4.
+- **Host adapter tests** against the Apps Script APIs behind a thin seam, so insert/replace logic is
+  testable without a live document.
+- **End-to-end smoke** (D3): install → insert → edit → refresh, on a clean account, in each of the
+  three hosts.
+
+### 13.8 Exit criteria
+
+- A diagram can be inserted into a Doc, reopened from the inserted image, edited, and updated in
+  place — with the `.pfdn` recoverable from the document alone.
+- The same core drives Slides and the Drive third-party editor with **no** host-specific logic above
+  `@d3-polytree/embed`.
+- The add-on holds no restricted OAuth scope (§13.5), and D3 clears review without a CASA assessment.
+- Copy, relink, staleness, and adopt-on-copy each have a test and a user-visible affordance.
+- `DiagramRenderer` has two implementations and one parity test; D4's two gates are stated as
+  measurements, not opinions.
 
 ---
 
