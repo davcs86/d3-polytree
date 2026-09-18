@@ -69,13 +69,23 @@ jobs:
       - name: Determine mode
         id: mode
         shell: bash
+        # HEAD_MSG via env (never inlined) so a commit message cannot inject shell.
+        env:
+          HEAD_MSG: ${{ github.event.head_commit.message }}
         run: |
           dir="apps/storybook/playwright/__screenshots__"
           has_baselines=false
           if [ -d "$dir" ] && [ -n "$(ls -A "$dir" 2>/dev/null)" ]; then
             has_baselines=true
           fi
+          marker=false
+          if printf '%s' "$HEAD_MSG" | grep -qF '[update-snapshots]'; then
+            marker=true
+          fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.update_snapshots }}" = "true" ]; then
+            echo "mode=update" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ] && [ "$marker" = "true" ]; then
+            # Intentional visual change: regenerate baselines in the pinned container.
             echo "mode=update" >> "$GITHUB_OUTPUT"
           elif [ "$has_baselines" = "false" ] && [ "${{ github.event_name }}" = "push" ]; then
             echo "mode=seed" >> "$GITHUB_OUTPUT"
