@@ -1,5 +1,6 @@
 import { Injector, type ModuleDeclaration } from 'didi';
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { canvasModule } from '@d3-polytree/canvas';
 
 /** A didi module descriptor as consumed by {@link Diagram}. */
@@ -62,7 +63,7 @@ export class Diagram {
 
   constructor(options: DiagramOptions = {}, injector?: Injector) {
     this.injector = injector ?? createInjector(options);
-    this.get<EventEmitter>('eventBus').emit('d3canvas.init');
+    this.get<EventEmitter<DiagramEventMap>>('eventBus').emit('d3canvas.init');
   }
 
   /** Resolve a service by name. */
@@ -71,10 +72,10 @@ export class Diagram {
   }
 
   destroy(): void {
-    this.get<EventEmitter>('eventBus').emit('d3canvas.destroy');
+    this.get<EventEmitter<DiagramEventMap>>('eventBus').emit('d3canvas.destroy');
   }
 
   clear(): void {
-    this.get<EventEmitter>('eventBus').emit('d3canvas.clear');
+    this.get<EventEmitter<DiagramEventMap>>('eventBus').emit('d3canvas.clear');
   }
 }

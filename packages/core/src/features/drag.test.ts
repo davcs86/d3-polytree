@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { select, type Selection as D3Selection } from 'd3-selection';
 import { Canvas } from '@d3-polytree/canvas';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
@@ -18,7 +19,7 @@ function drawing(x: number, y: number): D3Selection<SVGGElement, unknown, null, 
 }
 
 function setup() {
-  const bus = new EventEmitter();
+  const bus = new EventEmitter<DiagramEventMap>();
   const canvas = new Canvas({ container: document.body }, bus);
   const registry = new DrawingRegistry();
   const selection = new Selection(bus);

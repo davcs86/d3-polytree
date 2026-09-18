@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { BaseElement, DrawingRegistry } from '../draw';
 import type { NotificationService } from '../features/notifications';
 import { ModellingElement } from './ModellingElement';
@@ -24,7 +25,7 @@ export class ModellingZones extends ModellingElement {
     definitions: ModellingModelElement,
     drawingRegistry: DrawingRegistry,
     notifications: NotificationService,
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     zones: BaseElement
   ) {
     super(definitions, zones, drawingRegistry, notifications, eventBus);

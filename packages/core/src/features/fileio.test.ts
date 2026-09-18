@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { Canvas } from '@d3-polytree/canvas';
 import { LocalStorage, type StorageHost } from './localStorage';
 import { Upload, type UploadHost } from './upload';
@@ -55,7 +56,7 @@ describe('@d3-polytree/core Upload', () => {
   });
 
   it('inserts a hidden file input and opens it on demand', () => {
-    const canvas = new Canvas({ container: document.body }, new EventEmitter());
+    const canvas = new Canvas({ container: document.body }, new EventEmitter<DiagramEventMap>());
     const host: UploadHost = { importDiagram: vi.fn() };
     const upload = new Upload(canvas, host);
 
@@ -67,7 +68,7 @@ describe('@d3-polytree/core Upload', () => {
   });
 
   it('imports the chosen file contents', async () => {
-    const canvas = new Canvas({ container: document.body }, new EventEmitter());
+    const canvas = new Canvas({ container: document.body }, new EventEmitter<DiagramEventMap>());
     const importDiagram = vi.fn().mockResolvedValue(undefined);
     new Upload(canvas, { importDiagram });
 

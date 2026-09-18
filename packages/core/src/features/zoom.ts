@@ -3,6 +3,7 @@ import { zoom as d3zoom, zoomIdentity, type D3ZoomEvent, type ZoomBehavior } fro
 // side-effect import: augments d3-selection with `.transition()`
 import 'd3-transition';
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
 import { getLocalName } from '../utils/localName';
 import type { CalculateCenter } from '../utils/calculateCenter';
@@ -40,7 +41,7 @@ export class Zoom {
   ];
 
   private readonly _canvas: Canvas;
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _options: ZoomModel;
   private readonly _calculateCenter: CalculateCenter;
   private _isZoomable = false;
@@ -49,7 +50,7 @@ export class Zoom {
   constructor(
     options: ZoomModel,
     canvas: Canvas,
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     calculateCenter: CalculateCenter
   ) {
     this._canvas = canvas;

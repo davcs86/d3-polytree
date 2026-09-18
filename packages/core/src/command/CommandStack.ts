@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { CommandContext, CommandHandler } from './CommandHandler';
 
 /** One recorded command: the registered name plus its memento context. */
@@ -34,7 +35,7 @@ type Transaction = Command[];
 export class CommandStack {
   static readonly $inject = ['eventBus'];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _handlers = new Map<string, CommandHandler>();
   private _stack: Transaction[] = [];
   /** Index of the last-applied transaction; -1 when nothing is applied. */
@@ -43,7 +44,7 @@ export class CommandStack {
   private _txn: Transaction | null = null;
   private _enabled = false;
 
-  constructor(eventBus: EventEmitter) {
+  constructor(eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
     // Enable only once the injector (and thus the initial render) is built, so
     // the boot round-trip records nothing; tear-down quarantines the stack.

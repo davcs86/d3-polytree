@@ -1,5 +1,6 @@
 import { pointer, type Selection } from 'd3-selection';
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { DrawingSelection, Point } from '../../draw';
 import type { CommandStack } from '../../command';
@@ -24,13 +25,13 @@ export class AddLinkTool implements Tool {
 
   active = false;
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _canvas: Canvas;
   private readonly _commandStack: CommandStack;
   private readonly _fakeLink: Selection<SVGPathElement, unknown, null, undefined>;
   private _selectedNodes: PickedNode[] = [];
 
-  constructor(eventBus: EventEmitter, canvas: Canvas, commandStack: CommandStack) {
+  constructor(eventBus: EventEmitter<DiagramEventMap>, canvas: Canvas, commandStack: CommandStack) {
     this._eventBus = eventBus;
     this._canvas = canvas;
     this._commandStack = commandStack;

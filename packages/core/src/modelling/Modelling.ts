@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { getLocalName } from '../utils/localName';
 import type { CommandStack } from '../command';
 import { registerModellingCommands } from './commands';
@@ -36,12 +37,12 @@ export class Modelling {
     'commandStack'
   ];
 
-  private readonly _eventBus: EventEmitter;
+  private readonly _eventBus: EventEmitter<DiagramEventMap>;
   private readonly _elements: Record<ElementClass, ModellingElement>;
   private readonly _commandStack: CommandStack;
 
   constructor(
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     definitions: ModellingModelElement,
     modellingNodes: ModellingElement,
     modellingLabels: ModellingElement,

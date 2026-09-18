@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { DrawingSelection } from '../draw';
 import type { ModellingModelElement } from '../modelling/types';
@@ -20,7 +21,7 @@ export class Tooltip {
 
   private _tip: HTMLElement | null = null;
 
-  constructor(tooltip: TooltipFn | undefined, canvas: Canvas, eventBus: EventEmitter) {
+  constructor(tooltip: TooltipFn | undefined, canvas: Canvas, eventBus: EventEmitter<DiagramEventMap>) {
     if (typeof tooltip !== 'function') {
       return;
     }

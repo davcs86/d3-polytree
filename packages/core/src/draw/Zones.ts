@@ -1,4 +1,5 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas, ElementBuilder, ElementRegistry } from '@d3-polytree/canvas';
 import { BaseElement } from './BaseElement';
 import type { DrawingRegistry } from './DrawingRegistry';
@@ -19,7 +20,7 @@ export class Zones extends BaseElement {
   constructor(
     zones: ZoneDefinition[] | undefined,
     canvas: Canvas,
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     elementBuilder: ElementBuilder,
     elementRegistry: ElementRegistry,
     drawingRegistry: DrawingRegistry

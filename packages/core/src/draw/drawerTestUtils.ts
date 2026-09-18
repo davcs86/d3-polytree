@@ -1,4 +1,5 @@
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { Canvas, ElementRegistry, ElementBuilder } from '@d3-polytree/canvas';
 import { DrawingRegistry } from './DrawingRegistry';
 import type { DiagramElement } from './types';
@@ -17,7 +18,7 @@ export function makeDef<T extends Record<string, unknown>>(id: string, props: T)
 }
 
 export function makeServices() {
-  const bus = new EventEmitter();
+  const bus = new EventEmitter<DiagramEventMap>();
   const canvas = new Canvas({ container: document.body }, bus);
   const elementRegistry = new ElementRegistry();
   const elementBuilder = new ElementBuilder(elementRegistry);

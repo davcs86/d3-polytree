@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
 import { Modelling, type ElementClass, type MutatingAction } from './Modelling';
 import type { ModellingElement } from './ModellingElement';
@@ -22,7 +23,7 @@ function fakeCommandStack(): CommandStack {
 }
 
 describe('@d3-polytree/core modelling orchestrator', () => {
-  let bus: EventEmitter;
+  let bus: EventEmitter<DiagramEventMap>;
   let moddle: ReturnType<typeof createPfdnModdle>;
   let definitions: ModellingModelElement;
   let handlers: Record<ElementClass, SpyHandler>;
@@ -30,7 +31,7 @@ describe('@d3-polytree/core modelling orchestrator', () => {
   let modelling: Modelling;
 
   beforeEach(() => {
-    bus = new EventEmitter();
+    bus = new EventEmitter<DiagramEventMap>();
     moddle = createPfdnModdle();
     definitions = moddle.create('pfdn:Diagram', {}) as unknown as ModellingModelElement;
     handlers = { node: spyHandler(), label: spyHandler(), zone: spyHandler(), link: spyHandler() };

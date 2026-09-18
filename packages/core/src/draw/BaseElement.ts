@@ -1,5 +1,7 @@
 import type EventEmitter from 'eventemitter3';
+import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas, ElementBuilder, ElementRegistry } from '@d3-polytree/canvas';
+import type { ElementClass } from '../modelling';
 import type { DrawingRegistry } from './DrawingRegistry';
 import type { ContainerSelection, DiagramElement, DrawingSelection } from './types';
 
@@ -12,9 +14,9 @@ import type { ContainerSelection, DiagramElement, DrawingSelection } from './typ
  * implement {@link _createElement} and {@link _updateElement}.
  */
 export abstract class BaseElement {
-  protected readonly _className: string;
+  protected readonly _className: ElementClass;
   protected readonly _canvas: Canvas;
-  protected readonly _eventBus: EventEmitter;
+  protected readonly _eventBus: EventEmitter<DiagramEventMap>;
   protected readonly _elementBuilder: ElementBuilder;
   protected readonly _elementRegistry: ElementRegistry;
   protected readonly _drawingRegistry: DrawingRegistry;
@@ -23,10 +25,10 @@ export abstract class BaseElement {
   protected _elementsContainer: ContainerSelection | null = null;
 
   constructor(
-    className: string,
+    className: ElementClass,
     items: DiagramElement[] | undefined,
     canvas: Canvas,
-    eventBus: EventEmitter,
+    eventBus: EventEmitter<DiagramEventMap>,
     elementBuilder: ElementBuilder,
     elementRegistry: ElementRegistry,
     drawingRegistry: DrawingRegistry
