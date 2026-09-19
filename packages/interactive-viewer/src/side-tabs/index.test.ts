@@ -70,4 +70,25 @@ describe('@d3-polytree/side-tabs SideTabs', () => {
     cancel.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(container.querySelector('.pfdjs-st-container')?.classList.contains('open')).toBe(false);
   });
+
+  it('collapses the panel when the already-active tab is clicked again', () => {
+    const { canvas, bus, provider } = setup();
+    const onClick = vi.fn();
+    provider.registerSideTab({ title: 'Props', action: onClick });
+    new SideTabs(canvas, provider, bus);
+    const container = canvas.getContainer();
+    const tab = container.querySelector('.pfdjs-st-tab') as HTMLElement;
+
+    // first click opens
+    tab.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(container.querySelector('.pfdjs-st-container')?.classList.contains('open')).toBe(true);
+    expect(tab.classList.contains('active')).toBe(true);
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    // second click on the same (active) tab collapses, without re-firing the handler
+    tab.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(container.querySelector('.pfdjs-st-container')?.classList.contains('open')).toBe(false);
+    expect(tab.classList.contains('active')).toBe(false);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
 });

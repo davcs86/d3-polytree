@@ -1,0 +1,7 @@
+// Drag cursor, ported from v2.0-beta `lib/features/drag/style.scss`. The Drag
+// feature toggles `.cursor-grabbing` on the diagram container for the duration
+// of an element drag; without this rule the cursor never changes while dragging.
+.cursor-grabbing,
+.cursor-grabbing * {
+  cursor: move !important;
+}

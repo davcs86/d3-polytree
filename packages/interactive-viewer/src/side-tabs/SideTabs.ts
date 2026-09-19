@@ -46,6 +46,14 @@ export class SideTabs {
     }
 
     if (action === 'click') {
+      // Toggle semantics: clicking the already-active tab collapses the panel
+      // (the panel was otherwise stuck open — it only ever added `.open`).
+      const tab = this._tabsEl.querySelector(`.pfdjs-st-tab[data-action="${id}"]`);
+      const isActive = this._container.classList.contains('open') && !!tab?.classList.contains('active');
+      if (isActive) {
+        this._readjustTabs();
+        return;
+      }
       this._readjustTabs(id);
     } else if (action === 'close') {
       this._readjustTabs();
