@@ -5,7 +5,7 @@
 **Design**: [design.md](./design.md)
 **Test harness**: `pnpm --filter @d3-polytree/<pkg> test [file]` (vitest; jsdom for core/editor, node default for the pure `route/` folder) — `package.json:19`, CLAUDE.md; full gate `pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook` mirrors CI `.github/workflows/ci.yml`
 **Total Steps**: 11
-**Review**: `not-reviewed`
+**Review**: `passed-with-warnings @ 2026-09-19`
 
 ---
 
@@ -117,7 +117,7 @@ returning `Point[] | null` (null on torn links, unchanged). Apply the NaN guard 
 `calculateAngle`. Solved (non-pinned) waypoints remain fully recomputed each call (derived).
 
 **Verification**:
-`pnpm --filter @d3-polytree/core typecheck` (callers updated in Steps 4/6 in the same change set — see Step Dependencies); `pnpm lint`.
+`pnpm --filter @d3-polytree/core typecheck` (all three callers updated in Steps 4/5/6 in the same change set — `model.ts:63` in Step 4, `_updateLink` in Step 5, the trigger handler in Step 6 — see Step Dependencies); `pnpm lint`.
 
 **Test**:
 Covered by Step 2 (pure geometry) and Steps 9–10 (integration + fixture). No standalone test for the glue signature; the type checker + callers are the guard. `N/A (signature change verified by typecheck + downstream steps)`.
@@ -164,8 +164,10 @@ stored waypoints (not recomputed). Fails before Step 3's skip; passes after.
 Add a reroute routine (or adapt `_updateLink`) that recomputes a link's waypoints via the widened
 `computeLinkWaypoints` (Step 3), and **only when they differ** from the link's current `waypoint`
 writes them and calls the status-neutral `drawingRegistry`/`BaseElement.updateElement` (`:124`) —
-**not** `reconcile`. Diff-skip is **value-based**: unequal length, else any `x !== x || y !== y` per
-waypoint (never object identity — `createWaypoint` mints fresh objects). Skip pinned links.
+**not** `reconcile`. Diff-skip is **value-based, comparing the newly-computed waypoints to the link's
+current ones**: unequal array length, else any `next[i].x !== prev[i].x || next[i].y !== prev[i].y`
+(new-vs-old per coordinate — NOT a self-comparison, and never object identity, since `createWaypoint`
+mints fresh objects). Skip pinned links.
 
 **Verification**:
 `pnpm --filter @d3-polytree/core typecheck`; targeted `pnpm --filter @d3-polytree/core exec vitest run src/modelling/links.test.ts`; `pnpm lint`.
@@ -196,6 +198,11 @@ direct `updateNodeLinks(...)` calls (`Links.ts:78-79`) — the post-command pass
 create runs inside `element.create`, which fires `commandStack.changed`). Update the now-false comment at
 `commands.ts:224-230,240` to describe the `commandStack.changed` single-writer reroute. Do **not** add a
 `node.updated` fallback (the only off-stack reconcile is the `@deprecated Modelling.doAction`).
+
+**Performance note (design Open Risk → C10):** this pass recomputes all unpinned links once per
+transaction — O(L·(L+N)) — which is negligible at the target sparse scale. A spatial-index / dirty-set
+optimization is **deferred to C10** (per design.md Open Risks); do not build it here (DN-7). The
+value-based diff-skip already bounds the downstream `link.updated` fan-out to genuinely-changed links.
 
 **Verification**:
 `pnpm --filter @d3-polytree/core exec vitest run src/modelling/links.test.ts` (after Step 9 updates it); a test asserting exactly ONE reroute pass per `element.move` and per `element.create` (Step 9); `pnpm --filter @d3-polytree/core typecheck`; `pnpm lint`.
@@ -346,6 +353,29 @@ This step is the guard test. It encodes the standing invariant so a later off-st
 caught by CI rather than shipping a silent stale-link regression.
 
 ---
+
+## Review Log
+
+### 2026-09-19 — plan-review — verdict: passed-with-warnings
+Reviewer subagent applied the design-buddy plan-review criteria and verified every cited `path:line`
+against the repo. **Blockers: none** (all citations resolve; no rejected alternative reintroduced —
+router is in `core/src/route/` not a new package and not in `layout`; byte-identical `toXML` gate upheld
+via status-neutral `updateElement`, derived waypoints, and a flag-only pin memento; determinism enforced;
+eslint mutation rule not breached; ordering is fully forward). **Warnings addressed (no waivers):**
+- Step 5 diff-skip predicate re-stated as new-vs-old per-coordinate (`next[i].x !== prev[i].x || …`) so
+  it is not read as a NaN self-comparison.
+- Step 3 verification caller list corrected to "Steps 4/5/6" (`_updateLink` is a `computeLinkWaypoints`
+  caller updated in Step 5).
+- Added a Performance note to Step 6 recording the design Open Risk (O(L·(L+N))/txn reroute cost deferred
+  to C10), which the plan previously left uncovered.
+- NOTE (no change needed): the `N/A`/deferred Test fields in Steps 3/5/6 land their assertions in
+  Step 9 (status="0" no-residue round-trip; one-pass count for move/create/auto-layout) and Step 11
+  (off-stack guard). Minor citation-anchor offsets the reviewer flagged (e.g. `draw/Links.test.ts:39`
+  vs `:41`, `editor/index.ts` module vs `editor.autoLayout()` at `:167`) all resolve to the intended
+  content — not defects.
+
+No blockers, so no fix-and-re-review cycle was required; the amendments above are doc-only clarity edits
+that touch no cited evidence or step logic. Plan is execution-ready.
 
 ## Deviation Log
 
