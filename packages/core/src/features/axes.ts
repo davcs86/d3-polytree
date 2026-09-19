@@ -45,7 +45,12 @@ export class Axes {
   private _gX: GSelection | null = null;
   private _gY: GSelection | null = null;
 
-  constructor(options: GridModel, canvas: Canvas, eventBus: EventEmitter<DiagramEventMap>, zoom: Zoom) {
+  constructor(
+    options: GridModel,
+    canvas: Canvas,
+    eventBus: EventEmitter<DiagramEventMap>,
+    zoom: Zoom
+  ) {
     this._options = options;
     this._isVisible = options.show ?? true;
     this._canvas = canvas;
@@ -128,15 +133,29 @@ export class Axes {
       this._svg.remove();
     }
 
-    this._svg = this._canvas
-      .getRootLayer()
-      .insert('g', ':first-child') // send to the background
-      .attr('class', 'axis');
+    const root = this._canvas.getRootLayer();
+    // Sit just ABOVE the background-colour rect (so the grid paints over the
+    // fill) but below the diagram content. Both this feature and BackgroundColor
+    // used `:first-child`; because BackgroundColor boots first, the grid ended up
+    // *beneath* the opaque background rect and was never visible. Insert after the
+    // background rect when present, otherwise fall back to the back of the layer.
+    const firstChild = (root.node() as Element | null)?.firstElementChild ?? null;
+    const before: Element | null =
+      firstChild && firstChild.tagName.toLowerCase() === 'rect'
+        ? (firstChild.nextElementSibling as Element | null)
+        : firstChild;
+    // `insert(type, before)` inserts before the node the function returns, or
+    // appends when it returns null.
+    this._svg = root.insert('g', () => before as never).attr('class', 'axis');
 
     const { width, height } = this._canvas.getSize();
 
-    this._x = scaleLinear().domain([-1, width - 1]).range([-1, width - 1]);
-    this._y = scaleLinear().domain([-1, height - 1]).range([-1, height - 1]);
+    this._x = scaleLinear()
+      .domain([-1, width - 1])
+      .range([-1, width - 1]);
+    this._y = scaleLinear()
+      .domain([-1, height - 1])
+      .range([-1, height - 1]);
 
     this._xAxis = axisBottom<number>(this._x)
       .tickFormat(() => '')

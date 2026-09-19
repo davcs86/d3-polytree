@@ -31,6 +31,23 @@ describe('@d3-polytree/core Axes', () => {
     expect(axis.selectAll('g').size()).toBe(2);
   });
 
+  it('inserts the grid above a background rect (so it is not painted over)', () => {
+    const { bus, canvas, zoom, grid } = setup();
+    // simulate BackgroundColor, which inserts an opaque full-size rect first
+    const root = canvas.getRootLayer();
+    root.insert('rect', ':first-child').attr('class', 'bg');
+
+    new Axes(grid, canvas, bus, zoom);
+
+    const children = [...(root.node() as Element).children].map((c) => c.tagName.toLowerCase());
+    const rectIdx = children.indexOf('rect');
+    const axisIdx = [...(root.node() as Element).children].findIndex((c) =>
+      c.classList.contains('axis')
+    );
+    // the grid must come AFTER the background rect, or it would be hidden by it
+    expect(axisIdx).toBeGreaterThan(rectIdx);
+  });
+
   it('setVisible / toggleVisible drive the display style', () => {
     const { bus, canvas, zoom, grid } = setup();
     const axes = new Axes(grid, canvas, bus, zoom);
