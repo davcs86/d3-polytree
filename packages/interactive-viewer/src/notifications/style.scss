@@ -1,0 +1,107 @@
+// DOM notifications: toasts + modal confirm dialog. Ships in the interactive
+// viewer's compiled style.css (editor consumers import it too).
+.pfdjs-notifications {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+
+  .pfdjs-toast {
+    pointer-events: auto;
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    max-width: 320px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: #333333;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+
+    &.pfdjs-toast-out {
+      opacity: 0;
+    }
+    .pfdjs-toast-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    a {
+      color: #9ecbff;
+    }
+    &.pfdjs-toast-success {
+      background: #2e7d32;
+    }
+    &.pfdjs-toast-warning {
+      background: #b26a00;
+    }
+    &.pfdjs-toast-error {
+      background: #c62828;
+    }
+    &.pfdjs-toast-info {
+      background: #37474f;
+    }
+  }
+
+  .pfdjs-dialog-overlay {
+    pointer-events: auto;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+
+    .pfdjs-dialog {
+      min-width: 260px;
+      max-width: 90%;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+      padding: 18px 20px 14px;
+      color: #333333;
+      font-size: 13px;
+
+      .pfdjs-dialog-title {
+        font-weight: 700;
+        font-size: 15px;
+        margin-bottom: 8px;
+      }
+      .pfdjs-dialog-text {
+        line-height: 1.5;
+      }
+      .pfdjs-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 16px;
+
+        .pfdjs-dialog-btn {
+          padding: 6px 14px;
+          border-radius: 5px;
+          border: solid 1px #cccccc;
+          background: #fafafa;
+          cursor: pointer;
+          font-size: 13px;
+
+          &:hover {
+            background: #f0f0f0;
+          }
+          &.pfdjs-dialog-ok {
+            background: #5990bd;
+            border-color: #5990bd;
+            color: #ffffff;
+
+            &:hover {
+              background: #4d80a8;
+            }
+          }
+        }
+      }
+    }
+  }
+}

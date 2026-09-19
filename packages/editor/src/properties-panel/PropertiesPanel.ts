@@ -149,6 +149,9 @@ export class PropertiesPanel {
     this._container.addEventListener('click', (event) => {
       const tab = (event.target as Element).closest<HTMLElement>('.tab-sheet');
       if (tab) {
+        // The tab label is an <a>; stop it from navigating (it used to carry
+        // href="#", which appended a hash / history entry on every tab switch).
+        event.preventDefault();
         this._selectTab(tab.getAttribute('data-tab-target'));
         event.stopImmediatePropagation();
       }
@@ -177,7 +180,8 @@ export class PropertiesPanel {
     });
     this._eventBus.on(
       'PropertiesPanel.propertyChanged',
-      (propertyId: string, definition: Definition) => this._applyChangeByProperty(propertyId, definition)
+      (propertyId: string, definition: Definition) =>
+        this._applyChangeByProperty(propertyId, definition)
     );
   }
 
@@ -266,16 +270,16 @@ export class PropertiesPanel {
     }
 
     // populate each entry from the model
-    Object.values(this._entries).forEach((entry) => entry.scope.get(entry.definition, entry.formNode));
+    Object.values(this._entries).forEach((entry) =>
+      entry.scope.get(entry.definition, entry.formNode)
+    );
 
     // draw the tab strip
     let firstTab: string | null = null;
     for (const tab of renderedTabs) {
       firstTab ??= tab.id;
       this._tabsEl.appendChild(
-        fromHtml(
-          `<li class="tab-sheet" data-tab-target="${tab.id}"><a href="#">${tab.label}</a></li>`
-        )
+        fromHtml(`<li class="tab-sheet" data-tab-target="${tab.id}"><a>${tab.label}</a></li>`)
       );
     }
     this._selectTab(firstTab);

@@ -23,9 +23,11 @@ import {
 // re-exported below so `sideTabsModule` / `searchPanelModule` stay importable.
 import { sideTabsModule } from './side-tabs';
 import { searchPanelModule } from './search-panel';
+import { domNotificationsModule } from './notifications';
 
 export * from './side-tabs';
 export * from './search-panel';
+export * from './notifications';
 
 export type InteractiveViewerOptions = ViewerOptions;
 
@@ -47,8 +49,14 @@ export class InteractiveViewer extends Viewer {
 
   getModules(): readonly DiagramModule[] {
     // interaction first (zoom swaps the drawing layer, features subscribe),
-    // then the drawers (which render into that layer and emit created events)
-    return [...InteractiveViewer.interactionModules, ...Viewer.modules];
+    // then the drawers (which render into that layer and emit created events),
+    // then the DOM notifications override *last* so it wins the `notifications`
+    // token over the core console default (didi: last definition wins).
+    return [
+      ...InteractiveViewer.interactionModules,
+      ...Viewer.modules,
+      domNotificationsModule as DiagramModule
+    ];
   }
 }
 

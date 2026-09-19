@@ -5,7 +5,11 @@
  * dragging plus the modelling create/save/delete flows. Element creation is
  * exposed programmatically here; the palette toolbar UI is layered on next.
  */
-import { InteractiveViewer, type InteractiveViewerOptions } from '@d3-polytree/interactive-viewer';
+import {
+  InteractiveViewer,
+  domNotificationsModule,
+  type InteractiveViewerOptions
+} from '@d3-polytree/interactive-viewer';
 import { Viewer } from '@d3-polytree/viewer';
 import {
   dragModule,
@@ -120,7 +124,10 @@ export class Editor extends InteractiveViewer {
     return [
       ...InteractiveViewer.interactionModules,
       ...Editor.editionModules,
-      ...Viewer.modules
+      ...Viewer.modules,
+      // DOM notifications override last so it wins the `notifications` token over
+      // the core console default (which the palette's New/Save depend on).
+      domNotificationsModule as DiagramModule
     ];
   }
 
