@@ -76,7 +76,8 @@ export class Zoom {
     if (this._isZoomable) {
       // Only read the current transform to fill in any omitted argument; the
       // interactive and programmatic paths supply all three.
-      const needsCurrent = translateX === undefined || translateY === undefined || scale === undefined;
+      const needsCurrent =
+        translateX === undefined || translateY === undefined || scale === undefined;
       const current = needsCurrent ? this._canvas.getTransform() : null;
       const tx = translateX ?? current!.e;
       const ty = translateY ?? current!.f;
@@ -142,8 +143,14 @@ export class Zoom {
       .on('end', () => this._eventBus.emit('zoom.end'));
 
     drawingLayer.on('click', (event: Event) => {
-      const isOutline = select(event.target as Element).classed('element-outline');
-      if (!isOutline) {
+      // Only a click on empty canvas clears the selection. A click that lands on
+      // a drawn element (its `.element` group or its `.element-outline`) — even on
+      // an inner `<use>`/`<rect>` that bubbles up here — must not, or selecting a
+      // node by clicking it would immediately clear it again.
+      const target = event.target as Element;
+      const onElement =
+        typeof target.closest === 'function' && target.closest('.element, .element-outline');
+      if (!onElement) {
         this._eventBus.emit('background.click');
       }
     });

@@ -68,6 +68,26 @@ describe('@d3-polytree/core Zoom', () => {
     expect(bg).toHaveBeenCalledTimes(1);
   });
 
+  it('does not emit background.click when a drawn element is clicked', () => {
+    const { bus, canvas, calculateCenter, options } = setup();
+    new Zoom(options, canvas, bus, calculateCenter);
+    const bg = vi.fn();
+    bus.on('background.click', bg);
+
+    // A drawn element (its `.element` group) with an inner child, as the drawers
+    // render it. A click on the inner child bubbles up to the drawing-layer
+    // handler; it must not be treated as a background click.
+    const inner = canvas.getDrawingLayer().node() as SVGGElement;
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', 'nodeItem element');
+    const child = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    group.appendChild(child);
+    inner.appendChild(group);
+
+    child.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(bg).not.toHaveBeenCalled();
+  });
+
   it('handles a zoom.to.element request for a node without throwing', () => {
     const { bus, canvas, calculateCenter, options, definitions } = setup();
     new Zoom(options, canvas, bus, calculateCenter);

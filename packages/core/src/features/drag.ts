@@ -104,6 +104,11 @@ export class Drag {
    * captured origin (`from`) and the current model state (`to`). The command
    * reconciles each moved node, whose `node.updated` re-drives the link router —
    * so waypoints are recomputed, never stored. Links were excluded at capture.
+   *
+   * A gesture with no net displacement — most commonly a plain click, which
+   * d3-drag reports as `start` + `end` with no `drag` in between — is *not*
+   * committed: it would otherwise push a zero-delta move onto the undo stack, so
+   * every click would silently become an undo step.
    */
   notifyMovedSelected(): void {
     if (this._origin.length === 0) {
@@ -117,7 +122,18 @@ export class Drag {
         : undefined
     }));
     this._origin = [];
-    this._commandStack.execute('element.move', { items });
+    if (items.some(Drag._itemMoved)) {
+      this._commandStack.execute('element.move', { items });
+    }
+  }
+
+  /** Whether a captured item actually changed position (node or its label). */
+  private static _itemMoved(item: MoveItem): boolean {
+    const shifted = (a: Placement, b: Placement): boolean =>
+      a.position.x !== b.position.x || a.position.y !== b.position.y;
+    return (
+      shifted(item.from, item.to) || (item.label ? shifted(item.label.from, item.label.to) : false)
+    );
   }
 
   private _applyOffset(
