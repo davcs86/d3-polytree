@@ -1,5 +1,6 @@
 import type { PfdnModdle } from '@d3-polytree/pfdn-moddle';
 import type { Point } from '../draw';
+import { avoidObstacles, type Obstacle, type RoutePoint } from '../route';
 import type { ModellingModelElement } from './types';
 
 /**
@@ -41,12 +42,24 @@ const SIDE_FLIP_THRESHOLD = 80;
 /** Minimum axis gap before a straight run bends into a bezier. */
 const CURVE_MIN_GAP = 20;
 
-/** Angle (radians) between two vectors. */
+/**
+ * Angle (radians) between two vectors. Guards the degenerate cases — a
+ * zero-length vector, or a cosine that floats just past ±1 — that would make
+ * `Math.acos` return `NaN` and give the sort comparator an undefined (and thus
+ * non-deterministic) order. Determinism here is load-bearing: the waypoints must
+ * be bit-identical between the load-time route and the interactive reroute so the
+ * `toXML` round-trip stays byte-identical.
+ */
 function calculateAngle(a: Point, b: Point): number {
   const dotProduct = a.x * b.x + a.y * b.y;
   const moduleA = Math.sqrt(a.x ** 2 + a.y ** 2);
   const moduleB = Math.sqrt(b.x ** 2 + b.y ** 2);
-  return Math.acos(dotProduct / (moduleA * moduleB));
+  const denom = moduleA * moduleB;
+  if (denom === 0) {
+    return 0;
+  }
+  const ratio = Math.max(-1, Math.min(1, dotProduct / denom));
+  return Math.acos(ratio);
 }
 
 /** Order the connectors on one node side by their angle to a reference. */
@@ -218,6 +231,7 @@ function createWaypoint(moddle: PfdnModdle, x: number, y: number): Point {
 export function computeLinkWaypoints(
   link: ModellingModelElement,
   allLinks: ModellingModelElement[],
+  nodes: ModellingModelElement[] | undefined,
   moddle: PfdnModdle
 ): Point[] | null {
   const source = link.source as ModellingModelElement | undefined;
@@ -235,14 +249,14 @@ export function computeLinkWaypoints(
   const targetPoint: MutablePoint = { x: tPos.x, y: tPos.y };
   const sourceSide: SideIndex = { idx: 0 };
   const targetSide: SideIndex = { idx: 0 };
-  const waypoints: Point[] = [];
+  const plain: RoutePoint[] = [];
   let curve1RefPoint: MutablePoint | false = false;
   let curve2RefPoint: MutablePoint | false = false;
 
   adjustSidePoint(sourcePoint, sourceSides, target.id as string, source.size ?? 0, sourceSide);
   adjustSidePoint(targetPoint, targetSides, source.id as string, target.size ?? 0, targetSide);
 
-  waypoints.push(createWaypoint(moddle, sourcePoint.x, sourcePoint.y));
+  plain.push({ x: sourcePoint.x, y: sourcePoint.y });
 
   if (sourceSide.idx === 1 || sourceSide.idx === 3) {
     // source leaves from left or right
@@ -273,14 +287,24 @@ export function computeLinkWaypoints(
   }
 
   if (curve1RefPoint !== false) {
-    waypoints.push(createWaypoint(moddle, curve1RefPoint.x, curve1RefPoint.y));
+    plain.push({ x: curve1RefPoint.x, y: curve1RefPoint.y });
   }
   if (curve2RefPoint !== false) {
-    waypoints.push(createWaypoint(moddle, curve2RefPoint.x, curve2RefPoint.y));
+    plain.push({ x: curve2RefPoint.x, y: curve2RefPoint.y });
   }
-  waypoints.push(createWaypoint(moddle, targetPoint.x, targetPoint.y));
+  plain.push({ x: targetPoint.x, y: targetPoint.y });
 
-  return waypoints;
+  // Obstacle-avoidance post-pass (C4): nudge the elbow around the other nodes'
+  // boxes, excluding this link's own two endpoints. Pure, deterministic, and a
+  // no-op (returns the same array) when nothing is in the way — so a diagram with
+  // clear channels routes exactly as before.
+  const obstacles: Obstacle[] = (nodes ?? []).map((n) => {
+    const pos = n.position as Point;
+    return { id: n.id as string, x: pos.x, y: pos.y, size: n.size ?? 0 };
+  });
+  const routed = avoidObstacles(plain, obstacles, [source.id as string, target.id as string]);
+
+  return routed.map((p) => createWaypoint(moddle, p.x, p.y));
 }
 
 /**
@@ -289,12 +313,22 @@ export function computeLinkWaypoints(
  * both present are left untouched. Called from `loadModel` so links render
  * correctly on first paint in every component, editor or not.
  */
-export function routeLinks(links: ModellingModelElement[] | undefined, moddle: PfdnModdle): void {
+export function routeLinks(
+  links: ModellingModelElement[] | undefined,
+  nodes: ModellingModelElement[] | undefined,
+  moddle: PfdnModdle
+): void {
   if (!links || links.length === 0) {
     return;
   }
   links.forEach((link) => {
-    const waypoints = computeLinkWaypoints(link, links, moddle);
+    // A pinned link keeps its authored waypoints — the router never recomputes
+    // it (C4). This is the load-time counterpart to the interactive skip, and it
+    // is the ONLY router in the static Viewer / Interactive-Viewer / SSR tiers.
+    if (link.get('pinned') === true) {
+      return;
+    }
+    const waypoints = computeLinkWaypoints(link, links, nodes, moddle);
     if (waypoints) {
       link.waypoint = waypoints;
     }

@@ -27,6 +27,7 @@ import {
   type CreateParameters,
   type CommandStack,
   type CreateContext,
+  type PinContext,
   type Selection,
   type LayoutOptions
 } from '@d3-polytree/core';
@@ -166,6 +167,26 @@ export class Editor extends InteractiveViewer {
    */
   autoLayout(options?: LayoutOptions): Promise<void> {
     return this.get<AutoLayout>('autoLayout').apply(options);
+  }
+
+  /**
+   * Pin or unpin a link's route (C4). A pinned link keeps its current waypoints
+   * and is skipped by the obstacle-avoiding reroute (it degrades to the plain
+   * polyline); unpinning lets the router recompute it. Undoable (one step); a
+   * no-op if the id is unknown or already in the requested state.
+   */
+  setLinkPinned(id: string, pinned = true): void {
+    const links = this.get<{ getAll(): ModellingModelElement[] }>('links');
+    const def = links.getAll().find((l) => l.id === id);
+    if (!def) {
+      return;
+    }
+    const before = def.get('pinned') === true;
+    if (before === pinned) {
+      return;
+    }
+    const ctx: PinContext = { def, before, after: pinned };
+    this.get<CommandStack>('commandStack').execute('link.pin', ctx);
   }
 
   /** Undo the last edit (a whole gesture is one step). No-op if nothing to undo. */
