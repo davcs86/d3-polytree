@@ -1,5 +1,13 @@
 # @d3-polytree/ssr
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [cdc6008]
+  - @d3-polytree/core@0.5.0
+  - @d3-polytree/viewer@0.1.4
+
 ## 0.2.2
 
 ### Patch Changes
