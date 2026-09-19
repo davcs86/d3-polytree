@@ -1,12 +1,13 @@
 import type EventEmitter from 'eventemitter3';
 import type { DiagramEventMap, ElementClassName } from '@d3-polytree/canvas';
+import type { UiIconName } from '@d3-polytree/core';
 
 /** The side-tab registration surface this panel needs (structural — avoids a
  * hard build dependency on `@d3-polytree/side-tabs`; the token is supplied at
  * runtime when both are composed into the editor). */
 export interface SideTabRegistration {
   title?: string;
-  iconClassName?: string;
+  icon?: UiIconName;
   action: {
     created?: (content: HTMLElement | null) => void;
     click?: (content: HTMLElement | null) => void;
@@ -166,7 +167,7 @@ export class SearchPanel {
     provider.registerSideTab(
       {
         title: 'Search element',
-        iconClassName: 'icon-glass',
+        icon: 'search',
         action: {
           created: (content) => this._drawForm(content),
           click: () => this._render()

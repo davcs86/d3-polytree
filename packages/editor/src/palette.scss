@@ -2,8 +2,8 @@
 // `lib/features/palette/style.scss`. The palette module (`paletteModule`) is
 // part of the Editor's module list and inserts `.pfdjs-palette` into the canvas
 // container; without this CSS the toolbar renders as an unstyled, invisible
-// block of empty spans. Palette glyphs come from the `pfdn-font` shipped via
-// `@d3-polytree/interactive-viewer/style.css` (which Editor consumers also import).
+// block of empty spans. Palette icons are inline SVG (see core `uiIcons`), tinted
+// via `currentColor` and sized to the `.pfdjs-entry` box below.
 .pfdjs-container {
   .pfdjs-palette {
     position: absolute;
@@ -30,6 +30,13 @@
           cursor: pointer;
           margin: 0 4px;
           text-align: center;
+
+          svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+            margin: 0 auto;
+          }
 
           &:hover {
             color: #ff4800;

@@ -17,7 +17,7 @@ describe('@d3-polytree/core Palette', () => {
     const clicked = vi.fn();
     const provider = {
       getPaletteEntries: () => ({
-        'new-node': { title: 'New node', group: 'drawing', iconClassName: 'icon-x', action: { click: clicked } }
+        'new-node': { title: 'New node', group: 'drawing', icon: 'node', action: { click: clicked } }
       }),
       getPaletteTools: () => ({})
     } as unknown as PP;
@@ -28,7 +28,7 @@ describe('@d3-polytree/core Palette', () => {
     expect(canvas.getContainer().querySelector('.pfdjs-palette')).not.toBeNull();
     expect(button).not.toBeNull();
     expect(button?.getAttribute('title')).toBe('New node');
-    expect(button?.querySelector('.icon-x')).not.toBeNull();
+    expect(button?.querySelector('svg.pfdjs-icon-node')).not.toBeNull();
 
     button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(clicked).toHaveBeenCalled();

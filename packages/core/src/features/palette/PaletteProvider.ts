@@ -1,5 +1,6 @@
 import type EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/canvas';
+import type { UiIconName } from '../../uiIcons';
 import type { NotificationService } from '../notifications';
 import type { Axes } from '../axes';
 import type { Selection } from '../selection';
@@ -20,7 +21,7 @@ export type PaletteAction =
 export interface PaletteEntry {
   title?: string;
   group?: string;
-  iconClassName?: string;
+  icon?: UiIconName;
   className?: string;
   html?: string;
   action: PaletteAction;
@@ -95,7 +96,7 @@ export class PaletteProvider {
       new: {
         title: 'New diagram',
         group: 'file-ops',
-        iconClassName: 'icon-doc',
+        icon: 'new',
         action: {
           click: () => {
             this._notifications.warning(
@@ -112,61 +113,61 @@ export class PaletteProvider {
       save: {
         title: 'Save diagram',
         group: 'file-ops',
-        iconClassName: 'icon-floppy',
+        icon: 'save',
         action: { click: () => this._localStorage.save() }
       },
       open: {
         title: 'Open diagram',
         group: 'file-ops',
-        iconClassName: 'icon-folder-open-empty',
+        icon: 'open',
         action: { click: () => this._upload.openDialog() }
       },
       download: {
         title: 'Download diagram',
         group: 'file-ops',
-        iconClassName: 'icon-download',
+        icon: 'download',
         action: { click: () => void this._exporting.trigger('pfdn') }
       },
       'export-svg': {
         title: 'Download as SVG image',
         group: 'file-export',
-        iconClassName: 'icon-file-code',
+        icon: 'export-code',
         action: { click: () => void this._exporting.trigger('svg') }
       },
       'export-png': {
         title: 'Download as PNG image',
         group: 'file-export',
-        iconClassName: 'icon-image',
+        icon: 'export-image',
         action: { click: () => void this._exporting.trigger('png') }
       },
       'new-connection': {
         title: 'New connection',
         group: 'drawing',
-        iconClassName: 'icon-arrow',
+        icon: 'link',
         action: { click: () => this._tools.addLinkTool.activate() }
       },
       'new-label': {
         title: 'New label',
         group: 'drawing',
-        iconClassName: 'icon-text',
+        icon: 'label',
         action: { click: () => this._addLabelHandler.append() }
       },
       'new-node': {
         title: 'New node',
         group: 'drawing',
-        iconClassName: 'icon-check-empty',
+        icon: 'node',
         action: { click: () => this._addNodeHandler.append() }
       },
       'delete-item': {
         title: 'Delete selected item(s)',
         group: 'utils',
-        iconClassName: 'icon-trash',
+        icon: 'delete',
         action: { click: () => this._selection.deleteSelected() }
       },
       'toggle-grid': {
         title: 'Show/hide grid',
         group: 'settings',
-        iconClassName: 'icon-grid',
+        icon: 'grid',
         action: { click: () => this._axes.toggleVisible() }
       }
     };

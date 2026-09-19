@@ -38,13 +38,13 @@ describe('@d3-polytree/side-tabs SideTabs', () => {
 
   it('renders a tab + content per registered entry and re-renders on registration', () => {
     const { canvas, provider } = setup();
-    provider.registerSideTab({ title: 'Props', iconClassName: 'icon-cog', action: vi.fn() });
+    provider.registerSideTab({ title: 'Props', icon: 'sliders', action: vi.fn() });
     new SideTabs(canvas, provider, provider['_eventBus'] as never);
 
     const container = canvas.getContainer();
     expect(container.querySelector('.pfdjs-st-container')).not.toBeNull();
     expect(container.querySelectorAll('.pfdjs-st-tab').length).toBe(1);
-    expect(container.querySelector('.pfdjs-st-tab .icon-cog')).not.toBeNull();
+    expect(container.querySelector('.pfdjs-st-tab svg.pfdjs-icon-sliders')).not.toBeNull();
 
     // a late registration triggers a re-render
     provider.registerSideTab({ title: 'Search', action: vi.fn() });
@@ -66,7 +66,7 @@ describe('@d3-polytree/side-tabs SideTabs', () => {
     expect(container.querySelector('.pfdjs-st-content')?.classList.contains('hidden')).toBe(false);
     expect(onClick).toHaveBeenCalledWith(container.querySelector('.content-body'));
 
-    const cancel = container.querySelector('.icon-cancel') as HTMLElement;
+    const cancel = container.querySelector('.pfdjs-st-close') as unknown as SVGElement;
     cancel.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(container.querySelector('.pfdjs-st-container')?.classList.contains('open')).toBe(false);
   });

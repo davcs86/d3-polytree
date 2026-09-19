@@ -2,7 +2,7 @@
 // core feature styles that only the Editor composes (palette toolbar and the
 // drag cursor). Compiled to dist/style.css and exposed via ./style.css.
 // Editor consumers also import `@d3-polytree/interactive-viewer/style.css`,
-// which carries the shared `pfdn-font`, side-tabs, search-panel and outline CSS.
+// which carries the side-tabs, search-panel and selection-outline CSS.
 @import './properties-panel/style/style';
 @import './palette';
 @import './drag';

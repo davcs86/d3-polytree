@@ -1,4 +1,5 @@
 import type { Canvas } from '@d3-polytree/canvas';
+import { createIcon } from '../../uiIcons';
 import type { PaletteEntry, PaletteProvider } from './PaletteProvider';
 
 /** Parse a small HTML fragment into its first element. */
@@ -84,10 +85,11 @@ export class Palette {
     if (entry.className) {
       control.classList.add(entry.className);
     }
-    if (entry.iconClassName) {
-      const icon = document.createElement('span');
-      icon.className = entry.iconClassName;
-      control.appendChild(icon);
+    if (entry.icon) {
+      const icon = createIcon(entry.icon);
+      if (icon) {
+        control.appendChild(icon);
+      }
     }
   }
 

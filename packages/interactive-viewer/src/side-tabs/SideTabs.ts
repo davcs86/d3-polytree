@@ -1,6 +1,7 @@
 import type EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { Canvas } from '@d3-polytree/canvas';
+import { createIcon } from '@d3-polytree/core';
 import type { SideTabEntry, SideTabsProvider } from './SideTabsProvider';
 
 /** Parse a small HTML fragment into its first element. */
@@ -102,25 +103,31 @@ export class SideTabs {
     if (entry.title) {
       tab.setAttribute('title', entry.title);
     }
-    if (entry.iconClassName) {
-      const icon = document.createElement('span');
-      icon.className = entry.iconClassName;
-      tab.appendChild(icon);
+    if (entry.icon) {
+      const icon = createIcon(entry.icon);
+      if (icon) {
+        tab.appendChild(icon);
+      }
     }
 
     const content = fromHtml(
       '<div class="pfdjs-st-content hidden">' +
         '<div class="content-title">' +
         `<span class="content-title-span">${entry.title ?? ''}</span>` +
-        '<span class="icon-cancel" title="Close"></span>' +
         '<span>&nbsp;</span>' +
         '</div>' +
         '<div class="content-body"></div>' +
         '</div>'
     );
+    // Close affordance: an inline SVG "×" the delegate listens for.
+    const close = createIcon('close', 'pfdjs-st-close');
+    if (close) {
+      close.setAttribute('data-action', String(id));
+      const titleBar = content.querySelector('.content-title');
+      titleBar?.insertBefore(close, titleBar.lastElementChild);
+    }
     this._contentsEl.appendChild(content);
     content.setAttribute('data-action', String(id));
-    content.querySelector('.icon-cancel')?.setAttribute('data-action', String(id));
 
     this.trigger('created', null, String(id));
   }
@@ -147,7 +154,7 @@ export class SideTabs {
       }
     });
     this._contentsEl.addEventListener('click', (event) => {
-      const cancel = (event.target as Element).closest('.icon-cancel');
+      const cancel = (event.target as Element).closest('.pfdjs-st-close');
       if (cancel) {
         this.trigger('close', cancel);
         event.stopImmediatePropagation();

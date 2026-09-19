@@ -16,14 +16,18 @@ Close seven V2↔V1 interaction/rendering gaps carried over from the v2.0-beta p
 - **Selection outline (interactive-viewer).** The per-element `element-outline`
   rect is made visible on `.selected` / `:hover` again — the v2.0-beta outline CSS
   was never ported. Ships in `interactive-viewer/style.css`.
-- **Side-tab icons (interactive-viewer).** The `pfdn-font` icon font is ported and
-  shipped with `interactive-viewer/style.css` (copied to `dist/font/`), so the
-  side-tab, search, properties and palette glyphs render instead of blank spans.
+- **Chrome icons (core).** The former (never-ported) fontello icon font is replaced
+  with inline SVG icons from [Lucide](https://lucide.dev) (the icon set behind
+  shadcn/ui), vendored as a small typed registry in `core` (`createIcon` /
+  `UiIconName`) — no icon font, no binary asset, no runtime dependency. The
+  side-tab, search, properties, palette and close icons all render as accessible,
+  `currentColor`-tinted inline SVG. Palette/side-tab entries now take a semantic
+  `icon` key instead of the old `iconClassName` CSS class.
 - **Closable side panel (interactive-viewer).** Clicking the already-active side
-  tab now collapses the panel; the close "×" is also visible again (font).
+  tab now collapses the panel; the close "×" is visible again (inline SVG).
 - **Editor toolbar (editor).** The palette toolbar CSS was never ported, leaving
   an invisible block of empty spans; `editor/style.css` now carries the palette
-  styling (glyphs come from the shared `pfdn-font`).
+  styling.
 - **Drag cursor (core + editor).** `Drag` toggles `cursor-grabbing` on the root
   layer for the duration of a gesture; the matching `cursor: move` rule ships in
   `editor/style.css`.

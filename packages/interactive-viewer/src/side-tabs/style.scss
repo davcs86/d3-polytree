@@ -40,16 +40,17 @@
         border-bottom-right-radius: 0;
         border-top-right-radius: 0;
         box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.3);
-        span {
-          font-size: 26px;
-          top: 4.25px;
-          position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #333333;
+        svg {
+          width: 24px;
+          height: 24px;
           cursor: pointer;
         }
         &.active{
-          span {
-            color: #ff4800;
-          }
+          color: #ff4800;
         }
       }
     }
@@ -81,10 +82,13 @@
             margin-left: 6px;
             line-height: 18px;
           }
-          .icon-cancel {
-            font-size: 18px;
+          .pfdjs-st-close {
+            width: 18px;
+            height: 18px;
+            margin: 1px 6px;
             cursor: pointer;
             float: right;
+            color: white;
           }
         }
       }

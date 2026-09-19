@@ -22,7 +22,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup && sass src/style.scss dist/style.css --no-source-map --style=compressed --silence-deprecation=import && mkdir -p dist/font && cp src/font/pfdn-font.woff2 src/font/pfdn-font.woff src/font/pfdn-font.ttf dist/font/",
+    "build": "tsup && sass src/style.scss dist/style.css --no-source-map --style=compressed --silence-deprecation=import",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
