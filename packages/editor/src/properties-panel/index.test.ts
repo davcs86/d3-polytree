@@ -4,7 +4,11 @@ import type { DiagramEventMap } from '@d3-polytree/core';
 import { CommandStack } from '@d3-polytree/core';
 import { EntryFactory } from './EntryFactory';
 import { PfdnPropertiesProvider } from './PfdnPropertiesProvider';
-import { PropertiesPanel, type SideTabRegistration, type SideTabsRegistrar } from './PropertiesPanel';
+import {
+  PropertiesPanel,
+  type SideTabRegistration,
+  type SideTabsRegistrar
+} from './PropertiesPanel';
 import type { Definition } from './utils';
 
 /** A moddle-element double: `$instanceOf`, `get`, and plain nested props. */
@@ -64,7 +68,11 @@ describe('@d3-polytree/properties-panel EntryFactory', () => {
   });
 
   it('colour field: renders a native colour input and seeds a hex value', () => {
-    const entry = factory.colorPicker({ id: 'label.color', label: 'Color', modelProperty: 'label.color' });
+    const entry = factory.colorPicker({
+      id: 'label.color',
+      label: 'Color',
+      modelProperty: 'label.color'
+    });
     expect(entry.html).toContain('type="color"');
     const node = render(entry.html);
     entry.get(nodeDef(), node);
@@ -83,7 +91,15 @@ describe('@d3-polytree/properties-panel EntryFactory', () => {
       ]
     });
     const node = render(entry.html);
-    entry.get(def('pfdn:Node', { type: 'task', get(this: Record<string, unknown>, p: string) { return this[p]; } }), node);
+    entry.get(
+      def('pfdn:Node', {
+        type: 'task',
+        get(this: Record<string, unknown>, p: string) {
+          return this[p];
+        }
+      }),
+      node
+    );
     const selected = node.querySelector('option[value="task"]') as HTMLOptionElement;
     expect(selected.selected).toBe(true);
   });
@@ -106,7 +122,10 @@ describe('@d3-polytree/properties-panel PfdnPropertiesProvider', () => {
     const elementFormat = tabs[1].groups[0];
     expect(elementFormat.entries.map((e) => e.id)).toEqual(['type', 'size']);
     // the icon select got an option per icon
-    expect(elementFormat.entries[0].selectOptions?.map((o) => o.value)).toEqual(['default', 'task']);
+    expect(elementFormat.entries[0].selectOptions?.map((o) => o.value)).toEqual([
+      'default',
+      'task'
+    ]);
   });
 
   it('updateDrawing emits element.updated for a node and its label', () => {
@@ -162,7 +181,9 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
     // properties + format tabs rendered, first selected
     const tabs = content.querySelectorAll('.tab-sheet');
     expect(tabs.length).toBe(2);
-    expect(content.querySelector('.tab-sheet-active')?.getAttribute('data-tab-target')).toBe('properties');
+    expect(content.querySelector('.tab-sheet-active')?.getAttribute('data-tab-target')).toBe(
+      'properties'
+    );
   });
 
   it('re-renders for the selected element and edits its model on change', () => {
@@ -211,8 +232,24 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
 
     expect(formatTab.classList.contains('tab-sheet-active')).toBe(true);
     expect(
-      content.querySelector('.pfdjs-pp-content[data-tab-target="format"]')?.classList.contains('open')
+      content
+        .querySelector('.pfdjs-pp-content[data-tab-target="format"]')
+        ?.classList.contains('open')
     ).toBe(true);
+  });
+
+  it('tab labels do not navigate (no href) and a click is default-prevented', () => {
+    new PropertiesPanel(registrar, bus, provider, settingsDef(), new CommandStack(bus));
+    const content = registrar.open();
+
+    // the label used to be <a href="#">, which appended a hash on every switch
+    const anchor = content.querySelector('.tab-sheet a') as HTMLAnchorElement;
+    expect(anchor.hasAttribute('href')).toBe(false);
+
+    const formatTab = content.querySelector('.tab-sheet[data-tab-target="format"]') as HTMLElement;
+    const evt = new MouseEvent('click', { bubbles: true, cancelable: true });
+    formatTab.dispatchEvent(evt);
+    expect(evt.defaultPrevented).toBe(true);
   });
 });
 

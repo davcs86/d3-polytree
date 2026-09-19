@@ -60,7 +60,7 @@ export class SearchPanel {
   }
 
   addOrUpdateItem(item: SearchItem): void {
-    if (!item.name) {
+    if (!item.id) {
       return;
     }
     this._items.set(item.id, item);
@@ -74,12 +74,19 @@ export class SearchPanel {
   }
 
   private _init(): void {
-    this._eventBus.on('node.created', (element: unknown, definition: ElementDefinition) => {
+    const onNode = (element: unknown, definition: ElementDefinition): void => {
       this.addOrUpdateItem(this._toItem(element, definition, 'Node', definition.type ?? ''));
-    });
-    this._eventBus.on('link.created', (element: unknown, definition: ElementDefinition) => {
+    };
+    const onLink = (element: unknown, definition: ElementDefinition): void => {
       this.addOrUpdateItem(this._toItem(element, definition, 'Connection', ''));
-    });
+    };
+    // `created` indexes an element; `updated` re-derives its name so a later
+    // rename (the label text is often set *after* the node is created) is
+    // reflected — otherwise freshly added nodes never appeared in the list.
+    this._eventBus.on('node.created', onNode);
+    this._eventBus.on('node.updated', onNode);
+    this._eventBus.on('link.created', onLink);
+    this._eventBus.on('link.updated', onLink);
     this._eventBus.on('node.deleted', (_element: unknown, definition: ElementDefinition) => {
       this.removeItem(definition.id as string);
     });
@@ -94,9 +101,12 @@ export class SearchPanel {
     elementType: string,
     elementSubType: string
   ): SearchItem {
+    // Fall back to the id when the caption label has no text yet (a just-added
+    // node), so it still shows in the list — matching its on-canvas caption.
+    const label = definition.label?.text?.trim();
     return {
       id: definition.id as string,
-      name: definition.label?.text ?? '',
+      name: label || (definition.id as string),
       elementType,
       elementSubType,
       element,
@@ -136,7 +146,8 @@ export class SearchPanel {
       return;
     }
     this._eventBus.emit('zoom.to.element', item.element, item.definition);
-    const clickEvent = `${item.definition.$descriptor.ns.localName.toLowerCase()}.click` as `${ElementClassName}.click`;
+    const clickEvent =
+      `${item.definition.$descriptor.ns.localName.toLowerCase()}.click` as `${ElementClassName}.click`;
     this._eventBus.emit(clickEvent, item.element, item.definition, null);
   }
 

@@ -58,6 +58,22 @@ describe('@d3-polytree/search-panel', () => {
     expect(content.querySelector('li .name')?.textContent).toBe('Beta');
   });
 
+  it('shows a newly added node even before it has a caption (falls back to its id)', () => {
+    new SearchPanel(registrar, bus);
+    const content = registrar.open();
+
+    // a just-added node: no label text yet (label is set after node.created)
+    const fresh = { id: 'node_3', type: 'default', $descriptor: { ns: { localName: 'Node' } } };
+    bus.emit('node.created', {}, fresh);
+    expect(content.querySelectorAll('li').length).toBe(1);
+    expect(content.querySelector('li .name')?.textContent).toBe('node_3');
+
+    // once its caption is set, an update reflects the name
+    bus.emit('node.updated', {}, node('node_3', 'Renamed'));
+    expect(content.querySelectorAll('li').length).toBe(1);
+    expect(content.querySelector('li .name')?.textContent).toBe('Renamed');
+  });
+
   it('filters the list by the search box (case-insensitive)', () => {
     new SearchPanel(registrar, bus);
     const content = registrar.open();
