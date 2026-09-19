@@ -1,4 +1,5 @@
 // Aggregated styling for the interactive viewer's folded-in panels.
 // Compiled to dist/style.css and exposed via the package's ./style.css export.
+@import './outline';
 @import './side-tabs/style';
 @import './search-panel/style';

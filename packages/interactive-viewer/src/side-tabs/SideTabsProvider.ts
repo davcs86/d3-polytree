@@ -1,5 +1,6 @@
 import type EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/canvas';
+import type { UiIconName } from '@d3-polytree/core';
 
 /** An action bound to a side tab: a click callback, or a map of gesture → callback. */
 export type SideTabAction =
@@ -9,7 +10,7 @@ export type SideTabAction =
 /** A registered side tab. */
 export interface SideTabEntry {
   title?: string;
-  iconClassName?: string;
+  icon?: UiIconName;
   action: SideTabAction;
 }
 

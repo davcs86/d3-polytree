@@ -1,0 +1,19 @@
+// Selection / hover outline, ported from v2.0-beta `lib/features/outline/style.scss`.
+// The Outline feature already draws a `<rect class="element-outline">` per element
+// at `stroke-width: 0`, and Selection toggles `.selected` on the element group;
+// this rule is what makes that rect visible on selection or hover. Without it the
+// outline is drawn but never shown, so selection (single or multi) has no feedback.
+.pfdjs-container {
+  .element {
+    & > .element-outline {
+      stroke-width: 0;
+    }
+
+    &.selected,
+    &:hover {
+      & > .element-outline {
+        stroke-width: 1px;
+      }
+    }
+  }
+}

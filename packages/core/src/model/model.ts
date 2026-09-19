@@ -1,5 +1,7 @@
 import { createPfdnModdle, type ModelElement, type PfdnModdle } from '@d3-polytree/pfdn-moddle';
 import type { DiagramModule } from '../Diagram';
+import { routeLinks } from '../modelling/linkRouting';
+import type { ModellingModelElement } from '../modelling/types';
 
 /** A loaded PFDN model: the root `pfdn:Diagram` plus its moddle instance. */
 export interface ModelHost {
@@ -52,7 +54,14 @@ export function emptyModel(): ModelHost {
 export async function loadModel(xml: string): Promise<ModelHost> {
   const moddle = createPfdnModdle();
   const { rootElement } = await moddle.fromXML(xml, 'pfdn:Diagram');
-  return { definitions: ensureSettings(rootElement, moddle), moddle };
+  const definitions = ensureSettings(rootElement, moddle);
+  // Route every link to edge-docked orthogonal waypoints up front, so links
+  // render correctly on first paint in every component — including the static
+  // Viewer, which has no modelling layer to re-route on interaction. A saved
+  // document may already carry routed waypoints; recomputing here is idempotent
+  // and also corrects centre-to-centre waypoints authored by hand or by tools.
+  routeLinks(definitions.link as ModellingModelElement[] | undefined, moddle);
+  return { definitions, moddle };
 }
 
 /**

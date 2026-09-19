@@ -156,15 +156,49 @@ export class Drag {
     this._eventBus.emit(`${getLocalName(def) as ElementClass}.moving`, elem, def);
   }
 
+  /**
+   * The drag-start decision and arming, split out from the d3-drag closure so it
+   * is unit-testable without synthesising a pointer gesture. Returns whether the
+   * move was armed (false when the root layer is `no-drag`).
+   */
+  beginDrag(
+    element: DrawingSelection,
+    definition: ModellingModelElement,
+    sourceEvent?: { ctrlKey?: boolean }
+  ): boolean {
+    // Grabbing a member of a multi-selection must drag the whole group, not
+    // collapse it: d3-drag's default filter strips ctrlKey, so a select() here is
+    // always a *replace*. Only (re)select the pressed element when it is not
+    // already part of the current selection.
+    const id = definition.id as string;
+    const alreadySelected = this._selection
+      .getSelectedElements()
+      .some((v) => (v.definition.id as string) === id);
+    if (!alreadySelected) {
+      this._selection.select(element, definition, sourceEvent);
+    }
+    if (this._canvas.getRootLayer().classed('no-drag')) {
+      return false;
+    }
+    // Show the "move" cursor for the duration of the gesture.
+    this._canvas.getRootLayer().classed('cursor-grabbing', true);
+    this.captureMoveOrigin();
+    return true;
+  }
+
+  /** Release the drag: clear the drag cursor and commit the move. */
+  endDrag(): void {
+    this._canvas.getRootLayer().classed('cursor-grabbing', false);
+    this.notifyMovedSelected();
+  }
+
   private _setElemToDrag(element: DrawingSelection, definition: ModellingModelElement): void {
     element.call(
       d3drag<SVGGElement, DiagramElement>().on('start', (event: DragEvent) => {
-        this._selection.select(element, definition, event.sourceEvent as { ctrlKey?: boolean });
-        if (!this._canvas.getRootLayer().classed('no-drag')) {
-          this.captureMoveOrigin();
+        if (this.beginDrag(element, definition, event.sourceEvent as { ctrlKey?: boolean })) {
           event
             .on('drag', (e: DragEvent) => this.applyOffsetToSelected(e.dx, e.dy))
-            .on('end', () => this.notifyMovedSelected());
+            .on('end', () => this.endDrag());
         }
       })
     );

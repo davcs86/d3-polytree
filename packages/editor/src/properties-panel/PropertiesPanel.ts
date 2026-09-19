@@ -1,6 +1,6 @@
 import type EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/core';
-import type { CommandStack, CommandContext } from '@d3-polytree/core';
+import type { CommandStack, CommandContext, UiIconName } from '@d3-polytree/core';
 import type { EntryResource } from './EntryFactory';
 import type { PropertiesProvider } from './PfdnPropertiesProvider';
 import { debounce, deepGet, deepSet, type Definition } from './utils';
@@ -16,7 +16,7 @@ interface UpdatePropsContext extends CommandContext {
 /** The side-tab registration surface the panel needs (structural). */
 export interface SideTabRegistration {
   title?: string;
-  iconClassName?: string;
+  icon?: UiIconName;
   action: {
     created?: (content: HTMLElement | null) => void;
     [gesture: string]: ((content: HTMLElement | null) => void) | undefined;
@@ -108,7 +108,7 @@ export class PropertiesPanel {
     provider.registerSideTab(
       {
         title: 'Properties',
-        iconClassName: 'icon-sliders',
+        icon: 'sliders',
         action: { created: (content) => this._drawPanel(content) }
       },
       1

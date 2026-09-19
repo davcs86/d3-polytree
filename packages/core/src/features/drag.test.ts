@@ -106,6 +106,56 @@ describe('@d3-polytree/core Drag', () => {
     expect(ctx.items[0].from.position).toEqual({ x: 0, y: 0 });
   });
 
+  it('toggles the drag cursor on the root layer for the duration of the gesture', () => {
+    const { canvas, selection, drag, moddle } = setup();
+    const el = drawing(0, 0);
+    const def = node(moddle, 'N1', 0, 0);
+    selection.select(el as unknown as DrawingSelection, def);
+
+    expect(canvas.getRootLayer().classed('cursor-grabbing')).toBe(false);
+    drag.beginDrag(el as unknown as DrawingSelection, def);
+    expect(canvas.getRootLayer().classed('cursor-grabbing')).toBe(true);
+    drag.endDrag();
+    expect(canvas.getRootLayer().classed('cursor-grabbing')).toBe(false);
+  });
+
+  it('grabbing a member of a multi-selection drags the whole group, not just it', () => {
+    const { selection, drag, moddle } = setup();
+    const aEl = drawing(0, 0);
+    const bEl = drawing(50, 50);
+    const a = node(moddle, 'A', 0, 0);
+    const b = node(moddle, 'B', 50, 50);
+    // build a two-element selection via ctrl-click semantics
+    selection.select(aEl as unknown as DrawingSelection, a);
+    selection.select(bEl as unknown as DrawingSelection, b, { ctrlKey: true });
+    expect(selection.getSelectedElements()).toHaveLength(2);
+
+    // press A to start dragging — d3-drag strips ctrlKey, so sourceEvent has none.
+    // The group must survive rather than collapse to {A}.
+    drag.beginDrag(aEl as unknown as DrawingSelection, a, { ctrlKey: false });
+    expect(selection.getSelectedElements()).toHaveLength(2);
+
+    drag.applyOffsetToSelected(10, 10);
+    expect((a.position as { x: number; y: number }).x).toBe(10);
+    expect((b.position as { x: number; y: number }).x).toBe(60);
+  });
+
+  it('grabbing an unselected element replaces the selection with it', () => {
+    const { selection, drag, moddle } = setup();
+    const aEl = drawing(0, 0);
+    const cEl = drawing(90, 90);
+    const a = node(moddle, 'A', 0, 0);
+    const c = node(moddle, 'C', 90, 90);
+    selection.select(aEl as unknown as DrawingSelection, a);
+    expect(selection.getSelectedElements()).toHaveLength(1);
+
+    // grabbing C (not selected, no ctrl) selects just C, then drags it
+    drag.beginDrag(cEl as unknown as DrawingSelection, c, { ctrlKey: false });
+    const sel = selection.getSelectedElements();
+    expect(sel).toHaveLength(1);
+    expect(sel[0].definition.id).toBe('C');
+  });
+
   it('does not commit a zero-delta gesture (a plain click)', () => {
     const { selection, drag, moddle, commandStack } = setup();
     const nodeEl = drawing(0, 0);
