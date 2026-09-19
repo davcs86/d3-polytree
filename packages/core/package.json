@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/core",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Core diagram engine for the d3-polytree v2 ecosystem (draw/features/modelling) — carved from core-v2beta in B3",
   "license": "MIT",
   "author": "David Castillo",

@@ -1,5 +1,13 @@
 # @d3-polytree/interactive-viewer
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [cdc6008]
+  - @d3-polytree/core@0.5.0
+  - @d3-polytree/viewer@0.1.4
+
 ## 0.5.1
 
 ### Patch Changes
