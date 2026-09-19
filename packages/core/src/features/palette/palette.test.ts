@@ -17,7 +17,12 @@ describe('@d3-polytree/core Palette', () => {
     const clicked = vi.fn();
     const provider = {
       getPaletteEntries: () => ({
-        'new-node': { title: 'New node', group: 'drawing', icon: 'node', action: { click: clicked } }
+        'new-node': {
+          title: 'New node',
+          group: 'drawing',
+          icon: 'node',
+          action: { click: clicked }
+        }
       }),
       getPaletteTools: () => ({})
     } as unknown as PP;
@@ -62,7 +67,14 @@ describe('@d3-polytree/core PaletteProvider', () => {
     const addNodeHandler = { append: vi.fn() };
     const addLabelHandler = { append: vi.fn() };
     const addLinkTool = { activate: vi.fn(), deactivate: vi.fn() };
-    const notifications = { warning: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn(), notify: vi.fn() };
+    const notifications = {
+      warning: vi.fn(),
+      success: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      notify: vi.fn()
+    };
+    const autoLayout = { apply: vi.fn(() => Promise.resolve()) };
     const provider = new PaletteProvider(
       host as never,
       bus,
@@ -74,9 +86,21 @@ describe('@d3-polytree/core PaletteProvider', () => {
       addNodeHandler as never,
       addLabelHandler as never,
       addLinkTool as never,
-      notifications as never
+      notifications as never,
+      autoLayout as never
     );
-    return { provider, addNodeHandler, addLabelHandler, addLinkTool, selection, axes, exporting, localStorage, upload };
+    return {
+      provider,
+      addNodeHandler,
+      addLabelHandler,
+      addLinkTool,
+      selection,
+      axes,
+      exporting,
+      localStorage,
+      upload,
+      autoLayout
+    };
   }
 
   const fire = (provider: PaletteProvider, id: string): void => {
@@ -110,5 +134,7 @@ describe('@d3-polytree/core PaletteProvider', () => {
     expect(ctx.upload.openDialog).toHaveBeenCalled();
     fire(ctx.provider, 'download');
     expect(ctx.exporting.trigger).toHaveBeenCalledWith('pfdn');
+    fire(ctx.provider, 'auto-layout');
+    expect(ctx.autoLayout.apply).toHaveBeenCalled();
   });
 });
