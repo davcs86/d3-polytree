@@ -11,12 +11,19 @@ import type { ModellingModelElement } from './types';
 /**
  * Modelling handler for links.
  *
- * Owns link creation and keeps link paths attached to node sides as nodes move.
- * The orthogonal, edge-docked waypoint geometry lives in the draw-independent
+ * Owns link creation and keeps link paths attached to node sides — and routed
+ * around obstacle nodes (C4) — as the model changes. The orthogonal, edge-docked,
+ * obstacle-avoiding waypoint geometry lives in the draw-independent
  * {@link computeLinkWaypoints} (so the same routing runs at load time for every
- * component, editor or not — see `linkRouting.ts`); this handler is the editing
- * side of it, re-routing on `node.moved` / `node.updated`. Ported from
- * `core-v2beta`'s `features/modelling/elements/links/Links.js`.
+ * component, editor or not — see `linkRouting.ts`).
+ *
+ * This handler is the interactive side of it and the **single writer** of solved
+ * waypoints while editing: it reroutes every unpinned link once per top-level
+ * transaction on `commandStack.changed`. That trigger is complete because every
+ * routing-input mutation (move/resize/create/delete/property edit) flows through
+ * the command stack (O11); a pinned link is left untouched (its authored
+ * waypoints degrade to the polyline drawer). Ported from `core-v2beta`'s
+ * `features/modelling/elements/links/Links.js`.
  */
 export class ModellingLinks extends ModellingElement {
   static readonly $inject = [
@@ -47,10 +54,16 @@ export class ModellingLinks extends ModellingElement {
     this.init();
   }
 
-  /** Subscribe to node movement so attached links re-route. */
+  /**
+   * Reroute every unpinned link once per committed transaction. Subscribing to
+   * `commandStack.changed` (not per-node events) makes this the single reroute
+   * writer: it fires once after execute/undo/redo with all positions already
+   * written, so obstacle-dependent routes stay correct even when a *non-incident*
+   * node moves or a node is created/deleted — cases the old incident-only
+   * `node.updated` subscription missed once routes depend on every node's box.
+   */
   init(): void {
-    this._eventBus.on('node.moved', this.updateNodeLinks, this);
-    this._eventBus.on('node.updated', this.updateNodeLinks, this);
+    this._eventBus.on('commandStack.changed', this.rerouteAll, this);
   }
 
   create(nodeADef: ModellingModelElement, nodeBDef: ModellingModelElement): ModellingModelElement {
@@ -75,8 +88,9 @@ export class ModellingLinks extends ModellingElement {
 
     this._drawer.reconcile(newLinkDef.id as string, newLinkDef);
 
-    this.updateNodeLinks(undefined, newLinkDef.target as ModellingModelElement);
-    this.updateNodeLinks(undefined, newLinkDef.source as ModellingModelElement);
+    // No incident reroute here: `create()` runs inside the `element.create`
+    // command, whose `commandStack.changed` drives the single reroute pass
+    // (which also routes this new link around obstacles).
 
     // create the associated label at the link midpoint
     const linkLabel = this._modellingLabels.create({
@@ -93,12 +107,15 @@ export class ModellingLinks extends ModellingElement {
     return newLinkDef;
   }
 
-  /** Re-route every link attached to `definition` (a node). */
-  updateNodeLinks(_element: unknown, definition: ModellingModelElement): void {
-    (this._links.getAll() as ModellingModelElement[]).forEach((link) => {
-      if (link.source === definition || link.target === definition) {
-        this._updateLink(link);
+  /** Reroute every unpinned link once, after a committed transaction. */
+  rerouteAll(): void {
+    const links = this._links.getAll() as ModellingModelElement[];
+    const nodes = this._definitions.get('node') as ModellingModelElement[] | undefined;
+    links.forEach((link) => {
+      if (link.get('pinned') === true) {
+        return; // a pinned route keeps its authored waypoints (degrade)
       }
+      this._rerouteLink(link, links, nodes);
     });
   }
 
@@ -110,18 +127,42 @@ export class ModellingLinks extends ModellingElement {
     return this._moddle.create('pfdn:Coordinates', { x, y }) as unknown as Point;
   }
 
-  /** Recompute the orthogonal waypoints of a single link and re-render it. */
-  private _updateLink(link: ModellingModelElement): void {
-    const waypoints = computeLinkWaypoints(
-      link,
-      this._links.getAll() as ModellingModelElement[],
-      this._moddle
-    );
+  /**
+   * Recompute a single link's obstacle-avoiding waypoints and re-render it —
+   * but only when they actually changed, and via the status-neutral
+   * {@link BaseElement.updateElement}, NOT `reconcile`. `reconcile` would flip a
+   * `status:0` link to `2` (soft-dirty) and leave `status="2"` residue that undo
+   * never restores, breaking the byte-identical `toXML` round-trip. The
+   * value-based diff-skip also bounds the `link.updated` fan-out (outline,
+   * search panel) to genuinely-moved links.
+   */
+  private _rerouteLink(
+    link: ModellingModelElement,
+    links: ModellingModelElement[],
+    nodes: ModellingModelElement[] | undefined
+  ): void {
+    const waypoints = computeLinkWaypoints(link, links, nodes, this._moddle);
     if (!waypoints) {
-      console.error(`Link #${link.id} should have valid source and target.`);
-      return;
+      return; // torn link (missing endpoint) — skip silently
+    }
+    if (waypointsEqual(link.waypoint as Point[] | undefined, waypoints)) {
+      return; // unchanged → no write, no re-render, no spurious link.updated
     }
     link.waypoint = waypoints;
-    this._links.reconcile(link.id as string, link);
+    this._links.updateElement(link);
   }
+}
+
+/** Value-based waypoint comparison (never object identity — every recompute mints
+ * fresh `pfdn:Coordinates`). Equal length and equal x/y at every index. */
+function waypointsEqual(prev: Point[] | undefined, next: Point[]): boolean {
+  if (!prev || prev.length !== next.length) {
+    return false;
+  }
+  for (let i = 0; i < next.length; i++) {
+    if (prev[i].x !== next[i].x || prev[i].y !== next[i].y) {
+      return false;
+    }
+  }
+  return true;
 }

@@ -35,4 +35,33 @@ describe('@d3-polytree/pfdn-moddle', () => {
     expect(nodes[0].id).toBe('N1');
     expect(nodes[0].name).toBe('NodeA');
   });
+
+  it('omits the default `pinned` attr for an unpinned link (byte-identical legacy XML)', () => {
+    const moddle = createPfdnModdle();
+    const link = moddle.create('pfdn:Link', { id: 'L1', source: 'N1', target: 'N2' });
+    const diagram = moddle.create('pfdn:Diagram', { id: 'D1' });
+    diagram.link = [link];
+    const xml = moddle.toXML(diagram);
+    // pinned defaults to false; moddle-xml omits default-valued attrs, so an
+    // existing .pfdn document gains no `pinned` attribute on any link (C4).
+    expect(xml).not.toContain('pinned');
+  });
+
+  it('serializes and round-trips a pinned link', async () => {
+    const moddle = createPfdnModdle();
+    const link = moddle.create('pfdn:Link', {
+      id: 'L1',
+      source: 'N1',
+      target: 'N2',
+      pinned: true
+    });
+    const diagram = moddle.create('pfdn:Diagram', { id: 'D1' });
+    diagram.link = [link];
+    const xml = moddle.toXML(diagram);
+    expect(xml).toContain('pinned="true"');
+
+    const { rootElement } = await moddle.fromXML(xml, 'pfdn:Diagram');
+    const links = rootElement.link as ModelElement[];
+    expect(links[0].pinned).toBe(true);
+  });
 });

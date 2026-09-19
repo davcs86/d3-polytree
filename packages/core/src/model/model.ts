@@ -60,7 +60,11 @@ export async function loadModel(xml: string): Promise<ModelHost> {
   // Viewer, which has no modelling layer to re-route on interaction. A saved
   // document may already carry routed waypoints; recomputing here is idempotent
   // and also corrects centre-to-centre waypoints authored by hand or by tools.
-  routeLinks(definitions.link as ModellingModelElement[] | undefined, moddle);
+  routeLinks(
+    definitions.link as ModellingModelElement[] | undefined,
+    definitions.node as ModellingModelElement[] | undefined,
+    moddle
+  );
   return { definitions, moddle };
 }
 

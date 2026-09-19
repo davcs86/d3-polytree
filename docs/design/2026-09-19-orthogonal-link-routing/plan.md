@@ -379,5 +379,25 @@ that touch no cited evidence or step logic. Plan is execution-ready.
 
 ## Deviation Log
 
-_Populated during execution. Step bodies above are immutable (DN-5); record any divergence here with the
-step number, what changed, and why._
+_Step bodies above are immutable (DN-5); divergences during execution are recorded here._
+
+- **Step 2 (route/ factoring).** The plan said to port the elbow + side-assignment math into `route/`.
+  Executed instead as: `route/` holds the genuinely-new, pure **obstacle-avoidance** algorithm
+  (`avoidObstacles` over plain points + boxes, fixture-tested), while the existing elbow/side geometry
+  stays in `linkRouting.ts`, which builds the plain elbow and delegates the nudge to `route/`. This
+  honors the Chosen Approach identically (pure obstacle router in `core/src/route/`, glue in
+  `linkRouting.ts`, degrades to today's output) with a smaller, safer split — and makes the
+  "degrades to exact output" invariant trivial (nudge is identity when nothing intersects). No design
+  decision changed.
+- **Step 5 (write path).** Verified `pnpm build` that moddle-xml **omits default-valued attributes**
+  (`lineColor`/`lineWidth`/`status`/`position x=0` all absent at default), so Step 1's primary path
+  (declare `pinned` `default:false`) holds and the fallback was **not** needed.
+- **Step 7 (no status residue, status=0 concern).** The reviewer's Step-9a status="0" masking concern is
+  structurally moot: `link.pin` performs **no** reconcile at all, so it cannot flip `status` on a link of
+  any status. The pin round-trip test (`command.roundtrip.test.ts`) proves byte-identity on undo; the
+  `links.test.ts` pinned-skip + off-stack-guard tests cover the rest.
+- **Step 8 (pin affordance — scope trim).** `EntryFactory` has no boolean/checkbox entry. Shipped the
+  pin **mechanism** — the `link.pin` command + a public `editor.setLinkPinned(id, pinned)` API (a
+  legitimate library affordance the host UI wires up) — and **deferred the properties-panel checkbox**
+  to a follow-up to keep C4 focused and avoid a panel refactor + special-cased dispatch. The command and
+  API are fully tested; the checkbox is UX polish, not part of the routing engine C4 delivers.

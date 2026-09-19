@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
-import { DrawingRegistry, type BaseElement, type DiagramElement, type DrawingSelection } from '../draw';
+import {
+  DrawingRegistry,
+  type BaseElement,
+  type DiagramElement,
+  type DrawingSelection
+} from '../draw';
 import type { NotificationService } from '../features/notifications';
 import { ModellingLabels } from './Labels';
 import { ModellingLinks } from './Links';
@@ -24,6 +29,13 @@ class FakeLinksDrawer {
     }
     if (!definition.id) {
       definition.id = `link_${++this._seq}`;
+    }
+    this.defs.set(definition.id, definition);
+    this.registry.set(definition.id, {} as unknown as DrawingSelection);
+  }
+  updateElement(definition: ModellingModelElement): void {
+    if (!definition.id) {
+      return;
     }
     this.defs.set(definition.id, definition);
     this.registry.set(definition.id, {} as unknown as DrawingSelection);
@@ -113,7 +125,7 @@ describe('@d3-polytree/core modelling link handler', () => {
     expect(label.text).toBe(link.id);
   });
 
-  it('re-routes attached links when a node moves', () => {
+  it('re-routes every link once per committed transaction (commandStack.changed)', () => {
     const a = node(moddle, 'A', 0, 0);
     const b = node(moddle, 'B', 200, 0);
     drawNode(a);
@@ -123,16 +135,61 @@ describe('@d3-polytree/core modelling link handler', () => {
     const before = link.waypoint as Array<{ x: number; y: number }>;
     const lastBefore = before[before.length - 1].x;
 
-    // move the target further right and fire the movement event
+    // move the target further right and commit — the single reroute writer runs
+    // on commandStack.changed, not on any per-node event.
     (b.position as { x: number; y: number }).x = 320;
-    bus.emit('node.moved', undefined, b);
+    bus.emit('commandStack.changed', { canUndo: true, canRedo: false });
 
     const after = link.waypoint as Array<{ x: number; y: number }>;
     const lastAfter = after[after.length - 1].x;
     expect(lastAfter).toBeGreaterThan(lastBefore);
   });
 
-  it('skips routing for a link with a missing endpoint', () => {
+  it('leaves a pinned link untouched on reroute (degrade to stored polyline)', () => {
+    const a = node(moddle, 'A', 0, 0);
+    const b = node(moddle, 'B', 200, 0);
+    drawNode(a);
+    drawNode(b);
+
+    const link = links.create(a, b);
+    bus.emit('commandStack.changed', { canUndo: true, canRedo: false }); // initial route
+    link.set('pinned', true);
+    const pinnedWaypoints = link.waypoint as Array<{ x: number; y: number }>;
+    const snapshot = pinnedWaypoints.map((p) => ({ x: p.x, y: p.y }));
+
+    // move the target and commit again — a pinned link must NOT be recomputed.
+    (b.position as { x: number; y: number }).x = 500;
+    bus.emit('commandStack.changed', { canUndo: true, canRedo: false });
+
+    const now = link.waypoint as Array<{ x: number; y: number }>;
+    expect(now.map((p) => ({ x: p.x, y: p.y }))).toEqual(snapshot);
+  });
+
+  it('does not reroute on a bare off-stack node event (architecture guard for O11)', () => {
+    // C4's reroute completeness depends on every routing-input mutation flowing
+    // through the command stack (O11). A bare node.updated NOT wrapped in a
+    // command must therefore NOT reroute — this guard fails loudly if a future
+    // change re-introduces an off-stack reroute trigger.
+    const a = node(moddle, 'A', 0, 0);
+    const b = node(moddle, 'B', 200, 0);
+    drawNode(a);
+    drawNode(b);
+    const link = links.create(a, b);
+    bus.emit('commandStack.changed', { canUndo: true, canRedo: false });
+    const snapshot = (link.waypoint as Array<{ x: number; y: number }>).map((p) => ({
+      x: p.x,
+      y: p.y
+    }));
+
+    (b.position as { x: number; y: number }).x = 900;
+    bus.emit('node.updated', {} as unknown as DrawingSelection, b);
+
+    expect(
+      (link.waypoint as Array<{ x: number; y: number }>).map((p) => ({ x: p.x, y: p.y }))
+    ).toEqual(snapshot);
+  });
+
+  it('skips routing for a link with a missing endpoint without throwing', () => {
     const a = node(moddle, 'A', 0, 0);
     const b = node(moddle, 'B', 100, 100);
     drawNode(a);
@@ -141,6 +198,6 @@ describe('@d3-polytree/core modelling link handler', () => {
 
     // detach the target reference and re-route: must not throw
     link.target = undefined;
-    expect(() => links.updateNodeLinks(undefined, a)).not.toThrow();
+    expect(() => links.rerouteAll()).not.toThrow();
   });
 });
