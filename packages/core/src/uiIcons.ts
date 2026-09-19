@@ -29,7 +29,8 @@ export type UiIconName =
   | 'label'
   | 'node'
   | 'delete'
-  | 'grid';
+  | 'grid'
+  | 'layout';
 
 /** Inner SVG markup (Lucide 24×24 stroke icons) keyed by {@link UiIconName}. */
 const ICON_PATHS: Record<UiIconName, string> = {
@@ -52,7 +53,10 @@ const ICON_PATHS: Record<UiIconName, string> = {
   node: '<rect width="18" height="18" x="3" y="3" rx="2"/>',
   delete:
     '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
-  grid: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>'
+  grid: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>',
+  // Lucide "network" — a layered graph, apt for the auto-layout action.
+  layout:
+    '<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>'
 };
 
 /** The SVG string for an icon (empty for an unknown name). */

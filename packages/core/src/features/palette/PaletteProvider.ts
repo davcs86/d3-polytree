@@ -7,6 +7,7 @@ import type { Selection } from '../selection';
 import type { Exporting } from '../exporting';
 import type { LocalStorage } from '../localStorage';
 import type { Upload } from '../upload';
+import type { AutoLayout } from '../autoLayout';
 import type { AddNodeHandler } from './AddNodeHandler';
 import type { AddLabelHandler } from './AddLabelHandler';
 import type { AddLinkTool } from './AddLinkTool';
@@ -48,7 +49,8 @@ export class PaletteProvider {
     'addNodeHandler',
     'addLabelHandler',
     'addLinkTool',
-    'notifications'
+    'notifications',
+    'autoLayout'
   ];
 
   private readonly _host: PaletteHost;
@@ -60,6 +62,7 @@ export class PaletteProvider {
   private readonly _addNodeHandler: AddNodeHandler;
   private readonly _addLabelHandler: AddLabelHandler;
   private readonly _notifications: NotificationService;
+  private readonly _autoLayout: AutoLayout;
   private readonly _tools: Record<string, Tool>;
 
   constructor(
@@ -73,7 +76,8 @@ export class PaletteProvider {
     addNodeHandler: AddNodeHandler,
     addLabelHandler: AddLabelHandler,
     addLinkTool: AddLinkTool,
-    notifications: NotificationService
+    notifications: NotificationService,
+    autoLayout: AutoLayout
   ) {
     this._host = host;
     this._localStorage = localStorage;
@@ -84,6 +88,7 @@ export class PaletteProvider {
     this._addNodeHandler = addNodeHandler;
     this._addLabelHandler = addLabelHandler;
     this._notifications = notifications;
+    this._autoLayout = autoLayout;
     this._tools = { addLinkTool };
   }
 
@@ -169,6 +174,12 @@ export class PaletteProvider {
         group: 'settings',
         icon: 'grid',
         action: { click: () => this._axes.toggleVisible() }
+      },
+      'auto-layout': {
+        title: 'Auto-layout diagram',
+        group: 'settings',
+        icon: 'layout',
+        action: { click: () => void this._autoLayout.apply() }
       }
     };
   }

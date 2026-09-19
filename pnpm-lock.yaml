@@ -115,6 +115,9 @@ importers:
       '@d3-polytree/canvas':
         specifier: workspace:*
         version: link:../canvas
+      '@d3-polytree/layout':
+        specifier: workspace:*
+        version: link:../layout
       '@d3-polytree/pfdn-moddle':
         specifier: workspace:*
         version: link:../pfdn-moddle
@@ -197,6 +200,8 @@ importers:
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.4
+
+  packages/layout: {}
 
   packages/pfdn-moddle:
     dependencies:
