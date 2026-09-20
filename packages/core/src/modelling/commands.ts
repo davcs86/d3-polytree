@@ -222,30 +222,58 @@ export interface MoveContext extends CommandContext {
 }
 
 /**
- * Build the `element.move` command. Links are NOT in the memento: their
- * waypoints are a pure function of node positions, so restoring positions and
- * reconciling re-drives the live router (which subscribes to `node.updated`).
- * All positions are written before any reconcile, so a shared incident link
- * reroutes against fully-restored endpoints (never an intermediate state).
+ * Build the `element.move` command. Links are NOT in the memento: their solved
+ * waypoints are a pure function of node positions, recomputed by the single
+ * reroute pass that `ModellingLinks` runs on `commandStack.changed` after this
+ * command (on execute, undo, and redo alike). All positions are written before
+ * any reconcile, so that pass routes against fully-restored endpoints (never an
+ * intermediate state). Only a *pinned* link's waypoints are authored state, and
+ * those the reroute deliberately skips.
  */
 export function moveElementsCommand(handlers: ElementHandlers): CommandHandler<MoveContext> {
-  const applyAll = (which: 'from' | 'to') => (ctx: MoveContext): void => {
-    // 1. write every position/status first
-    for (const it of ctx.items) {
-      applyPlacement(it.def, it[which]);
-      if (it.label) {
-        applyPlacement(it.label.def, it.label[which]);
+  const applyAll =
+    (which: 'from' | 'to') =>
+    (ctx: MoveContext): void => {
+      // 1. write every position/status first
+      for (const it of ctx.items) {
+        applyPlacement(it.def, it[which]);
+        if (it.label) {
+          applyPlacement(it.label.def, it.label[which]);
+        }
       }
-    }
-    // 2. then reconcile every touched drawing (each node.updated reroutes its links)
-    for (const it of ctx.items) {
-      handlers[it.className].reconcile(it.def.id as string, it.def);
-      if (it.label) {
-        handlers.label.reconcile(it.label.def.id as string, it.label.def);
+      // 2. then reconcile every touched drawing (the commandStack.changed reroute
+      //    pass then re-routes all unpinned links against the final positions)
+      for (const it of ctx.items) {
+        handlers[it.className].reconcile(it.def.id as string, it.def);
+        if (it.label) {
+          handlers.label.reconcile(it.label.def.id as string, it.label.def);
+        }
       }
+    };
+  return { execute: applyAll('to'), revert: applyAll('from') };
+}
+
+/**
+ * `link.pin` — toggle a link's `pinned` flag (C4). The memento is the flag only:
+ * a pinned link keeps its authored waypoints (the reroute pass skips it), and
+ * solved waypoints are never captured (they stay derived). It performs NO
+ * reconcile, so it cannot flip a `status:0` link to `2` — no `toXML` residue.
+ */
+export interface PinContext extends CommandContext {
+  def: ModellingModelElement;
+  before: boolean;
+  after: boolean;
+}
+
+export function pinLinkCommand(): CommandHandler<PinContext> {
+  return {
+    execute(ctx) {
+      ctx.def.set('pinned', ctx.after);
+    },
+    revert(ctx) {
+      ctx.def.set('pinned', ctx.before);
     }
   };
-  return { execute: applyAll('to'), revert: applyAll('from') };
 }
 
 /**
@@ -271,4 +299,5 @@ export function registerModellingCommands(
   );
   commandStack.registerHandler('element.resize', resizeElementCommand(handlers) as CommandHandler);
   commandStack.registerHandler('element.move', moveElementsCommand(handlers) as CommandHandler);
+  commandStack.registerHandler('link.pin', pinLinkCommand() as CommandHandler);
 }

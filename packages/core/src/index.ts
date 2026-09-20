@@ -30,6 +30,7 @@ export { getLocalName } from './utils/localName';
 export type { Descriptored } from './utils/localName';
 export * from './features';
 export * from './modelling';
+export * from './route';
 export * from './command';
 export * from './Diagram';
 export * from './model/model';

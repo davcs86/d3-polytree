@@ -225,4 +225,37 @@ describe('@d3-polytree/editor command round-trips', () => {
     cs.undo(); // ONE undo restores BOTH nodes (one transaction)
     expect(editor.exportDiagram()).toBe(before);
   });
+
+  it('setLinkPinned round-trips through undo byte-identically (no status residue)', () => {
+    const addNode = editor.get<AppendHandler>('addNodeHandler');
+    const a = addNode.append({ position: { x: 0, y: 0 } });
+    const b = addNode.append({ position: { x: 120, y: 120 } });
+    cs.execute('element.create', { className: 'link', parameters: [a, b] });
+    const link = editor.get<{ getAll(): Def[] }>('links').getAll()[0];
+
+    // link.pin performs no reconcile, so pinning cannot flip status → the pin,
+    // then undo, is byte-identical (C4).
+    assertGestureRoundTrip(editor, cs, () => editor.setLinkPinned(link.id as string, true));
+    expect(link.get('pinned')).not.toBe(true); // undo cleared the flag
+  });
+
+  it('a pinned link keeps its waypoints when an endpoint moves', () => {
+    const addNode = editor.get<AppendHandler>('addNodeHandler');
+    const a = addNode.append({ position: { x: 0, y: 0 } });
+    const b = addNode.append({ position: { x: 120, y: 120 } });
+    cs.execute('element.create', { className: 'link', parameters: [a, b] });
+    const link = editor.get<{ getAll(): Def[] }>('links').getAll()[0];
+    editor.setLinkPinned(link.id as string, true);
+    const pinned = (link.waypoint as Array<{ x: number; y: number }>).map((p) => ({
+      x: p.x,
+      y: p.y
+    }));
+
+    cs.execute('element.move', { items: [nodeMove(b, { x: 320, y: 280 })] });
+
+    // reroute pass ran on commandStack.changed, but the pinned link was skipped.
+    expect(
+      (link.waypoint as Array<{ x: number; y: number }>).map((p) => ({ x: p.x, y: p.y }))
+    ).toEqual(pinned);
+  });
 });

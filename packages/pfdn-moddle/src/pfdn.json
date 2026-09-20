@@ -388,6 +388,12 @@
           }
         },
         {
+          "name": "pinned",
+          "type": "Boolean",
+          "isAttr": true,
+          "default": false
+        },
+        {
           "name": "tag",
           "isAttr": true,
           "type": "String"
