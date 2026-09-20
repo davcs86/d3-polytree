@@ -1,5 +1,22 @@
 # @d3-polytree/react
 
+## 0.2.1
+
+### Patch Changes
+
+- 8c75ec1: Docs: comprehensive per-package READMEs across the ecosystem.
+
+  Every published package now ships a comprehensive README (install, feature/API tables, usage examples,
+  where-it-fits notes, and links) so the npm package page is self-contained. `@d3-polytree/element` and
+  `@d3-polytree/react` gain their first READMEs; the remaining nine are expanded to a consistent
+  structure. Stale `homepage` links that pointed at a non-existent `v2` branch are corrected to `main`.
+  No runtime or API changes — this is a docs/metadata-only release so the refreshed READMEs are
+  republished to npm.
+
+- Updated dependencies [8c75ec1]
+- Updated dependencies [7ed534c]
+  - @d3-polytree/editor@0.7.0
+
 ## 0.2.0
 
 ### Minor Changes

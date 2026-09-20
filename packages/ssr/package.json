@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/ssr",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Server-side rendering: turn a .pfdn document into a static SVG string in Node (deterministic, no browser) for the d3-polytree v2 ecosystem",
   "license": "MIT",
   "author": "David Castillo",
