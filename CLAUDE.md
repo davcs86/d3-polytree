@@ -53,7 +53,7 @@ canvas  +  pfdn-moddle  ->  core  ->  viewer  ->  interactive-viewer  ->  editor
   exporting, localStorage, upload, palette, resize, tooltip, notifications). Runs on **peer** D3 slices
   (`d3-selection`, `d3-zoom`, `d3-transition`, `d3-scale`, `d3-axis`, `d3-drag`).
 - `viewer` → `interactive-viewer` → `editor` are **subclasses** (`Editor extends InteractiveViewer
-  extends Viewer`), each adding a slice of modules. `side-tabs` + `search-panel` are folded into
+extends Viewer`), each adding a slice of modules. `side-tabs` + `search-panel` are folded into
   `interactive-viewer/src/`; `properties-panel` into `editor/src/` (they have no standalone package —
   decision O10 — but are re-exported from the parents).
 
@@ -64,15 +64,15 @@ The engine is wired with **didi**. A module is a plain object:
 (in `core/src/Diagram.ts`) bootstraps an injector from a module list and eagerly instantiates each
 `__init__` service. Two invariants govern everything:
 
-1. **Last definition of a token wins.** Composing a module *after* the core modules overrides that
+1. **Last definition of a token wins.** Composing a module _after_ the core modules overrides that
    token. This is the single extension seam: `new Editor({ modules: [myModule] })` appends caller
    modules **after** the component's own (see `Viewer._boot`), and icon packs rely on it (their
    `icons` factory spreads `createIcons()` then their own). Do not reorder so a core module lands last.
 2. **Boot order = event-subscription order.** Drawers emit `<class>.created` (`node.created`,
-   `link.created`, …) *during* boot as they render the loaded model. Any feature that must see those
+   `link.created`, …) _during_ boot as they render the loaded model. Any feature that must see those
    initial elements (selection, outline, search-panel, side-tabs) therefore has to be registered
    **before** the drawer modules. That is why components list interaction/feature modules in
-   `interactionModules` *ahead of* `Viewer.modules` (the drawers) in `getModules()`. Moving a
+   `interactionModules` _ahead of_ `Viewer.modules` (the drawers) in `getModules()`. Moving a
    created-listener after the drawers silently drops the initial elements — a real bug the folded-panel
    tests guard against.
 
@@ -106,13 +106,31 @@ the reference. `icons-amazon` generates `src/icons.generated.ts` from `src/svg/`
 
 ## Releases
 
-Versioning/publishing is **Changesets** + `.github/workflows/release.yml`, publishing **tokenlessly**
-via npm **Trusted Publishing (OIDC)** — there is no `NPM_TOKEN`. Record changes with `pnpm changeset`;
-merging to `main` opens a *Version Packages* PR; merging that publishes the bumped packages. Constraints
-that are load-bearing (don't regress them):
+Versioning/publishing is **Changesets** + `.github/workflows/release.yml`. Record changes with
+`pnpm changeset`; merging to `main` opens a _Version Packages_ PR; merging that publishes the bumped
+packages. Publishing is **hybrid**, routed per package by `scripts/publish.mjs` (the `release` script
+runs `turbo run build && node scripts/publish.mjs`):
 
-- Publishing must go through **pnpm** (it rewrites `workspace:*` to real versions). OIDC therefore
-  needs **pnpm 10** (pnpm 9 has no OIDC; pnpm 11 has an OIDC 404 regression).
+- **New packages** (a name that 404s on the registry) are published with the **`NPM_TOKEN`** secret.
+  Trusted Publishing can't cover a first release — a Trusted Publisher can only be configured on
+  npmjs.com _after_ the package exists — so `publish.mjs` bootstraps new names with the token, then
+  git-tags them. After that first publish, configure the package's Trusted Publisher so it goes
+  tokenless from then on.
+- **Existing packages** are published **tokenlessly** via npm **Trusted Publishing (OIDC)** through
+  `changeset publish`. The two phases are isolated: `NPM_TOKEN` is injected only into the bootstrap
+  subprocess (as `NODE_AUTH_TOKEN`), so the OIDC phase always runs with no token — OIDC is used for
+  updates irrespective of npm/pnpm token-vs-OIDC precedence. `changeset publish` skips versions
+  already on the registry, so a bootstrapped package is not double-published.
+
+Constraints that are load-bearing (don't regress them):
+
+- Publishing must go through **pnpm** (it rewrites `workspace:*` to real versions) — both phases do
+  (`pnpm publish` for the bootstrap, `changeset publish` → pnpm for updates). OIDC therefore needs
+  **pnpm 10** (pnpm 9 has no OIDC; pnpm 11 has an OIDC 404 regression).
 - The release job upgrades npm to **≥ 11.5.1** (`npm install -g npm@latest`) — the OIDC token exchange
   goes through the npm CLI — and needs `id-token: write` + setup-node `registry-url` + Node ≥ 22.14.
-- Each package has a Trusted Publisher configured on npmjs.com pointing at this repo + `release.yml`.
+- The **`NPM_TOKEN`** repo secret must exist (npm automation/granular token, publish rights on the
+  `@d3-polytree` scope) whenever a release introduces a brand-new package; existing-only releases
+  never read it.
+- Each already-published package has a Trusted Publisher configured on npmjs.com pointing at this repo
+  - `release.yml`.
