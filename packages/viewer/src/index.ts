@@ -6,6 +6,7 @@
  * and the other interactive features are layered on by `@d3-polytree/interactive-viewer`
  * and `@d3-polytree/editor`.
  */
+import type EventEmitter from 'eventemitter3';
 import {
   Diagram,
   emptyModel,
@@ -15,8 +16,23 @@ import {
   linksModule,
   nodesModule,
   type DiagramModule,
+  type DiagramEventMap,
   type ModelHost
 } from '@d3-polytree/core';
+
+/**
+ * The engine events a component subscription survives a diagram reboot for.
+ * Scoped to the post-boot events (they fire *after* `new Diagram` builds and the
+ * drawers have replayed the initial model), so a subscriber never misses the
+ * boot-time `*.created` storm — those fire synchronously during construction,
+ * before the re-attach in {@link Viewer._boot}, and are out of scope here.
+ */
+export type ReboundEvent = 'document.changed' | 'selection.changed' | 'commandStack.changed';
+
+interface HandlerEntry {
+  event: ReboundEvent;
+  handler: (...args: never[]) => void;
+}
 
 type ModelDefinitions = ModelHost['definitions'];
 type ModelModdle = ModelHost['moddle'];
@@ -56,9 +72,43 @@ export class Viewer {
   moddle: ModelModdle | null = null;
   private _diagram: Diagram | null = null;
   private _host: ModelHost | null = null;
+  /** The currently-bound eventBus (recreated on every boot); held so we can
+   * detach from it during teardown without calling `get()` (which throws once
+   * `_diagram` is null). */
+  private _bus: EventEmitter<DiagramEventMap> | null = null;
+  /** Consumer subscriptions, re-attached to each new bus across reboots. */
+  private readonly _handlers = new Set<HandlerEntry>();
 
   constructor(options: ViewerOptions = {}) {
     this.options = options;
+  }
+
+  /**
+   * Subscribe to a post-boot engine event. Unlike a raw `get('eventBus').on(…)`,
+   * a subscription taken here **survives `importDiagram`/`createEmpty` reboots**
+   * (which rebuild the injector and mint a fresh eventBus): the component
+   * re-attaches every registered handler to the new bus on each boot. This is the
+   * seam the custom-element and React adapters (and Track D) bridge through.
+   */
+  on<K extends ReboundEvent>(event: K, handler: (...args: DiagramEventMap[K]) => void): void {
+    const entry: HandlerEntry = {
+      event,
+      handler: handler as unknown as (...args: never[]) => void
+    };
+    this._handlers.add(entry);
+    this._bus?.on(event, handler as never);
+  }
+
+  /** Remove a subscription added with {@link on}. Safe to call after destroy. */
+  off<K extends ReboundEvent>(event: K, handler: (...args: DiagramEventMap[K]) => void): void {
+    const target = handler as unknown as (...args: never[]) => void;
+    for (const entry of this._handlers) {
+      if (entry.event === event && entry.handler === target) {
+        this._handlers.delete(entry);
+        break;
+      }
+    }
+    this._bus?.off(event, handler as never);
   }
 
   /** The modules this instance boots with (overridable by subclasses). */
@@ -102,9 +152,30 @@ export class Viewer {
     return this._diagram.get<T>(name, strict);
   }
 
-  /** Tear down the current diagram. */
+  /** Tear down the current diagram and forget all subscriptions. */
   destroy(): void {
+    this._teardown();
+    this._handlers.clear();
+  }
+
+  /**
+   * Destroy the current diagram and detach subscriptions from its (dying) bus,
+   * but KEEP the registry so a following boot can re-attach. Used by both
+   * {@link destroy} (which then clears the registry) and {@link _boot} (which
+   * re-attaches) — routing reboot through this non-virtual method (instead of the
+   * virtual `destroy()`) also preserves subclass DOM bindings across a reboot
+   * (e.g. the editor's undo/redo keydown listener).
+   */
+  private _teardown(): void {
+    // Destroy the Diagram first (so teardown-observing handlers still fire on the
+    // live bus), then detach our handlers from that bus.
     this._diagram?.destroy();
+    if (this._bus) {
+      for (const { event, handler } of this._handlers) {
+        this._bus.off(event, handler as never);
+      }
+      this._bus = null;
+    }
     this._diagram = null;
     this._host = null;
     this.definitions = null;
@@ -113,7 +184,7 @@ export class Viewer {
 
   private _boot(host: ModelHost): void {
     if (this._diagram) {
-      this.destroy();
+      this._teardown();
     }
     this._host = host;
     this.definitions = host.definitions;
@@ -132,6 +203,14 @@ export class Viewer {
         { d3polytree: ['value', this] } as DiagramModule
       ]
     });
+    // Bind the (fresh) eventBus and re-attach every consumer subscription, so an
+    // `on(...)` taken before or across a reboot keeps firing. The drawers have
+    // already replayed the initial model synchronously inside `new Diagram`, so
+    // only post-boot events (ReboundEvent) are re-attached here — by design.
+    this._bus = this.get<EventEmitter<DiagramEventMap>>('eventBus');
+    for (const { event, handler } of this._handlers) {
+      this._bus.on(event, handler as never);
+    }
   }
 }
 

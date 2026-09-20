@@ -23,6 +23,8 @@ published from `main` via GitHub Pages.
 | [`@d3-polytree/interactive-viewer`](./packages/interactive-viewer) | Viewer + pan/zoom, selection, side-tabs & search panels. |
 | [`@d3-polytree/editor`](./packages/editor) | Full editor — create/modify diagrams, palette, properties panel. |
 | [`@d3-polytree/icons-amazon`](./packages/icons-amazon) | AWS icon pack + the reference **icon-pack convention**. |
+| [`@d3-polytree/element`](./packages/element) | `<d3-polytree-editor>` custom element — shadow DOM, form-associated (`ElementInternals`). |
+| [`@d3-polytree/react`](./packages/react) | React wrapper (`<PolytreeEditor>`) bridging the event bus via `useSyncExternalStore`. |
 
 Every package ships **ESM + CJS + `.d.ts`**; the three components (`viewer`, `interactive-viewer`,
 `editor`) also ship a self-contained **UMD** bundle with D3 inlined for a plain `<script>` drop-in.
