@@ -5,7 +5,7 @@
 **Design**: [design.md](./design.md)
 **Test harness**: `pnpm --filter @d3-polytree/<pkg> test` (vitest jsdom); Playwright e2e via `apps/storybook` (`@playwright/test` 1.56.1, container-pinned); full gate `pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook` (CI `.github/workflows/ci.yml`)
 **Total Steps**: 8
-**Review**: `not-reviewed`
+**Review**: `passed-with-warnings @ 2026-09-20`
 
 ---
 
@@ -178,7 +178,7 @@ This step is the react test suite. Fails before Steps 5–6.
 - Built element UMD: `packages/element/dist/element.umd.js` (self-registers tag).
 
 **Instructions**:
-New spec (no Storybook story, so it stays out of the VR + a11y nets): `page.setContent('<form id="f"><d3-polytree-editor name="doc"></d3-polytree-editor></form>')` on about:blank; `page.addScriptTag({ content: readFileSync('packages/element/dist/element.umd.js','utf8') })`; wait for the element to upgrade + boot; make an edit via `page.evaluate` (dispatch through the element's editor or set a value); assert `new FormData(document.getElementById('f')).get('doc')` contains a `.pfdn` fragment. Guard the spec so it only runs when the UMD exists (build-before-e2e). Keep it a single spec.
+New spec (no Storybook story, so it stays out of the VR + a11y nets): `page.setContent('<form id="f"><d3-polytree-editor name="doc"></d3-polytree-editor></form>')` on about:blank; inject the built UMD via `page.addScriptTag({ content })` where `content` is read from a **repo-root-resolved absolute path** — Playwright's cwd is `apps/storybook` (`testDir: './playwright'`), so a bare `packages/element/...` relative path resolves wrong (W1). Resolve it as `path.resolve(__dirname, '../../../packages/element/dist/element.umd.js')` (mirror `_support.ts`'s `node:path` artifact-resolution — `_support.ts:1-2`), or `fileURLToPath` off `import.meta.url`. Wait for the element to upgrade + boot; make an edit via `page.evaluate` (dispatch through the element's editor or set a value); assert `new FormData(document.getElementById('f')).get('doc')` contains a `.pfdn` fragment. Guard the spec so it only runs when the UMD exists (build-before-e2e). Keep it a single spec.
 
 **Verification**:
 Run the Playwright suite the way CI does (container-pinned, `.github/workflows/visual-regression.yml`); locally note it needs the pinned container. `pnpm build` first (produces the element UMD).
@@ -201,7 +201,7 @@ This step is the browser test. Confirms real Chromium form participation (unveri
 - Changesets auto-include new packages (`.changeset/config.json` ignores only storybook); frozen install requires the committed lockfile (`.github/workflows/ci.yml`).
 
 **Instructions**:
-`pnpm install` to regenerate `pnpm-lock.yaml` (React devDeps) and commit it. Changeset: **minor** for `@d3-polytree/viewer` (new `on/off` API), `@d3-polytree/element`, `@d3-polytree/react`. Add the two packages to `README.md`'s package table. Mark C7 in `ROADMAP.md`. Note (not a code step): a Trusted Publisher must be configured on npmjs.com for each new package before its first OIDC publish (root `CLAUDE.md` Releases) — release follow-up.
+`pnpm install` to regenerate `pnpm-lock.yaml` (React devDeps) and commit it. Changeset: **minor** for `@d3-polytree/viewer` (new `on/off` API), `@d3-polytree/element`, `@d3-polytree/react`; plus a **patch** for `@d3-polytree/editor` describing the reboot-keydown bonus fix from Step 1 (W2 — so its changelog carries the user-visible fix, not just the dependency cascade). Add the two packages to `README.md`'s package table. Mark C7 in `ROADMAP.md`. Note (not a code step): a Trusted Publisher must be configured on npmjs.com for each new package before its first OIDC publish (root `CLAUDE.md` Releases) — release follow-up.
 
 **Verification**:
 Full gate: `pnpm install --frozen-lockfile` then `pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook`.
@@ -210,6 +210,24 @@ Full gate: `pnpm install --frozen-lockfile` then `pnpm lint && pnpm typecheck &&
 `N/A (release/docs)`.
 
 ---
+
+## Review Log
+
+### 2026-09-20 — plan-review — verdict: passed-with-warnings
+Reviewer subagent applied the plan-review criteria and verified every cited `path:line` (all resolve).
+**Blockers: none** (design honored; rejected alternatives stay rejected — adapter-side re-subscribe,
+one-package-two-entries, in-package SCSS compile, controlled React `value`; host rules untouched; ordering
+sound with an explicit `## Step Dependencies`). The Step-1 on/off design matches the design doc on all four
+points, and the reboot-keydown bonus fix was confirmed real. **Warnings addressed (no waivers):**
+- W1 (Step 7): the Playwright UMD `readFileSync` path must be repo-root-resolved (cwd is `apps/storybook`) —
+  amended to `path.resolve(__dirname, '../../../packages/element/dist/element.umd.js')`.
+- W2 (Step 8): added a `@d3-polytree/editor` patch changeset for the reboot-keydown fix so its changelog
+  carries the user-visible change, not just the dependency cascade.
+- W3 (NOTE, no change): `eventemitter3` as a `dependency` on viewer matches the sibling precedent; type-only
+  use would also permit devDep — harmless.
+
+No blockers, so no fix-and-re-review cycle required; amendments are doc-only clarity edits touching no cited
+evidence. Plan is execution-ready.
 
 ## Deviation Log
 
