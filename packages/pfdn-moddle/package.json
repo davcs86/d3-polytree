@@ -20,7 +20,8 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "generate": "node scripts/generate-pfdn.mjs",
+    "build": "node scripts/generate-pfdn.mjs && tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

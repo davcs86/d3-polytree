@@ -50,6 +50,27 @@ editor.select(node);
 const xml = editor.exportDiagram();    // serialize back to .pfdn
 ```
 
+## JSON documents (typed + validated)
+
+Besides `.pfdn` XML, the model round-trips through plain, typed JSON over the **same** moddle
+model — so you can produce, validate, and load documents without touching XML:
+
+```ts
+import { toJson, fromJson, validate, type PfdnDocument } from '@d3-polytree/pfdn-moddle';
+import { loadModelFromJson } from '@d3-polytree/core';
+
+const doc = toJson(editor.get('d3polytree').definitions); // typed PfdnDocument (refs as ids, defaults omitted)
+const result = validate(doc);                              // strict, collects ALL errors as a Result
+if (!result.ok) console.error(result.errors);             // each with a JSON-Pointer instancePath
+
+const host = await loadModelFromJson(doc);                 // JSON twin of loadModel — throws on invalid input
+// host: { definitions, moddle } — a normalised ModelHost (ensureSettings + routeLinks applied)
+```
+
+The validator and the document types are **generated from the schema** (`pfdn.json`) — zero runtime
+dependencies. Pass `{ lax: true }` to `fromJson`/`loadModelFromJson` to drop unresolvable references
+instead of rejecting them.
+
 ## Theming
 
 The panel/toolbar **chrome** is themed with `--pfd-color-*` CSS custom properties. A **dark scheme**
