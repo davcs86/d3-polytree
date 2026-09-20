@@ -21,9 +21,9 @@
     right: -3px;
     top: 0;
     bottom: 0;
-    background: #fafafa;
-    border: solid 1px #cccccc;
-    border-left: solid 2px #cccccc;
+    background: var(--pfd-color-surface, #fafafa);
+    border: solid 1px var(--pfd-color-border-strong, #cccccc);
+    border-left: solid 2px var(--pfd-color-border-strong, #cccccc);
     .pfdjs-st-tabs {
       position: absolute;
       width: 36px;
@@ -34,8 +34,8 @@
         overflow: hidden;
         height: 40px;
         margin-bottom: 5px;
-        background: #fafafa;
-        border: solid 1px #cccccc;
+        background: var(--pfd-color-surface, #fafafa);
+        border: solid 1px var(--pfd-color-border-strong, #cccccc);
         border-radius: 3px;
         border-bottom-right-radius: 0;
         border-top-right-radius: 0;
@@ -43,14 +43,14 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #333333;
+        color: var(--pfd-color-text, #333333);
         svg {
           width: 24px;
           height: 24px;
           cursor: pointer;
         }
         &.active{
-          color: #ff4800;
+          color: var(--pfd-color-accent-invariant, #ff4800);
         }
       }
     }
@@ -68,11 +68,11 @@
           overflow-y: auto;
         }
         .content-title {
-          background-color: #5990bd;
+          background-color: var(--pfd-color-accent-fill, #5990bd);
           color: white;
           font-size: 12px;
 
-          border: solid 1px #ccc;
+          border: solid 1px var(--pfd-color-border-strong, #cccccc);
           position: absolute;
           left: 0;
           right: 0;

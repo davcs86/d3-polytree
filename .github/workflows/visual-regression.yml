@@ -7,10 +7,12 @@ name: E2E · visual-regression · a11y · interaction
 #
 # Rendering is pinned to the official Playwright container so baselines are
 # byte-stable across runs and machines. Baselines can only be generated inside
-# this image, so the job SEEDS them automatically on the first push to a branch
-# (committing the PNGs from within the container) and GATES on every run
-# thereafter. Seeding is self-limiting: it only fires when baselines are absent,
-# so it never loops.
+# this image, so every push to a branch SEEDS the MISSING baselines
+# (`--update-snapshots=missing` — it never overwrites an existing baseline, so a
+# newly-added story is seeded while real drift in existing stories is still
+# gated by the pull_request compare run) and commits any new PNGs from within
+# the container. Seeding is self-limiting: once nothing is missing there is
+# nothing to commit, so it never loops. pull_request runs always compare (gate).
 
 on:
   push:
@@ -64,20 +66,15 @@ jobs:
       - name: Build Storybook
         run: pnpm build-storybook
 
-      # Decide mode: explicit dispatch → update; missing baselines on a push →
-      # seed; everything else → compare (the gate).
+      # Decide mode: explicit dispatch → update (regenerate ALL); any push →
+      # seed the MISSING baselines; pull_request (and anything else) → compare (gate).
       - name: Determine mode
         id: mode
         shell: bash
         run: |
-          dir="apps/storybook/playwright/__screenshots__"
-          has_baselines=false
-          if [ -d "$dir" ] && [ -n "$(ls -A "$dir" 2>/dev/null)" ]; then
-            has_baselines=true
-          fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.update_snapshots }}" = "true" ]; then
             echo "mode=update" >> "$GITHUB_OUTPUT"
-          elif [ "$has_baselines" = "false" ] && [ "${{ github.event_name }}" = "push" ]; then
+          elif [ "${{ github.event_name }}" = "push" ]; then
             echo "mode=seed" >> "$GITHUB_OUTPUT"
           else
             echo "mode=compare" >> "$GITHUB_OUTPUT"
@@ -87,9 +84,19 @@ jobs:
         if: steps.mode.outputs.mode == 'compare'
         run: pnpm --filter @d3-polytree/storybook test:e2e
 
-      - name: Seed or update baselines
+      - name: Seed missing baselines (push) or regenerate all (dispatch)
         if: steps.mode.outputs.mode == 'seed' || steps.mode.outputs.mode == 'update'
-        run: pnpm --filter @d3-polytree/storybook test:e2e:update-snapshots
+        shell: bash
+        run: |
+          if [ "${{ steps.mode.outputs.mode }}" = "update" ]; then
+            pnpm --filter @d3-polytree/storybook test:e2e:update-snapshots
+          else
+            # Create only missing baselines; never overwrite an existing one, so
+            # real drift stays gated by the pull_request compare run. Tolerate a
+            # non-zero exit (Playwright may signal that snapshots were written)
+            # so the commit step still runs; the PR compare is the real gate.
+            pnpm --filter @d3-polytree/storybook test:e2e:seed-missing || true
+          fi
 
       - name: Commit baselines
         if: steps.mode.outputs.mode == 'seed' || steps.mode.outputs.mode == 'update'

@@ -109,8 +109,14 @@ export class D3PolytreeEditorElement extends HTMLElement {
     }
     const svg = this._editor.exportSVG();
     const styleTag = `<style>${shadowCss}</style>`;
-    // Insert right after the opening <svg …> tag.
-    return svg.replace(/(<svg\b[^>]*>)/, `$1${styleTag}`);
+    // Pin the export to the light theme: the injected shadowCss carries the dark
+    // `@media`/`[data-pfd-theme]` token blocks, so without this an export viewed
+    // under a dark OS (or inlined into a dark host page) would render dark chrome.
+    // `svg[data-pfd-theme="light"]` (and `:root[...]` for a standalone document
+    // root) re-declare the light tokens on the exported root, keeping exports
+    // theme-invariant. Stamp the attribute onto the opening <svg> tag, then inject.
+    const stamped = svg.replace(/<svg\b/, '<svg data-pfd-theme="light"');
+    return stamped.replace(/(<svg\b[^>]*>)/, `$1${styleTag}`);
   }
 
   /**

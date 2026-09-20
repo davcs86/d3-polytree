@@ -1,0 +1,94 @@
+// Theme tokens (C13) — the single source of the `--pfd-*` colour system, imported
+// FIRST by both interactive-viewer/src/style.scss and editor/src/style.scss (the
+// latter via a relative `@import '../../interactive-viewer/src/tokens'`). Chrome
+// only — the diagram body/canvas are document data and are never themed here.
+//
+// Mechanism (deliberately NOT `light-dark()`, which has no safe fallback on
+// unsupported engines): plain-hex tokens on `:root, :host` are the light base;
+// `@media (prefers-color-scheme: dark)` re-declares the dark values (auto dark);
+// `[data-pfd-theme]` (and `svg[data-pfd-theme]` for exported SVGs) force a scheme
+// and win by specificity. Light values equal today's literals verbatim, so light
+// rendering is pixel-identical (VR baselines don't move); `color-mix()` supplies
+// the mandated derivations in the dark declarations only.
+
+// Invariant across themes: selection (drawn on the always-light canvas), the
+// #ff4800 accent, the dark-in-both-themes toast surface/link/severity, and the
+// accent FILL (kept mid-blue so white text on it stays legible in dark).
+@mixin pfd-tokens-invariant {
+  --pfd-color-selection: #ff0000;
+  --pfd-color-accent-invariant: #ff4800;
+  --pfd-color-accent-fill: #5990bd;
+  --pfd-color-toast-bg: #333333;
+  --pfd-color-toast-link: #9ecbff;
+  --pfd-color-toast-success: #2e7d32;
+  --pfd-color-toast-warning: #b26a00;
+  --pfd-color-toast-error: #c62828;
+  --pfd-color-toast-info: #37474f;
+}
+
+@mixin pfd-tokens-light {
+  --pfd-color-surface: #fafafa;
+  --pfd-color-surface-raised: #ffffff;
+  --pfd-color-surface-hover: #f0f0f0;
+  --pfd-color-border-strong: #cccccc;
+  --pfd-color-border-muted: #808080;
+  --pfd-color-border-subtle: #d3d3d3;
+  --pfd-color-text: #333333;
+  --pfd-color-text-muted: #808080;
+  --pfd-color-text-secondary: #555555;
+  --pfd-color-accent-ink: #5990bd;
+  --pfd-color-accent-fill-hover: #4d80a8;
+  --pfd-color-list-item: #eeeeee;
+  --pfd-color-list-item-hover: #f5f5f5;
+}
+
+@mixin pfd-tokens-dark {
+  --pfd-color-surface: #1e1e1e;
+  --pfd-color-surface-raised: #252526;
+  --pfd-color-surface-hover: #2d2d2d;
+  --pfd-color-border-strong: #3c3c3c;
+  --pfd-color-border-muted: #333333;
+  --pfd-color-border-subtle: #2a2a2a;
+  --pfd-color-text: #e4e4e4;
+  --pfd-color-text-muted: #a0a0a0;
+  --pfd-color-text-secondary: #c0c0c0;
+  --pfd-color-accent-ink: #6fb0e0;
+  --pfd-color-accent-fill-hover: color-mix(in srgb, var(--pfd-color-accent-fill) 85%, black);
+  --pfd-color-list-item: #252526;
+  --pfd-color-list-item-hover: #2d2d2d;
+}
+
+// Light base (invariant + light) on both the document root and any shadow host.
+:root,
+:host {
+  color-scheme: light;
+  @include pfd-tokens-invariant;
+  @include pfd-tokens-light;
+}
+
+// Auto dark — follows the OS preference. Authored AFTER the base (equal
+// specificity, later wins).
+@media (prefers-color-scheme: dark) {
+  :root,
+  :host {
+    color-scheme: dark;
+    @include pfd-tokens-dark;
+  }
+}
+
+// Manual override — wins over the media block by specificity. `svg[...]` is the
+// exported-SVG pin (a standalone export's root is <svg>, and inline-HTML
+// consumption where :root is <html> that lacks the stamp).
+:root[data-pfd-theme='light'],
+:host([data-pfd-theme='light']),
+svg[data-pfd-theme='light'] {
+  color-scheme: light;
+  @include pfd-tokens-light;
+}
+
+:root[data-pfd-theme='dark'],
+:host([data-pfd-theme='dark']),
+svg[data-pfd-theme='dark'] {
+  color-scheme: dark;
+  @include pfd-tokens-dark;
+}

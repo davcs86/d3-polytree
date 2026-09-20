@@ -7,6 +7,11 @@
   .element {
     & > .element-outline {
       stroke-width: 0;
+      // Themed selection colour. Layers OVER the inline `stroke="red"` attr the
+      // Outline feature sets (a presentation attr, lowest cascade, kept so a
+      // no-stylesheet/SSR export of a selected element stays visible). Selection
+      // is theme-invariant (the outline is drawn on the always-light canvas).
+      stroke: var(--pfd-color-selection, #ff0000);
     }
 
     &.selected,
@@ -15,5 +20,14 @@
         stroke-width: 1px;
       }
     }
+  }
+}
+
+// High-contrast: map the selection indicator to the system Highlight colour so
+// it stays visible when the OS palette replaces authored colours.
+@media (forced-colors: active) {
+  .pfdjs-container .element > .element-outline {
+    stroke: Highlight;
+    forced-color-adjust: none;
   }
 }
