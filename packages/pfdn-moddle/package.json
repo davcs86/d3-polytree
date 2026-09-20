@@ -34,7 +34,7 @@
     "url": "git+https://github.com/davcs86/d3-polytree.git",
     "directory": "packages/pfdn-moddle"
   },
-  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/pfdn-moddle#readme",
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/main/packages/pfdn-moddle#readme",
   "publishConfig": {
     "access": "public"
   }

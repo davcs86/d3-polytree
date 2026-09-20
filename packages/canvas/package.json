@@ -40,7 +40,7 @@
     "url": "git+https://github.com/davcs86/d3-polytree.git",
     "directory": "packages/canvas"
   },
-  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/canvas#readme",
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/main/packages/canvas#readme",
   "publishConfig": {
     "access": "public"
   }
