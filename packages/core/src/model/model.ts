@@ -1,4 +1,11 @@
-import { createPfdnModdle, type ModelElement, type PfdnModdle } from '@d3-polytree/pfdn-moddle';
+import {
+  createPfdnModdle,
+  fromJson,
+  PfdnValidationError,
+  type ModelElement,
+  type PfdnModdle,
+  type PfdnDocument
+} from '@d3-polytree/pfdn-moddle';
 import type { DiagramModule } from '../Diagram';
 import { routeLinks } from '../modelling/linkRouting';
 import type { ModellingModelElement } from '../modelling/types';
@@ -60,6 +67,52 @@ export async function loadModel(xml: string): Promise<ModelHost> {
   // Viewer, which has no modelling layer to re-route on interaction. A saved
   // document may already carry routed waypoints; recomputing here is idempotent
   // and also corrects centre-to-centre waypoints authored by hand or by tools.
+  routeLinks(
+    definitions.link as ModellingModelElement[] | undefined,
+    definitions.node as ModellingModelElement[] | undefined,
+    moddle
+  );
+  return { definitions, moddle };
+}
+
+/**
+ * Parse a PFDN **JSON** document into a normalised model — the JSON twin of
+ * {@link loadModel}, reusing the same `ensureSettings`/`routeLinks` normalisation
+ * so a JSON-loaded model boots every component identically to an XML-loaded one.
+ *
+ * Accepts a JSON string or an already-parsed {@link PfdnDocument}. **Unlike
+ * `loadModel` (which forces moddle-xml's lax mode and silently tolerates malformed
+ * input), this validates strictly and THROWS a `PfdnValidationError` on any schema
+ * violation** — a JSON document is a new external contract where silent corruption
+ * is the worse failure. Pass `{ lax: true }` to restore `loadModel`-style tolerance
+ * (unresolvable references are dropped rather than rejected). A malformed JSON
+ * string throws the same `PfdnValidationError` (single error, keyword `json`).
+ */
+export async function loadModelFromJson(
+  input: string | PfdnDocument,
+  opts: { lax?: boolean } = {}
+): Promise<ModelHost> {
+  let doc: PfdnDocument;
+  if (typeof input === 'string') {
+    try {
+      doc = JSON.parse(input) as PfdnDocument;
+    } catch (error) {
+      throw new PfdnValidationError([
+        { instancePath: '', keyword: 'json', message: (error as Error).message }
+      ]);
+    }
+  } else {
+    doc = input;
+  }
+
+  const result = fromJson(doc, opts);
+  if (!result.ok) throw new PfdnValidationError(result.errors);
+
+  // Reuse the exact moddle instance fromJson built the tree with, matching
+  // loadModel's single-instance contract (a moddle element carries its own $model).
+  const definitions = result.value;
+  const moddle = (definitions as unknown as { $model: PfdnModdle }).$model;
+  ensureSettings(definitions, moddle);
   routeLinks(
     definitions.link as ModellingModelElement[] | undefined,
     definitions.node as ModellingModelElement[] | undefined,
