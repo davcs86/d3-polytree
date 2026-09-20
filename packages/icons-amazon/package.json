@@ -33,7 +33,7 @@
     "url": "git+https://github.com/davcs86/d3-polytree.git",
     "directory": "packages/icons-amazon"
   },
-  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/icons-amazon#readme",
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/main/packages/icons-amazon#readme",
   "publishConfig": {
     "access": "public"
   }

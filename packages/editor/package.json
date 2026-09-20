@@ -39,7 +39,7 @@
     "url": "git+https://github.com/davcs86/d3-polytree.git",
     "directory": "packages/editor"
   },
-  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/editor#readme",
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/main/packages/editor#readme",
   "publishConfig": {
     "access": "public"
   }

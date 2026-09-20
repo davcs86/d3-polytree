@@ -58,7 +58,7 @@
     "url": "git+https://github.com/davcs86/d3-polytree.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/davcs86/d3-polytree/tree/v2/packages/core#readme",
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/main/packages/core#readme",
   "publishConfig": {
     "access": "public"
   }

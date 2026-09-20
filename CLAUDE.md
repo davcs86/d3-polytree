@@ -104,6 +104,22 @@ the reference. `icons-amazon` generates `src/icons.generated.ts` from `src/svg/`
   (`format: iife`, `noExternal: [/.*/]`, global `d3Polytree*`) alongside the ESM/CJS library build;
   `clean` belongs to the first pass only.
 
+## Package READMEs
+
+Every publishable `@d3-polytree/*` package ships a **comprehensive README that follows a single shared
+template** — [`docs/README-template.md`](./docs/README-template.md) is the source of truth (structure,
+authoring rules, and a copy-paste skeleton). When you **add a package** or **change a package's public
+API/exports**, update its README to match that template; when you scaffold a new package, start its
+README from the skeleton. Load-bearing rules (the full set is in the template):
+
+- Keep the section order: title + intro → `## Install` → feature/API table → `## Usage` → `## API` →
+  optional where-it-fits/styling → `## Links` → `## License` (`MIT © David Castillo`).
+- Cross-links in a README must be **absolute `/tree/main/` GitHub URLs**, not relative paths — npm
+  renders READMEs off-repo, so relative links break. There is no `v2` branch; never link one.
+- Document only **real** exports/options/peer-deps (verify against `src/index.ts(x)` + `package.json`).
+- A README-only edit still needs a **`patch` changeset** for the affected package(s): npm re-renders a
+  README only on republish, so without a version bump the update never reaches the registry.
+
 ## Releases
 
 Versioning/publishing is **Changesets** + `.github/workflows/release.yml`. Record changes with

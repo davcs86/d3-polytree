@@ -70,6 +70,11 @@ whole diagram as a **single undoable command**, and the palette exposes an
 "Auto-layout diagram" button. Provide a `layoutRunner` DI value to move it onto a
 worker.
 
+## Links
+
+- [Repository](https://github.com/davcs86/d3-polytree)
+- [Live Storybook](https://davcs86.github.io/d3-polytree/)
+
 ## License
 
-MIT
+MIT © David Castillo
