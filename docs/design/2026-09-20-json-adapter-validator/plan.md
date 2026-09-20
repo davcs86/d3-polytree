@@ -22,12 +22,21 @@ Mirror `packages/icons-amazon/scripts/generate-icons.mjs` (readFileSync → writ
 - **Per CONCRETE type** an `export interface Pfdn<LocalName>`: `$type: '<prefix:LocalName>'` (literal, required);
   each resolved property (own + inherited via `superClass` chain, super-first — mirror `getEffectiveDescriptor`)
   typed by rule — `isReference` → `string`; simple builtin (`String`→`string`, `Real`/`Integer`→`number`,
-  `Boolean`→`boolean`) → that scalar; complex → `Pfdn<Type>`; `isMany` → `T[]`; **defaulted props and `id`
-  OPTIONAL** (`?`), everything else required-if-not-defaulted. Skip `isVirtual`.
+  `Boolean`→`boolean`) → that scalar; complex → `Pfdn<Type>`; `isMany` → `T[]`. **[B2] EVERY property is OPTIONAL
+  (`?`) except the required `$type` literal** — `toJson` omits any absent/default/null/empty prop (the
+  `getSerializableProperties` predicate), and `validate` enforces NO presence constraints, so a required
+  `node[]`/`settings`/`position`/`id`/`name` would make `toJson` output fail to satisfy `PfdnDocument` and reject
+  the toolkit's own canonical minimal docs at compile-time. Only `$type` is always emitted → only `$type` required.
+  Skip `isVirtual`.
 - `export type PfdnDocument = PfdnDiagram;` and `export type PfdnElement = PfdnNode | PfdnLink | … ;` (concrete only).
 - `export const SCHEMA: Record<string, TypeInfo>` where `TypeInfo = { abstract: boolean; superTypes: string[];
   allTypesByName: string[]; properties: PropInfo[] }` and `PropInfo = { name; type; isAttr; isMany; isReference;
-  isId; isSimple; hasDefault; default? }`. `isSimple` = type is a moddle builtin (not `pfdn:`-prefixed).
+  isId; isSimple; hasDefault; default? }`. **[W1] `isSimple` = the property's `type` name ∈ the moddle builtins
+  `{ String, Boolean, Integer, Real }`** (NOT "not `pfdn:`-prefixed" — raw `pfdn.json` property types are ALL
+  unprefixed, e.g. `"Coordinates"`, `"Real"`; the `pfdn:` prefix exists only in the moddle runtime). **[W2] In the
+  emitted `SCHEMA`, complex (non-builtin) type names — `SCHEMA` keys, `PropInfo.type`, and `allTypesByName`
+  entries — are stored in the `pfdn:`-prefixed runtime form** (matching a runtime `$type` like `"pfdn:Node"`);
+  builtins stay unprefixed. Otherwise the M2/M3/M4 lookups silently mismatch.
   `allTypesByName` = self + all supertypes (for M4 assignability). Include ABSTRACT types in `SCHEMA` (for the
   supertype relation) but flag `abstract:true`; also `export const CONCRETE_TYPES: string[]`.
 - The banner + a `/* eslint-disable */` line if the flat config lints generated files (verify against
@@ -63,16 +72,23 @@ known property (else unknown-key error, keyword `additionalProperties`); child `
 property (`SCHEMA[child.$type].allTypesByName.includes(property.type)`, M2/M4); primitive `typeof` match; `isMany`
 → `Array.isArray`; collect the `id` of every `isId`-typed node into a `Map<id, $type>` (duplicate → error, M:
 `uniqueId`); recurse children. **(P2)** for every `isReference` value, look up id in the map — missing → error
-(`refResolvable`; hard unless `opts.lax`, then a collected warning + treat as drop), present but resolved
-`$type` not assignable to `property.type` → error (`refType`, M3). Collect ALL errors with JSON-Pointer
+(`refResolvable`; hard unless `opts.lax`, then a collected warning + treat as drop), present but — **[B1] ONLY for a
+complex-typed reference (`!prop.isSimple`)** — resolved `$type` not assignable to `property.type` → error
+(`refType`, M3). **`Link.source`/`target` are `isReference` with declared type `String`** (IDREF,
+`pfdn.json:352-363`), so for them (and any builtin-typed ref) enforce **resolvability ONLY**, never target-type —
+otherwise `SCHEMA["pfdn:Node"].allTypesByName.includes("String")` is false and EVERY link is rejected, breaking
+the sharp fixture and both round-trip gates. Collect ALL errors with JSON-Pointer
 `instancePath`. Strict-clean with explicit `typeof`/`Array.isArray`/`in` guards (no `noUncheckedIndexedAccess`).
 
 `fromJson(doc: unknown, opts?: { lax?: boolean }): Result<ModelElement>` — accepts object (string handled by
 `loadModelFromJson`). `const r = validate(doc, opts); if (!r.ok) return r;` then build with an internally-created
-`createPfdnModdle()`: **P1** recursively `moddle.create($type, plainAttrsAndChildren)` — build every sub-element
-individually (moddle `create` does not recurse into plain objects), OMIT `isReference` props, index every created
-element by id; **P2** for each `isReference`, `element.set(name, index.get(id))` (non-enumerable storage). Return
-`{ ok:true, value: root }`. Throws only on a non-object/non-string argument (programmer error).
+`createPfdnModdle()`: **P1** recursively `moddle.create($type, plainAttrsAndChildren)` — **[N1] recursively `create` children POST-ORDER
+(build leaf sub-elements first, then their parent with the built children), OMIT `isReference` props** — moddle
+`create` does NOT recurse into plain objects, so children must be built as real elements before being passed to
+the parent's `create`. Index every created element by id; **P2** for each `isReference`,
+`element.set(name, index.get(id))` (non-enumerable storage). Return `{ ok:true, value: root }`. Throws only on a
+non-object/non-string argument (programmer error). **[W3]** an internal builder returns `{ root, moddle }` (the
+single instance it built with) so `loadModelFromJson` can reuse that exact instance — see Step 5.
 
 `assertValid(doc: unknown): asserts doc is ValidatedPfdnDocument` — `const r = validate(doc); if (!r.ok) throw new
 PfdnValidationError(r.errors);`.
@@ -98,21 +114,24 @@ export async function loadModelFromJson(
   passes through). Loud JSDoc: documents the divergence from `loadModel`'s XML lax-tolerance + the `{lax}` opt-in.
 - `const definitions = r.value; ensureSettings(moddle, definitions); routeLinks(definitions, …);` mirroring
   `loadModel` (`:56-67`) — reuse the SAME `ensureSettings` (`:22-44`) and `routeLinks` (`:63`). Return
-  `{ definitions, moddle }`. (Obtain `moddle` from the same `createPfdnModdle()` used to build, or re-create — the
-  registry is stateless; simplest: `fromJson` returns the element and `loadModelFromJson` creates its own moddle
-  for `ensureSettings`. Prefer having `fromJson` also surface the moddle it built with to avoid a second instance —
-  decide in impl, both are correct.)
+  `{ definitions, moddle }`. **[W3 — PINNED, not "decide in impl"]** to match `loadModel`, which returns the SINGLE
+  moddle it parsed with (`model.ts:55-68`), the internal builder (Step 3) returns `{ root, moddle }` and
+  `loadModelFromJson` reuses **that one instance** for `ensureSettings`/`routeLinks` and returns it in `ModelHost`.
+  No second `createPfdnModdle()` — a two-instance tree is avoided.
 - Import `fromJson`, `PfdnDocument`, `PfdnValidationError` from `@d3-polytree/pfdn-moddle`.
 
 ## Step 6 — `.github/workflows/ci.yml` drift gate
-After the **Build** step (`ci.yml:13-38`), add:
+After the **Build** step (`ci.yml:13-38`), add a step that **[W4] runs the generator ITSELF, then diffs** — so it
+is independent of Build/turbo caching (a turbo cache hit would skip Build's regenerate and let a stale committed
+file pass a bare post-Build diff):
 ```
 - name: Verify generated files are up to date
-  run: git diff --exit-code -- packages/pfdn-moddle/src/pfdn.generated.ts
+  run: |
+    node packages/pfdn-moddle/scripts/generate-pfdn.mjs
+    git diff --exit-code -- packages/pfdn-moddle/src/pfdn.generated.ts
 ```
-Build regenerates the file (Step 2 build script); a stale committed file fails the diff. Turbo guard: confirm
-`turbo.json` `build.outputs` is `["dist/**"]` (already true — generated source is NOT an output, so no cache can
-restore a stale copy). No `.turbo`/remote cache in CI today.
+Turbo guard confirmed: `turbo.json` `build.outputs` is `["dist/**"]` — generated source is NOT an output, so no
+cache restores a stale copy over the working tree. (No `.turbo`/remote cache in CI today regardless.)
 
 ## Step 7 — Tests
 **`packages/pfdn-moddle/src/json.test.ts`** (pure, no DOM):
@@ -155,3 +174,21 @@ packages/pfdn-moddle/src/pfdn.generated.ts` (drift gate). All green before push.
 - R4 (id optional, no required-id): Step 1 interfaces, Step 3 `validate` uniqueness-when-present, Step 7 regression.
 - M1 (unused-locals): eliminated by the table-driven realization (plan-level decision above).
 - Drift gate + turbo guards: Step 6.
+
+## Review Log
+Plan-review verdict: **NEEDS-REVISION** (2 blockers, 4 warnings, 2 nits). All addressed in this revision:
+- **B1** (blocker) — the M3 reference-target-type check would reject every `Link` (`source`/`target` are
+  `String`-typed IDREFs). Fixed: Step 3 `validate` P2 now runs the target-type check ONLY for complex-typed refs
+  (`!prop.isSimple`); builtin-typed refs get resolvability-only.
+- **B2** (blocker) — required `isMany`/child props contradict `toJson`'s omit behavior + the validator's
+  no-presence-constraint contract. Fixed: Step 1 now makes EVERY interface property optional except the `$type`
+  literal.
+- **W1** — `isSimple` definition corrected to "type name ∈ {String,Boolean,Integer,Real}" (Step 1).
+- **W2** — `SCHEMA` keys/`PropInfo.type`/`allTypesByName` stored in `pfdn:`-prefixed runtime form (Step 1).
+- **W3** — moddle-instance sourcing pinned: internal builder returns `{root, moddle}`, reused by
+  `loadModelFromJson` (Steps 3, 5).
+- **W4** — CI drift gate runs the generator itself before diffing, cache-independent (Step 6).
+- **N1** — `fromJson` assembly clarified to post-order child creation (Step 3).
+- **N2** — `PropInfo.default` acknowledged as harmless dead data for the validator (kept for completeness).
+Reviewer confirmed sound (no action): F1 predicate exactness, F2 baked-assignability direction, non-enumerable
+ref two-pass, dts-drop avoidance, R4 id-optional regression coverage, all line anchors.
