@@ -4,18 +4,29 @@ name: Release
 # (when unreleased changesets are present) or, once that PR is merged and the
 # versions are bumped, publishes the changed @d3-polytree/* packages to npm.
 #
-# Tokenless: publishing uses npm Trusted Publishing (OIDC) — GitHub's OIDC
-# identity is exchanged for a short-lived npm credential at publish time, so
-# there is no long-lived NPM_TOKEN secret. Requirements, all satisfied here:
+# Hybrid auth, chosen per package by scripts/publish.mjs:
+#   - New packages (never published) can't use Trusted Publishing yet — a
+#     Trusted Publisher can only be configured on npmjs.com after the package
+#     exists — so their first version is published with the NPM_TOKEN secret.
+#   - Existing packages are published tokenlessly via npm Trusted Publishing
+#     (OIDC): GitHub's OIDC identity is exchanged for a short-lived npm
+#     credential at publish time, with no long-lived token involved.
+# The two phases are isolated: NPM_TOKEN is injected only into the bootstrap
+# subprocess, so the OIDC phase always runs without a token. Requirements:
 #   - `id-token: write` permission (below) — the OIDC token.
-#   - `registry-url` on setup-node — required for the OIDC exchange.
+#   - `registry-url` on setup-node — writes the .npmrc used by BOTH the token
+#     publish (NODE_AUTH_TOKEN) and the OIDC exchange.
 #   - Node >= 22.14 — OIDC support in the toolchain.
 #   - pnpm 10 — performs the OIDC exchange natively via npm-registry-fetch
 #     (pnpm 9 predates it; pnpm 11 has a known OIDC 404 regression). The version
 #     comes from the repo's `packageManager` field, which pnpm/action-setup reads.
-#   - Each published package must have a Trusted Publisher configured on npmjs.com
-#     pointing at this repo + workflow file `release.yml` (a one-time, per-package
-#     setup on the npm side; see the PR description).
+#   - `NPM_TOKEN` repository secret — an npm automation/granular token with
+#     publish rights on the @d3-polytree scope. Only used to bootstrap brand-new
+#     packages; releases that touch only existing packages never read it.
+#   - Each existing package must have a Trusted Publisher configured on
+#     npmjs.com pointing at this repo + workflow file `release.yml` (a one-time,
+#     per-package setup on the npm side; do it right after a package's first,
+#     token-based publish so subsequent releases go tokenless).
 on:
   push:
     branches: [main]
@@ -62,6 +73,10 @@ jobs:
           title: 'Release: version packages'
           commit: 'chore: version packages'
         env:
-          # Only GitHub auth for opening the Version PR — no npm token: the
-          # publish authenticates to npm via OIDC (id-token above).
+          # GitHub auth for opening the Version PR.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Bootstrap token for the FIRST publish of a brand-new package. Passed
+          # as a plain value (not NODE_AUTH_TOKEN) so it is inert for auth until
+          # scripts/publish.mjs injects it into the bootstrap subprocess only;
+          # the OIDC phase runs without it. Existing-package releases ignore it.
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
