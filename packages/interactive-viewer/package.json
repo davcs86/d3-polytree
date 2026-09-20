@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/interactive-viewer",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Interactive polytree viewer (zoom, pan, search)",
   "license": "MIT",
   "author": "David Castillo",

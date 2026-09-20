@@ -1,5 +1,23 @@
 # @d3-polytree/ssr
 
+## 0.2.4
+
+### Patch Changes
+
+- 8c75ec1: Docs: comprehensive per-package READMEs across the ecosystem.
+
+  Every published package now ships a comprehensive README (install, feature/API tables, usage examples,
+  where-it-fits notes, and links) so the npm package page is self-contained. `@d3-polytree/element` and
+  `@d3-polytree/react` gain their first READMEs; the remaining nine are expanded to a consistent
+  structure. Stale `homepage` links that pointed at a non-existent `v2` branch are corrected to `main`.
+  No runtime or API changes — this is a docs/metadata-only release so the refreshed READMEs are
+  republished to npm.
+
+- Updated dependencies [8c75ec1]
+  - @d3-polytree/canvas@0.2.1
+  - @d3-polytree/core@0.5.1
+  - @d3-polytree/viewer@0.2.1
+
 ## 0.2.3
 
 ### Patch Changes
