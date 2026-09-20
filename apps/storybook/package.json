@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:update-snapshots": "playwright test --update-snapshots",
+    "test:e2e:seed-missing": "playwright test --update-snapshots=missing",
     "test:e2e:update-a11y": "UPDATE_A11Y=1 playwright test a11y --workers=1"
   },
   "dependencies": {
