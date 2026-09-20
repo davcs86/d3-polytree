@@ -131,4 +131,20 @@ the new dark/forced-colors baselines.
   Step 8. Focus rings on real focusables only (R2): Step 5.
 
 ## Review Log
-(to be completed at plan-review)
+Plan-review verdict: **PASSED-WITH-WARNINGS** (no blocker; every literal confirmed mapped, outline/core "no
+change" verified, export neutrality confirmed both paths, Sass import mechanics compile). Warnings heeded in
+implementation:
+- **W1** — Step 1 must also define `--pfd-color-toast-bg` (INVARIANT `#333333`, `notifications:17` — mapping toast
+  bg to `text` would make it near-white in dark) and `--pfd-color-accent-invariant` (INVARIANT `#ff4800`).
+- **W2** — `.search` border `#333`→`border-strong` is NOT light-pixel-stable (`#333`→`#cccccc` in light); accepted
+  as an intentional, more-consistent border treatment, safe because the search input is unpainted in the 10
+  baselines (side-tab hidden by default). No light-baseline seeds a `#333` search border.
+- **W3** — Step 1's attribute block must include `svg[data-pfd-theme="light"]` (the export inline-HTML pin), not
+  only `:root`/`:host`.
+- **W4** — `document.documentElement` stamping drives the raw-mount stories (all current baselines + the dark
+  Editor story); an element-mount shadow story would need `emulateMedia({colorScheme:'dark'})` or a host-element
+  stamp. Scope the attribute-decorator to raw-mount stories.
+- **W5** — `@d3-polytree/element` changeset → **minor** (new backward-compatible dark/forced-colors + export attr).
+- **N1** — cover the second `color: gray` at `_tabs.scss:54` (`a:hover`). **N2** — export stamp via
+  `svg.replace(/<svg\b/, '<svg data-pfd-theme="light"')` (the existing `$1` captures the full tag incl. `>`, so a
+  naive append fails). **N3** — import as `@import './tokens'` (underscore-less, repo convention).
