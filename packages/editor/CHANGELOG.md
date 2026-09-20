@@ -1,5 +1,60 @@
 # @d3-polytree/editor
 
+## 0.6.0
+
+### Minor Changes
+
+- cdc6008: Obstacle-avoiding orthogonal link routing + route pinning (roadmap C4).
+
+  - **`@d3-polytree/core`** — a new pure, dependency-free `route/` module
+    (`avoidObstacles`) nudges the orthogonal elbow around other nodes' bounding
+    boxes; it is deterministic, bounded, and a no-op when nothing is in the way, so
+    diagrams with clear channels route exactly as before. `computeLinkWaypoints` /
+    `routeLinks` now take the node set and delegate to it. Link rerouting is driven
+    by a single writer on `commandStack.changed` (once per transaction, symmetric
+    across execute/undo/redo) — replacing the incident-only `node.updated`
+    subscription — so a route stays correct when a _non-incident_ obstacle node
+    moves or a node is created/deleted. Solved waypoints remain derived (recomputed,
+    never captured), keeping `toXML` byte-identical across undo/redo.
+  - **`@d3-polytree/pfdn-moddle`** — `pfdn:Link` gains a `pinned` boolean attribute
+    (default `false`, omitted from XML when unset, so existing documents round-trip
+    byte-identically). A pinned link keeps its authored waypoints and is skipped by
+    the router (it degrades to the plain polyline).
+  - **`@d3-polytree/editor`** — an `editor.setLinkPinned(id, pinned?)` method and a
+    `link.pin` command (one undo step) toggle a link's pinned route.
+
+### Patch Changes
+
+- 05f45d3: Custom Element + React adapter (roadmap C7).
+
+  - **New `@d3-polytree/element`** — the framework-free `<d3-polytree-editor>` custom
+    element. Hosts the editor in a shadow root, reflects the serialized `.pfdn` as a
+    `value` property/attribute, participates in `<form>`s via `ElementInternals`
+    (feature-gated — degrades gracefully where unsupported), emits a `change`
+    `CustomEvent` on every committed edit, and inlines the compiled component CSS
+    into its shadow root. Ships a UMD (`d3PolytreeElement`) that self-registers the
+    tag for a `<script>` drop-in.
+  - **New `@d3-polytree/react`** — a thin, uncontrolled React wrapper
+    (`<PolytreeEditor defaultValue onChange onSelectionChange ref>`). It bridges the
+    engine event bus via `useSyncExternalStore` (a monotonic version-counter
+    snapshot, tear-free under React 18/19), with an imperative `ref`
+    (`getEditor`/`load`/`export`). React is a peer dependency (`>=18`).
+  - **`@d3-polytree/viewer`** — a new stable `on(event, handler)` / `off(...)` surface
+    (for `document.changed` / `selection.changed` / `commandStack.changed`) that
+    **survives `importDiagram`/`createEmpty` reboots**: the component re-attaches
+    registered handlers to the fresh event bus on each boot. Inherited by
+    `InteractiveViewer` and `Editor`.
+  - **`@d3-polytree/editor`** — routing a diagram reboot through the new non-virtual
+    teardown fixes a latent bug where re-opening a document (`importDiagram` /
+    `createDiagram`) stripped the editor's undo/redo keyboard shortcuts.
+
+- Updated dependencies [05f45d3]
+- Updated dependencies [c342677]
+- Updated dependencies [cdc6008]
+  - @d3-polytree/viewer@0.2.0
+  - @d3-polytree/core@0.5.0
+  - @d3-polytree/interactive-viewer@0.5.2
+
 ## 0.5.0
 
 ### Minor Changes

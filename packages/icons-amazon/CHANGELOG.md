@@ -1,5 +1,13 @@
 # @d3-polytree/icons-amazon
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [c342677]
+- Updated dependencies [cdc6008]
+  - @d3-polytree/core@0.5.0
+
 ## 0.1.3
 
 ### Patch Changes

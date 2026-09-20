@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/viewer",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Static polytree viewer (no interaction)",
   "license": "MIT",
   "author": "David Castillo",

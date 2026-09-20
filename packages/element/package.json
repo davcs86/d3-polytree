@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/element",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "<d3-polytree-editor> custom element (shadow DOM, form-associated) wrapping the polytree editor",
   "license": "MIT",
   "author": "David Castillo",
