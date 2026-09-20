@@ -9,8 +9,8 @@
     position: absolute;
     margin: 6px;
     padding: 3px 6px;
-    background: #fafafa;
-    border: solid 1px #cccccc;
+    background: var(--pfd-color-surface, #fafafa);
+    border: solid 1px var(--pfd-color-border-strong, #cccccc);
     border-radius: 2px;
     box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.3);
     z-index: 1;
@@ -24,7 +24,7 @@
         .pfdjs-entry {
           float: left;
           width: 24px;
-          color: #333333;
+          color: var(--pfd-color-text, #333333);
           padding: 3px 0;
           font-size: 20px;
           cursor: pointer;
@@ -39,13 +39,13 @@
           }
 
           &:hover {
-            color: #ff4800;
+            color: var(--pfd-color-accent-invariant, #ff4800);
           }
         }
       }
 
       .pfdjs-entries-group:not(:last-of-type) {
-        border-right: 1px solid #cccccc;
+        border-right: 1px solid var(--pfd-color-border-strong, #cccccc);
         padding-right: 7px;
       }
     }

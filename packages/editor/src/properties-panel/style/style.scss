@@ -14,8 +14,8 @@
       margin-top: -6px;
       .pfdjs-pp-content {
         display: none;
-        border: 1px solid gray;
-        background-color: #fff;
+        border: 1px solid var(--pfd-color-border-muted, gray);
+        background-color: var(--pfd-color-surface-raised, #fff);
         padding: 6px;
         @import "groups";
         &.open{

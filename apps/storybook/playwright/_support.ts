@@ -52,8 +52,14 @@ export function iframeUrl(id: string): string {
  * the root has rendered, web fonts are resolved, and every CSS transition /
  * animation is neutralised. Returns once the frame is safe to snapshot or audit.
  */
-export async function gotoStory(page: Page, id: string): Promise<void> {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+export async function gotoStory(
+  page: Page,
+  id: string,
+  media: { colorScheme?: 'light' | 'dark'; forcedColors?: 'none' | 'active' } = {}
+): Promise<void> {
+  // Merge with the always-on reducedMotion; omitted keys are left unchanged, so
+  // existing light baselines are unaffected when colorScheme/forcedColors are omitted.
+  await page.emulateMedia({ reducedMotion: 'reduce', ...media });
   await page.goto(iframeUrl(id), { waitUntil: 'networkidle' });
   // Kill transitions/animations so a snapshot never catches an in-flight frame.
   await page.addStyleTag({

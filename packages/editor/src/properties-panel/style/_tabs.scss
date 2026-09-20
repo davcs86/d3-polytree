@@ -4,7 +4,7 @@
 }
 
 .pfdjs-pp-tabs .scroll-tabs-button {
-  color: gray;
+  color: var(--pfd-color-text-muted, gray);
   cursor: pointer;
   font-size: 16px;
   padding: 3px 4px 3px 4px;
@@ -39,26 +39,28 @@ ul.tab-sheets > li {
 ul.tab-sheets > li.tab-sheet-ignore { display: none; }
 
 ul.tab-sheets > li > a {
-  background-color: #fff;
-  border: 1px solid lightgray;
+  background-color: var(--pfd-color-surface-raised, #fff);
+  border: 1px solid var(--pfd-color-border-subtle, lightgray);
   -ms-border-radius: 4px 4px 0 0;
   border-radius: 4px 4px 0 0;
   border-bottom: transparent;
-  color: gray;
+  color: var(--pfd-color-text-muted, gray);
   display: inline-block;
   font-size: 12px;
   padding: 4px 7px;
   text-decoration: none;
 }
 
-ul.tab-sheets > li > a:hover { color: gray; }
+ul.tab-sheets > li > a:hover { color: var(--pfd-color-text-muted, gray); }
 
 ul.tab-sheets > li + li { margin-left: 1px; }
 
 ul.tab-sheets > li.tab-sheet-active a {
-  border: 1px solid gray;
-  border-top: 2px solid #5990bd;
-  border-bottom: #fff;
-  color: #333;
+  border: 1px solid var(--pfd-color-border-muted, gray);
+  border-top: 2px solid var(--pfd-color-accent-ink, #5990bd);
+  // seam mask — MUST match the pp-content background so the active tab merges
+  // into the content panel in every theme.
+  border-bottom: var(--pfd-color-surface-raised, #fff);
+  color: var(--pfd-color-text, #333);
   padding-bottom: 5px;
 }

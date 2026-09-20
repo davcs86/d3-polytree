@@ -50,6 +50,24 @@ editor.select(node);
 const xml = editor.exportDiagram();    // serialize back to .pfdn
 ```
 
+## Theming
+
+The panel/toolbar **chrome** is themed with `--pfd-color-*` CSS custom properties. A **dark scheme**
+follows the OS `prefers-color-scheme` automatically; force one per instance with a `data-pfd-theme`
+attribute, and re-theme by overriding the tokens:
+
+```css
+/* force dark on a container (or the <d3-polytree-editor> element) */
+.my-editor[data-pfd-theme="dark"] { }
+
+/* or re-brand the chrome */
+:root { --pfd-color-accent-ink: #6c5ce7; --pfd-color-surface: #faf7ff; }
+```
+
+High-contrast (`forced-colors`) maps the selection outline and focus rings to system colours. The
+**diagram content** (nodes, links, zones, labels) keeps the colours authored in the document — it is your
+data, not chrome, so it renders the same in every theme, and exported SVG is theme-invariant.
+
 ## Extending
 
 Compose your own didi modules through the `modules` option — they layer over the component's own,

@@ -3,11 +3,21 @@
     .search{
       outline: none;
       padding: 6px;
-      border: 1px  solid #333;
+      // border colour tokenised (light #cccccc for consistency with other input
+      // borders; dark #3c3c3c). The search input is hidden by default, so no VR
+      // baseline paints its previous #333 border.
+      border: 1px  solid var(--pfd-color-border-strong, #cccccc);
+      background: var(--pfd-color-surface-raised, #ffffff);
+      color: var(--pfd-color-text, #333333);
       transition: border 0.3s;
+
       width: 300px;
       margin-top: 16px;
       margin-bottom: 16px;
+
+      &:focus-visible {
+        border-color: var(--pfd-color-accent-fill, #5990bd);
+      }
     }
     .list {
       margin-top: 3px;
@@ -16,26 +26,26 @@
       li {
         cursor: pointer;
         display: block;
-        background-color: #eee;
-        border-left: 4px solid #5990bd;
+        background-color: var(--pfd-color-list-item, #eeeeee);
+        border-left: 4px solid var(--pfd-color-accent-ink, #5990bd);
         padding: 8px;
         margin: 2px 20px;
         text-align: left;
         h3 {
           margin: 0;
-          color: #333;
+          color: var(--pfd-color-text, #333333);
           font-size: 15px;
         }
         p {
           margin: 0;
-          color: #555;
+          color: var(--pfd-color-text-secondary, #555555);
           font-size: 12px;
           .elementType{
             font-weight: bold;
           }
         }
         &:hover {
-          background-color: #f5f5f5;
+          background-color: var(--pfd-color-list-item-hover, #f5f5f5);
         }
       }
     }

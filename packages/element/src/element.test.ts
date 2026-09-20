@@ -92,6 +92,29 @@ describe('<d3-polytree-editor>', () => {
     expect(svg).toContain('<style>');
   });
 
+  it('exportSVG() pins the export to the light theme (C13 export neutrality)', () => {
+    // Fresh elements per export — the engine's exportSVG appends a <style> to the
+    // live SVG on each call (not idempotent across calls on one instance), so
+    // theme-invariance is asserted across two instances, one with a dark host.
+    const light = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+    document.body.appendChild(light);
+    const dark = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+    dark.setAttribute('data-pfd-theme', 'dark');
+    document.body.appendChild(dark);
+
+    const lightSvg = light.exportSVG();
+    const darkSvg = dark.exportSVG();
+
+    // The export is stamped light and is byte-identical regardless of the host's
+    // active theme — a dark viewer never leaks into an exported SVG.
+    expect(lightSvg).toContain('data-pfd-theme="light"');
+    expect(darkSvg).toBe(lightSvg);
+    // Tokens are self-contained in the injected CSS (no host-page :root
+    // dependency); selection is present (theme-invariant).
+    expect(lightSvg).toContain('--pfd-color-selection');
+    expect(lightSvg).toContain(':host');
+  });
+
   it('tears down on disconnect without throwing', () => {
     const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
     document.body.appendChild(el);

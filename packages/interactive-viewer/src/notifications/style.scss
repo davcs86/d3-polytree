@@ -14,7 +14,7 @@
     max-width: 320px;
     padding: 10px 14px;
     border-radius: 6px;
-    background: #333333;
+    background: var(--pfd-color-toast-bg, #333333);
     color: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     font-size: 13px;
@@ -31,19 +31,19 @@
       margin-bottom: 2px;
     }
     a {
-      color: #9ecbff;
+      color: var(--pfd-color-toast-link, #9ecbff);
     }
     &.pfdjs-toast-success {
-      background: #2e7d32;
+      background: var(--pfd-color-toast-success, #2e7d32);
     }
     &.pfdjs-toast-warning {
-      background: #b26a00;
+      background: var(--pfd-color-toast-warning, #b26a00);
     }
     &.pfdjs-toast-error {
-      background: #c62828;
+      background: var(--pfd-color-toast-error, #c62828);
     }
     &.pfdjs-toast-info {
-      background: #37474f;
+      background: var(--pfd-color-toast-info, #37474f);
     }
   }
 
@@ -59,11 +59,11 @@
     .pfdjs-dialog {
       min-width: 260px;
       max-width: 90%;
-      background: #ffffff;
+      background: var(--pfd-color-surface-raised, #ffffff);
       border-radius: 8px;
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
       padding: 18px 20px 14px;
-      color: #333333;
+      color: var(--pfd-color-text, #333333);
       font-size: 13px;
 
       .pfdjs-dialog-title {
@@ -83,25 +83,37 @@
         .pfdjs-dialog-btn {
           padding: 6px 14px;
           border-radius: 5px;
-          border: solid 1px #cccccc;
-          background: #fafafa;
+          border: solid 1px var(--pfd-color-border-strong, #cccccc);
+          background: var(--pfd-color-surface, #fafafa);
+          color: var(--pfd-color-text, #333333);
           cursor: pointer;
           font-size: 13px;
 
           &:hover {
-            background: #f0f0f0;
+            background: var(--pfd-color-surface-hover, #f0f0f0);
           }
           &.pfdjs-dialog-ok {
-            background: #5990bd;
-            border-color: #5990bd;
+            background: var(--pfd-color-accent-fill, #5990bd);
+            border-color: var(--pfd-color-accent-fill, #5990bd);
             color: #ffffff;
 
             &:hover {
-              background: #4d80a8;
+              background: var(--pfd-color-accent-fill-hover, #4d80a8);
             }
+          }
+          &:focus-visible {
+            outline: 2px solid var(--pfd-color-accent-fill, #5990bd);
+            outline-offset: 1px;
           }
         }
       }
     }
+  }
+}
+
+// High-contrast: keep dialog-button focus visible against the system palette.
+@media (forced-colors: active) {
+  .pfdjs-notifications .pfdjs-dialog-btn:focus-visible {
+    outline: 2px solid Highlight;
   }
 }
