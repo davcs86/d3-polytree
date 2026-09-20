@@ -231,4 +231,15 @@ evidence. Plan is execution-ready.
 
 ## Deviation Log
 
-_Populated during execution. Step bodies above are immutable (DN-5); record any divergence here._
+- **Steps 4 & 7 — form value set on boot, not only on edit.** The element now calls its form-value
+  update on initial load (`createEmpty`/`importDiagram`) as well as on `document.changed`, via a private
+  `_updateFormValue()` (no `change` event) split from the edit path (`_onDocChanged` = update + emit
+  `change`). This is more correct form-association semantics (a `<form>` reads the current document
+  immediately) and makes the Playwright test assert boot-time form participation. The jsdom edit test was
+  updated to clear the `setFormValue` spy after boot before asserting the edit call.
+- **Test typing** — the element/react test files type the eventBus via a local `Bus` interface and cast
+  the private `_editor` through `unknown` (a direct intersection collides with the `private` member →
+  `never`), avoiding non-direct-dep type imports (`eventemitter3`/`@d3-polytree/core`) that broke
+  `tsc --noEmit`.
+
+_Step bodies above are immutable (DN-5); further divergence recorded here._
