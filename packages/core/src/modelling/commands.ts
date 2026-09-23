@@ -5,6 +5,7 @@ import { getLocalName } from '../utils/localName';
 import type { ModellingElement } from './ModellingElement';
 import type { ElementClass } from './Modelling';
 import type { ModellingModelElement } from './types';
+import { ElementStatus } from '../model/status';
 
 /** A node's resizable geometry — the memento for `element.resize`. */
 export interface Geometry {
@@ -126,10 +127,10 @@ export function deleteElementCommand(
         ctx.labelPrevStatus = label.get('status') as number;
         ctx.labelPrevReadOnly = label.isReadOnly;
         label.isReadOnly = false;
-        label.set('status', 3);
+        label.set('status', ElementStatus.Deleted);
         labelHandler.reconcile(label.id as string, undefined);
       }
-      def.set('status', 3);
+      def.set('status', ElementStatus.Deleted);
       handlers[ctx.className].reconcile(def.id as string, undefined);
     },
     revert(ctx) {

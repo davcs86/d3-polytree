@@ -1,14 +1,18 @@
 <!-- context-forge:behavioral-contract:start -->
+
 ## How to Act
 
-1. **Don't assume — ask, and surface tradeoffs.** *(enforced by `SB-03` — `meta.title` is a cross-file spec key; `PLAT-03`)*
+1. **Don't assume — ask, and surface tradeoffs.** _(enforced by `SB-03` — `meta.title` is a cross-file spec key; `PLAT-03`)_
 2. **Write the minimum that solves the stated problem.**
-3. **Touch only what the task requires; keep diffs surgical.** *(enforced by `SB-01` CSS layering + `SB-02` dist-not-src)*
-4. **Define success up front, then loop until verified.** *(enforced by `SB-N04` deterministicModules; `PLAT-06`/`PLAT-08` pinned VR)*
+3. **Touch only what the task requires; keep diffs surgical.** _(enforced by `SB-01` CSS layering + `SB-02` dist-not-src)_
+4. **Define success up front, then loop until verified.** _(enforced by `SB-N04` deterministicModules; `PLAT-06`/`PLAT-08` pinned VR)_
+
 <!-- context-forge:behavioral-contract:end -->
 
 <!-- context-forge:constitution-pointer:start -->
+
 > 📜 **Constitution:** [`docs/context-constitution.md`](docs/context-constitution.md) · defects: [`docs/context-constitution-findings.md`](docs/context-constitution-findings.md) · inherits the root constitution. Forged by context-forge.
+
 <!-- context-forge:constitution-pointer:end -->
 
 # CLAUDE.md — @d3-polytree/storybook
@@ -30,7 +34,7 @@ Changesets**.
 
 `playwright/` holds the Playwright suite that gates on more than "it builds": **visual regression**
 (`vr.spec.ts`), **accessibility** (`a11y.spec.ts`, axe-core), and **live interaction**
-(`interactions.spec.ts`, real selection + command-stack undo/redo). It runs against the *static*
+(`interactions.spec.ts`, real selection + command-stack undo/redo). It runs against the _static_
 `storybook-static` build, so `pnpm build && pnpm build-storybook` must run first (`playwright.config.ts`
 serves it with `http-server`).
 
@@ -38,7 +42,7 @@ serves it with `http-server`).
   `deterministicModules()` (`src/deterministic.ts`), `gotoStory()` disables transitions + emulates
   reduced motion + waits for fonts, and the config uses a fixed viewport.
 - **Rendering is container-pinned.** Pixel baselines are byte-unstable across font stacks, so they are
-  generated and compared *only* inside `mcr.microsoft.com/playwright:v<version>-noble`
+  generated and compared _only_ inside `mcr.microsoft.com/playwright:v<version>-noble`
   (`.github/workflows/visual-regression.yml`), never on a dev host. Keep `@playwright/test` pinned to
   the same version as that image tag. CI **auto-seeds** the baselines under `playwright/__screenshots__/`
   on the first push to a branch, then gates. To refresh them intentionally, dispatch the workflow with

@@ -1,4 +1,3 @@
-
 .pfdjs-container {
   // Override palette style
   .pfdjs-palette {
@@ -49,14 +48,14 @@
           height: 24px;
           cursor: pointer;
         }
-        &.active{
+        &.active {
           color: var(--pfd-color-accent-invariant, #ff4800);
         }
       }
     }
     .pfdjs-st-contents {
       .pfdjs-st-content {
-        &.hidden{
+        &.hidden {
           display: none !important;
         }
         .content-body {
@@ -95,7 +94,7 @@
     }
     &.open {
       right: 0;
-      .pfdjs-st-tabs{
+      .pfdjs-st-tabs {
         .pfdjs-st-tab {
           &.active {
             left: 1px;

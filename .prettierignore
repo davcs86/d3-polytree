@@ -5,3 +5,5 @@ pnpm-lock.yaml
 # Generated files (written verbatim by their generator scripts; the CI drift
 # gate — not prettier — is their formatting authority).
 packages/pfdn-moddle/src/pfdn.generated.ts
+packages/icons-amazon/src/icons.generated.ts
+packages/element/src/styles.generated.ts

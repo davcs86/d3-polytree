@@ -36,8 +36,12 @@ function nameProps(group: PropertiesGroup, element: Definition, factory: EntryFa
       factory.textField({ id: 'label.text', label: 'Diagram label', modelProperty: 'label.text' })
     );
   } else if (is(element, 'pfdn:Settings')) {
-    group.entries.push(factory.textField({ id: 'name', label: 'Diagram name', modelProperty: 'name' }));
-    group.entries.push(factory.textField({ id: 'author', label: "Author's name", modelProperty: 'author' }));
+    group.entries.push(
+      factory.textField({ id: 'name', label: 'Diagram name', modelProperty: 'name' })
+    );
+    group.entries.push(
+      factory.textField({ id: 'author', label: "Author's name", modelProperty: 'author' })
+    );
   } else if (is(element, 'pfdn:Link')) {
     group.entries.push(
       factory.textField({ id: 'label.text', label: 'Diagram label', modelProperty: 'label.text' })
@@ -76,14 +80,23 @@ function linkFormatProps(group: PropertiesGroup, element: Definition, factory: E
     return;
   }
   group.entries.push(
-    factory.textField({ id: 'lineWidth', label: 'Line width', modelProperty: 'lineWidth', type: 'number' })
+    factory.textField({
+      id: 'lineWidth',
+      label: 'Line width',
+      modelProperty: 'lineWidth',
+      type: 'number'
+    })
   );
   group.entries.push(
     factory.colorPicker({ id: 'lineColor', label: 'Line color', modelProperty: 'lineColor' })
   );
 }
 
-function labelFormatProps(group: PropertiesGroup, element: Definition, factory: EntryFactory): void {
+function labelFormatProps(
+  group: PropertiesGroup,
+  element: Definition,
+  factory: EntryFactory
+): void {
   if (is(element, 'pfdn:Node') || is(element, 'pfdn:Link')) {
     group.entries.push(
       factory.textField({
@@ -98,9 +111,16 @@ function labelFormatProps(group: PropertiesGroup, element: Definition, factory: 
     );
   } else if (is(element, 'pfdn:Label')) {
     group.entries.push(
-      factory.textField({ id: 'fontSize', label: 'Font size', modelProperty: 'fontSize', type: 'number' })
+      factory.textField({
+        id: 'fontSize',
+        label: 'Font size',
+        modelProperty: 'fontSize',
+        type: 'number'
+      })
     );
-    group.entries.push(factory.colorPicker({ id: 'color', label: 'Color', modelProperty: 'color' }));
+    group.entries.push(
+      factory.colorPicker({ id: 'color', label: 'Color', modelProperty: 'color' })
+    );
   }
 }
 
@@ -109,16 +129,34 @@ function gridFormatProps(group: PropertiesGroup, element: Definition, factory: E
     return;
   }
   group.entries.push(
-    factory.colorPicker({ id: 'backgroundColor', label: 'Background color', modelProperty: 'backgroundColor' })
+    factory.colorPicker({
+      id: 'backgroundColor',
+      label: 'Background color',
+      modelProperty: 'backgroundColor'
+    })
   );
   group.entries.push(
-    factory.colorPicker({ id: 'grid.lineColor', label: 'Line color', modelProperty: 'grid.lineColor' })
+    factory.colorPicker({
+      id: 'grid.lineColor',
+      label: 'Line color',
+      modelProperty: 'grid.lineColor'
+    })
   );
   group.entries.push(
-    factory.textField({ id: 'grid.size', label: 'Square size', modelProperty: 'grid.size', type: 'number' })
+    factory.textField({
+      id: 'grid.size',
+      label: 'Square size',
+      modelProperty: 'grid.size',
+      type: 'number'
+    })
   );
   group.entries.push(
-    factory.textField({ id: 'grid.lineWidth', label: 'Line width', modelProperty: 'grid.lineWidth', type: 'number' })
+    factory.textField({
+      id: 'grid.lineWidth',
+      label: 'Line width',
+      modelProperty: 'grid.lineWidth',
+      type: 'number'
+    })
   );
 }
 
@@ -166,7 +204,11 @@ export class PfdnPropertiesProvider implements PropertiesProvider {
   }
 
   private _formatTab(element: Definition, factory: EntryFactory): PropertiesTab {
-    const elementFormat: PropertiesGroup = { id: 'elementFormat', label: 'Element format', entries: [] };
+    const elementFormat: PropertiesGroup = {
+      id: 'elementFormat',
+      label: 'Element format',
+      entries: []
+    };
     const labelFormat: PropertiesGroup = { id: 'labelFormat', label: 'Label format', entries: [] };
     const gridFormat: PropertiesGroup = { id: 'gridFormat', label: 'Grid format', entries: [] };
 

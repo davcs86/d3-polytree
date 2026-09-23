@@ -28,7 +28,10 @@ describe('@d3-polytree/core Outline', () => {
 
   it('outlines a node sized from its size property', () => {
     const el = drawing();
-    const def = moddle.create('pfdn:Node', { id: 'N1', size: 25 }) as unknown as ModellingModelElement;
+    const def = moddle.create('pfdn:Node', {
+      id: 'N1',
+      size: 25
+    }) as unknown as ModellingModelElement;
     const created = vi.fn();
     bus.on('outline.created', created);
 
@@ -70,7 +73,10 @@ describe('@d3-polytree/core Outline', () => {
 
   it('updates an existing outline in place', () => {
     const el = drawing();
-    const def = moddle.create('pfdn:Node', { id: 'N1', size: 25 }) as unknown as ModellingModelElement;
+    const def = moddle.create('pfdn:Node', {
+      id: 'N1',
+      size: 25
+    }) as unknown as ModellingModelElement;
     bus.emit('node.created', el as unknown as DrawingSelection, def);
 
     const updated = vi.fn();

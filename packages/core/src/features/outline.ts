@@ -56,9 +56,7 @@ export class Outline {
     // implemented in every environment (jsdom); fall back to a zero box.
     const inner = element.select<SVGGElement>('.innerElement').node();
     const bbox =
-      inner && typeof inner.getBBox === 'function'
-        ? inner.getBBox()
-        : { width: 0, height: 0 };
+      inner && typeof inner.getBBox === 'function' ? inner.getBBox() : { width: 0, height: 0 };
     return { x: 0, y: 0, width: bbox.width, height: bbox.height };
   }
 

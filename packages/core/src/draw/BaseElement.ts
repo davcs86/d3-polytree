@@ -4,6 +4,7 @@ import type { Canvas, ElementBuilder, ElementRegistry } from '@d3-polytree/canva
 import type { ElementClass } from '../modelling';
 import type { DrawingRegistry } from './DrawingRegistry';
 import type { ContainerSelection, DiagramElement, DrawingSelection } from './types';
+import { ElementStatus } from '../model/status';
 
 /**
  * Abstract base for a class of drawn diagram elements (nodes, links, labels, …).
@@ -60,8 +61,8 @@ export abstract class BaseElement {
   protected _builder(elementId: string, definition: DiagramElement | undefined): void {
     const element = this._elementRegistry.get(elementId);
     if (element && definition) {
-      if (definition.get('status') !== 1) {
-        definition.set('status', 2);
+      if (definition.get('status') !== ElementStatus.Persisted) {
+        definition.set('status', ElementStatus.Dirty);
       }
       this.updateElement(definition);
     } else if (element && !definition) {
@@ -103,16 +104,12 @@ export abstract class BaseElement {
   appendElement(definition: DiagramElement): void {
     this._elementRegistry.claimId(definition, this._className);
 
-    const newElem = this._elementsContainer!
-      .append('g')
+    const newElem = this._elementsContainer!.append('g')
       .datum(definition)
       .attr('element-id', definition.id as string)
       .attr('class', `${this._className}Item element`);
 
-    newElem
-      .append('g')
-      .attr('class', 'innerElement')
-      .attr('transform', 'translate(3, 3)');
+    newElem.append('g').attr('class', 'innerElement').attr('transform', 'translate(3, 3)');
 
     this._createElement(newElem, definition);
     this._drawingRegistry.set(definition.id as string, newElem);

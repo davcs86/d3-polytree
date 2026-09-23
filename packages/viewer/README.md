@@ -27,8 +27,8 @@ already provide.
 import { Viewer } from '@d3-polytree/viewer';
 
 const viewer = new Viewer({ container: document.getElementById('app')! });
-await viewer.importDiagram(pfdnXml);   // parse a .pfdn document and render it
-const svg = viewer.exportSVG();        // current rendering as a standalone SVG string
+await viewer.importDiagram(pfdnXml); // parse a .pfdn document and render it
+const svg = viewer.exportSVG(); // current rendering as a standalone SVG string
 ```
 
 ### `<script>` (UMD)
@@ -48,21 +48,21 @@ drop it in with a plain `<script>` tag, no bundler required:
 
 Constructor: `new Viewer(options?: ViewerOptions)`.
 
-| Option | Type | Purpose |
-| --- | --- | --- |
-| `container` | `HTMLElement` | Host element the diagram renders into. |
-| `modules` | `DiagramModule[]` | Extra didi modules layered **after** the component's own (last definition wins) — the no-subclassing extension seam. |
+| Option      | Type              | Purpose                                                                                                              |
+| ----------- | ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `container` | `HTMLElement`     | Host element the diagram renders into.                                                                               |
+| `modules`   | `DiagramModule[]` | Extra didi modules layered **after** the component's own (last definition wins) — the no-subclassing extension seam. |
 
-| Method / property | Description |
-| --- | --- |
-| `importDiagram(xml)` → `Promise<void>` | Parse and render a `.pfdn` document (a reboot). |
-| `createEmpty()` | Render a fresh, empty diagram. |
-| `exportDiagram()` → `string` | Serialize the current diagram back to `.pfdn` XML. |
-| `exportSVG()` → `string` | The current rendering as a standalone SVG string. |
-| `on(event, handler)` / `off(...)` | Subscribe to post-boot engine events — `document.changed`, `selection.changed`, `commandStack.changed`. Subscriptions **survive `importDiagram` reboots**. |
-| `get(name, strict?)` | Resolve any service from the running engine (`viewer.get('eventBus')`). |
-| `getHost()` | The loaded model host (`{ definitions, moddle }`). |
-| `destroy()` | Tear down the diagram and drop all subscriptions. |
+| Method / property                      | Description                                                                                                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `importDiagram(xml)` → `Promise<void>` | Parse and render a `.pfdn` document (a reboot).                                                                                                            |
+| `createEmpty()`                        | Render a fresh, empty diagram.                                                                                                                             |
+| `exportDiagram()` → `string`           | Serialize the current diagram back to `.pfdn` XML.                                                                                                         |
+| `exportSVG()` → `string`               | The current rendering as a standalone SVG string.                                                                                                          |
+| `on(event, handler)` / `off(...)`      | Subscribe to post-boot engine events — `document.changed`, `selection.changed`, `commandStack.changed`. Subscriptions **survive `importDiagram` reboots**. |
+| `get(name, strict?)`                   | Resolve any service from the running engine (`viewer.get('eventBus')`).                                                                                    |
+| `getHost()`                            | The loaded model host (`{ definitions, moddle }`).                                                                                                         |
+| `destroy()`                            | Tear down the diagram and drop all subscriptions.                                                                                                          |
 
 The running `Viewer` registers itself as the `d3polytree` value module, so drawers/modelling resolve
 `d3polytree.definitions` / `d3polytree.moddle` off the instance.

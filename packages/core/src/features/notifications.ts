@@ -1,6 +1,14 @@
 export interface NotificationParams {
   title?: string;
+  /** Body text. Always rendered as plain text (textContent) — safe for untrusted content. */
   text?: string;
+  /**
+   * Pre-sanitized HTML markup, rendered via innerHTML. Use ONLY for trusted,
+   * in-repo, static content (e.g. a project link) — never model- or user-derived
+   * text. It is a separate field (not a `text` + boolean flag) so untrusted
+   * content cannot reach innerHTML by toggling an option.
+   */
+  trustedHtml?: string;
   [key: string]: unknown;
 }
 

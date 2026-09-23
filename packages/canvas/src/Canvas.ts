@@ -2,7 +2,13 @@ import { select } from 'd3-selection';
 import type EventEmitter from 'eventemitter3';
 import { getSvgString } from './SvgExportingUtils';
 import type { DiagramEventMap } from './events';
-import type { CanvasConfig, CanvasSize, GroupSelection, SvgSelection, TransformMatrix } from './types';
+import type {
+  CanvasConfig,
+  CanvasSize,
+  GroupSelection,
+  SvgSelection,
+  TransformMatrix
+} from './types';
 
 function ensurePx(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;

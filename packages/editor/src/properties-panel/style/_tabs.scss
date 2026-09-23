@@ -10,7 +10,9 @@
   padding: 3px 4px 3px 4px;
 }
 
-.pfdjs-pp-tabs .scroll-tabs-button:hover { font-weight: bold; }
+.pfdjs-pp-tabs .scroll-tabs-button:hover {
+  font-weight: bold;
+}
 
 .pfdjs-pp-tabs .scroll-tabs-button.scroll-tabs-left {
   float: left;
@@ -22,7 +24,9 @@
   margin-right: -15px;
 }
 
-.pfdjs-pp-tabs:not(.scroll-tabs-overflow) .scroll-tabs-button { display: none; }
+.pfdjs-pp-tabs:not(.scroll-tabs-overflow) .scroll-tabs-button {
+  display: none;
+}
 
 ul.tab-sheets {
   margin: -1px 0 5px 0;
@@ -36,7 +40,9 @@ ul.tab-sheets > li {
   margin: 0;
 }
 
-ul.tab-sheets > li.tab-sheet-ignore { display: none; }
+ul.tab-sheets > li.tab-sheet-ignore {
+  display: none;
+}
 
 ul.tab-sheets > li > a {
   background-color: var(--pfd-color-surface-raised, #fff);
@@ -51,9 +57,13 @@ ul.tab-sheets > li > a {
   text-decoration: none;
 }
 
-ul.tab-sheets > li > a:hover { color: var(--pfd-color-text-muted, gray); }
+ul.tab-sheets > li > a:hover {
+  color: var(--pfd-color-text-muted, gray);
+}
 
-ul.tab-sheets > li + li { margin-left: 1px; }
+ul.tab-sheets > li + li {
+  margin-left: 1px;
+}
 
 ul.tab-sheets > li.tab-sheet-active a {
   border: 1px solid var(--pfd-color-border-muted, gray);

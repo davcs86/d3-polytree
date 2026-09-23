@@ -7,7 +7,8 @@ import '@d3-polytree/interactive-viewer/style.css';
 import '@d3-polytree/editor/style.css';
 
 /**
- * The C3 layered auto-layout (`@d3-polytree/layout`) wired into the editor.
+ * The C3 layered auto-layout (the `@d3-polytree/layout` solver, reached here via
+ * `@d3-polytree/core` / `editor` — not a direct Storybook dependency) wired into the editor.
  *
  * Each story loads the same deliberately-overlapping DAG and calls
  * `editor.autoLayout({ direction })` on mount — one undoable command that

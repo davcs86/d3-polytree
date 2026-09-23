@@ -14,20 +14,23 @@ published from `main` via GitHub Pages.
 
 ## Packages
 
-| Package | Role |
-| --- | --- |
-| [`@d3-polytree/canvas`](./packages/canvas) | Base SVG canvas toolbox (`Canvas`, `ElementRegistry`, `ElementBuilder`, SVG export). |
-| [`@d3-polytree/pfdn-moddle`](./packages/pfdn-moddle) | Read/write the `.pfdn` (Process Flow Diagram Notation) XML model. |
-| [`@d3-polytree/core`](./packages/core) | The engine: `draw` + `features` + `modelling`, on modular D3 v7 peer deps. |
-| [`@d3-polytree/viewer`](./packages/viewer) | Static, read-only viewer. |
-| [`@d3-polytree/interactive-viewer`](./packages/interactive-viewer) | Viewer + pan/zoom, selection, side-tabs & search panels. |
-| [`@d3-polytree/editor`](./packages/editor) | Full editor — create/modify diagrams, palette, properties panel. |
-| [`@d3-polytree/icons-amazon`](./packages/icons-amazon) | AWS icon pack + the reference **icon-pack convention**. |
-| [`@d3-polytree/element`](./packages/element) | `<d3-polytree-editor>` custom element — shadow DOM, form-associated (`ElementInternals`). |
-| [`@d3-polytree/react`](./packages/react) | React wrapper (`<PolytreeEditor>`) bridging the event bus via `useSyncExternalStore`. |
+| Package                                                            | Role                                                                                            |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| [`@d3-polytree/canvas`](./packages/canvas)                         | Base SVG canvas toolbox (`Canvas`, `ElementRegistry`, `ElementBuilder`, SVG export).            |
+| [`@d3-polytree/pfdn-moddle`](./packages/pfdn-moddle)               | Read/write the `.pfdn` (Process Flow Diagram Notation) XML model.                               |
+| [`@d3-polytree/core`](./packages/core)                             | The engine: `draw` + `features` + `modelling`, on modular D3 v7 peer deps.                      |
+| [`@d3-polytree/layout`](./packages/layout)                         | Framework-free layered (Sugiyama) auto-layout solver (pure + Web-Worker); composes into `core`. |
+| [`@d3-polytree/viewer`](./packages/viewer)                         | Static, read-only viewer.                                                                       |
+| [`@d3-polytree/interactive-viewer`](./packages/interactive-viewer) | Viewer + pan/zoom, selection, side-tabs & search panels.                                        |
+| [`@d3-polytree/editor`](./packages/editor)                         | Full editor — create/modify diagrams, palette, properties panel.                                |
+| [`@d3-polytree/icons-amazon`](./packages/icons-amazon)             | AWS icon pack + the reference **icon-pack convention**.                                         |
+| [`@d3-polytree/element`](./packages/element)                       | `<d3-polytree-editor>` custom element — shadow DOM, form-associated (`ElementInternals`).       |
+| [`@d3-polytree/react`](./packages/react)                           | React wrapper (`<PolytreeEditor>`) bridging the event bus via `useSyncExternalStore`.           |
+| [`@d3-polytree/ssr`](./packages/ssr)                               | Server-side rendering: deterministic `.pfdn` → static SVG in Node (no browser).                 |
 
 Every package ships **ESM + CJS + `.d.ts`**; the three components (`viewer`, `interactive-viewer`,
-`editor`) also ship a self-contained **UMD** bundle with D3 inlined for a plain `<script>` drop-in.
+`editor`) **and** the `@d3-polytree/element` custom element also ship a self-contained **UMD** bundle
+with D3 inlined for a plain `<script>` drop-in.
 
 ## Install
 
@@ -41,13 +44,13 @@ pnpm add @d3-polytree/editor d3-selection d3-zoom d3-transition d3-scale d3-axis
 ```ts
 import { Editor } from '@d3-polytree/editor';
 import '@d3-polytree/interactive-viewer/style.css'; // side-tabs + search panels
-import '@d3-polytree/editor/style.css';             // properties panel
+import '@d3-polytree/editor/style.css'; // properties panel
 
 const editor = new Editor({ container: document.getElementById('app')! });
-await editor.createDiagram();          // or: await editor.importDiagram(pfdnXml)
+await editor.createDiagram(); // or: await editor.importDiagram(pfdnXml)
 const node = editor.createNode({ type: 'default', position: { x: 80, y: 80 } });
 editor.select(node);
-const xml = editor.exportDiagram();    // serialize back to .pfdn
+const xml = editor.exportDiagram(); // serialize back to .pfdn
 ```
 
 ## JSON documents (typed + validated)
@@ -60,10 +63,10 @@ import { toJson, fromJson, validate, type PfdnDocument } from '@d3-polytree/pfdn
 import { loadModelFromJson } from '@d3-polytree/core';
 
 const doc = toJson(editor.get('d3polytree').definitions); // typed PfdnDocument (refs as ids, defaults omitted)
-const result = validate(doc);                              // strict, collects ALL errors as a Result
-if (!result.ok) console.error(result.errors);             // each with a JSON-Pointer instancePath
+const result = validate(doc); // strict, collects ALL errors as a Result
+if (!result.ok) console.error(result.errors); // each with a JSON-Pointer instancePath
 
-const host = await loadModelFromJson(doc);                 // JSON twin of loadModel — throws on invalid input
+const host = await loadModelFromJson(doc); // JSON twin of loadModel — throws on invalid input
 // host: { definitions, moddle } — a normalised ModelHost (ensureSettings + routeLinks applied)
 ```
 
@@ -79,10 +82,14 @@ attribute, and re-theme by overriding the tokens:
 
 ```css
 /* force dark on a container (or the <d3-polytree-editor> element) */
-.my-editor[data-pfd-theme="dark"] { }
+.my-editor[data-pfd-theme='dark'] {
+}
 
 /* or re-brand the chrome */
-:root { --pfd-color-accent-ink: #6c5ce7; --pfd-color-surface: #faf7ff; }
+:root {
+  --pfd-color-accent-ink: #6c5ce7;
+  --pfd-color-surface: #faf7ff;
+}
 ```
 
 High-contrast (`forced-colors`) maps the selection outline and focus rings to system colours. The
@@ -101,10 +108,15 @@ import { awsIconsModule } from '@d3-polytree/icons-amazon';
 // a custom feature reacting to the event bus
 const auditModule = {
   __init__: ['audit'],
-  audit: ['type', class Audit {
-    static $inject = ['eventBus'];
-    constructor(bus) { bus.on('selection.changed', (_p, next) => console.log(next.length, 'selected')); }
-  }]
+  audit: [
+    'type',
+    class Audit {
+      static $inject = ['eventBus'];
+      constructor(bus) {
+        bus.on('selection.changed', (_p, next) => console.log(next.length, 'selected'));
+      }
+    }
+  ]
 };
 
 new Editor({ container, modules: [awsIconsModule, auditModule] });

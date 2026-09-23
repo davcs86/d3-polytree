@@ -13,13 +13,11 @@ _None._
 
 ## Dead / orphaned code
 
-| What | Why it looks dead | Evidence |
-|---|---|---|
-| `@d3-polytree/viewer` is a direct `dependencies` entry but never imported by `src/` (only `@d3-polytree/editor` is) | candidate unused direct dependency (may be needed for `.d.ts` type resolution) | `packages/element/package.json`, `packages/element/src/index.ts` |
+_None open._
 
-## Open questions (unresolved *why* — needs a maintainer)
+## Open questions (unresolved _why_ — needs a maintainer)
 
-- Is repeated `exportSVG()` on the same mounted element meant to accumulate `<style>`/attribute stamps, or should it clone/snapshot before stamping? — status: **open**
+_None._
 
 ## Dismissed (won't fix)
 
@@ -27,8 +25,12 @@ _None._
 
 ## Resolved
 
-_None._
+| What the docs say / issue                          | Evidence (was)                            | Resolved   | How confirmed                                                                                                                                                                                  |
+| -------------------------------------------------- | ----------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unused direct `@d3-polytree/viewer` dependency     | `packages/element/package.json`           | 2026-09-23 | Removed (verified: not imported by `src/`, absent from the built `dist/index.d.ts`, and `generate-styles` reads only editor + interactive-viewer CSS)                                          |
+| `exportSVG()` not idempotent across repeated calls | `packages/element/src/index.ts#exportSVG` | 2026-09-23 | Fixed at the root in `@d3-polytree/canvas` `getSvgString` (serialize a clone, never the live node) — repeated exports no longer accumulate `<style>`/attrs, for element, viewer, and ssr alike |
 
 ---
+
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,
 not rules to keep (CF-N8)._

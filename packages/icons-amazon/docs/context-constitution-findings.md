@@ -5,11 +5,7 @@ Defects and drift surfaced by `/context-constitution` (context-forge) on 2026-09
 
 ## Documentation that lies (docs claim behavior the code lacks)
 
-| What the docs say | What the code does | Evidence | Suggested action |
-|---|---|---|---|
-| README/CLAUDE: the 8 bundled icons are "promoted from `catalog/` with no code change" | **none** of the 8 bundled filenames exist in `catalog/` (catalog uses different keys, e.g. `ApplicationServices_AmazonAPIGateway` vs bundled `MobileServices_AmazonAPIGateway`); a `cp catalog/*.svg src/svg/` adds ~300 *differently-keyed* icons | `packages/icons-amazon/README.md#Scope`, `packages/icons-amazon/CLAUDE.md#Scope`, `packages/icons-amazon/catalog/` vs `src/svg/` | Correct the "promote with no code change" claim, or re-derive the 8 from their real catalog counterparts |
-| `package.json#description`: "d3-polytree **v2** ecosystem" | root `CLAUDE.md`: "There is no `v2` branch; never link one" | `packages/icons-amazon/package.json` | Decide if "v2" is an intended product label or scrub it |
-| README section headings | uses `## The icon-pack convention` / `## Authoring your own pack` / `## Exports` instead of the template's `## Usage`/`## API` + feature table | `packages/icons-amazon/README.md`, `docs/README-template.md` | Restructure to the template |
+_None open._
 
 ## Latent bugs (looks broken, not merely non-obvious)
 
@@ -17,22 +13,28 @@ _None._
 
 ## Dead / orphaned code
 
-| What | Why it looks dead | Evidence |
-|---|---|---|
-| Legacy `.eslintrc` (`"es6": false`, `"commonjs": true`, `extends: eslint:recommended`) | flat config never reads it; settings contradict this ESM/TS package | `packages/icons-amazon/.eslintrc` |
+_None open._
 
-## Open questions (unresolved *why* — needs a maintainer)
+## Open questions (unresolved _why_ — needs a maintainer)
 
 - Are the 8 bundled icons intentionally a hand-renamed curated set (making "promote from catalog" aspirational), or should they be re-derived so keys line up? — status: **open**
 
 ## Dismissed (won't fix)
 
-_None._
+| What the docs say / issue                                      | Evidence                             | Dismissed  | Reason                                                                                                                                                                                                |
+| -------------------------------------------------------------- | ------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json#description` says "d3-polytree **v2** ecosystem" | `packages/icons-amazon/package.json` | 2026-09-23 | "v2 ecosystem" is a product-generation label used consistently by the root `README.md` and `ROADMAP.md`; the `CLAUDE.md` rule forbids **linking a `v2` branch**, not the generation label. No change. |
 
 ## Resolved
 
-_None._
+| What the docs say / issue                                       | Evidence (was)                                  | Resolved   | How confirmed                                                                                                                              |
+| --------------------------------------------------------------- | ----------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| README: "promote the full set with no code change"              | `packages/icons-amazon/README.md#Scope`         | 2026-09-23 | README fixed: curated `src/svg/` icons are hand-renamed, not a key-for-key subset; copying catalogue files adds new filename-keyed `type`s |
+| README: `@d3-polytree/core` is a "bundled workspace dependency" | `packages/icons-amazon/tsup.config.ts#external` | 2026-09-23 | README fixed: core is kept external at build, not bundled                                                                                  |
+| Dead legacy `.eslintrc`                                         | `packages/icons-amazon/.eslintrc`               | 2026-09-23 | Deleted                                                                                                                                    |
+| README didn't follow the shared template                        | `packages/icons-amazon/README.md`               | 2026-09-23 | Restructured to the template (Install → feature table → Usage → API → Links)                                                               |
 
 ---
+
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,
 not rules to keep (CF-N8)._

@@ -76,8 +76,7 @@ export class Modelling {
     const handler = this._elements[elementClassName as ElementClass];
     if (handler) {
       const fn = handler[action] as
-        | ((this: ModellingElement, ...args: unknown[]) => unknown)
-        | undefined;
+        ((this: ModellingElement, ...args: unknown[]) => unknown) | undefined;
       if (fn) {
         return fn.apply(handler, parameters);
       }

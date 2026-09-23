@@ -78,6 +78,8 @@ describe('@d3-polytree/core Upload', () => {
     input.dispatchEvent(new Event('change'));
 
     // FileReader is async; wait a tick
-    await vi.waitFor(() => expect(importDiagram).toHaveBeenCalledWith('<pfdn:diagram uploaded="1"/>'));
+    await vi.waitFor(() =>
+      expect(importDiagram).toHaveBeenCalledWith('<pfdn:diagram uploaded="1"/>')
+    );
   });
 });

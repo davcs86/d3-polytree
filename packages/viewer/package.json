@@ -26,7 +26,17 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@d3-polytree/core": "workspace:*",
+    "@d3-polytree/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "d3-transition": "^3.0.0",
+    "d3-scale": "^4.0.0",
+    "d3-axis": "^3.0.0",
+    "d3-drag": "^3.0.0"
+  },
+  "devDependencies": {
     "eventemitter3": "^5.0.1"
   },
   "unpkg": "./dist/viewer.umd.js",

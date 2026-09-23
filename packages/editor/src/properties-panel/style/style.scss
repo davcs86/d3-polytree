@@ -1,5 +1,4 @@
 .pfdjs-container {
-
   #pfdjs-pp-container {
     margin: 10px 16px;
 
@@ -8,7 +7,7 @@
     //$choices-button-icon-path: "~choices.js/assets/icons";
     //@import "../../node_modules/choices.js/assets/styles/scss/choices";
 
-    @import "tabs";
+    @import 'tabs';
 
     .pfdjs-pp-contents {
       margin-top: -6px;
@@ -17,12 +16,11 @@
         border: 1px solid var(--pfd-color-border-muted, gray);
         background-color: var(--pfd-color-surface-raised, #fff);
         padding: 6px;
-        @import "groups";
-        &.open{
+        @import 'groups';
+        &.open {
           display: block;
         }
       }
     }
-
   }
 }

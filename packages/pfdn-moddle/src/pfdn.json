@@ -18,9 +18,7 @@
     {
       "name": "Base",
       "isAbstract": true,
-      "superClass": [
-        "Statusable"
-      ],
+      "superClass": ["Statusable"],
       "properties": [
         {
           "name": "id",
@@ -37,9 +35,7 @@
     },
     {
       "name": "Property",
-      "superClass": [
-        "Statusable"
-      ],
+      "superClass": ["Statusable"],
       "properties": [
         {
           "name": "name",
@@ -62,9 +58,7 @@
     },
     {
       "name": "PropertiesSet",
-      "superClass": [
-        "Statusable"
-      ],
+      "superClass": ["Statusable"],
       "properties": [
         {
           "name": "id",
@@ -101,9 +95,7 @@
     },
     {
       "name": "Zoom",
-      "superClass": [
-        "Statusable"
-      ],
+      "superClass": ["Statusable"],
       "properties": [
         {
           "name": "offset",
@@ -155,9 +147,7 @@
     },
     {
       "name": "Settings",
-      "superClass": [
-        "Base"
-      ],
+      "superClass": ["Base"],
       "properties": [
         {
           "name": "author",
@@ -189,9 +179,7 @@
     },
     {
       "name": "Label",
-      "superClass": [
-        "Base"
-      ],
+      "superClass": ["Base"],
       "properties": [
         {
           "name": "position",
@@ -226,9 +214,7 @@
     },
     {
       "name": "Node",
-      "superClass": [
-        "Base"
-      ],
+      "superClass": ["Base"],
       "properties": [
         {
           "name": "label",
@@ -287,9 +273,7 @@
     },
     {
       "name": "Zone",
-      "superClass": [
-        "Base"
-      ],
+      "superClass": ["Base"],
       "properties": [
         {
           "name": "label",
@@ -339,9 +323,7 @@
     },
     {
       "name": "Link",
-      "superClass": [
-        "Base"
-      ],
+      "superClass": ["Base"],
       "properties": [
         {
           "name": "label",
@@ -408,9 +390,7 @@
     },
     {
       "name": "Diagram",
-      "superClass": [
-        "Base"
-      ],
+      "superClass": ["Base"],
       "properties": [
         {
           "name": "settings",

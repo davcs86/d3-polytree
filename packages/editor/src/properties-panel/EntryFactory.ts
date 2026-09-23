@@ -124,9 +124,7 @@ function selectBoxField(resource: EntryResource): EntryResource {
     ? resource.selectOptions.concat(allowEmpty ? [{ name: '', value: '' }] : [])
     : [{ name: '', value: '' }];
 
-  const optionsHtml = options
-    .map((o) => `<option value="${o.value}">${o.name}</option>`)
-    .join('');
+  const optionsHtml = options.map((o) => `<option value="${o.value}">${o.name}</option>`).join('');
   resource.html = fieldWrapper(
     resource,
     `<select id="pfdjs-${resource.id}" name="${resource.modelProperty}">${optionsHtml}</select>`

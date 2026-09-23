@@ -38,17 +38,20 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/command/CommandStack.ts` — create
 - `packages/core/src/command/CommandHandler.ts` — create
 - `packages/core/src/command/index.ts` — create
 - `packages/core/src/index.ts` — modify
 
 **Evidence**:
+
 - didi `*Module` provider pattern to mirror: `modelling/index.ts:19-60` — `{ __init__: ['x'], x: ['type', X], __depends__: [...] }` (recon.md Patterns to REUSE).
 - Core export site: `packages/core/src/index.ts:13-20` re-exports `./draw`, `./features`, `./modelling` (line 18), `./Diagram`, `./model/model` (recon area-C digest).
 - eventBus is provided as `['type', EventEmitter]` (`packages/canvas/src/module.ts:15`); resolved by token `eventBus`.
 
 **Instructions**:
+
 - `CommandHandler.ts`: export `interface CommandContext { [k: string]: unknown }` (a plain memento — ids + plain values only, O13) and `interface CommandHandler<C extends CommandContext = CommandContext> { canExecute?(c: C): boolean; preExecute?(c: C): void; execute(c: C): void; revert(c: C): void; postExecute?(c: C): void }`.
 - `CommandStack.ts`: `export class CommandStack` with `static readonly $inject = ['eventBus']`. Internal `_stack: {command:string; context:CommandContext}[][]` (each entry is a transaction = array of commands), `_pointer` (index into `_stack`), `_handlers = new Map<string, CommandHandler>()`, `_enabled = false`, and transaction bookkeeping `_txn: {command,context}[] | null`. Implement `registerHandler(name, handler)`, `execute(command, context)` (if a `_txn` is open, run the handler's execute and push to `_txn` — i.e. nested joins; else open a `_txn`, run, close, and if enabled push as one entry truncating the redo tail at `_pointer`), `undo()`/`redo()` (walk the entry, revert-in-reverse / execute-in-order), `canUndo()`/`canRedo()` (`_enabled && pointer in range`), `clear()`. Leave the latch + failure semantics to Step 2 (here `_enabled` starts false and nothing flips it yet).
 - `command/index.ts`: `export const commandStackModule = { __init__: ['commandStack'], commandStack: ['type', CommandStack] as const }; export * from './CommandStack'; export * from './CommandHandler';`
@@ -64,14 +67,17 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/command/CommandStack.ts` — modify
 - `packages/core/src/command/CommandStack.test.ts` — modify
 
 **Evidence**:
+
 - Latch signal: `Diagram` emits `d3canvas.init` **after** `createInjector` builds the injector (drawers + their boot `saveToModel` run synchronously inside `bootstrap` at `Diagram.ts:42,64`), the init emit at `Diagram.ts:65`, and `d3canvas.destroy`/`d3canvas.clear` on teardown (`Diagram.ts:74,78`).
 - Failure policy (design "Render channel, failure semantics"): best-effort unwind on execute-throw; on revert-throw, best-effort continue + quarantine + fatal `document.inconsistent` (design.md; `ROADMAP.md:552-554`).
 
 **Instructions**:
+
 - In the constructor, subscribe on the injected `eventBus`: `d3canvas.init` → `_enabled = true`; `d3canvas.destroy` and `d3canvas.clear` → `_quarantine()` (disable + clear both directions) so a re-boot starts clean.
 - `execute`: wrap the transaction body in try/catch. On throw mid-transaction, best-effort `revert` the commands already applied in `_txn` (reverse order, each in its own try/catch collecting errors), discard `_txn` (never push), rethrow the original error.
 - Add `_quarantine()`: `_enabled = false; _stack = []; _pointer = -1;` → `canUndo()`/`canRedo()` both false.
@@ -87,13 +93,16 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/command/roundtrip.testutil.ts` — create
 
 **Evidence**:
+
 - `ModelHost = { definitions, moddle }` and `moddle.toXML(definitions)` is the serialization (recon area-C: `model/model.ts:5`; `Viewer.exportDiagram` calls `moddle.toXML` per recon area-D).
 - The router precondition to assert: all incident nodes drawn at revert time (`Links.ts:233-235`, design Open Risk).
 
 **Instructions**:
+
 - Export `async function assertGestureRoundTrip(host, commandStack, gesture: () => void)`: snapshot `s0 = await host.moddle.toXML(host.definitions)`; run `gesture()` (which dispatches command(s)); assert `toXML` now differs from `s0` (the gesture mutated something — guards against a no-op test); call `commandStack.undo()`; assert `await toXML() === s0` **only at the transaction boundary** (after the whole undo, never mid-transaction). Add an `assertAllIncidentNodesDrawn(host, drawingRegistry, linkDef)` helper used by the move/delete fixtures.
 - This is a test-only util (no runtime export from `index.ts`).
 
@@ -107,6 +116,7 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/modelling/ModellingElement.ts` — modify
 - `packages/core/src/modelling/index.ts` — modify
 - `packages/core/src/modelling/Modelling.ts` — modify
@@ -114,11 +124,13 @@ the reroute is total before any undo/redo is user-reachable.
 - `packages/core/src/features/palette/AddLinkTool.ts` — modify
 
 **Evidence**:
+
 - Create today: `BaseAddHandler._create → this._modelling.doAction(this._className, 'create', [parameters])` (`palette/BaseAddHandler.ts:48`); `AddLinkTool._appendLink → modelling.doAction('link','create',[a,b])` (`palette/AddLinkTool.ts:112`).
 - Create writes: `moddle.create('pfdn:Node', …)` + child label + `node.label` ref (`Nodes.ts:51-71`); persisted via `saveToModel` = `collections.add(this._definitions.get(localName), definition)` (`ModellingElement.ts:51-57`); inverse is `collections.remove` (recon Patterns to REUSE; `utils/collections.ts`).
 - Registration site: `Modelling` already injects all four handlers (`Modelling.ts:27-34`).
 
 **Instructions**:
+
 - Give `ModellingElement` a `createCommand(): CommandHandler` (or equivalent) whose `execute` runs the existing create + `collections.add`, capturing the created element id(s) (node **and** its associated label) onto the context; `revert` calls `collections.remove` for both and reconciles them with `undefined`.
 - In `Modelling` (registration site), on construction call `commandStack.registerHandler('element.create', …)` per element class (inject `commandStack` into `Modelling.$inject`).
 - Change `BaseAddHandler._create` and `AddLinkTool._appendLink` to `commandStack.execute('element.create', { className, parameters })` instead of `modelling.doAction(..., 'create', ...)`. Add `'commandStack'` to `BaseAddHandler.$inject` (currently `['drawingRegistry','selection','canvas','modelling']`, `AddNodeHandler.ts:9`) and `AddLinkTool.$inject` (currently `['eventBus','canvas','modelling']`, `AddLinkTool.ts:22`), storing it on the instance. Keep `doAction` working for now (Step 8 removes it).
@@ -134,16 +146,19 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/modelling/ModellingElement.ts` — modify
 - `packages/core/src/modelling/Modelling.ts` — modify
 - `packages/core/src/features/selection.ts` — modify
 
 **Evidence**:
+
 - Delete today: soft-delete `definition.set('status', 3)` + drawer reconcile `undefined`, with read-only-label guard and cascade `label.deleted` (`ModellingElement.ts:64-84`).
 - Multi-delete today: `Selection.deleteSelected()` emits N `.deleted` in a `forEach` (`selection.ts:70-75`).
 - Selection snapshot for the whole set: `Selection.getSelectedElements()` (`selection.ts:77`).
 
 **Instructions**:
+
 - Add a delete `CommandHandler`: `execute` captures the element's prior `status` (and, for the cascade, the associated label's prior `status` and `isReadOnly`) onto the context, then runs the existing soft-delete + cascade; `revert` restores the captured `status`(es) + `isReadOnly` and reconciles node and label back in. Register as `element.delete` in `Modelling`.
 - Rewrite `Selection.deleteSelected()` to open **one** transaction: `commandStack.execute` is called once at top level, and each selected element's delete is a nested `execute('element.delete', …)` that joins the transaction → one stack entry. Inject `commandStack` into `Selection.$inject` (currently `['eventBus']`, `selection.ts:22`).
 - Keep emitting nothing extra; the handler's own reconcile drives the re-render (single render channel).
@@ -158,15 +173,18 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/modelling/ModellingElement.ts` — modify (or a node-specific handler)
 - `packages/core/src/modelling/Modelling.ts` — modify
 - `packages/core/src/features/resizeElement.ts` — modify
 
 **Evidence**:
+
 - Resize writes `definition.size` and `definition.position.x/y` in place per tick (`resizeElement.ts:74-75,93,105`), gated to `pfdn:Node` (`resizeElement.ts:145`); it writes **no** `status` and never the label (design capture-set, round-3 verified).
 - Commit fires `element.updated` with only `(id, definition)` (`resizeElement.ts:55-57`) — prior size/position already lost; the `'start'` hook is `_setCornerToDrag` (`resizeElement.ts:127-138`).
 
 **Instructions**:
+
 - Add a resize `CommandHandler`: context memento `{ id, from:{size,position:{x,y}}, to:{size,position:{x,y}} }` (all from model props, never `getBBox`/`attr`); `execute` idempotently applies `to`; `revert` applies `from` and reconciles the node. Register `element.resize`.
 - Snapshot the origin at drag start. Note `_setCornerToDrag`'s `'start'` closure (`resizeElement.ts:133`) has only `event` in scope — `definition` is not reachable there. So capture inside `_createCorners` (which has `definition`, `resizeElement.ts:40-42`): extend `_setCornerToDrag` to also take a `startFn`, and pass a `startFn` that reads `{ size: Number(definition.size), position: { x: (definition.position as Point).x, y: (definition.position as Point).y } }` from the **model** into a closure variable before the first tick. Change `commit` (`resizeElement.ts:55`) to `commandStack.execute('element.resize', { id: definition.id, from: snapshot, to: { size: Number(definition.size), position: {...} } })` (both read from model props) instead of emitting `element.updated`. Inject `commandStack` into `ResizeElement.$inject` (currently `['eventBus','canvas']`, `resizeElement.ts:29`).
 
@@ -180,16 +198,19 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/modelling/ModellingElement.ts` — modify (or a node/label move handler)
 - `packages/core/src/modelling/Modelling.ts` — modify
 - `packages/core/src/features/drag.ts` — modify
 
 **Evidence**:
+
 - Drag moves node **and** associated label by `dx/dy` (`drag.ts:45-58`), writing `position.x/y` and flipping `status`→2 unless `status===1` (`drag.ts:80-86`). Label reached via `v.definition.label` (`drag.ts:51`).
 - Gesture lifecycle: `_setElemToDrag` d3drag `'start'` → select, `'drag'` → `applyOffsetToSelected`, `'end'` → `notifyMovedSelected` (`drag.ts:90-100`).
 - Waypoints recompute on reroute; `updateNodeLinks` subscribes to **both** `node.moved` and `node.updated` (`Links.ts:83-84`); `reconcile → updateElement` emits `<class>.updated` (`draw/BaseElement.ts:131`) — verified round 3, so reconcile alone reroutes.
 
 **Instructions**:
+
 - Add a move `CommandHandler` taking a **batched** context: `{ items: [{ id, label?:{id}, from:{position,status, label?:{position,status}}, to:{…} }] }`. `execute` idempotently writes all `to` positions/statuses (node + label) for every item **first**, **then** reconciles every touched drawing (node + label) — never interleaved (the transaction-level write-before-reconcile invariant). `revert` writes all `from` values first, then reconciles all — the resulting `node.updated` events re-drive `updateNodeLinks`, recomputing incident-link waypoints from the restored positions (Option B; commands never touch `link.waypoint`). Do **not** re-emit `node.moved` explicitly (redundant — FIX-4).
 - In `_setElemToDrag`'s `'start'` (`drag.ts:92`), snapshot each selected non-link element's + its label's `{position:{x,y}, status}` from the model, first-touch-wins for the gesture. Change `notifyMovedSelected` (`drag.ts:62`) to dispatch **one** batched `commandStack.execute('element.move', { items })` using the start snapshot as `from` and current model values as `to`; drop the per-element `<class>.moved` emit (the handler's reconcile drives the reroute). Keep `applyOffsetToSelected` writing live during drag (visual feedback = the `to` state). Inject `commandStack` into `Drag.$inject`.
 
@@ -203,14 +224,17 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/modelling/Modelling.ts` — modify
 - `packages/core/src/modelling/orchestrator.test.ts` — modify
 
 **Evidence**:
+
 - `Modelling._init()` currently routes `*.created`→`saveToModel`, `*.deleted`→`delete`, `element.updated`→`reconcile` (`Modelling.ts:73-98`); `doAction` at `Modelling.ts:60-71`.
 - After Steps 4–7, create/delete/move/resize no longer flow through the `.created`/`.deleted` mutation routes.
 
 **Instructions**:
+
 - Remove the now-dead `*.created`→`saveToModel` and `*.deleted`→`delete` routes from `_init()`; **keep** the `element.updated`→`reconcile` subscription (still the notification path for external reconciles) and keep the draw-layer `.created`/`.deleted` events as pure notifications (boot-order invariant, `CLAUDE.md:71`). Keep `Modelling` as the `commandStack` registration site.
 - Reduce `doAction` to a deprecated shim that delegates to `commandStack.execute` (mark `@deprecated`, remove before 1.0 per O12); do not delete it (a consumer may still call it in this minor).
 
@@ -224,13 +248,16 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `eslint.config.js` — modify
 
 **Evidence**:
+
 - Flat config with a `rules` block and `js`/`tseslint` presets (`eslint.config.js:4-30`); `no-undef` is already overridden there (`eslint.config.js:24-28`).
 - Real write primitives to fence: `collections.add`/`collections.remove` (`utils/collections.ts`, `ModellingElement.ts:53`) and moddle `.set(` (`ModellingElement.ts:82`, `drag.ts:85`). Bare `(x as Point).x =` / `.size =` assignments are type-erased and intentionally **not** covered (design: harness is the proof).
 
 **Instructions**:
+
 - Add a scoped config block: for `packages/core/src/**` **except** the handler files (a `files`/`ignores` glob naming `modelling/**` and `command/**` as the allowlist), add `no-restricted-syntax` entries flagging `CallExpression[callee.property.name='add']`/`'remove'` on a `collections` object and `CallExpression[callee.property.name='set']` on element-typed refs, with a message pointing at "route model mutations through a commandStack handler (design.md)". Keep it a **tripwire** — accompany it with a code comment that the `toXML` harness (Steps 4–7) is the authoritative totality gate.
 
 **Verification**: `pnpm lint` passes (handlers exempt, no non-handler mutation remains after Step 8); temporarily adding a `collections.add(...)` call in a non-handler core file makes `pnpm lint` fail (verify, then revert).
@@ -243,15 +270,18 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/viewer/src/index.ts` — modify
 - `packages/interactive-viewer/src/index.ts` — modify (re-export types if needed)
 - `packages/editor/src/index.ts` — modify
 
 **Evidence**:
+
 - Service resolution pattern: `get<T>(token)` off the running Diagram (`viewer/src/index.ts:98`); Editor already uses it (`editor/src/index.ts:84-100`).
 - get-before-load throws `/no diagram loaded/` (`viewer/src/index.test.ts:48`) — new methods must honor this.
 
 **Instructions**:
+
 - On `Viewer` (base), add `undo()`/`redo()`/`canUndo()`/`canRedo()` resolving `this.get<CommandStack>('commandStack')` (guard: same `no diagram loaded` error contract). Add a `document.changed` emission: subscribe once (post-boot) to `commandStack` pointer transitions and re-emit `document.changed` with a `dirty` boolean off the component (dirty = there is an undoable entry past the boot baseline). Debounce is a detail (design Open Risk) — a direct emit is acceptable for v1.
 - Only expose on the classes that own mutation (undo/redo are meaningful on `InteractiveViewer`/`Editor`; on the static `Viewer` `canUndo()` is simply always false since it boots no command dispatchers — keep the method for a uniform surface but document it).
 
@@ -265,13 +295,16 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/interactive-viewer/src/index.ts` — modify
 
 **Evidence**:
+
 - **Not found** — no existing keyboard/keydown handling anywhere in the components (recon area-D: only `click`/`input`/`change` listeners in panels). Created from scratch.
 - Boot seam to attach after: `Viewer._boot(host)` (`viewer/src/index.ts:114-135`); container from `options.container`.
 
 **Instructions**:
+
 - In `InteractiveViewer` (so `Editor` inherits), after boot attach a `keydown` listener on the component container: Ctrl/Cmd+Z → `this.undo()`; Ctrl/Cmd+Shift+Z (and optionally Ctrl+Y) → `this.redo()`; guard against firing while focus is in a panel `<input>`/`<textarea>` (check `event.target`). Remove the listener in `destroy()`.
 
 **Verification**: `pnpm --filter @d3-polytree/interactive-viewer exec vitest run src/index.test.ts`; `pnpm typecheck`; `pnpm lint`.
@@ -284,15 +317,18 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/core/src/modelling/ModellingElement.ts` — modify (add the handler) + register in `Modelling`
 - `packages/editor/src/properties-panel/PropertiesPanel.ts` — modify
 - `packages/editor/src/properties-panel/PfdnPropertiesProvider.ts` — modify
 
 **Evidence**:
+
 - Property write today: `entry.scope.set(entry.definition, props)` (`PropertiesPanel.ts:171`) then `updateDrawing` emits `element.updated` for the node and its label (`PfdnPropertiesProvider.ts:147,151`).
 - Edited props are serialized (name/tag/text/color/property values) — `PfdnPropertiesProvider.ts:32-119`.
 
 **Instructions**:
+
 - Add an `element.updateProperties` `CommandHandler`: context `{ id, before: {…prior values of the edited keys…}, after: {…new values…} }` (plain values only); `execute` applies `after` via the same `scope.set` semantics and reconciles node (+label); `revert` applies `before` and reconciles. Register in `Modelling`.
 - Change `PropertiesPanel`'s apply path (`PropertiesPanel.ts:171`) to read the current values of the keys in `props` first (that becomes `before`), then dispatch `commandStack.execute('element.updateProperties', { id, before, after: props })` instead of a bare `scope.set` + `element.updated`. Inject `commandStack` into the panel/provider as the editor resolves core services.
 
@@ -306,13 +342,16 @@ the reroute is total before any undo/redo is user-reachable.
 
 **Status**: `done`
 **Files**:
+
 - `packages/editor/src/index.test.ts` — modify (or a new integration test)
 
 **Evidence**:
+
 - Boot hazard invariant: `canUndo() === false` immediately after `importDiagram` (design; `ROADMAP.md:572-576`).
 - Folded-panel boot-order tests to keep green: `interactive-viewer/src/index.test.ts:28-63`, `editor/src/index.test.ts:75-86` (recon area-D).
 
 **Instructions**:
+
 - Add an integration test asserting `editor.canUndo() === false` right after `importDiagram(fixtureXml)` (proves the boot render did not enter the stack). Confirm the folded-panel ordering tests still pass unchanged (do not modify them — they are the boot-order guard). Run the full pipeline locally to mirror CI (`CLAUDE.md:34`).
 
 **Verification**: full CI mirror: `pnpm install --frozen-lockfile && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook` all green (`CLAUDE.md:34-36`, `.github/workflows/ci.yml:22-39`).

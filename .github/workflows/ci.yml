@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Format
+        run: pnpm format:check
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -35,11 +38,17 @@ jobs:
         run: pnpm build
 
       - name: Verify generated files are up to date
-        # Run the generator itself (not just rely on Build) so a turbo cache hit
-        # can never mask a stale committed pfdn.generated.ts.
+        # Run each generator itself (not just rely on Build) so a turbo cache hit
+        # can never mask a stale committed *.generated.ts. Runs after Build so the
+        # style generator can read the upstream compiled dist/style.css.
         run: |
           node packages/pfdn-moddle/scripts/generate-pfdn.mjs
-          git diff --exit-code -- packages/pfdn-moddle/src/pfdn.generated.ts
+          node packages/icons-amazon/scripts/generate-icons.mjs
+          node packages/element/scripts/generate-styles.mjs
+          git diff --exit-code -- \
+            packages/pfdn-moddle/src/pfdn.generated.ts \
+            packages/icons-amazon/src/icons.generated.ts \
+            packages/element/src/styles.generated.ts
 
       - name: Build Storybook
         run: pnpm build-storybook

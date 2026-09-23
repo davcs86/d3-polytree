@@ -26,19 +26,21 @@ palette/side-tabs/search + the selection outline) is class-based CSS and themeab
 ## Approach
 
 ### Fork 1 — Token architecture (chrome-scoped)
+
 A new shared `packages/interactive-viewer/src/_tokens.scss` partial, `@import`ed at the top of BOTH aggregators
 (`editor/src/style.scss` uses the relative `@import '../../interactive-viewer/src/_tokens.scss'` — dart-sass
-resolves a relative import against the importing file's dir, no `--load-path` needed; it is a *source* partial so
+resolves a relative import against the importing file's dir, no `--load-path` needed; it is a _source_ partial so
 per-package `sass src/style.scss` compiles it inline; the duplicate `:root,:host` block in the concatenated
 `shadowCss` is byte-identical → harmless). Two layers: `--pfd-palette-*` primitives = **one per DISTINCT current
 literal** (no over-consolidation — a single `--pfd-color-border` cannot equal `#cccccc`+`gray`+`lightgray` at
 once) → semantic `--pfd-color-*`. Rewrite the ~50 color-bearing sites (~23 distinct literals) to `var(--pfd-*)`.
 Reference sites MAY carry a literal fallback as cheap defense but this is NOT relied on for browser-support
-degradation (a `var()` fallback fires only when the property is *undefined*, not when its value is
+degradation (a `var()` fallback fires only when the property is _undefined_, not when its value is
 invalid-at-computed-value-time). Stay on `@import` (defer `@use` — blocked by nested `@import` in
 `properties-panel/style/style.scss:11,20`).
 
 ### Fork 2 — Dark scheme: plain-hex base + `@media` + `[data-pfd-theme]`
+
 No `light-dark()` (only "newly available" at the cutoff, and its IACVT failure has no safe literal fallback).
 Base (light) tokens are **plain hex** on `:root, :host` (`color-scheme: light`) — always valid, so every engine
 renders correct light chrome. `@media (prefers-color-scheme: dark) { :root, :host { …dark… } }` for auto dark.
@@ -49,6 +51,7 @@ baselines DO NOT MOVE. `color-mix()` (widely available) supplies the mandated de
 declarations only.
 
 ### Fork 3 — Diagram body: CHROME-ONLY (canvas stays light in every theme)
+
 Theming does NOT recolour the diagram body, node/alert icons, grid, or the canvas backdrop — a light document
 inside a dark-chrome frame (the Figma/VS Code model). Rationale: diagram colours are document data; darkening the
 canvas without darkening the unreachable default `#000` links would make them invisible. **Deferred (documented
@@ -57,6 +60,7 @@ on read, indistinguishable from an explicit choice) and would reintroduce the ex
 scope for C13.
 
 ### Fork 4 — forced-colors
+
 KEEP the `outline.ts:73` `.attr('stroke','red')` (lowest cascade, and the only thing keeping a selected outline
 visible in a no-stylesheet/SSR export); layer `.element-outline { stroke: var(--pfd-color-selection, #ff0000) }`
 OVER it (`outline.test.ts:40` unchanged). Under `@media (forced-colors: active)`: `.element-outline { stroke:
@@ -68,6 +72,7 @@ canvas, so a dark-lightened selection would be 2.34:1; not axe-catchable). `#ff4
 (4.90:1 on `#1e1e1e`).
 
 ### Fork 5 — Export fidelity + Storybook/VR/a11y
+
 **Export invariant: an exported SVG is byte-identical regardless of active theme.** Under chrome-only the
 exported body has no tokens; the only themeable element that can appear (selection outline) stays neutral via the
 retained `stroke='red'` attr. The element's wholesale-`shadowCss` `exportSVG` path stamps `data-pfd-theme="light"`
@@ -82,6 +87,7 @@ panel), new baselines auto-seeded. a11y: axe on the dark variant (text only — 
 hand-computed ratio).
 
 ## The committed dark palette (WCAG-verified; light = exact current literal for pixel-stability)
+
 surface `#1e1e1e` · surface-raised `#252526` · surface-hover `#2d2d2d` (light `#f0f0f0`) · border-strong `#3c3c3c`
 (light `#cccccc`) · border-muted `#333333` (light `gray`) · border-subtle `#2a2a2a` (light `lightgray`) · text
 `#e4e4e4` (13.1:1) · text-muted `#a0a0a0` (light `#808080`; 6.38:1) · text-secondary `#c0c0c0` (light `#555`;
@@ -94,6 +100,7 @@ except the `.search` input border → border-strong; `#fff` is surface-raised ex
 literal) and the `_tabs.scss:61` seam-mask (→ surface-raised, same as pp-content bg).
 
 ## Correctness gates (test contract)
+
 1. Export neutrality: `exportSVG` dark === light, both document + shadow paths, incl. a SELECTED element.
 2. Model/XML untouched: import an explicit-`lineColor` fixture, toggle dark, `exportDiagram()` → `toXML`
    byte-identical to pre-theme.
@@ -104,6 +111,7 @@ literal) and the `_tabs.scss:61` seam-mask (→ surface-raised, same as pp-conte
 6. Light pixel-stability: the 10 existing VR baselines unchanged.
 
 ## Rejected / deferred
+
 `light-dark()` (rounds 1/3: newly-available + IACVT with no safe fallback → plain-hex + `@media` + attribute);
 semantic over-consolidation (round 1: breaks pixel-stability); deleting the outline attr (round 1: SSR export
 regression); themed diagram body / dark canvas (needs model default-provenance); `@use` migration (nested
@@ -111,6 +119,7 @@ regression); themed diagram body / dark canvas (needs model default-provenance);
 shadow token scope — documented out-of-scope); `exportSVG({ theme })` opt-in (future).
 
 ## Ledger lesson (append)
+
 See `docs/design/ledger.md` — theming a canvas app splits colour into document-data (unreachable inline
 literals, must not be themed) vs class-based chrome (themeable); tokens must be self-contained on `:root, :host`
 (the custom element inlines its own CSS copy and reads nothing from the host page); a `var()` fallback does NOT

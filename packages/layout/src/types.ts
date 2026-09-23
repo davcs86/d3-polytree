@@ -71,12 +71,22 @@ export const DEFAULT_OPTIONS: ResolvedLayoutOptions = {
 };
 
 export function resolveOptions(options: LayoutOptions = {}): ResolvedLayoutOptions {
+  // Clamp to sane minimums so a stray negative/NaN spacing or a negative
+  // iteration count can never flow into the solver.
+  const nonNeg = (value: number | undefined, fallback: number): number => {
+    const v = value ?? fallback;
+    return Number.isFinite(v) && v >= 0 ? v : fallback;
+  };
+  const iters = (value: number | undefined, fallback: number): number => {
+    const v = value ?? fallback;
+    return Number.isFinite(v) && v >= 0 ? Math.floor(v) : fallback;
+  };
   return {
     direction: options.direction ?? DEFAULT_OPTIONS.direction,
-    nodeSpacing: options.nodeSpacing ?? DEFAULT_OPTIONS.nodeSpacing,
-    layerSpacing: options.layerSpacing ?? DEFAULT_OPTIONS.layerSpacing,
-    margin: options.margin ?? DEFAULT_OPTIONS.margin,
-    orderIterations: options.orderIterations ?? DEFAULT_OPTIONS.orderIterations,
-    coordIterations: options.coordIterations ?? DEFAULT_OPTIONS.coordIterations
+    nodeSpacing: nonNeg(options.nodeSpacing, DEFAULT_OPTIONS.nodeSpacing),
+    layerSpacing: nonNeg(options.layerSpacing, DEFAULT_OPTIONS.layerSpacing),
+    margin: nonNeg(options.margin, DEFAULT_OPTIONS.margin),
+    orderIterations: iters(options.orderIterations, DEFAULT_OPTIONS.orderIterations),
+    coordIterations: iters(options.coordIterations, DEFAULT_OPTIONS.coordIterations)
   };
 }

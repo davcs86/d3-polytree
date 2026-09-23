@@ -40,10 +40,14 @@ function activityLogModule(log: (line: string) => void): DiagramModule {
   class ActivityLog {
     static readonly $inject = ['eventBus', 'kitchensinkLog'];
     constructor(eventBus: Bus, sink: (line: string) => void) {
-      eventBus.on('node.created', (...a) => sink(`node.created    ${(a[1] as Def).id}  (type=${(a[1] as Def).type ?? 'default'})`));
+      eventBus.on('node.created', (...a) =>
+        sink(`node.created    ${(a[1] as Def).id}  (type=${(a[1] as Def).type ?? 'default'})`)
+      );
       eventBus.on('link.created', (...a) => sink(`link.created    ${(a[1] as Def).id}`));
       eventBus.on('node.deleted', (...a) => sink(`node.deleted    ${(a[1] as Def).id}`));
-      eventBus.on('selection.changed', (...a) => sink(`selection.changed  ${(a[1] as unknown[]).length} selected`));
+      eventBus.on('selection.changed', (...a) =>
+        sink(`selection.changed  ${(a[1] as unknown[]).length} selected`)
+      );
     }
   }
   return {
@@ -66,7 +70,14 @@ const badgeDrawerModule: DiagramModule = (() => {
         const element = a[0] as DrawingSelection;
         const def = a[1] as Def;
         if (def.type !== CUSTOM_TYPE) return;
-        element.append('circle').attr('cx', 6).attr('cy', 6).attr('r', 7).attr('fill', '#7c3aed').attr('stroke', '#ffffff').attr('stroke-width', 2);
+        element
+          .append('circle')
+          .attr('cx', 6)
+          .attr('cy', 6)
+          .attr('r', 7)
+          .attr('fill', '#7c3aed')
+          .attr('stroke', '#ffffff')
+          .attr('stroke-width', 2);
       });
     }
   }
@@ -86,7 +97,8 @@ function build(): HTMLElement {
   stage.style.cssText = 'display:flex;gap:8px;align-items:stretch';
 
   const host = document.createElement('div');
-  host.style.cssText = 'position:relative;width:600px;height:440px;border:1px solid #ddd;flex:0 0 auto';
+  host.style.cssText =
+    'position:relative;width:600px;height:440px;border:1px solid #ddd;flex:0 0 auto';
 
   const logWrap = document.createElement('div');
   logWrap.style.cssText = 'flex:1 1 auto;min-width:220px;display:flex;flex-direction:column';
@@ -94,7 +106,8 @@ function build(): HTMLElement {
   logTitle.textContent = 'Activity log (custom feature module)';
   logTitle.style.cssText = 'font-weight:600;margin-bottom:4px';
   const logEl = document.createElement('pre');
-  logEl.style.cssText = 'flex:1;margin:0;padding:8px;overflow:auto;background:#0f172a;color:#e2e8f0;border-radius:6px;font-size:11px;line-height:1.5;white-space:pre-wrap';
+  logEl.style.cssText =
+    'flex:1;margin:0;padding:8px;overflow:auto;background:#0f172a;color:#e2e8f0;border-radius:6px;font-size:11px;line-height:1.5;white-space:pre-wrap';
   logWrap.append(logTitle, logEl);
 
   stage.append(host, logWrap);
@@ -120,7 +133,8 @@ function build(): HTMLElement {
   const button = (label: string, onClick: () => void): HTMLButtonElement => {
     const b = document.createElement('button');
     b.textContent = label;
-    b.style.cssText = 'padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;cursor:pointer';
+    b.style.cssText =
+      'padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;cursor:pointer';
     b.addEventListener('click', onClick);
     return b;
   };

@@ -31,8 +31,15 @@
   },
   "dependencies": {
     "@d3-polytree/editor": "workspace:*",
-    "@d3-polytree/interactive-viewer": "workspace:*",
-    "@d3-polytree/viewer": "workspace:*"
+    "@d3-polytree/interactive-viewer": "workspace:*"
+  },
+  "peerDependencies": {
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "d3-transition": "^3.0.0",
+    "d3-scale": "^4.0.0",
+    "d3-axis": "^3.0.0",
+    "d3-drag": "^3.0.0"
   },
   "unpkg": "./dist/element.umd.js",
   "jsdelivr": "./dist/element.umd.js",

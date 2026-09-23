@@ -16,10 +16,7 @@ export function is(definition: Definition, elementType: string): boolean {
 export function deepGet(obj: unknown, path: string): unknown {
   return path
     .split('.')
-    .reduce<unknown>(
-      (o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]),
-      obj
-    );
+    .reduce<unknown>((o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]), obj);
 }
 
 /** Write a dotted property path, creating intermediate objects as needed. */

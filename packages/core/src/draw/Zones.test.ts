@@ -18,7 +18,14 @@ describe('Zones', () => {
       opacity: 0.3,
       border: { lineColor: '#00f', lineWidth: 2 }
     }) as unknown as ZoneDefinition;
-    const zones = new Zones([def], s.canvas, s.bus, s.elementBuilder, s.elementRegistry, s.drawingRegistry);
+    const zones = new Zones(
+      [def],
+      s.canvas,
+      s.bus,
+      s.elementBuilder,
+      s.elementRegistry,
+      s.drawingRegistry
+    );
 
     const rect = zones.getContainer()!.select('.zoneItem').select('rect');
     expect(rect.attr('width')).toBe('100');
@@ -30,7 +37,10 @@ describe('Zones', () => {
     const s = makeServices();
     // pre-existing child on the drawing layer
     s.canvas.getDrawingLayer().append('g').attr('class', 'pre-existing');
-    const def = makeDef('z1', { position: { x: 0, y: 0 }, border: {} }) as unknown as ZoneDefinition;
+    const def = makeDef('z1', {
+      position: { x: 0, y: 0 },
+      border: {}
+    }) as unknown as ZoneDefinition;
     new Zones([def], s.canvas, s.bus, s.elementBuilder, s.elementRegistry, s.drawingRegistry);
 
     const first = s.canvas.getDrawingLayer().node()!.firstElementChild;

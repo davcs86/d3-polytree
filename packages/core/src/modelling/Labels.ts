@@ -5,6 +5,7 @@ import type { NotificationService } from '../features/notifications';
 import type { PfdnModdle } from '@d3-polytree/pfdn-moddle';
 import { ModellingElement } from './ModellingElement';
 import type { CreateParameters, ModellingModelElement } from './types';
+import { ElementStatus } from '../model/status';
 
 /**
  * Modelling handler for labels.
@@ -40,7 +41,7 @@ export class ModellingLabels extends ModellingElement {
     const positionDef = this._moddle.create('pfdn:Coordinates', { x: position.x, y: position.y });
     const labelDef = this._moddle.create('pfdn:Label', {
       position: positionDef,
-      status: 1
+      status: ElementStatus.Persisted
     }) as unknown as ModellingModelElement;
 
     this._drawer.reconcile(labelDef.id as string, labelDef);

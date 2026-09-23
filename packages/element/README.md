@@ -12,12 +12,14 @@ identically wherever you drop it.
 ## Install
 
 ```sh
-pnpm add @d3-polytree/element
+pnpm add @d3-polytree/element d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag
 ```
 
 Ships ESM + CJS + `.d.ts` and a self-contained **UMD** bundle (`dist/element.umd.js`). Importing the
-package **registers the tag as a side effect** — no D3 peer deps to add and no CSS import (styles are
-inlined into the shadow root).
+package **registers the tag as a side effect**, and all styling is inlined into the shadow root (no CSS
+import). The six D3 v7 slices are **peer dependencies** (inherited from the wrapped `@d3-polytree/editor`
+→ `core`) for the ESM/CJS build; the **UMD** bundle inlines them, so a plain `<script>` drop-in needs
+nothing extra.
 
 ## Usage
 
@@ -70,13 +72,13 @@ defineD3PolytreeEditor(); // idempotent — guards HMR / repeated evaluation
 
 ## API
 
-| Member | Type | Description |
-| --- | --- | --- |
-| `value` | property / attribute | The current diagram as a `.pfdn` XML string; setting it reloads the editor (echo-guarded so the element never reloads on its own emitted change). |
-| `exportSVG()` | method | The current SVG with the shadow-scoped CSS inlined, pinned to the light theme so exports stay theme-invariant. |
-| `change` | `CustomEvent<string>` | Fired on every committed edit; `detail` is the new `.pfdn`. Bubbles and crosses the shadow boundary (`composed`). |
-| `D3PolytreeEditorElement` | class | The element class, if you need to subclass or reference it. |
-| `defineD3PolytreeEditor()` | function | Idempotent tag registration. |
+| Member                     | Type                  | Description                                                                                                                                       |
+| -------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                    | property / attribute  | The current diagram as a `.pfdn` XML string; setting it reloads the editor (echo-guarded so the element never reloads on its own emitted change). |
+| `exportSVG()`              | method                | The current SVG with the shadow-scoped CSS inlined, pinned to the light theme so exports stay theme-invariant.                                    |
+| `change`                   | `CustomEvent<string>` | Fired on every committed edit; `detail` is the new `.pfdn`. Bubbles and crosses the shadow boundary (`composed`).                                 |
+| `D3PolytreeEditorElement`  | class                 | The element class, if you need to subclass or reference it.                                                                                       |
+| `defineD3PolytreeEditor()` | function              | Idempotent tag registration.                                                                                                                      |
 
 The element gives itself `tabindex="0"` (so keyboard undo/redo reaches the editor) and delegates focus
 into the shadow root. The editor subscription survives `importDiagram` reboots, so external `value`

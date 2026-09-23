@@ -23,11 +23,11 @@ ssr-without-core need is demonstrated. Instead the numeric router is a pure, det
 side-effect-free sub-folder of `core` (no moddle/DOM/DI; no `Math.random`/`Date`/Map-order), mirroring
 the fixture-test style of `packages/layout/src/layout.test.ts`. The algorithm is a **per-segment
 obstacle nudge** over the existing elbow geometry (`packages/core/src/modelling/linkRouting.ts:247-281`):
-for each orthogonal segment, test it against every *other* node's AABB; on intersection, shift the
+for each orthogonal segment, test it against every _other_ node's AABB; on intersection, shift the
 shared mid-channel bend past the box edge + margin. It is **bounded** (K attempts, cap ~8, then a
 **give-up floor** that emits the un-nudged elbow — accept the crossing; never loops, never throws) and
 **deterministic** (total tie-break order: integer-quantized |displacement|, sign, obstacle quantized
-x, quantized y, node id, over a *sorted* array). It **degrades to today's exact output when no
+x, quantized y, node id, over a _sorted_ array). It **degrades to today's exact output when no
 obstacle intersects**. A real grid/visibility-graph router is the mechanical escalation behind the
 same seam if a measured give-up rate ever demands a crossing-free guarantee.
 
@@ -83,7 +83,7 @@ for ports, so the `.pfdn` write set is unchanged.
 - **Node-event trigger (`node.created/updated/removed`) + reroute-all + diff-skip (Option Q)** — correct,
   but fires N redundant passes per N-node command; `commandStack.changed` coalesces to one pass for
   free because all mutations are command-mediated (O11).
-- **Grid / A* / visibility-graph router now** — more code, state, and determinism burden than sparse
+- _*Grid / A* / visibility-graph router now_* — more code, state, and determinism burden than sparse
   process-flow layouts need at C4's M sizing; kept as the documented escalation behind the seam.
 - **Capturing pinned waypoints in the pin memento** — unnecessary; the `pinned` flag is the only
   authored state, and derived waypoints reproduce bit-identically on undo/redo.
@@ -93,24 +93,24 @@ for ports, so the `.pfdn` write set is unchanged.
 ## Open Risks
 
 - [ ] **Reroute cost is O(L·(L+N)) per transaction** (all unpinned links recomputed) — negligible at the
-  target sparse scale; a spatial-index/dirty-set optimization is deferred to **C10**. To be recorded in
-  the plan; not addressed in C4.
+      target sparse scale; a spatial-index/dirty-set optimization is deferred to **C10**. To be recorded in
+      the plan; not addressed in C4.
 - [ ] **Nudge is best-effort, not crossing-free** — it gives up (emits the elbow, accepts a crossing) in
-  dense corridors. Acceptable for sparse polytrees; escalate to a grid router behind the seam if a
-  measured give-up rate demands it. Covered by the router's exit-criteria tests.
+      dense corridors. Acceptable for sparse polytrees; escalate to a grid router behind the seam if a
+      measured give-up rate demands it. Covered by the router's exit-criteria tests.
 - [ ] **Option P depends on the O11 "all mutations through the stack" invariant** — a future off-stack
-  routing-input reconcile would silently stop rerouting. Addressed by an **architecture-guard test**
-  (a bare off-stack reconcile must leave no stale link) mirroring the existing `no-restricted-syntax`
-  mutation rule (`eslint.config.js:49-57`). To be added in the plan.
+      routing-input reconcile would silently stop rerouting. Addressed by an **architecture-guard test**
+      (a bare off-stack reconcile must leave no stale link) mirroring the existing `no-restricted-syntax`
+      mutation rule (`eslint.config.js:49-57`). To be added in the plan.
 - [ ] **moddle-xml default-attr omission unverified in this checkout** (`node_modules` not populated) —
-  the byte-identical-unpinned claim rests on it. Plan step must verify against moddle-xml `dist` and, if
-  it does not omit defaults, apply the fallback (declare `pinned` with no default, treat absent-as-false)
-  with a test asserting an unpinned link's `toXML` has no `pinned`.
+      the byte-identical-unpinned claim rests on it. Plan step must verify against moddle-xml `dist` and, if
+      it does not omit defaults, apply the fallback (declare `pinned` with no default, treat absent-as-false)
+      with a test asserting an unpinned link's `toXML` has no `pinned`.
 - [ ] **`create()`'s direct `updateNodeLinks` incident reroute** (`Links.ts:78-79`) must be retired/routed
-  through the status-neutral path too, or created links flip status=0 peers to 2 (residue). Plan must
-  extend the "one reroute pass" test to `element.create`.
+      through the status-neutral path too, or created links flip status=0 peers to 2 (residue). Plan must
+      extend the "one reroute pass" test to `element.create`.
 - [ ] **No live link-follow during drag/resize** — unchanged from today (links snap on release); called
-  out so reviewers don't read it as a regression.
+      out so reviewers don't read it as a regression.
 
 ## Principles & Host Rules Touched
 

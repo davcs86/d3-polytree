@@ -5,22 +5,17 @@ Defects and drift surfaced by `/context-constitution` (context-forge) on 2026-09
 
 ## Documentation that lies (docs claim behavior the code lacks)
 
-| What the docs say | What the code does | Evidence | Suggested action |
-|---|---|---|---|
-| README section order / has an API table | README order (`## Solver` / `## Running off the main thread` / `## In the editor`) doesn't follow the repo's mandated template (`docs/README-template.md`), and ships no feature/API table | `packages/layout/README.md`, `docs/README-template.md` | Restructure README to the template |
+_None open._
 
 ## Latent bugs (looks broken, not merely non-obvious)
 
-| Issue | Impact | Evidence |
-|---|---|---|
-| `resolveOptions` applies defaults but never clamps/validates | a negative `nodeSpacing` or `orderIterations: 0` flows straight into the solver | `packages/layout/src/types.ts#resolveOptions` |
-| `WorkerLayoutRunner.run` never rejects/times out | a worker error/crash leaves the promise pending forever | `packages/layout/src/runner.ts#WorkerLayoutRunner` |
+_None open._
 
 ## Dead / orphaned code
 
 _None._
 
-## Open questions (unresolved *why* — needs a maintainer)
+## Open questions (unresolved _why_ — needs a maintainer)
 
 - Are the magic constants tuned or arbitrary: dummy coordinate weight **128** (`coordinates.ts#placeLayer`) and the crossing-transpose fixpoint bound **`guard < 8`** (`order.ts#reduceCrossings`)? Does `guard < 8` ever cap quality on large graphs? — status: **open**
 - `package.json` sets `"sideEffects": false` yet `worker.ts` is a top-level side-effect module (`self.onmessage = …`) — is the `./worker` entry safe from tree-shaking across all target bundlers? — status: **open**
@@ -31,8 +26,13 @@ _None._
 
 ## Resolved
 
-_None._
+| What the docs say / issue                         | Evidence (was)                                     | Resolved   | How confirmed                                                                           |
+| ------------------------------------------------- | -------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- |
+| README didn't follow the shared template          | `packages/layout/README.md`                        | 2026-09-23 | Restructured to the template (Install → feature table → Usage → API → where-it-fits)    |
+| `resolveOptions` never clamped/validated          | `packages/layout/src/types.ts#resolveOptions`      | 2026-09-23 | Clamps spacing/margin to non-negative finite, iteration counts to non-negative integers |
+| `WorkerLayoutRunner.run` never rejected/timed out | `packages/layout/src/runner.ts#WorkerLayoutRunner` | 2026-09-23 | Added a `timeoutMs` (default 30000) that rejects a hung/crashed worker                  |
 
 ---
+
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,
 not rules to keep (CF-N8)._

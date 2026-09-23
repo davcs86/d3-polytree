@@ -43,8 +43,11 @@ export abstract class BaseAddHandler {
     const scale = canvasTransform.a || 1;
 
     return {
-      x: (-1.0 * (refRect.left - translateX * scale - (container.left + container.width / 2))) / scale,
-      y: (-1.0 * (refRect.top - translateY * scale - (container.top + container.height / 2))) / scale
+      x:
+        (-1.0 * (refRect.left - translateX * scale - (container.left + container.width / 2))) /
+        scale,
+      y:
+        (-1.0 * (refRect.top - translateY * scale - (container.top + container.height / 2))) / scale
     };
   }
 

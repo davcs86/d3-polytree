@@ -5,9 +5,7 @@ Defects and drift surfaced by `/context-constitution` (context-forge) on 2026-09
 
 ## Documentation that lies (docs claim behavior the code lacks)
 
-| What the docs say | What the code does | Evidence | Suggested action |
-|---|---|---|---|
-| README: "The six D3 v7 slices are **peer dependencies**" of `@d3-polytree/viewer` | `packages/viewer/package.json` declares **no** `peerDependencies` (the peers live on `@d3-polytree/core`) — npm consumers of viewer get no peer-dep warning | `packages/viewer/README.md#Install`, `packages/viewer/package.json` | Declare the peers, or correct the README to say they arrive via core |
+_None open._ (the broader "should terminal components declare core's D3 peers?" packaging question is tracked at the root as an open question / candidate.)
 
 ## Latent bugs (looks broken, not merely non-obvious)
 
@@ -15,12 +13,9 @@ _None._
 
 ## Dead / orphaned code
 
-| What | Why it looks dead | Evidence |
-|---|---|---|
-| `eventemitter3` is a runtime `dependency` but used only via `import type` (erased at compile) | ships an unused runtime dep edge; belongs in `devDependencies` | `packages/viewer/package.json`, `packages/viewer/src/index.ts` |
-| `tsup.config.ts` `external` lists `@d3-polytree/core` **twice** and externalizes `@d3-polytree/canvas`, `@d3-polytree/pfdn-moddle`, `d3-selection` — none imported by viewer's src | inert duplicate + never-imported entries | `packages/viewer/tsup.config.ts#external` |
+_None open._
 
-## Open questions (unresolved *why* — needs a maintainer)
+## Open questions (unresolved _why_ — needs a maintainer)
 
 - Is the component `external` list (duplicate + never-imported `d3-selection`) intentional defensive boilerplate or prunable to just `@d3-polytree/core`? — status: **open**
 
@@ -30,8 +25,13 @@ _None._
 
 ## Resolved
 
-_None._
+| What the docs say / issue                                                   | Evidence (was)                            | Resolved   | How confirmed                                                                                |
+| --------------------------------------------------------------------------- | ----------------------------------------- | ---------- | -------------------------------------------------------------------------------------------- |
+| `eventemitter3` shipped as a runtime `dependency` (used only `import type`) | `packages/viewer/package.json`            | 2026-09-23 | Moved to `devDependencies` (+ patch changeset)                                               |
+| tsup `external` listed `@d3-polytree/core` twice                            | `packages/viewer/tsup.config.ts#external` | 2026-09-23 | Removed the duplicate (the full-chain entries match the repo convention, kept)               |
+| README "six D3 slices are peer dependencies" of viewer                      | `packages/viewer/README.md#Install`       | 2026-09-23 | No change needed — the README already qualifies "(inherited from `core`)", which is accurate |
 
 ---
+
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,
 not rules to keep (CF-N8)._
