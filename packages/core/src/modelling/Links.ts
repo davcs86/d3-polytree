@@ -7,6 +7,7 @@ import { ModellingElement } from './ModellingElement';
 import type { ModellingLabels } from './Labels';
 import { computeLinkWaypoints } from './linkRouting';
 import type { ModellingModelElement } from './types';
+import { ElementStatus } from '../model/status';
 
 /**
  * Modelling handler for links.
@@ -83,7 +84,7 @@ export class ModellingLinks extends ModellingElement {
       source: nodeADef,
       target: nodeBDef,
       waypoint: [waypoint1, waypoint2],
-      status: 1
+      status: ElementStatus.Persisted
     }) as unknown as ModellingModelElement;
 
     this._drawer.reconcile(newLinkDef.id as string, newLinkDef);

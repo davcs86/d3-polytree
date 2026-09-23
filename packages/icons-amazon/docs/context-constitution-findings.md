@@ -5,9 +5,7 @@ Defects and drift surfaced by `/context-constitution` (context-forge) on 2026-09
 
 ## Documentation that lies (docs claim behavior the code lacks)
 
-| What the docs say | What the code does | Evidence | Suggested action |
-|---|---|---|---|
-| README section headings | uses `## The icon-pack convention` / `## Authoring your own pack` / `## Exports` instead of the template's `## Usage`/`## API` + feature table | `packages/icons-amazon/README.md`, `docs/README-template.md` | Restructure to the template (deferred — larger editorial change) |
+_None open._
 
 ## Latent bugs (looks broken, not merely non-obvious)
 
@@ -34,6 +32,7 @@ _None open._
 | README: "promote the full set with no code change" | `packages/icons-amazon/README.md#Scope` | 2026-09-23 | README fixed: curated `src/svg/` icons are hand-renamed, not a key-for-key subset; copying catalogue files adds new filename-keyed `type`s |
 | README: `@d3-polytree/core` is a "bundled workspace dependency" | `packages/icons-amazon/tsup.config.ts#external` | 2026-09-23 | README fixed: core is kept external at build, not bundled |
 | Dead legacy `.eslintrc` | `packages/icons-amazon/.eslintrc` | 2026-09-23 | Deleted |
+| README didn't follow the shared template | `packages/icons-amazon/README.md` | 2026-09-23 | Restructured to the template (Install → feature table → Usage → API → Links) |
 
 ---
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,

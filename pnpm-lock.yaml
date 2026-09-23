@@ -176,6 +176,25 @@ importers:
       '@d3-polytree/viewer':
         specifier: workspace:*
         version: link:../viewer
+      d3-axis:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-drag:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-scale:
+        specifier: ^4.0.0
+        version: 4.0.2
+      d3-selection:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-transition:
+        specifier: ^3.0.0
+        version: 3.0.1(d3-selection@3.0.0)
+      d3-zoom:
+        specifier: ^3.0.0
+        version: 3.0.0
+    devDependencies:
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.4
@@ -188,9 +207,6 @@ importers:
       '@d3-polytree/interactive-viewer':
         specifier: workspace:*
         version: link:../interactive-viewer
-      '@d3-polytree/viewer':
-        specifier: workspace:*
-        version: link:../viewer
 
   packages/icons-amazon:
     dependencies:
@@ -209,6 +225,25 @@ importers:
       '@d3-polytree/viewer':
         specifier: workspace:*
         version: link:../viewer
+      d3-axis:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-drag:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-scale:
+        specifier: ^4.0.0
+        version: 4.0.2
+      d3-selection:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-transition:
+        specifier: ^3.0.0
+        version: 3.0.1(d3-selection@3.0.0)
+      d3-zoom:
+        specifier: ^3.0.0
+        version: 3.0.0
+    devDependencies:
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.4
@@ -263,6 +298,24 @@ importers:
       '@d3-polytree/core':
         specifier: workspace:*
         version: link:../core
+      d3-axis:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-drag:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-scale:
+        specifier: ^4.0.0
+        version: 4.0.2
+      d3-selection:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-transition:
+        specifier: ^3.0.0
+        version: 3.0.1(d3-selection@3.0.0)
+      d3-zoom:
+        specifier: ^3.0.0
+        version: 3.0.0
     devDependencies:
       eventemitter3:
         specifier: ^5.0.1

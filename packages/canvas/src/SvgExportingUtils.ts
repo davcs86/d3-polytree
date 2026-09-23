@@ -7,11 +7,16 @@
  * and drops debug `console.log`s.
  */
 export function getSvgString(svgNode: SVGSVGElement): string {
-  svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
-  appendCSS(getCSSStyles(svgNode), svgNode);
+  // Serialize a CLONE, never the live node: setting the xlink attr and inserting
+  // the inlined-CSS <style> mutate their target, so exporting the live node would
+  // accumulate a fresh <style> on every call. Cloning keeps exportSVG idempotent
+  // and side-effect-free for repeated exports on one instance.
+  const clone = svgNode.cloneNode(true) as SVGSVGElement;
+  clone.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
+  appendCSS(getCSSStyles(svgNode), clone);
 
   const serializer = new XMLSerializer();
-  let svgString = serializer.serializeToString(svgNode);
+  let svgString = serializer.serializeToString(clone);
   svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink='); // root xlink ns
   svgString = svgString.replace(/NS\d+:href/g, 'xlink:href'); // Safari ns fix
   return svgString;

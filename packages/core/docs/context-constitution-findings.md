@@ -12,9 +12,7 @@ not write-only (**CF-N12**).
 
 ## Latent bugs (looks broken, not merely non-obvious)
 
-| Issue | Impact | Evidence |
-|---|---|---|
-| The `0/1/2/3` element `status` state machine has **no shared const/enum** — bare integer literals across ≥3 files | Easy to typo / drift; no single source for the mapping that `CORE-01` (toXML round-trip) depends on | `packages/core/src/draw/BaseElement.ts#BaseElement`, `packages/core/src/features/drag.ts`, `packages/core/src/modelling/Links.ts` |
+_None open._
 
 ## Dead / orphaned code
 
@@ -33,7 +31,9 @@ _None._
 
 ## Resolved
 
-_None._
+| What the docs say / issue | Evidence (was) | Resolved | How confirmed |
+|---|---|---|---|
+| `status` state machine had no shared const (bare literals across ≥3 files) | `packages/core/src/draw/BaseElement.ts`, `features/drag.ts`, `modelling/*` | 2026-09-23 | Added `ElementStatus` (New/Persisted/Dirty/Deleted) in `packages/core/src/model/status.ts`; replaced every literal (identical numeric behavior, CORE-01 preserved) |
 
 ---
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,

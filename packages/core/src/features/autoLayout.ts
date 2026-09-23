@@ -9,6 +9,7 @@ import type { DrawingRegistry, Point } from '../draw';
 import type { ElementClass } from '../modelling';
 import type { MoveItem, Placement } from '../modelling/commands';
 import type { ModellingModelElement } from '../modelling/types';
+import { ElementStatus } from '../model/status';
 
 /** The `d3polytree` model host surface auto-layout reads. */
 interface ModelHostLike {
@@ -74,7 +75,7 @@ export class AutoLayout {
 
   private _placement(def: ModellingModelElement): Placement {
     const pos = def.position as Point;
-    return { position: { x: pos.x, y: pos.y }, status: Number(def.get('status') ?? 0) };
+    return { position: { x: pos.x, y: pos.y }, status: Number(def.get('status') ?? ElementStatus.New) };
   }
 
   private _buildGraph(nodes: ModellingModelElement[]): LayoutGraph {

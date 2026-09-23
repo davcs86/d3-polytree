@@ -55,10 +55,12 @@ export class DomNotifications implements NotificationService {
   }
 
   private _fillText(el: HTMLElement, params: NotificationParams): void {
-    // `html: true` is an explicit opt-in used only by trusted, in-repo callers
-    // (e.g. the notice popup's project link); everything else is set as text.
-    if (params.html) {
-      el.innerHTML = String(params.text ?? '');
+    // Safe by default: `text` is always rendered as textContent. Markup is
+    // rendered only when a caller supplies it via the dedicated `trustedHtml`
+    // field — a separate field (not a boolean on `text`) so untrusted or
+    // model-derived content can never reach innerHTML by flipping a flag.
+    if (typeof params.trustedHtml === 'string') {
+      el.innerHTML = params.trustedHtml;
     } else {
       el.textContent = String(params.text ?? '');
     }

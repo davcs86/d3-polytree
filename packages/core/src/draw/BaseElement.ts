@@ -4,6 +4,7 @@ import type { Canvas, ElementBuilder, ElementRegistry } from '@d3-polytree/canva
 import type { ElementClass } from '../modelling';
 import type { DrawingRegistry } from './DrawingRegistry';
 import type { ContainerSelection, DiagramElement, DrawingSelection } from './types';
+import { ElementStatus } from '../model/status';
 
 /**
  * Abstract base for a class of drawn diagram elements (nodes, links, labels, …).
@@ -60,8 +61,8 @@ export abstract class BaseElement {
   protected _builder(elementId: string, definition: DiagramElement | undefined): void {
     const element = this._elementRegistry.get(elementId);
     if (element && definition) {
-      if (definition.get('status') !== 1) {
-        definition.set('status', 2);
+      if (definition.get('status') !== ElementStatus.Persisted) {
+        definition.set('status', ElementStatus.Dirty);
       }
       this.updateElement(definition);
     } else if (element && !definition) {

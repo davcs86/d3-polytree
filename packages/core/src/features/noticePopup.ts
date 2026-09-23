@@ -19,7 +19,7 @@ export class NoticePopup {
     button.className = 'noticePopup';
     canvas.getContainer().appendChild(button);
     button.addEventListener('click', () => {
-      notifications.notify({ title: 'D3-Polytree', text: NOTICE_TEXT, html: true }, 'info');
+      notifications.notify({ title: 'D3-Polytree', trustedHtml: NOTICE_TEXT }, 'info');
     });
   }
 }

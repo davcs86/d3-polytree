@@ -35,20 +35,40 @@ export interface LayoutWorkerLike {
 export class WorkerLayoutRunner implements LayoutRunner {
   private _seq = 0;
 
-  constructor(private readonly _worker: LayoutWorkerLike) {}
+  /**
+   * @param _worker    the Worker to run layout on
+   * @param _timeoutMs reject `run` if the worker does not answer within this many
+   *                   ms (default 30000), so a crashed/hung worker never leaves the
+   *                   promise pending forever. Pass `0` to disable the timeout.
+   */
+  constructor(
+    private readonly _worker: LayoutWorkerLike,
+    private readonly _timeoutMs = 30_000
+  ) {}
 
   run(graph: LayoutGraph, options?: LayoutOptions): Promise<LayoutResult> {
     const requestId = (this._seq += 1);
-    return new Promise<LayoutResult>((resolve) => {
+    return new Promise<LayoutResult>((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const cleanup = (): void => {
+        this._worker.removeEventListener('message', onMessage);
+        if (timer !== undefined) clearTimeout(timer);
+      };
       const onMessage = (event: MessageEvent<LayoutResponse>): void => {
         const data = event.data;
         if (!data || data.type !== 'polytree:layout:result' || data.requestId !== requestId) {
           return;
         }
-        this._worker.removeEventListener('message', onMessage);
+        cleanup();
         resolve(decodeResult(data));
       };
       this._worker.addEventListener('message', onMessage);
+      if (this._timeoutMs > 0 && typeof setTimeout === 'function') {
+        timer = setTimeout(() => {
+          cleanup();
+          reject(new Error(`WorkerLayoutRunner: layout timed out after ${this._timeoutMs}ms`));
+        }, this._timeoutMs);
+      }
       this._worker.postMessage({ type: 'polytree:layout', requestId, graph, options });
     });
   }

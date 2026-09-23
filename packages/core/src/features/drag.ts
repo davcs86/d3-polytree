@@ -9,6 +9,7 @@ import type { ElementClass } from '../modelling';
 import type { MoveItem, Placement } from '../modelling/commands';
 import type { ModellingModelElement } from '../modelling/types';
 import type { Selection } from './selection';
+import { ElementStatus } from '../model/status';
 
 type DragEvent = D3DragEvent<SVGGElement, DiagramElement, DiagramElement>;
 
@@ -53,7 +54,7 @@ export class Drag {
   /** Read an element's current placement from the model (never the DOM). */
   private _placement(def: ModellingModelElement): Placement {
     const pos = def.position as Point;
-    return { position: { x: pos.x, y: pos.y }, status: Number(def.get('status') ?? 0) };
+    return { position: { x: pos.x, y: pos.y }, status: Number(def.get('status') ?? ElementStatus.New) };
   }
 
   /**
@@ -150,8 +151,8 @@ export class Drag {
     position.x = x;
     position.y = y;
 
-    if (def.get('status') !== 1) {
-      def.set('status', 2);
+    if (def.get('status') !== ElementStatus.Persisted) {
+      def.set('status', ElementStatus.Dirty);
     }
     this._eventBus.emit(`${getLocalName(def) as ElementClass}.moving`, elem, def);
   }

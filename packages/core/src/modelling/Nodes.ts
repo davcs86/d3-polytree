@@ -6,6 +6,7 @@ import type { PfdnModdle } from '@d3-polytree/pfdn-moddle';
 import { ModellingElement } from './ModellingElement';
 import type { ModellingLabels } from './Labels';
 import type { CreateParameters, ModellingModelElement } from './types';
+import { ElementStatus } from '../model/status';
 
 /** Vertical gap between a node's baseline and its associated label. */
 const NODE_LABEL_GAP = 15;
@@ -52,7 +53,7 @@ export class ModellingNodes extends ModellingElement {
     const nodeDef = this._moddle.create('pfdn:Node', {
       type,
       position: positionDef,
-      status: 1
+      status: ElementStatus.Persisted
     }) as unknown as ModellingModelElement;
 
     this._drawer.reconcile(nodeDef.id as string, nodeDef);

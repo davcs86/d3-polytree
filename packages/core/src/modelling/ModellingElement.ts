@@ -6,6 +6,7 @@ import type { NotificationService } from '../features/notifications';
 import { getLocalName } from '../utils/localName';
 import * as collections from '../utils/collections';
 import type { ModellingModelElement } from './types';
+import { ElementStatus } from '../model/status';
 
 /**
  * Abstract base for the modelling element handlers (nodes, labels, zones,
@@ -80,7 +81,7 @@ export abstract class ModellingElement {
       this._eventBus.emit('label.deleted', lblElement, label);
     }
 
-    definition.set('status', 3);
+    definition.set('status', ElementStatus.Deleted);
     this._drawer.reconcile(definition.id as string, undefined);
   }
 }
