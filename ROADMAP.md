@@ -534,6 +534,9 @@ Tiered by architectural depth. **Unlocks** names the items that become cheap onc
 | **C12**    | **Typed event bus**                                                    | Replace the stringly-typed `eventemitter3` surface with a declaration-merged event map so `on`/`emit` are checked against payload types. Small diff, disproportionate effect on DX and on the safety of C1's rerouting.                                                                                                                                                                                                                                                                                                                                                                                                                                    | —                                    | S      |
 | **C13** ✅ | **Theming: CSS custom properties, dark mode, forced-colors**           | B8's other half. Tokenised colors with `color-mix()` derivations, a dark scheme, and `forced-colors` support — the visual counterpart to C2. **Shipped 2026-09-20**: chrome-scoped `--pfd-*` tokens on `:root,:host` (shared `_tokens.scss`), auto dark via `prefers-color-scheme` + `[data-pfd-theme]` override, `color-mix()` dark derivations, forced-colors selection/focus, theme-invariant export. Diagram body/canvas stay as document data (theme-aware defaults deferred — needs model default-provenance).                                                                                                                                       | —                                    | M      |
 
+| **C14** | **JSON adapter — caller-extended schema support** | Today `fromJson`/`validate` are generated from the base `pfdn.json` (`SCHEMA`/`CONCRETE_TYPES`), so a `createPfdnModdle(extraPackages)` extension never reaches the JSON path — extended types fail `validate`, and `buildTree` instantiates a base-only moddle. Thread caller packages through validate/build (or accept a supplemental descriptor) and regenerate the typed schema, so JSON documents round-trip extended models the way XML already does. Surfaced by the context-forge audit (2026-09-23). | C11 | M |
+| **C15** | **Coalesced text-edit undo** | Property-panel text edits currently commit one undo step per ~300 ms idle gap, so a single typing burst becomes several `Ctrl+Z` steps. Add a `CommandStack` merge seam (a `mergeKey` / replace-top-transaction facility) so consecutive same-target `element.updateProperties` collapse into one transaction while keeping live preview — needs dedicated tests around the transactional / redo-tail / quarantine semantics. Surfaced by the context-forge audit (2026-09-23). | C1 | S |
+
 ### 11.2 Sequencing
 
 ```
@@ -544,6 +547,8 @@ C12 ──→ C1 ──┬──→ C3 ──→ C4
 C9 ──→ C8 ──→ C10
 C7 ──┬──→ Track D:  D0 ──→ D1 ──→ D2 ──→ D3
 C9 ──┘                            └─────→ D4   (conditional, §13.3)
+C11 ──→ C14                  (JSON adapter: caller-extended schema)
+C1  ──→ C15                  (coalesced text-edit undo)
 C11, C13   (independent)
 ```
 

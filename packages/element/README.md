@@ -12,12 +12,14 @@ identically wherever you drop it.
 ## Install
 
 ```sh
-pnpm add @d3-polytree/element
+pnpm add @d3-polytree/element d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag
 ```
 
 Ships ESM + CJS + `.d.ts` and a self-contained **UMD** bundle (`dist/element.umd.js`). Importing the
-package **registers the tag as a side effect** — no D3 peer deps to add and no CSS import (styles are
-inlined into the shadow root).
+package **registers the tag as a side effect**, and all styling is inlined into the shadow root (no CSS
+import). The six D3 v7 slices are **peer dependencies** (inherited from the wrapped `@d3-polytree/editor`
+→ `core`) for the ESM/CJS build; the **UMD** bundle inlines them, so a plain `<script>` drop-in needs
+nothing extra.
 
 ## Usage
 

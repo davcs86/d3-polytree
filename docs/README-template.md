@@ -34,9 +34,10 @@ editor`; `pfdn-moddle`, `layout`, `ssr`, `icons-amazon`, `element`, `react` hang
 
 - Show the real install line. If the package has **peer dependencies**, list them in the `pnpm add`
   command and say one sentence about why they're peers. The D3 v7 slices
-  (`d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag`) are peers of `core` and every
-  component; `react`/`react-dom` are peers of `@d3-polytree/react`. Packages that render in Node
-  (`ssr`) or inline their styles (`element`) have **no** peer deps — say so.
+  (`d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag`) are peers of `core`, every
+  component, and the `element` custom element (its ESM build externalizes the wrapped editor; its UMD
+  inlines them); `react`/`react-dom` are peers of `@d3-polytree/react`. Packages that render in Node
+  (`ssr`) have **no** peer deps — say so.
 
 **Usage.**
 
