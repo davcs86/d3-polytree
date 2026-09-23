@@ -1,3 +1,16 @@
+<!-- context-forge:behavioral-contract:start -->
+## How to Act
+
+1. **Don't assume — ask, and surface tradeoffs.** *(enforced by `SB-03` — `meta.title` is a cross-file spec key; `PLAT-03`)*
+2. **Write the minimum that solves the stated problem.**
+3. **Touch only what the task requires; keep diffs surgical.** *(enforced by `SB-01` CSS layering + `SB-02` dist-not-src)*
+4. **Define success up front, then loop until verified.** *(enforced by `SB-N04` deterministicModules; `PLAT-06`/`PLAT-08` pinned VR)*
+<!-- context-forge:behavioral-contract:end -->
+
+<!-- context-forge:constitution-pointer:start -->
+> 📜 **Constitution:** [`docs/context-constitution.md`](docs/context-constitution.md) · defects: [`docs/context-constitution-findings.md`](docs/context-constitution-findings.md) · inherits the root constitution. Forged by context-forge.
+<!-- context-forge:constitution-pointer:end -->
+
 # CLAUDE.md — @d3-polytree/storybook
 
 Package-specific notes; see the repo-root `CLAUDE.md` for the big picture.
