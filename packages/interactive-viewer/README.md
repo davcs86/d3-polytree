@@ -50,7 +50,11 @@ in this package rather than as standalone packages. They are re-exported for adv
 the `modules` option:
 
 ```ts
-import { InteractiveViewer, sideTabsModule, searchPanelModule } from '@d3-polytree/interactive-viewer';
+import {
+  InteractiveViewer,
+  sideTabsModule,
+  searchPanelModule
+} from '@d3-polytree/interactive-viewer';
 ```
 
 ## Styling

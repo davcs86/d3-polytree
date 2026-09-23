@@ -79,6 +79,7 @@ TypeScript/ESM monorepo (pnpm 10 + Turborepo) publishing `@d3-polytree/*`; the e
 ## Recommended Scope
 
 Advisory (input to the debate + impl-plan, not binding):
+
 - New `commandStack` service + `CommandHandler` contract + registration, following the didi `*Module` export pattern; a natural seam is to make `Modelling` the registration site while keeping its notification subscriptions.
 - Convert the three real write mechanisms (`collections.add`/`remove`, soft-delete `status`, direct prop sets) into command handlers with `execute`/`revert`; candidate vocabulary: `element.create`, `element.delete`, `element.move`, `element.resize`, `element.updateProperties`, `link.create`, `link.updateWaypoints`.
 - Reroute the dispatchers: `Selection.deleteSelected` → one transaction; `Drag` `.moved` → move command; `ResizeElement` commit → resize command; palette `create` → create command.

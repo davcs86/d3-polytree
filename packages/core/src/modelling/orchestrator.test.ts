@@ -48,8 +48,9 @@ describe('@d3-polytree/core modelling orchestrator', () => {
   });
 
   it('registers the modelling commands on the stack at construction', () => {
-    const registered = (commandStack.registerHandler as unknown as { mock: { calls: string[][] } })
-      .mock.calls.map((c) => c[0]);
+    const registered = (
+      commandStack.registerHandler as unknown as { mock: { calls: string[][] } }
+    ).mock.calls.map((c) => c[0]);
     expect(registered).toEqual(
       expect.arrayContaining([
         'element.create',
@@ -82,8 +83,11 @@ describe('@d3-polytree/core modelling orchestrator', () => {
     bus.emit('elements.delete', [{ definition: a }, { definition: b }]);
 
     expect(commandStack.execute).toHaveBeenCalledTimes(1);
-    const [command, ctx] = (commandStack.execute as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0] as [string, { items: Array<{ def: ModellingModelElement; className: string }> }];
+    const [command, ctx] = (commandStack.execute as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0] as [
+      string,
+      { items: Array<{ def: ModellingModelElement; className: string }> }
+    ];
     expect(command).toBe('elements.delete');
     expect(ctx.items).toEqual([
       { def: a, className: 'node' },

@@ -104,16 +104,12 @@ export abstract class BaseElement {
   appendElement(definition: DiagramElement): void {
     this._elementRegistry.claimId(definition, this._className);
 
-    const newElem = this._elementsContainer!
-      .append('g')
+    const newElem = this._elementsContainer!.append('g')
       .datum(definition)
       .attr('element-id', definition.id as string)
       .attr('class', `${this._className}Item element`);
 
-    newElem
-      .append('g')
-      .attr('class', 'innerElement')
-      .attr('transform', 'translate(3, 3)');
+    newElem.append('g').attr('class', 'innerElement').attr('transform', 'translate(3, 3)');
 
     this._createElement(newElem, definition);
     this._drawingRegistry.set(definition.id as string, newElem);

@@ -21,7 +21,11 @@ export class Tooltip {
 
   private _tip: HTMLElement | null = null;
 
-  constructor(tooltip: TooltipFn | undefined, canvas: Canvas, eventBus: EventEmitter<DiagramEventMap>) {
+  constructor(
+    tooltip: TooltipFn | undefined,
+    canvas: Canvas,
+    eventBus: EventEmitter<DiagramEventMap>
+  ) {
     if (typeof tooltip !== 'function') {
       return;
     }

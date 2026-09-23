@@ -19,20 +19,20 @@ pnpm add @d3-polytree/editor d3-selection d3-zoom d3-transition d3-scale d3-axis
 ```ts
 import { Editor } from '@d3-polytree/editor';
 import '@d3-polytree/interactive-viewer/style.css'; // side-tabs + search panels
-import '@d3-polytree/editor/style.css';             // properties panel
+import '@d3-polytree/editor/style.css'; // properties panel
 
 const editor = new Editor({ container: document.getElementById('app')! });
 
-await editor.createDiagram();                                  // open the starter diagram
+await editor.createDiagram(); // open the starter diagram
 const node = editor.createNode({ type: 'default', position: { x: 80, y: 80 } });
 editor.select(node);
 editor.deleteSelected();
 
-await editor.autoLayout({ direction: 'TB' });                 // one undoable re-layout
+await editor.autoLayout({ direction: 'TB' }); // one undoable re-layout
 editor.undo();
 editor.redo();
 
-const xml = editor.exportDiagram();                           // serialize to .pfdn
+const xml = editor.exportDiagram(); // serialize to .pfdn
 ```
 
 ### `<script>` (UMD)
@@ -50,16 +50,16 @@ const xml = editor.exportDiagram();                           // serialize to .p
 Everything on [`Viewer`](https://github.com/davcs86/d3-polytree/tree/main/packages/viewer) /
 `InteractiveViewer`, plus the editing surface:
 
-| Method | Description |
-| --- | --- |
-| `createDiagram()` → `Promise<void>` | Open the built-in starter diagram. |
-| `createNode(params?)` → element | Create a node (`{ type, position }`) as an undoable command. |
-| `select(definition)` | Select an element programmatically. |
-| `deleteSelected()` | Delete the current selection. |
+| Method                                   | Description                                                                                                                            |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `createDiagram()` → `Promise<void>`      | Open the built-in starter diagram.                                                                                                     |
+| `createNode(params?)` → element          | Create a node (`{ type, position }`) as an undoable command.                                                                           |
+| `select(definition)`                     | Select an element programmatically.                                                                                                    |
+| `deleteSelected()`                       | Delete the current selection.                                                                                                          |
 | `autoLayout(options?)` → `Promise<void>` | Re-lay the whole diagram (layered/Sugiyama) as a **single undoable command**. Provide a `layoutRunner` DI value to run it on a Worker. |
-| `setLinkPinned(id, pinned?)` | Pin/unpin a link's routing (`pinned` defaults to `true`) as an undoable command. |
-| `undo()` / `redo()` | Walk the command stack. |
-| `canUndo()` / `canRedo()` → `boolean` | Whether the command stack currently has anything to undo / redo. |
+| `setLinkPinned(id, pinned?)`             | Pin/unpin a link's routing (`pinned` defaults to `true`) as an undoable command.                                                       |
+| `undo()` / `redo()`                      | Walk the command stack.                                                                                                                |
+| `canUndo()` / `canRedo()` → `boolean`    | Whether the command stack currently has anything to undo / redo.                                                                       |
 
 ## Styling & theming
 

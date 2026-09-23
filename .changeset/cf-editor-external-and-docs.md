@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/editor": patch
+'@d3-polytree/editor': patch
 ---
 
 Fix the tsup library build to keep `@d3-polytree/interactive-viewer` external (it was omitted from the

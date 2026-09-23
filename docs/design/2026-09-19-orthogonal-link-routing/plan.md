@@ -39,10 +39,12 @@ flag is authored.
 
 **Status**: `pending`
 **Files**:
+
 - `packages/pfdn-moddle/src/pfdn.json` — modify
 - `packages/pfdn-moddle/src/pfdn-moddle.test.ts` — modify
 
 **Evidence**:
+
 - `pfdn:Link` block: `packages/pfdn-moddle/src/pfdn.json:341-402` (properties incl. `waypoint` isMany Coordinates `:382-389`).
 - Precedent to mirror — a Boolean `isAttr` default `false`: `Label.isReadOnly` at `pfdn.json:203-208`.
 - Links inherit `status` (Real, default 0) from `Statusable` — `pfdn.json:9-16` (no own `status` on Link).
@@ -63,12 +65,14 @@ Add to the `pfdn:Link` `properties` array a `{ "name": "pinned", "isAttr": true,
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/route/index.ts` — create
 - `packages/core/src/route/route.ts` — create
 - `packages/core/src/route/types.ts` — create
 - `packages/core/src/route/route.test.ts` — create
 
 **Evidence**:
+
 - No `packages/core/src/route/` exists yet (**Not found** — created from scratch).
 - Pure fixture-test style to mirror: `packages/layout/src/layout.test.ts:8-21,31` (`overlaps`/`assertNoOverlaps`, numeric `expect(...).toEqual(...)`).
 - Existing elbow geometry to port/reuse as the pre-nudge base + give-up fallback: `packages/core/src/modelling/linkRouting.ts:247-281`; side/quadrant helpers `:53,77,136,169`; the `acos` key `:45,49`; tunables `:40,42`.
@@ -100,9 +104,11 @@ sentinel order when a vector is zero-length or the cosine grazes ±1). No object
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/modelling/linkRouting.ts` — modify
 
 **Evidence**:
+
 - Current signatures (no nodes param): `computeLinkWaypoints(link, allLinks, moddle)` — `linkRouting.ts:218-222`; `routeLinks(links, moddle)` — `linkRouting.ts:292`.
 - Waypoint construction to reuse: `moddle.create('pfdn:Coordinates', {x,y})` — `linkRouting.ts:209-210`.
 - `acos` key needing the NaN guard at the glue level too: `linkRouting.ts:45,49`.
@@ -128,9 +134,11 @@ Covered by Step 2 (pure geometry) and Steps 9–10 (integration + fixture). No s
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/model/model.ts` — modify
 
 **Evidence**:
+
 - `loadModel` and the `routeLinks` call: `model.ts:54,63` (`routeLinks(definitions.link as ..., moddle)`), with `definitions` (root `pfdn:Diagram`) in scope so `definitions.node` is reachable.
 - viewer/interactive-viewer boot no command stack — `packages/viewer/src/index.ts:45-50`, `packages/interactive-viewer/src/index.ts:36-48` — so this load-time call is their ONLY router (must skip pinned).
 - Boot latch suppresses `commandStack.changed` during load — `CommandStack.ts:45,51,161` (no double-fire with the trigger from Step 6).
@@ -153,9 +161,11 @@ stored waypoints (not recomputed). Fails before Step 3's skip; passes after.
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/modelling/Links.ts` — modify
 
 **Evidence**:
+
 - `_updateLink` currently writes `link.waypoint` then calls `reconcile(...)` — `Links.ts:114,124-125`.
 - `reconcile` → `_builder` flips `status` 0→2 — `BaseElement.ts:60-66` (flip `:63-64`); status-neutral path is `updateElement` (emits `<class>.updated`) — `BaseElement.ts:124,133`.
 - Links can be `status:0` (inherited `Statusable`, `pfdn.json:9-16`) → flip would add `status="2"` residue.
@@ -181,10 +191,12 @@ Covered by Step 9 (status="0" round-trip proves no status residue) and Step 11 (
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/modelling/Links.ts` — modify
 - `packages/core/src/modelling/commands.ts` — modify (comment only)
 
 **Evidence**:
+
 - Current subscriptions to remove: `Links.ts:51-53` (`node.moved`, `node.updated` → `updateNodeLinks`).
 - `create()`'s direct incident reroute to retire: `Links.ts:78-79`.
 - Trigger event (typed, once per top-level txn, symmetric execute/undo/redo): `CommandStack.ts:201-203`; typed at `packages/canvas/src/events.ts:103`. `eventBus` already injected into `ModellingLinks` (`Links.ts:22-30`) — no `$inject` change.
@@ -216,9 +228,11 @@ See Step 9 (one-pass assertion + auto-layout single-pass) and Step 11 (off-stack
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/modelling/commands.ts` — modify
 
 **Evidence**:
+
 - Command registration block: `registerModellingCommands` `commands.ts:255`, existing registrations `:260-273`.
 - CommandHandler interface (`execute`/`revert`): `packages/core/src/command/CommandHandler.ts:27-38`.
 - `element.move`'s "links NOT in memento / derived" precedent: `commands.ts:224-230`.
@@ -243,11 +257,13 @@ pass (waypoints unchanged after an incident node move). Fails before the command
 
 **Status**: `pending`
 **Files**:
+
 - `packages/editor/src/index.ts` — modify
 - `packages/editor/src/properties-panel/PfdnPropertiesProvider.ts` — modify
 - `packages/editor/src/properties-panel/EntryFactory.ts` — modify (only if no checkbox entry exists)
 
 **Evidence**:
+
 - Editor public-method precedent (C3): `editor.autoLayout()` — `packages/core/src/features/autoLayout.ts` surface; editor module wiring `packages/editor/src/index.ts:61`.
 - Link properties group + entry factory: `PfdnPropertiesProvider.ts:79-82` (link group entries: `lineWidth`, `lineColor`); `EntryFactory` textField/colorPicker precedent (`EntryFactory.ts:72` emits `PropertiesPanel.propertyChanged`).
 - Command dispatch precedent: `PropertiesPanel.ts:210` (`commandStack.execute(...)`).
@@ -272,10 +288,12 @@ link — the exact residue Step 5/7 avoid). Keep the control read/write of `defi
 
 **Status**: `pending`
 **Files**:
+
 - `packages/editor/src/command.roundtrip.test.ts` — modify
 - `packages/core/src/modelling/links.test.ts` — modify
 
 **Evidence**:
+
 - Round-trip harness (`assertGestureRoundTrip`, byte-identical export): `command.roundtrip.test.ts:18-24,168-184` (`expect(editor.exportDiagram()).toBe(before)`).
 - `links.test.ts` currently emits `node.moved` to drive reroute (`:128`, assertion `:132`) — must move to a command-driven trigger under Step 6.
 
@@ -294,7 +312,7 @@ bounds emissions to changed links). Update `links.test.ts:128` to trigger via a 
 `pnpm --filter @d3-polytree/editor test` and `pnpm --filter @d3-polytree/core exec vitest run src/modelling/links.test.ts` green; `pnpm lint`.
 
 **Test**:
-This step *is* the test set. Each case fails against the pre-C4 tree (no pinned attr / node.moved trigger)
+This step _is_ the test set. Each case fails against the pre-C4 tree (no pinned attr / node.moved trigger)
 and passes after Steps 1–7.
 
 ---
@@ -303,9 +321,11 @@ and passes after Steps 1–7.
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/model/model.test.ts` — modify
 
 **Evidence**:
+
 - Hard-coded docked-border expectation: `model.test.ts:72-79` (`expect(wp).toEqual([{x:135,y:115},{x:365,y:115},{x:365,y:225}])`).
 - Drawer polyline test that must NOT move if the nudge truly degrades to today's output when nothing intersects: `packages/core/src/draw/Links.test.ts:41`.
 
@@ -330,9 +350,11 @@ justified any change. `draw/Links.test.ts` unchanged.
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/modelling/links.test.ts` — modify (or a new `packages/core/src/modelling/reroute.guard.test.ts`)
 
 **Evidence**:
+
 - Reroute completeness depends on all mutations going through the stack (O11); the only off-stack path is `@deprecated Modelling.doAction` — `Modelling.ts:70-86`.
 - Precedent for an invariant-enforcing guard: eslint `no-restricted-syntax` on `collections.add/remove` — `eslint.config.js:49-57`.
 
@@ -357,11 +379,13 @@ caught by CI rather than shipping a silent stale-link regression.
 ## Review Log
 
 ### 2026-09-19 — plan-review — verdict: passed-with-warnings
+
 Reviewer subagent applied the design-buddy plan-review criteria and verified every cited `path:line`
 against the repo. **Blockers: none** (all citations resolve; no rejected alternative reintroduced —
 router is in `core/src/route/` not a new package and not in `layout`; byte-identical `toXML` gate upheld
 via status-neutral `updateElement`, derived waypoints, and a flag-only pin memento; determinism enforced;
 eslint mutation rule not breached; ordering is fully forward). **Warnings addressed (no waivers):**
+
 - Step 5 diff-skip predicate re-stated as new-vs-old per-coordinate (`next[i].x !== prev[i].x || …`) so
   it is not read as a NaN self-comparison.
 - Step 3 verification caller list corrected to "Steps 4/5/6" (`_updateLink` is a `computeLinkWaypoints`

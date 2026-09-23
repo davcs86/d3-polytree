@@ -18,12 +18,12 @@ bundled). No D3 v7 slices to add.
 
 ## What's inside
 
-| Export | Kind | Role |
-| --- | --- | --- |
-| `renderToSvg` | function | `renderToSvg(xml, options?)` → `Promise<string>` — the deterministic `.pfdn` → SVG renderer. |
-| `SequentialIdGenerator` | class | The default deterministic id generator (`node_1`, `node_2`, …). |
-| `IdsIdGenerator` | class | The random/browser-style id generator, to opt back into non-deterministic ids. |
-| `IdGenerator` | type | The id-generator interface (re-exported from `@d3-polytree/canvas`). |
+| Export                  | Kind     | Role                                                                                         |
+| ----------------------- | -------- | -------------------------------------------------------------------------------------------- |
+| `renderToSvg`           | function | `renderToSvg(xml, options?)` → `Promise<string>` — the deterministic `.pfdn` → SVG renderer. |
+| `SequentialIdGenerator` | class    | The default deterministic id generator (`node_1`, `node_2`, …).                              |
+| `IdsIdGenerator`        | class    | The random/browser-style id generator, to opt back into non-deterministic ids.               |
+| `IdGenerator`           | type     | The id-generator interface (re-exported from `@d3-polytree/canvas`).                         |
 
 ## Usage
 
@@ -45,8 +45,8 @@ const svg = await renderToSvg(pfdnXmlString, { idGenerator: new IdsIdGenerator()
 
 ## API
 
-| Symbol | Signature | Description |
-| --- | --- | --- |
+| Symbol        | Signature                                                                   | Description                                                                                  |
+| ------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `renderToSvg` | `(xml: string, options?: { idGenerator?: IdGenerator }) => Promise<string>` | Render a `.pfdn` document to a standalone SVG string. Defaults to a `SequentialIdGenerator`. |
 
 ## Notes & constraints

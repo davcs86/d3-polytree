@@ -22,6 +22,7 @@ XML consumers pay nothing.
 ## Ground truth (verified in the moddle/moddle-xml runtime during recon + debate)
 
 The moddle element is a **hostile object to serialize naively**:
+
 - **References are stored NON-ENUMERABLE** (`moddle/dist/index.esm.js:765`, `enumerable: !property.isReference`).
   `JSON.stringify`/`Object.keys`/spread silently drops every `label`/`source`/`target`/`propertiesSet`.
 - **Defaults live on the PROTOTYPE**, applied at `create` for non-`isMany` props with a `default`
@@ -41,10 +42,12 @@ The moddle element is a **hostile object to serialize naively**:
 ## Approach
 
 ### 1. JSON shape + defaults (adapter, pure)
+
 Descriptor-driven walk of `element.$descriptor.properties`; read the **raw own value `element[p.name]`**, NOT
 `element.get()` (which materializes unset collections and defeats the omit gate). Per property, in ORDER:
+
 1. `isReference` → the referent's **`id` string** (re-linked on parse). Tested FIRST — `Node/Zone/Link.label`
-   (type `Label`) and `Node/Link.propertiesSet` (type `PropertiesSet`) are *complex-typed* references; an
+   (type `Label`) and `Node/Link.propertiesSet` (type `PropertiesSet`) are _complex-typed_ references; an
    `isSimpleType`-first split would walk the referent (cycle/duplication).
 2. `isSimpleType(p.type)` → scalar key (so `Label.text`, a nested simple element with no `isBody`, → a plain
    `text` string).
@@ -57,6 +60,7 @@ predicate above (the `!== null` and `isMany ? value.length` clauses are load-bea
 `moddle.create` re-applies defaults.
 
 ### 2. `fromJson` — validate-first, two-pass rebuild (pure)
+
 `fromJson(doc, {lax?}): Result<ModelElement, ValidationError[]>`. **Validate the plain JSON FIRST**, then build —
 mandatory, because moddle's lax setter deletes dangling refs and shoves unknown keys into `$attrs`
 (`index.esm.js:648`) before a build-then-validate check could see them. Build is **two passes** mirroring
@@ -69,15 +73,17 @@ assembled. `fromJson` **internally `createPfdnModdle()`** (the registry is deriv
 stateless; per-call instance is correct and harmless).
 
 ### 3. Validator — dependency-free, generated, strict, collect-all
+
 Generated dependency-free TS from `pfdn.json` (ajv/JSON-Schema-runtime rejected by the package's hard
 "moddle + moddle-xml only" rule). Returns `Result<T, ValidationError[]>` with a JSON-Pointer `instancePath`,
 collecting ALL errors. Pure — the `$type`-assignability and reference-target-type checks use generator-**baked**
 `allTypesByName` tables (not `getType`/`hasType`), so no moddle instance is needed. Checks:
+
 - known **concrete** `$type` (abstract `Base`/`Statusable` excluded — `moddle.create` does not gate on
   `isAbstract`, so building one yields junk);
 - **`$type` assignable to the containing property's declared type** — correct IS-A direction
   `getType(child.$type).hasType(property.type)`, baked as a table (monomorphic today → `child.$type ===
-  property.type`, but future subtypes work on regen);
+property.type`, but future subtypes work on regen);
 - **resolved referent's type** matches `property.type` (reference-side twin of the containment check);
 - primitive type match (`String`→string, `Real`→number, `Boolean`→boolean); `isMany` → array;
 - **id uniqueness WHEN PRESENT** (NOT required-id — that would reject the engine's own canonical id-less docs);
@@ -90,6 +96,7 @@ Generated code must pass `tsc --noEmit` under the full base tsconfig: explicit `
 guards (no `noUncheckedIndexedAccess`), and **zero unused locals/params**.
 
 ### 4. Typed documents — co-generated, plain interfaces, drift-gated
+
 One `scripts/generate-pfdn.mjs` (icons-amazon pattern) → one committed `src/pfdn.generated.ts` (validator +
 interfaces), "do-not-edit" banner, deterministic (stable ordering, no timestamps, LF). Interfaces match
 `toJson`'s runtime output EXACTLY: **`$type` required** (literal), **`id?: string` optional** on every
@@ -105,6 +112,7 @@ Turbo guards: `build.outputs` stays `dist/**` (never the generated source); if `
 enabled, the drift step must run the generator itself.
 
 ### 5. API placement + core integration
+
 Export `toJson`/`fromJson`/`validate`/`assertValid`, the new types `Result`/`ValidationError`/
 `PfdnValidationError`, and the generated document types from the existing single `.` entry (no new subpath;
 tree-shaking preserved by `sideEffects:false`; verified no name collision with current exports). Additive
@@ -123,6 +131,7 @@ divergence from `loadModel`'s XML lax-tolerance (`PfdnModdle.ts:52` `lax:true`; 
 `loadModel(xml)`; `loadModelFromJson` has no existing callers).
 
 ## Round-trip equivalence (test contract — three gates)
+
 1. **JSON idempotence**: `deepEqual(toJson(fromJson(j)), j)`.
 2. **Cross-format oracle**: build the same model via `fromXML(xml)` and `fromJson(json)`; assert
    `toXML(a) === toXML(b)` (reuse the proven byte-identical XML gate) AND `deepEqual(toJson(a), toJson(b))`.
@@ -135,6 +144,7 @@ divergence from `loadModel`'s XML lax-tolerance (`PfdnModdle.ts:52` `lax:true`; 
    (e.g. `status=2`) asserted to SURVIVE.
 
 ## Rejected alternatives
+
 - **ajv / JSON-Schema runtime validator** — breaches the package's hard minimal-dep rule.
 - **Emit a JSON Schema artifact now** (target-state's `./schema`) — DEFERRED: faithfully expressing
   IDREF/default-omission/body-text/`xsi:type` in Draft 2020-12 is the single most fragile piece ("a subtly-wrong
@@ -146,6 +156,7 @@ divergence from `loadModel`'s XML lax-tolerance (`PfdnModdle.ts:52` `lax:true`; 
 - **Build-then-validate** — rejected: moddle's lax setter mutates/loses data before the check runs.
 
 ## Open risks
+
 - **Generator fragility**: emitting strict-clean TS (no unused locals/params, no `noUncheckedIndexedAccess`) is
   fiddly; mitigated by the round-trip gates + the CI drift gate + `tsc --noEmit` in CI.
 - **JSON-Schema deferral**: consumers wanting a machine-readable schema get the dep-free validator now; the
@@ -154,6 +165,7 @@ divergence from `loadModel`'s XML lax-tolerance (`PfdnModdle.ts:52` `lax:true`; 
   affected.
 
 ## Ledger lesson (append)
+
 See `docs/design/ledger.md` — a naive moddle→JSON serializer silently drops non-enumerable references and
 prototype defaults; the adapter must be `$descriptor`-driven, read raw own values (not `get()`), and mirror
 moddle-xml's exact writer predicate — proven only by a status=0 / omitted-default / forward-reference fixture and

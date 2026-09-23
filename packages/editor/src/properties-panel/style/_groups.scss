@@ -1,11 +1,11 @@
-.pfdjs-pp-content-group{
+.pfdjs-pp-content-group {
   text-align: left;
   border-bottom: 1px solid var(--pfd-color-border-subtle, lightgray);
   padding-bottom: 6px;
   margin-bottom: 6px;
   font-size: 12px;
   font-weight: bold;
-  .pfdjs-pp-field-wrapper{
+  .pfdjs-pp-field-wrapper {
     margin: 4px;
   }
   label {
@@ -14,7 +14,8 @@
     font-size: inherit;
     display: block;
   }
-  input, select {
+  input,
+  select {
     width: 100%;
     font-size: 11px;
   }

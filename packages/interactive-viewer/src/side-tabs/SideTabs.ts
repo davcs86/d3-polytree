@@ -29,7 +29,11 @@ export class SideTabs {
   private _contentsEl!: HTMLElement;
   private _actions: SideTabEntry[] = [];
 
-  constructor(canvas: Canvas, sideTabsProvider: SideTabsProvider, eventBus: EventEmitter<DiagramEventMap>) {
+  constructor(
+    canvas: Canvas,
+    sideTabsProvider: SideTabsProvider,
+    eventBus: EventEmitter<DiagramEventMap>
+  ) {
     this._canvas = canvas;
     this._sideTabsProvider = sideTabsProvider;
     this._eventBus = eventBus;
@@ -50,7 +54,8 @@ export class SideTabs {
       // Toggle semantics: clicking the already-active tab collapses the panel
       // (the panel was otherwise stuck open — it only ever added `.open`).
       const tab = this._tabsEl.querySelector(`.pfdjs-st-tab[data-action="${id}"]`);
-      const isActive = this._container.classList.contains('open') && !!tab?.classList.contains('active');
+      const isActive =
+        this._container.classList.contains('open') && !!tab?.classList.contains('active');
       if (isActive) {
         this._readjustTabs();
         return;

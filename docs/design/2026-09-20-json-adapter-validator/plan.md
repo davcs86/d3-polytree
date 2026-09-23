@@ -4,6 +4,7 @@ Derived from the approved `design.md` (deep debate; R5 clean SOUND). Steps are o
 independently verifiable. Every file path + line anchor was verified during recon/debate.
 
 ## Plan-level realization decision (flagged for plan-review)
+
 The design mandates a "dependency-free validator + typed documents **generated from `pfdn.json`**". This plan
 realizes the validator as **table-driven**: the generator emits (a) the TS interfaces and (b) a `SCHEMA`
 descriptor table (per concrete type: its resolved property list, `abstract` flag, and `allTypesByName` set), and a
@@ -16,9 +17,11 @@ violations that fail CI Typecheck). The contract from the design is unchanged: z
 ---
 
 ## Step 1 — Generator `packages/pfdn-moddle/scripts/generate-pfdn.mjs` (Node stdlib only)
+
 Mirror `packages/icons-amazon/scripts/generate-icons.mjs` (readFileSync → writeFileSync a committed
 `src/*.generated.ts`, "AUTO-GENERATED … do not edit" banner). Read `src/pfdn.json`. Emit **deterministic**
 (schema array order, no timestamps, LF) `src/pfdn.generated.ts` containing:
+
 - **Per CONCRETE type** an `export interface Pfdn<LocalName>`: `$type: '<prefix:LocalName>'` (literal, required);
   each resolved property (own + inherited via `superClass` chain, super-first — mirror `getEffectiveDescriptor`)
   typed by rule — `isReference` → `string`; simple builtin (`String`→`string`, `Real`/`Integer`→`number`,
@@ -30,8 +33,8 @@ Mirror `packages/icons-amazon/scripts/generate-icons.mjs` (readFileSync → writ
   Skip `isVirtual`.
 - `export type PfdnDocument = PfdnDiagram;` and `export type PfdnElement = PfdnNode | PfdnLink | … ;` (concrete only).
 - `export const SCHEMA: Record<string, TypeInfo>` where `TypeInfo = { abstract: boolean; superTypes: string[];
-  allTypesByName: string[]; properties: PropInfo[] }` and `PropInfo = { name; type; isAttr; isMany; isReference;
-  isId; isSimple; hasDefault; default? }`. **[W1] `isSimple` = the property's `type` name ∈ the moddle builtins
+allTypesByName: string[]; properties: PropInfo[] }` and `PropInfo = { name; type; isAttr; isMany; isReference;
+isId; isSimple; hasDefault; default? }`. **[W1] `isSimple` = the property's `type` name ∈ the moddle builtins
   `{ String, Boolean, Integer, Real }`** (NOT "not `pfdn:`-prefixed" — raw `pfdn.json` property types are ALL
   unprefixed, e.g. `"Coordinates"`, `"Real"`; the `pfdn:` prefix exists only in the moddle runtime). **[W2] In the
   emitted `SCHEMA`, complex (non-builtin) type names — `SCHEMA` keys, `PropInfo.type`, and `allTypesByName`
@@ -48,6 +51,7 @@ Mirror `packages/icons-amazon/scripts/generate-icons.mjs` (readFileSync → writ
 base tsconfig (no unused locals/params — a pure data+interface file has none).
 
 ## Step 2 — `packages/pfdn-moddle/package.json`
+
 - `"build": "node scripts/generate-pfdn.mjs && tsup"` (mirror icons-amazon `:24`).
 - add `"generate": "node scripts/generate-pfdn.mjs"`.
 - No `exports`/`files`/tsup change needed: single `.` entry, tsup single-entry `src/index.ts` bundles the whole
@@ -55,7 +59,9 @@ base tsconfig (no unused locals/params — a pure data+interface file has none).
 - Commit `src/pfdn.generated.ts` (like `icons.generated.ts`).
 
 ## Step 3 — `packages/pfdn-moddle/src/json.ts` (hand-written adapter + interpreter, pure)
+
 Public types:
+
 - `type Result<T> = { ok: true; value: T } | { ok: false; errors: ValidationError[] }`.
 - `interface ValidationError { instancePath: string; keyword: string; message: string }`.
 - `class PfdnValidationError extends Error { readonly errors: ValidationError[] }`.
@@ -94,6 +100,7 @@ single instance it built with) so `loadModelFromJson` can reuse that exact insta
 PfdnValidationError(r.errors);`.
 
 ## Step 4 — `packages/pfdn-moddle/src/index.ts`
+
 Add: `export { toJson, fromJson, validate, assertValid, PfdnValidationError } from './json';`
 `export type { Result, ValidationError, ValidatedPfdnDocument } from './json';`
 `export type { PfdnDocument, PfdnElement, PfdnNode, PfdnLink, PfdnLabel, PfdnZone, PfdnCoordinates, PfdnSettings,
@@ -101,13 +108,16 @@ Add: `export { toJson, fromJson, validate, assertValid, PfdnValidationError } fr
 (`PfdnModdle`/`createPfdnModdle`/`FromXmlOptions`/`ModelElement`/`ParseResult`).
 
 ## Step 5 — `packages/core/src/model/model.ts` — `loadModelFromJson`
+
 Add beside `loadModel` (`:54-69`), auto-exported via `core/src/index.ts:36`:
+
 ```
 export async function loadModelFromJson(
   input: string | PfdnDocument,
   opts?: { lax?: boolean },
 ): Promise<ModelHost> { … }
 ```
+
 - If `typeof input === 'string'`: `JSON.parse` inside try/catch → on `SyntaxError` throw `PfdnValidationError`
   with a single `{instancePath:'', keyword:'json', message}` (one failure channel).
 - `const r = fromJson(parsed, opts); if (!r.ok) throw new PfdnValidationError(r.errors);` (strict default; `{lax}`
@@ -121,20 +131,25 @@ export async function loadModelFromJson(
 - Import `fromJson`, `PfdnDocument`, `PfdnValidationError` from `@d3-polytree/pfdn-moddle`.
 
 ## Step 6 — `.github/workflows/ci.yml` drift gate
+
 After the **Build** step (`ci.yml:13-38`), add a step that **[W4] runs the generator ITSELF, then diffs** — so it
 is independent of Build/turbo caching (a turbo cache hit would skip Build's regenerate and let a stale committed
 file pass a bare post-Build diff):
+
 ```
 - name: Verify generated files are up to date
   run: |
     node packages/pfdn-moddle/scripts/generate-pfdn.mjs
     git diff --exit-code -- packages/pfdn-moddle/src/pfdn.generated.ts
 ```
+
 Turbo guard confirmed: `turbo.json` `build.outputs` is `["dist/**"]` — generated source is NOT an output, so no
 cache restores a stale copy over the working tree. (No `.turbo`/remote cache in CI today regardless.)
 
 ## Step 7 — Tests
+
 **`packages/pfdn-moddle/src/json.test.ts`** (pure, no DOM):
+
 - **Gate 1 idempotence**: `deepEqual(toJson(fromJson(j).value…), j)` for the sharp fixture.
 - **Gate 2 cross-format oracle**: from an XML fixture build `a = fromXML`, from the equivalent JSON build
   `b = fromJson`; assert `toXML(a) === toXML(b)` (byte-identical) AND `deepEqual(toJson(a), toJson(b))`.
@@ -154,19 +169,24 @@ invalid JSON string throws `PfdnValidationError`; a dangling-ref doc throws by d
 Run cross-package tests after `pnpm --filter @d3-polytree/pfdn-moddle build` (core test reads built dist).
 
 ## Step 8 — Changeset
+
 `.changeset/json-adapter-validator.md`: `@d3-polytree/pfdn-moddle` **minor** (toJson/fromJson/validate/assertValid
-+ generated types), `@d3-polytree/core` **minor** (loadModelFromJson).
+
+- generated types), `@d3-polytree/core` **minor** (loadModelFromJson).
 
 ## Step 9 — Docs
+
 - `README.md`: a short "JSON documents" subsection (typed + validated `toJson`/`fromJson`/`loadModelFromJson`).
 - `ROADMAP.md`: mark C11 done.
 
 ## Step 10 — Full local gate (mirror CI)
+
 `pnpm install` (no new deps) → `pnpm lint` → `pnpm typecheck` → `pnpm test` → `pnpm build` →
 `pnpm build-storybook` → `node packages/pfdn-moddle/scripts/generate-pfdn.mjs && git diff --exit-code --
 packages/pfdn-moddle/src/pfdn.generated.ts` (drift gate). All green before push.
 
 ## Traceability to debate findings
+
 - F1 (exact omit predicate, raw-own read): Step 3 `toJson`.
 - F2 (assignability, correct direction + baked): Step 1 `allTypesByName`, Step 3 `validate` M2/M4.
 - M3 (reference target-type): Step 3 `validate` P2.
@@ -176,7 +196,9 @@ packages/pfdn-moddle/src/pfdn.generated.ts` (drift gate). All green before push.
 - Drift gate + turbo guards: Step 6.
 
 ## Review Log
+
 Plan-review verdict: **NEEDS-REVISION** (2 blockers, 4 warnings, 2 nits). All addressed in this revision:
+
 - **B1** (blocker) — the M3 reference-target-type check would reject every `Link` (`source`/`target` are
   `String`-typed IDREFs). Fixed: Step 3 `validate` P2 now runs the target-type check ONLY for complex-typed refs
   (`!prop.isSimple`); builtin-typed refs get resolvability-only.
@@ -190,5 +212,5 @@ Plan-review verdict: **NEEDS-REVISION** (2 blockers, 4 warnings, 2 nits). All ad
 - **W4** — CI drift gate runs the generator itself before diffing, cache-independent (Step 6).
 - **N1** — `fromJson` assembly clarified to post-order child creation (Step 3).
 - **N2** — `PropInfo.default` acknowledged as harmless dead data for the validator (kept for completeness).
-Reviewer confirmed sound (no action): F1 predicate exactness, F2 baked-assignability direction, non-enumerable
-ref two-pass, dts-drop avoidance, R4 id-optional regression coverage, all line anchors.
+  Reviewer confirmed sound (no action): F1 predicate exactness, F2 baked-assignability direction, non-enumerable
+  ref two-pass, dts-drop avoidance, R4 id-optional regression coverage, all line anchors.

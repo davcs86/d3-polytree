@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/icons-amazon": patch
+'@d3-polytree/icons-amazon': patch
 ---
 
 Correct README inaccuracies: `@d3-polytree/core` is kept external at build (not bundled); and the

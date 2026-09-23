@@ -17,15 +17,15 @@ Worker, or Node.
 
 ## What's inside
 
-| Export | Kind | Role |
-| --- | --- | --- |
-| `layout` | function | Run the solver synchronously: `LayoutGraph` + `LayoutOptions` → `LayoutResult` (centre points + extent). |
-| `createSyncLayoutRunner` | function | The in-thread `LayoutRunner` — wraps `layout` in a promise. |
-| `WorkerLayoutRunner` | class | A `LayoutRunner` that drives the `./worker` entry over a typed, transferable `postMessage` protocol. |
-| `LayoutGraph` · `LayoutNode` · `LayoutEdge` | type | The input graph (unique node ids; `width`/`height` bounding boxes). |
-| `LayoutOptions` · `LayoutResult` · `LayoutDirection` · `Point` | type | Tuning knobs and output. |
-| `DEFAULT_OPTIONS` | value | The resolved defaults applied to `LayoutOptions`. |
-| `LayoutRunner` · `LayoutWorkerLike` | type | The runner interface and the minimal Worker surface it needs. |
+| Export                                                         | Kind     | Role                                                                                                     |
+| -------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `layout`                                                       | function | Run the solver synchronously: `LayoutGraph` + `LayoutOptions` → `LayoutResult` (centre points + extent). |
+| `createSyncLayoutRunner`                                       | function | The in-thread `LayoutRunner` — wraps `layout` in a promise.                                              |
+| `WorkerLayoutRunner`                                           | class    | A `LayoutRunner` that drives the `./worker` entry over a typed, transferable `postMessage` protocol.     |
+| `LayoutGraph` · `LayoutNode` · `LayoutEdge`                    | type     | The input graph (unique node ids; `width`/`height` bounding boxes).                                      |
+| `LayoutOptions` · `LayoutResult` · `LayoutDirection` · `Point` | type     | Tuning knobs and output.                                                                                 |
+| `DEFAULT_OPTIONS`                                              | value    | The resolved defaults applied to `LayoutOptions`.                                                        |
+| `LayoutRunner` · `LayoutWorkerLike`                            | type     | The runner interface and the minimal Worker surface it needs.                                            |
 
 The Web Worker entry is published separately at `@d3-polytree/layout/worker`.
 
@@ -66,7 +66,9 @@ as a **transferable `Float64Array`** (zero-copy):
 ```ts
 import { WorkerLayoutRunner } from '@d3-polytree/layout';
 
-const worker = new Worker(new URL('@d3-polytree/layout/worker', import.meta.url), { type: 'module' });
+const worker = new Worker(new URL('@d3-polytree/layout/worker', import.meta.url), {
+  type: 'module'
+});
 const runner = new WorkerLayoutRunner(worker); // optional 2nd arg: timeout ms (default 30000)
 const result = await runner.run(graph, { direction: 'LR' });
 ```
@@ -79,14 +81,14 @@ swap one for the other without changing calling code.
 `layout(graph, options?)` returns a `LayoutResult` of **centre** points per input node id. `options`
 (`LayoutOptions`) — every field is optional, and out-of-range values are clamped to sane minimums:
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `direction` | `'TB' \| 'BT' \| 'LR' \| 'RL'` | `'TB'` | Flow direction. |
-| `nodeSpacing` | `number` | `40` | Minimum gap between two nodes in the same layer. |
-| `layerSpacing` | `number` | `80` | Gap between adjacent layers. |
-| `margin` | `number` | `20` | Padding around the whole result. |
-| `orderIterations` | `number` | `24` | Crossing-reduction sweeps (higher = better, slower). |
-| `coordIterations` | `number` | `12` | Coordinate-alignment sweeps. |
+| Option            | Type                           | Default | Description                                          |
+| ----------------- | ------------------------------ | ------- | ---------------------------------------------------- |
+| `direction`       | `'TB' \| 'BT' \| 'LR' \| 'RL'` | `'TB'`  | Flow direction.                                      |
+| `nodeSpacing`     | `number`                       | `40`    | Minimum gap between two nodes in the same layer.     |
+| `layerSpacing`    | `number`                       | `80`    | Gap between adjacent layers.                         |
+| `margin`          | `number`                       | `20`    | Padding around the whole result.                     |
+| `orderIterations` | `number`                       | `24`    | Crossing-reduction sweeps (higher = better, slower). |
+| `coordIterations` | `number`                       | `12`    | Coordinate-alignment sweeps.                         |
 
 `WorkerLayoutRunner(worker, timeoutMs = 30000)` — `run()` rejects if the worker does not answer within
 `timeoutMs` (pass `0` to disable), so a crashed worker never leaves the promise pending.

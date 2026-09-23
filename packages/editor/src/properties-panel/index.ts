@@ -9,10 +9,7 @@
  */
 export { EntryFactory, entryFactoryModule } from './EntryFactory';
 export type { EntryOptions, EntryResource, SelectOption } from './EntryFactory';
-export {
-  PfdnPropertiesProvider,
-  pfdnPropertiesProviderModule
-} from './PfdnPropertiesProvider';
+export { PfdnPropertiesProvider, pfdnPropertiesProviderModule } from './PfdnPropertiesProvider';
 export type {
   IconMap,
   PropertiesGroup,

@@ -111,7 +111,7 @@ this dissolves the shared-incident-link double-capture problem entirely.
 - **Totality is gated on a gesture-level `toXML` round-trip harness** (authoritative): snapshot
   `moddle.toXML()` → drive the real dispatcher for a gesture → `undo()` → assert `toXML` returns to
   the snapshot. An escaped write leaves residue surviving undo → `toXML` diff → red CI. An eslint
-  `no-restricted-syntax` rule banning the *named, matchable* primitives (`collections.add/remove`,
+  `no-restricted-syntax` rule banning the _named, matchable_ primitives (`collections.add/remove`,
   moddle `.set(`) outside a handler-dir glob is a **cheap tripwire only** — it cannot be the proof,
   because bare type-erased assignments (`(def.position as Point).x =`, `definition.size =`) are
   unmatchable by lint (this corrects the RFC's `definitions.*` lint premise, which matched none of
@@ -127,12 +127,12 @@ this dissolves the shared-incident-link double-capture problem entirely.
 
 - **Keep `Modelling` as the event→mutation router; wrap existing handler methods without a
   `CommandHandler` contract (minimal-delta panel proposal)** — rejected: it left `create` as a
-  notification-persist *outside* `commandStack.execute`, contradicting decided O11 (full reroute)
+  notification-persist _outside_ `commandStack.execute`, contradicting decided O11 (full reroute)
   and re-opening the two-path desync O11 exists to prevent. Its primitive-reuse insight was kept,
   inside the full contract.
 - **Recompute link waypoints on revert by re-emitting `node.moved`, storing nothing (minimal-delta
-  fork b)** — initially rejected as "not byte-identical," then re-examined: the router *is* pure, so
-  this became the winning mechanism (Option B). The variant that also *stored* the prior array
+  fork b)** — initially rejected as "not byte-identical," then re-examined: the router _is_ pure, so
+  this became the winning mechanism (Option B). The variant that also _stored_ the prior array
   (target-state/operational-safety) was rejected as redundant once purity was proven.
 - **Store the prior waypoint array in the move command's memento** — rejected: redundant given a
   pure recomputed router, and it created a two-writer race (stored array vs live reroute) plus a
@@ -152,20 +152,20 @@ this dissolves the shared-incident-link double-capture problem entirely.
 ## Open Risks
 
 - [ ] **Router-purity precondition — "all incident nodes are drawn at revert time."**
-  `_setSideConnectors` early-returns leaving stale `sides` if a node's drawing is absent
-  (`Links.ts:233-235`). Replay-revert satisfies this (it never deletes nodes; delete-revert
-  restores `status` and reconciles the node back into the drawing before any incident-link reroute).
-  — to be **asserted in the harness** (a both-endpoints-selected multi-move fixture) and stated as a
-  code comment on the move handler.
+      `_setSideConnectors` early-returns leaving stale `sides` if a node's drawing is absent
+      (`Links.ts:233-235`). Replay-revert satisfies this (it never deletes nodes; delete-revert
+      restores `status` and reconciles the node back into the drawing before any incident-link reroute).
+      — to be **asserted in the harness** (a both-endpoints-selected multi-move fixture) and stated as a
+      code comment on the move handler.
 - [ ] **Transaction-level write-before-reconcile batching.** For a multi-node selection move, the
-  move command must restore **all** node+label positions/statuses before reconciling **any** drawing,
-  and the harness must assert `toXML` only at transaction boundaries. — to be addressed at the
-  move-handler plan step + its harness fixture.
+      move command must restore **all** node+label positions/statuses before reconciling **any** drawing,
+      and the harness must assert `toXML` only at transaction boundaries. — to be addressed at the
+      move-handler plan step + its harness fixture.
 - [ ] **Router remaining pure over model state.** Option B's correctness depends on the waypoint
-  computation staying a pure function of model position/size. — the both-endpoints harness fixture is
-  the standing guard; if a future change makes routing stateful, fall back to Option A.
+      computation staying a pure function of model position/size. — the both-endpoints harness fixture is
+      the standing guard; if a future change makes routing stateful, fall back to Option A.
 - [ ] **`document.changed` debounce semantics** (derived from `canUndo()` transitions past the boot
-  latch). — a PR-2 detail.
+      latch). — a PR-2 detail.
 
 ## Principles & Host Rules Touched
 

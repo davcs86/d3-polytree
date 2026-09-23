@@ -20,14 +20,14 @@ dependencies.
 
 ## What's inside
 
-| Export | Kind | Role |
-| --- | --- | --- |
-| `Canvas` | class | The rendering surface: a container `<div>`, an `<svg>`, and a root `<g>`. Exposes container/SVG/transform/size accessors and emits `canvas.init` / `canvas.resized` / `canvas.destroy` on the injected event bus. |
-| `ElementRegistry` | class | Id assignment (via [`ids`](https://github.com/bpmn-io/ids)) and an owned element store keyed by id. |
-| `ElementBuilder` | class | Assigns an id to a definition and runs a builder callback that renders it. |
-| `IdsIdGenerator`, `SequentialIdGenerator` | class | Pluggable id strategies — random (default) vs. deterministic sequential (`node_1`, `node_2`, …). |
-| `getSvgString` | function | Serialize an `<svg>` to a standalone string with the applicable CSS inlined. |
-| `canvasModule` | didi module | Descriptor wiring `Canvas` / `ElementRegistry` / `ElementBuilder` into an injector. |
+| Export                                    | Kind        | Role                                                                                                                                                                                                              |
+| ----------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Canvas`                                  | class       | The rendering surface: a container `<div>`, an `<svg>`, and a root `<g>`. Exposes container/SVG/transform/size accessors and emits `canvas.init` / `canvas.resized` / `canvas.destroy` on the injected event bus. |
+| `ElementRegistry`                         | class       | Id assignment (via [`ids`](https://github.com/bpmn-io/ids)) and an owned element store keyed by id.                                                                                                               |
+| `ElementBuilder`                          | class       | Assigns an id to a definition and runs a builder callback that renders it.                                                                                                                                        |
+| `IdsIdGenerator`, `SequentialIdGenerator` | class       | Pluggable id strategies — random (default) vs. deterministic sequential (`node_1`, `node_2`, …).                                                                                                                  |
+| `getSvgString`                            | function    | Serialize an `<svg>` to a standalone string with the applicable CSS inlined.                                                                                                                                      |
+| `canvasModule`                            | didi module | Descriptor wiring `Canvas` / `ElementRegistry` / `ElementBuilder` into an injector.                                                                                                                               |
 
 Type exports: `ElementBuildFn`, `IdGenerator`, `DiagramEventMap`, `ElementClassName`, `MouseKind`.
 
@@ -43,8 +43,8 @@ const bus = new EventEmitter();
 const host = document.getElementById('app')!;
 const canvas = new Canvas({ container: host, width: 800, height: 600 }, bus);
 
-bus.emit('canvas.init');           // finish wiring the surface
-const svg = canvas.getSVGStr();    // serialize (CSS inlined) for export/thumbnails
+bus.emit('canvas.init'); // finish wiring the surface
+const svg = canvas.getSVGStr(); // serialize (CSS inlined) for export/thumbnails
 ```
 
 ### Deterministic ids for reproducible output

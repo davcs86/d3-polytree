@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/canvas": patch
+'@d3-polytree/canvas': patch
 ---
 
 `getSvgString` now serializes a clone of the SVG node instead of the live node, so repeated

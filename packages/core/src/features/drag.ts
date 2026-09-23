@@ -54,7 +54,10 @@ export class Drag {
   /** Read an element's current placement from the model (never the DOM). */
   private _placement(def: ModellingModelElement): Placement {
     const pos = def.position as Point;
-    return { position: { x: pos.x, y: pos.y }, status: Number(def.get('status') ?? ElementStatus.New) };
+    return {
+      position: { x: pos.x, y: pos.y },
+      status: Number(def.get('status') ?? ElementStatus.New)
+    };
   }
 
   /**

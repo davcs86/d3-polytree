@@ -66,7 +66,7 @@ pnpm 10 + Turborepo monorepo of scoped `@d3-polytree/*` TypeScript/ESM packages;
 - **Command memento assumption** — `element.move` excludes links because waypoints are a pure function of node positions (`commands.ts:225`). Pinned (user-authored) waypoints are NOT a pure function of positions → they must survive undo/redo, which changes that assumption.
 - **Ledger trap** (2026-09-17, command-stack): a gesture writes more serialized props than the obvious one; enumerate the complete serialized write set or `toXML` residue survives.
 - **Ledger trap** (2026-09-18, deterministic-ids): a `['type', X]` didi service whose constructor gains any arg MUST declare `static readonly $inject`.
-- **Ledger trap** (2026-09-17, command-stack): derived state with a pure producer should be recomputed on inverse/replay, not captured — keeps it byte-identical and avoids a two-writer race. (Directly relevant: solved waypoints stay derived; only *pinned* waypoints become authored state.)
+- **Ledger trap** (2026-09-17, command-stack): derived state with a pure producer should be recomputed on inverse/replay, not captured — keeps it byte-identical and avoids a two-writer race. (Directly relevant: solved waypoints stay derived; only _pinned_ waypoints become authored state.)
 
 ## Recommended Scope
 

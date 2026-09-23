@@ -30,11 +30,13 @@ finds it.
 
 **Status**: `pending`
 **Files**:
+
 - `packages/viewer/src/index.ts` — modify
 - `packages/viewer/package.json` — modify (add `eventemitter3`)
 - `packages/viewer/src/onoff.test.ts` — create
 
 **Evidence**:
+
 - `destroy()` body: `packages/viewer/src/index.ts:106-112`; `_boot` calls `this.destroy()` at `:116`; `new Diagram(...)` at `:125-134`; `get()` throws when `_diagram` null `:98-102`.
 - Event types: `DiagramEventMap` re-exported from core — `packages/core/src/index.ts:12`; the three post-boot events `document.changed`/`selection.changed`/`commandStack.changed` — `packages/canvas/src/events.ts:104,95,103`.
 - `eventemitter3` dep precedent: `packages/editor/package.json` + `packages/interactive-viewer/package.json` declare `eventemitter3: ^5.0.1`; viewer does not (confirm `packages/viewer/package.json`).
@@ -54,6 +56,7 @@ Add to `Viewer`: `import type EventEmitter from 'eventemitter3'` and `import typ
 
 **Status**: `pending`
 **Files**:
+
 - `packages/element/package.json` — create
 - `packages/element/tsup.config.ts` — create
 - `packages/element/vitest.config.ts` — create
@@ -61,6 +64,7 @@ Add to `Viewer`: `import type EventEmitter from 'eventemitter3'` and `import typ
 - `packages/element/tsconfig.json` — create
 
 **Evidence**:
+
 - Package template (`exports` `.`/`./umd`, `sideEffects:false`, `publishConfig.access:public`, UMD pass): `packages/editor/package.json`, `packages/editor/tsup.config.ts` (dual ESM/CJS+dts pass + `iife` UMD pass `globalName`). Vitest jsdom one-liner: `packages/editor/vitest.config.ts`.
 - Host API reused: `importDiagram`/`createEmpty`/`exportDiagram`/`get`/`destroy` + `on/off` (Step 1) — `packages/viewer/src/index.ts:70,75,85,98,106`; container append contract `packages/canvas/src/Canvas.ts:11,21`.
 
@@ -79,11 +83,13 @@ Covered by Step 4's element tests. `N/A (skeleton; behavior asserted in Step 4)`
 
 **Status**: `pending`
 **Files**:
+
 - `packages/element/scripts/generate-styles.mjs` — create
 - `packages/element/src/styles.generated.ts` — create (committed)
 - `packages/element/package.json` — modify (`build` runs the script before tsup)
 
 **Evidence**:
+
 - Precedent: `packages/icons-amazon/package.json` `build` = `node scripts/generate-icons.mjs && tsup`; committed `src/icons.generated.ts` (not gitignored — `.gitignore` ignores only `dist`/`node_modules`).
 - Both stylesheets needed: `packages/editor/package.json` `./style.css` (properties/palette/drag) + `packages/interactive-viewer/package.json` `./style.css` (outline/notifications/side-tabs/search); editor consumers import both (root `CLAUDE.md` "CSS ships compiled").
 - turbo `^build` ordering: `turbo.json` `build.dependsOn: ["^build"]`.
@@ -103,10 +109,12 @@ Step 4 asserts the shadow root contains the CSS. Here: `N/A (build artifact; ass
 
 **Status**: `pending`
 **Files**:
+
 - `packages/element/src/index.ts` — modify (exportSVG wrap)
 - `packages/element/src/element.test.ts` — create
 
 **Evidence**:
+
 - `exportSVG()` returns a complete `<svg>…</svg>` string — `packages/viewer/src/index.ts:93-95` → `Canvas.getSVGStr` → `getSvgString` (`packages/canvas/src/SvgExportingUtils.ts:9-18`); its CSS inlining reads `document.styleSheets` (`:53`), blind to shadow styles.
 - jsdom `attachInternals` exists but stub lacks `setFormValue` (root `package.json` jsdom ^25) — guard on `setFormValue`.
 
@@ -125,6 +133,7 @@ This step is the element test suite. Fails before Steps 2–4.
 
 **Status**: `pending`
 **Files**:
+
 - `packages/react/package.json` — create
 - `packages/react/tsup.config.ts` — create
 - `packages/react/vitest.config.ts` — create
@@ -132,6 +141,7 @@ This step is the element test suite. Fails before Steps 2–4.
 - `packages/react/src/index.tsx` — create
 
 **Evidence**:
+
 - No React anywhere today (recon); D3 peers declared narrowly `packages/core/package.json:34` — same pattern for React here.
 - Host API + `on/off` (Step 1); `document.changed`/`selection.changed` (`packages/canvas/src/events.ts:104,95`); `selection.changed` tuple order `(prev, next)` — `packages/core/src/features/selection.ts:61`.
 
@@ -150,10 +160,12 @@ Covered by Step 6. `N/A (skeleton)`.
 
 **Status**: `pending`
 **Files**:
+
 - `packages/react/src/index.tsx` — modify
 - `packages/react/src/react.test.tsx` — create
 
 **Evidence**:
+
 - `useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)`; `act` exported from `react` at 18.3+/19; `document.changed`/`selection.changed` (`packages/canvas/src/events.ts:104,95`).
 
 **Instructions**:
@@ -171,9 +183,11 @@ This step is the react test suite. Fails before Steps 5–6.
 
 **Status**: `pending`
 **Files**:
+
 - `apps/storybook/playwright/element-form.spec.ts` — create
 
 **Evidence**:
+
 - Playwright runner/config: `apps/storybook/playwright.config.ts` (pinned `@playwright/test` 1.56.1, `apps/storybook/package.json:26`), existing specs `apps/storybook/playwright/interactions.spec.ts`, `_support.ts` (reads built artifacts). VR/a11y specs loop `loadStories()` (no story ⇒ no VR/a11y enrollment).
 - Built element UMD: `packages/element/dist/element.umd.js` (self-registers tag).
 
@@ -192,12 +206,14 @@ This step is the browser test. Confirms real Chromium form participation (unveri
 
 **Status**: `pending`
 **Files**:
+
 - `.changeset/custom-element-react.md` — create
 - `pnpm-lock.yaml` — modify (regenerated by `pnpm install` for React devDeps)
 - `README.md` — modify (mention the two new packages)
 - `ROADMAP.md` — modify (mark C7)
 
 **Evidence**:
+
 - Changesets auto-include new packages (`.changeset/config.json` ignores only storybook); frozen install requires the committed lockfile (`.github/workflows/ci.yml`).
 
 **Instructions**:
@@ -214,11 +230,13 @@ Full gate: `pnpm install --frozen-lockfile` then `pnpm lint && pnpm typecheck &&
 ## Review Log
 
 ### 2026-09-20 — plan-review — verdict: passed-with-warnings
+
 Reviewer subagent applied the plan-review criteria and verified every cited `path:line` (all resolve).
 **Blockers: none** (design honored; rejected alternatives stay rejected — adapter-side re-subscribe,
 one-package-two-entries, in-package SCSS compile, controlled React `value`; host rules untouched; ordering
 sound with an explicit `## Step Dependencies`). The Step-1 on/off design matches the design doc on all four
 points, and the reboot-keydown bonus fix was confirmed real. **Warnings addressed (no waivers):**
+
 - W1 (Step 7): the Playwright UMD `readFileSync` path must be repo-root-resolved (cwd is `apps/storybook`) —
   amended to `path.resolve(__dirname, '../../../packages/element/dist/element.umd.js')`.
 - W2 (Step 8): added a `@d3-polytree/editor` patch changeset for the reboot-keydown fix so its changelog

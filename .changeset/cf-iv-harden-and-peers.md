@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/interactive-viewer": patch
+'@d3-polytree/interactive-viewer': patch
 ---
 
 - `DomNotifications` renders `text` as textContent by default and only renders markup supplied via the

@@ -5,7 +5,10 @@ import { DrawingRegistry } from './DrawingRegistry';
 import type { DiagramElement } from './types';
 
 /** A moddle-like definition: get/set for `status`, plus direct typed props. */
-export function makeDef<T extends Record<string, unknown>>(id: string, props: T): DiagramElement & T {
+export function makeDef<T extends Record<string, unknown>>(
+  id: string,
+  props: T
+): DiagramElement & T {
   const store = new Map<string, unknown>(Object.entries({ status: 0, ...props }));
   return {
     id,

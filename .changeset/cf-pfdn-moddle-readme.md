@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/pfdn-moddle": patch
+'@d3-polytree/pfdn-moddle': patch
 ---
 
 Correct README inaccuracies: `toXML` is synchronous and returns a `string` (not `await … { xml }`);

@@ -5,7 +5,9 @@ verification. All paths/anchors verified during recon + debate. **Chrome-only** 
 code change (the selection outline keeps its inline `stroke='red'` attr; CSS layers over it).
 
 ## Step 1 — `packages/interactive-viewer/src/_tokens.scss` (new shared token partial)
+
 Author the token system as plain CSS in a Sass partial:
+
 - **Primitives** `--pfd-palette-*`: one per DISTINCT current literal (light values verbatim) — `#5990bd`,
   `#ff4800`, `#333333`, `#808080`(gray), `#d3d3d3`(lightgray), `#cccccc`, `#eee`, `#555`, `#f5f5f5`, `#fafafa`,
   `#f0f0f0`, `#4d80a8`, `#9ecbff`, toast hexes, white.
@@ -27,6 +29,7 @@ Author the token system as plain CSS in a Sass partial:
   avoid triplicate hand-maintenance, but the EMITTED CSS must be the plain-hex declarations above.
 
 ## Step 2 — Import the partial (both aggregators, order-first)
+
 - `packages/interactive-viewer/src/style.scss`: `@import './_tokens';` as the FIRST import (before outline/
   notifications/side-tabs/search).
 - `packages/editor/src/style.scss`: `@import '../../interactive-viewer/src/_tokens';` FIRST (relative path
@@ -35,7 +38,9 @@ Author the token system as plain CSS in a Sass partial:
   `:root,:host` block in the concatenated `shadowCss` is byte-identical → harmless.
 
 ## Step 3 — Rewrite the ~50 color-bearing sites to `var(--pfd-*)`
+
 Per the design's committed table, in these files (light value preserved exactly → VR baselines don't move):
+
 - `interactive-viewer/src/search-panel/style.scss`: `.search` border `#333`→`var(--pfd-color-border-strong)`;
   `.list li` bg `#eee`→`list-item`, border-left `#5990bd`→`accent-ink`; `h3` `#333`→`text`; `p` `#555`→
   `text-secondary`; `:hover` `#f5f5f5`→`list-item-hover`.
@@ -58,11 +63,13 @@ Per the design's committed table, in these files (light value preserved exactly 
 - Leave every `rgba(0,0,0,·)` shadow/overlay literal.
 
 ## Step 4 — Selection outline (`interactive-viewer/src/_outline.scss`); NO core change
+
 - Add `.element-outline { stroke: var(--pfd-color-selection, #ff0000) }` (beats the inline `stroke='red'` attr,
   which is RETAINED at `core/src/features/outline.ts:73` for export neutrality — `outline.test.ts:40` unchanged).
 - Keep the existing `stroke-width` toggles for `.selected`/`:hover`.
 
 ## Step 5 — forced-colors (`@media (forced-colors: active)`)
+
 - `_outline.scss`: `.element-outline { stroke: Highlight; forced-color-adjust: none }` (selection stays visible).
 - Focus rings on GENUINELY focusable chrome only: dialog `<button>`s (`notifications/style.scss`) and the search
   `<input>` (`search-panel/style.scss`) → `:focus-visible { outline: 2px solid Highlight }` under forced-colors.
@@ -71,12 +78,14 @@ Per the design's committed table, in these files (light value preserved exactly 
   which today rely on box-shadow — noted, not required.)
 
 ## Step 6 — Regenerate the element's shadow CSS
+
 `packages/element/scripts/generate-styles.mjs` re-runs in the element `build` (turbo `^build` orders the two
 upstream `dist/style.css` first) and rewrites the committed `packages/element/src/styles.generated.ts` — the
 `:root,:host` token block + `@media`/attribute blocks flow into `shadowCss` automatically. Do NOT hand-edit;
 regenerate via build and commit the result.
 
 ## Step 7 — Export light-pin (`packages/element/src/index.ts`)
+
 In `exportSVG`, on the captured `<svg …>` open tag (already rewritten via `svg.replace(/(<svg\b[^>]*>)/, …)`),
 add `data-pfd-theme="light"`. The `_tokens.scss` pin block must include BOTH `:root[data-pfd-theme="light"]`
 (matches the `<svg>` document root in standalone `data:`-URI consumption) AND `svg[data-pfd-theme="light"]`
@@ -85,6 +94,7 @@ add `data-pfd-theme="light"`. The `_tokens.scss` pin block must include BOTH `:r
 keeps a selected outline neutral.
 
 ## Step 8 — Storybook (`apps/storybook`)
+
 - `.storybook/preview.ts`: add `globalTypes.theme` (auto/light/dark, toolbar) + a global decorator that stamps
   `data-pfd-theme` on **`document.documentElement`** for the explicit light/dark choices and REMOVES it for
   `auto` — the light/auto branch is a strict no-op (no `parameters.backgrounds`, no structural wrapper) so the
@@ -94,6 +104,7 @@ keeps a selected outline neutral.
   unchanged).
 
 ## Step 9 — Tests / gates
+
 - **VR** (`apps/storybook/playwright/vr.spec.ts` or a new `theme.spec.ts`): dark + forced-colors variants of the
   highest-chrome story (must include the SEARCH PANEL and properties-panel tabs), via `emulateMedia` and via the
   `data-pfd-theme` attribute (both dark paths, gate #4). New baselines auto-seed on first push; the 10 existing
@@ -109,6 +120,7 @@ keeps a selected outline neutral.
   hand-computed ratios, not axe.
 
 ## Step 10 — Changeset + docs
+
 - `.changeset/theming.md`: `@d3-polytree/interactive-viewer` **minor**, `@d3-polytree/editor` **minor**,
   `@d3-polytree/element` **patch** (regenerated `styles.generated.ts` + export light-pin). NOT core (no code
   change). NOT viewer (no CSS).
@@ -116,12 +128,14 @@ keeps a selected outline neutral.
   manual `data-pfd-theme`, `--pfd-*` override tokens; diagram content stays as authored).
 
 ## Step 11 — Full local gate (mirror CI)
+
 `pnpm install` (no new deps) → `pnpm lint` → `pnpm typecheck` → `pnpm test` → `pnpm build` (regenerates
 `styles.generated.ts` — confirm it's committed & clean) → `pnpm build-storybook`. Then VR locally against the 10
 existing baselines to PROVE zero light drift before pushing (the load-bearing pixel-stability claim). Reseed only
 the new dark/forced-colors baselines.
 
 ## Traceability to debate findings
+
 - Chrome-only + light canvas (Fork 3): Steps 3-5 touch only chrome CSS; no core/draw/model change.
 - Plain-hex + @media + attribute, no light-dark() (R1/R3): Step 1.
 - One-primitive-per-literal, pixel-stable light (R1/R2): Steps 1,3,11.
@@ -131,9 +145,11 @@ the new dark/forced-colors baselines.
   Step 8. Focus rings on real focusables only (R2): Step 5.
 
 ## Review Log
+
 Plan-review verdict: **PASSED-WITH-WARNINGS** (no blocker; every literal confirmed mapped, outline/core "no
 change" verified, export neutrality confirmed both paths, Sass import mechanics compile). Warnings heeded in
 implementation:
+
 - **W1** — Step 1 must also define `--pfd-color-toast-bg` (INVARIANT `#333333`, `notifications:17` — mapping toast
   bg to `text` would make it near-white in dark) and `--pfd-color-accent-invariant` (INVARIANT `#ff4800`).
 - **W2** — `.search` border `#333`→`border-strong` is NOT light-pixel-stable (`#333`→`#cccccc` in light); accepted

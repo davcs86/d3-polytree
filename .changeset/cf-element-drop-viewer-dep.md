@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/element": patch
+'@d3-polytree/element': patch
 ---
 
 Remove the unused direct `@d3-polytree/viewer` dependency (never imported by `src`, absent from the

@@ -1,18 +1,22 @@
 <!-- context-forge:behavioral-contract:start -->
+
 ## How to Act
 
-Read this first — it governs *how* you work here; everything below is the *what* you work with.
+Read this first — it governs _how_ you work here; everything below is the _what_ you work with.
 
-1. **Don't assume — ask, and surface tradeoffs.** On ambiguity or a design fork, stop and raise it; never paper over it with a silent guess. *(enforced by `PLAT-01`/`PLAT-03` — silent DI token-order footguns; and the ROADMAP design-buddy debate→plan→review gate)*
+1. **Don't assume — ask, and surface tradeoffs.** On ambiguity or a design fork, stop and raise it; never paper over it with a silent guess. _(enforced by `PLAT-01`/`PLAT-03` — silent DI token-order footguns; and the ROADMAP design-buddy debate→plan→review gate)_
 2. **Write the minimum that solves the stated problem.** No speculative abstraction or "while I'm here" scaffolding.
-3. **Touch only what the task requires; keep diffs surgical.** *(enforced by `PLAT-04` — never hand-edit generated files; and the constitution's non-destructive spirit)*
-4. **Define success up front, then loop until verified.** *(enforced by `PLAT-06`/`PLAT-08` — determinism + Playwright-pinned VR; CI order install→lint→typecheck→test→build→build-storybook)*
+3. **Touch only what the task requires; keep diffs surgical.** _(enforced by `PLAT-04` — never hand-edit generated files; and the constitution's non-destructive spirit)_
+4. **Define success up front, then loop until verified.** _(enforced by `PLAT-06`/`PLAT-08` — determinism + Playwright-pinned VR; CI order install→lint→typecheck→test→build→build-storybook)_
 
-> Litmus test for any future line in this file: *does it shape how the agent thinks (a behavior), or restate a fact it can read from the code?* If it's a fact already in the repo, leave it out.
+> Litmus test for any future line in this file: _does it shape how the agent thinks (a behavior), or restate a fact it can read from the code?_ If it's a fact already in the repo, leave it out.
+
 <!-- context-forge:behavioral-contract:end -->
 
 <!-- context-forge:constitution-pointer:start -->
+
 > 📜 **Constitution.** Non-obvious repo-wide invariants live in [`docs/context-constitution.md`](docs/context-constitution.md); defects/drift to triage are in [`docs/context-constitution-findings.md`](docs/context-constitution-findings.md). Each package carries its own `docs/context-constitution.md`. Forged by context-forge; re-run `/context-constitution` to refresh.
+
 <!-- context-forge:constitution-pointer:end -->
 
 # CLAUDE.md

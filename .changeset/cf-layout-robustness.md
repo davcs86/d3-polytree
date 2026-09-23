@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/layout": patch
+'@d3-polytree/layout': patch
 ---
 
 Robustness: `resolveOptions` clamps out-of-range values (negative/NaN spacing and negative iteration

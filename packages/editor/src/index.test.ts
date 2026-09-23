@@ -11,7 +11,9 @@ describe('@d3-polytree/editor', () => {
   it('extends the InteractiveViewer with editing modules', () => {
     const editor = new Editor();
     expect(editor).toBeInstanceOf(InteractiveViewer);
-    expect(editor.getModules().length).toBeGreaterThan(InteractiveViewer.interactionModules.length + Viewer.modules.length);
+    expect(editor.getModules().length).toBeGreaterThan(
+      InteractiveViewer.interactionModules.length + Viewer.modules.length
+    );
   });
 
   it('creates a node (with associated label) into the model and the DOM', () => {
@@ -99,5 +101,4 @@ describe('@d3-polytree/editor', () => {
     expect(editor.get('propertiesPanel')).toBeTruthy();
     expect(editor.get('propertiesProvider')).toBeTruthy();
   });
-
 });

@@ -20,11 +20,11 @@ their own copy) — not bundled into `dist`.
 
 ## What's inside
 
-| Export | Kind | Role |
-| --- | --- | --- |
+| Export           | Kind        | Role                                                                                                                               |
+| ---------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `awsIconsModule` | didi module | The pack: an `icons` factory that spreads the engine's base icons then the AWS set. Compose it via a component's `modules` option. |
-| `awsIcons` | value | The generated `type → <symbol>` map behind the module (from `src/icons.generated.ts`). |
-| `default` | — | Re-export of `awsIconsModule`. |
+| `awsIcons`       | value       | The generated `type → <symbol>` map behind the module (from `src/icons.generated.ts`).                                             |
+| `default`        | —           | Re-export of `awsIconsModule`.                                                                                                     |
 
 ## Usage
 
@@ -55,9 +55,12 @@ Mirror this package: a module whose `icons` factory returns `{ ...createIcons(),
 import { createIcons } from '@d3-polytree/core';
 
 export const myIconsModule = {
-  icons: ['factory', function () {
-    return { ...createIcons(), MyType_Thing: '<symbol …>…</symbol>' };
-  }]
+  icons: [
+    'factory',
+    function () {
+      return { ...createIcons(), MyType_Thing: '<symbol …>…</symbol>' };
+    }
+  ]
 };
 ```
 

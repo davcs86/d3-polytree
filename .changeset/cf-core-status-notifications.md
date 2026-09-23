@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/core": patch
+'@d3-polytree/core': patch
 ---
 
 Two internal hardening changes, no behavior change to public rendering:

@@ -59,7 +59,7 @@ runtime dep; already a root devDep). Vitest env `jsdom`.
 export async function renderToSvg(
   xml: string,
   options?: { idGenerator?: IdGenerator }
-): Promise<string>
+): Promise<string>;
 ```
 
 Implementation, inside a **serial mutex** (a module-level promise chain — `globalThis` is shared, so
@@ -108,7 +108,7 @@ package at `0.1.0`.
 
 - **Default-arg constructor with no `$inject`** (round-1 seam) — rejected: didi parses the constructor
   and throws `No provider` at boot. Fixed by declaring `$inject = ['idGenerator']` + a token.
-- **`options.window` / DOM-agnostic "inject a Document"** — rejected: the draw layer reads the *global*
+- **`options.window` / DOM-agnostic "inject a Document"** — rejected: the draw layer reads the _global_
   `document`/`XMLSerializer`, so a passed `Document` can't be threaded; it degenerates to `globalThis`
   mutation anyway, and only a jsdom-fidelity DOM satisfies the pipeline. Committed to self-contained
   jsdom instead.
@@ -128,13 +128,13 @@ package at `0.1.0`.
 ## Open Risks
 
 - [ ] **Add-only guard skips a coincidentally-present Node global.** If a future Node exposes a
-  base-path DOM global (`document`/`DOMParser`/`XMLSerializer`) as a non-DOM value, add-only would skip
-  jsdom's version. Verified moot today (none is a Node global). — revisit if a needed global becomes a
-  Node built-in; the fallback is a small force-override essential set. Note in the ssr code.
+      base-path DOM global (`document`/`DOMParser`/`XMLSerializer`) as a non-DOM value, add-only would skip
+      jsdom's version. Verified moot today (none is a Node global). — revisit if a needed global becomes a
+      Node built-in; the fallback is a small force-override essential set. Note in the ssr code.
 - [ ] **Serial-only.** Concurrent `renderToSvg` calls are serialized by the module mutex; genuine
-  parallelism would need a worker/realm per render. — documented, adequate for golden tests/thumbnails.
+      parallelism would need a worker/realm per render. — documented, adequate for golden tests/thumbnails.
 - [ ] **Double-parse cost.** Two `moddle.fromXML` per render. — acceptable (SSR is not a hot path);
-  revisit only if a pre-boot host seam is added to `Viewer`.
+      revisit only if a pre-boot host seam is added to `Viewer`.
 
 ## Principles & Host Rules Touched
 

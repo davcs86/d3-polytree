@@ -19,15 +19,15 @@ build time and carry **no runtime deps**.
 
 The `pfdn:` namespace defines the element types the engine reads and writes:
 
-| Type | Role |
-| --- | --- |
-| `pfdn:Diagram` | Root document — holds `settings` and the element collection. |
-| `pfdn:Node` | A process node, drawn as an icon `<use>` keyed by its `type` and sized by `size`. |
-| `pfdn:Link` | A directed edge between nodes. |
-| `pfdn:Label` | Text attached to a node/link. |
-| `pfdn:Zone` | A grouping region. |
-| `pfdn:Coordinates` | An `{ x, y }` point. |
-| settings | Author, name, zoom/offset, grid, status. |
+| Type               | Role                                                                              |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `pfdn:Diagram`     | Root document — holds `settings` and the element collection.                      |
+| `pfdn:Node`        | A process node, drawn as an icon `<use>` keyed by its `type` and sized by `size`. |
+| `pfdn:Link`        | A directed edge between nodes.                                                    |
+| `pfdn:Label`       | Text attached to a node/link.                                                     |
+| `pfdn:Zone`        | A grouping region.                                                                |
+| `pfdn:Coordinates` | An `{ x, y }` point.                                                              |
+| settings           | Author, name, zoom/offset, grid, status.                                          |
 
 ## Usage
 
@@ -38,9 +38,9 @@ import { createPfdnModdle } from '@d3-polytree/pfdn-moddle';
 
 const moddle = createPfdnModdle();
 
-const { rootElement } = await moddle.fromXML(pfdnXml);          // parse (async → ParseResult)
+const { rootElement } = await moddle.fromXML(pfdnXml); // parse (async → ParseResult)
 const node = moddle.create('pfdn:Node', { id: 'n1', type: 'default' });
-const xml = moddle.toXML(rootElement);                          // serialize (sync → string)
+const xml = moddle.toXML(rootElement); // serialize (sync → string)
 ```
 
 ### Typed JSON (no XML)
@@ -53,16 +53,16 @@ import { toJson, fromJson, validate, type PfdnDocument } from '@d3-polytree/pfdn
 
 const doc: PfdnDocument = toJson(definitions); // refs collapse to ids, defaults omitted
 
-const result = validate(doc);                  // strict — collects ALL errors, does not throw
+const result = validate(doc); // strict — collects ALL errors, does not throw
 if (!result.ok) {
   for (const err of result.errors) {
     console.error(err.instancePath, err.message); // instancePath is a JSON Pointer
   }
 }
 
-const parsed = fromJson(doc);                  // validates first; returns a Result (never throws on invalid data)
+const parsed = fromJson(doc); // validates first; returns a Result (never throws on invalid data)
 if (parsed.ok) {
-  const rootElement = parsed.value;            // the rebuilt moddle element tree
+  const rootElement = parsed.value; // the rebuilt moddle element tree
 }
 // fromJson(doc, { lax: true }) drops unresolvable references instead of rejecting them
 ```

@@ -75,7 +75,10 @@ export class AutoLayout {
 
   private _placement(def: ModellingModelElement): Placement {
     const pos = def.position as Point;
-    return { position: { x: pos.x, y: pos.y }, status: Number(def.get('status') ?? ElementStatus.New) };
+    return {
+      position: { x: pos.x, y: pos.y },
+      status: Number(def.get('status') ?? ElementStatus.New)
+    };
   }
 
   private _buildGraph(nodes: ModellingModelElement[]): LayoutGraph {

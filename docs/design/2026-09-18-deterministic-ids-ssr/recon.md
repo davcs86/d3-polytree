@@ -15,7 +15,7 @@ pnpm 10 + Turborepo monorepo of `@d3-polytree/*` ESM/TS packages, layered `canva
 
 - **`packages/canvas/src/`** (TS)
   - **The single non-deterministic id source**: `ElementRegistry._ids = new Ids([8, 24, 86])` (`ElementRegistry.ts:12`) — the `ids` lib mints random hex per instance; not seedable/injectable today.
-  - Id API used by callers: `claimId(element, prefix)` sets `element.id = element.id || this._ids.nextPrefixed(\`${prefix}_\`, element)` then `this._ids.claim(...)` (`ElementRegistry.ts:22-26`); also `claim(id, element)` (`:16`), `unClaim` (`:29`), `removeElementById` (`:40`). Pre-set ids are preserved (the `|| ` guard).
+  - Id API used by callers: `claimId(element, prefix)` sets `element.id = element.id || this._ids.nextPrefixed(\`${prefix}_\`, element)`then`this._ids.claim(...)` (`ElementRegistry.ts:22-26`); also `claim(id, element)` (`:16`), `unClaim` (`:29`), `removeElementById` (`:40`). Pre-set ids are preserved (the `|| ` guard).
   - SVG-to-string: `getSvgString(svgNode)` uses `new XMLSerializer()`, `svgNode.setAttribute`, `document.createElement('style')`, and reads **`document.styleSheets`** to inline matching CSS (`SvgExportingUtils.ts:9,13,53,79`). Entry: `Canvas.getSVGStr()` → `getSvgString(this._svg.node())` (`Canvas.ts:81-82`).
   - DOM construction: `Canvas` uses `document`/`document.createElement` (`Canvas.ts:11-12`), `select(container).append('svg').append('g')` (`:48-53`), `document.createElementNS(SVG_NS,'g')` (`:105`); the `transform.baseVal` identity fallback in `Canvas.getTransform` is an intentional jsdom shim (`packages/canvas/CLAUDE.md:11-13`).
 - **`packages/core/src/draw/`** (TS)
@@ -63,6 +63,7 @@ pnpm 10 + Turborepo monorepo of `@d3-polytree/*` ESM/TS packages, layered `canva
 ## Recommended Scope
 
 Advisory (input to the debate + plan; not binding):
+
 - **Part 1 (determinism):** introduce an `IdGenerator` interface in canvas (the subset `ElementRegistry` uses: `nextPrefixed`, `claim`, `unclaim`), a default impl wrapping `ids` (preserves current random behavior), and a deterministic sequential impl. Inject it into `ElementRegistry` (constructor/optional), overridable via the DI token or a canvas option, so SSR/tests get reproducible ids.
 - **Part 2 (SSR):** a new `packages/ssr/` exposing `renderToSvg(xml, options?): Promise<string>` (or sync) that hosts a `Viewer` against a Node DOM, wires the deterministic id generator, provisions CSS, and returns `exportSVG()`. Resolve the DOM fork (jsdom dep vs injectable `Document` vs linkedom) in the debate. Ship as a golden-file test substrate (unblocks C8) — SVG only, PNG out of scope.
 - Vitest env for the SSR package (`node` vs `jsdom`) depends on the DOM fork; a Changeset entry for the new package.

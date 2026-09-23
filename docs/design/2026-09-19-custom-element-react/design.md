@@ -20,6 +20,7 @@ that both adapters (and Track D / O16) depend on.
 `localStorage.ts:40`, `upload.ts:61`, palette "New" `PaletteProvider.ts:111` all call
 `this._host.importDiagram/createDiagram()`. An adapter-side re-subscribe wrapper cannot see those, so a
 subscription taken off the bus dangles silently. Fix once, on the long-lived component:
+
 - Add `on(event, handler)` / `off(event, handler)`, with the generic **narrowed to the three
   reboot-surviving post-boot events** `'document.changed' | 'selection.changed' | 'commandStack.changed'`
   (typed via `DiagramEventMap`, imported from `@d3-polytree/core` which re-exports it — `core/src/index.ts:12`;
@@ -41,6 +42,7 @@ subscription taken off the bus dangles silently. Fix once, on the long-lived com
   `_bus` field's `EventEmitter` type import needs it under pnpm strict resolution).
 
 **2. `@d3-polytree/element`** — framework-free custom element, no runtime deps:
+
 - `attachShadow({ mode: 'open', delegatesFocus: true })`; `:host { display: block }` with an explicit/measured
   size (Canvas `getSize()` reads `clientWidth/Height`, `Canvas.ts:117`); a `tabindex` so keyboard reaches the
   editor's container keydown listener (`editor/src/index.ts:84`). `connectedCallback` hosts an `Editor` in a
@@ -68,6 +70,7 @@ subscription taken off the bus dangles silently. Fix once, on the long-lived com
 - UMD `d3PolytreeElement` global that self-registers the tag for `<script>` drop-in.
 
 **3. `@d3-polytree/react`** — thin `useSyncExternalStore` wrapper, **uncontrolled contract**:
+
 - `react`/`react-dom` `>=18` **required peers** (only here); `react@19`/`react-dom@19` devDeps; tests use
   `react-dom/client` `createRoot` + `act` from `'react'` (no `@testing-library/react`). `'use client'`.
 - `defaultValue` (the `.pfdn`) applied once on mount; **controlled `value` is dropped** — `importDiagram` is a
@@ -114,14 +117,14 @@ name="…">')` on about:blank, inject the built element UMD via `page.addScriptT
 ## Open Risks
 
 - [ ] **`exportSVG()` shadow-CSS gap** — handled by wrapping the export in the element to inject its compiled
-  CSS; covered by a test. To be implemented in the element package (no engine edit).
+      CSS; covered by a test. To be implemented in the element package (no engine edit).
 - [ ] **Browser-only form participation** — jsdom cannot exercise `setFormValue`; covered by the guarded/spied
-  unit path + the one Playwright form test. Documented as browser-verified.
+      unit path + the one Playwright form test. Documented as browser-verified.
 - [ ] **Consumer must give the element layout** (`:host` size) or `getSize()` reads 0 — documented; the element
-  sets a sane default `:host { display: block }` height.
+      sets a sane default `:host { display: block }` height.
 - [ ] **First React in the monorepo** — the regenerated `pnpm-lock.yaml` must be committed (frozen install).
 - [ ] **O11 dependency** — `onChange` completeness relies on all mutations flowing through the command stack
-  (verified today); a future off-stack mutation would be missed. Shares C4's O11 guard posture.
+      (verified today); a future off-stack mutation would be missed. Shares C4's O11 guard posture.
 
 ## Principles & Host Rules Touched
 

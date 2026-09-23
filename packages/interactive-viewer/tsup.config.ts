@@ -17,7 +17,13 @@ export default defineConfig([
     dts: true,
     clean: true,
     sourcemap: true,
-    external: ['@d3-polytree/viewer', '@d3-polytree/core', '@d3-polytree/canvas', '@d3-polytree/pfdn-moddle', 'd3-selection']
+    external: [
+      '@d3-polytree/viewer',
+      '@d3-polytree/core',
+      '@d3-polytree/canvas',
+      '@d3-polytree/pfdn-moddle',
+      'd3-selection'
+    ]
   },
   {
     entry: { 'interactive-viewer': 'src/index.ts' },

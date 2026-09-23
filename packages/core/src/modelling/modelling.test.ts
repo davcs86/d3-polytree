@@ -66,7 +66,14 @@ describe('@d3-polytree/core modelling handlers', () => {
   it('creates a node together with a read-only associated label', () => {
     const labelDrawer = drawer();
     const nodeDrawer = drawer();
-    const labels = new ModellingLabels(definitions, moddle, registry, notes, bus, labelDrawer.drawer);
+    const labels = new ModellingLabels(
+      definitions,
+      moddle,
+      registry,
+      notes,
+      bus,
+      labelDrawer.drawer
+    );
     const nodes = new ModellingNodes(
       definitions,
       moddle,

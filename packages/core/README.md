@@ -40,14 +40,24 @@ lets the host own the D3 version. `@d3-polytree/canvas`, `@d3-polytree/layout`, 
 ### Boot the engine directly
 
 ```ts
-import { Diagram, loadModel, nodesModule, linksModule, labelsModule, zonesModule } from '@d3-polytree/core';
+import {
+  Diagram,
+  loadModel,
+  nodesModule,
+  linksModule,
+  labelsModule,
+  zonesModule
+} from '@d3-polytree/core';
 
-const host = await loadModel(pfdnXml);                 // { definitions, moddle }
+const host = await loadModel(pfdnXml); // { definitions, moddle }
 const diagram = new Diagram({
   container: document.getElementById('app')!,
   modules: [
-    labelsModule, zonesModule, linksModule, nodesModule,
-    { d3polytree: ['value', host] }                    // drawers resolve the model off this token
+    labelsModule,
+    zonesModule,
+    linksModule,
+    nodesModule,
+    { d3polytree: ['value', host] } // drawers resolve the model off this token
   ]
 });
 
@@ -72,11 +82,11 @@ The engine is a module list, not a monolith. A module is a plain object —
 `{ __init__: ['svc'], __depends__: [otherModule], svc: ['type'|'factory'|'value', X] }` — and two
 invariants govern composition:
 
-1. **Last definition of a token wins.** Composing a module *after* the core modules overrides that
+1. **Last definition of a token wins.** Composing a module _after_ the core modules overrides that
    token. This is the single extension seam: caller modules are appended after the component's own,
    and icon packs rely on it.
 2. **Boot order = event-subscription order.** Drawers emit `<class>.created` (`node.created`,
-   `link.created`, …) *during* boot; any feature that must see those initial elements (selection,
+   `link.created`, …) _during_ boot; any feature that must see those initial elements (selection,
    outline, search) has to be registered **before** the drawer modules.
 
 ## Key exports

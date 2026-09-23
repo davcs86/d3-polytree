@@ -44,7 +44,7 @@ pnpm + Turborepo monorepo (TypeScript/ESM) publishing `@d3-polytree/*` v2 packag
 ## Host Conventions & Hard Rules
 
 - **Hard rule**: "The eventBus is a single `eventemitter3` instance provided by `canvasModule`; every feature injects the same one." — `packages/core/CLAUDE.md:20` (the typed change must remain **one shared instance**, compile-time only, zero runtime change).
-- **Hard rule**: "**Boot order = event-subscription order.** Drawers emit `<class>.created` (`node.created`, `link.created`, …) *during* boot as they render the loaded model." — `CLAUDE.md:71`; and "Moving a created-listener after the drawers silently drops the initial elements — a real bug the folded-panel tests guard against." — `CLAUDE.md:76`. (Retyping must not reorder module registration.)
+- **Hard rule**: "**Boot order = event-subscription order.** Drawers emit `<class>.created` (`node.created`, `link.created`, …) _during_ boot as they render the loaded model." — `CLAUDE.md:71`; and "Moving a created-listener after the drawers silently drops the initial elements — a real bug the folded-panel tests guard against." — `CLAUDE.md:76`. (Retyping must not reorder module registration.)
 - **Hard rule**: "`Canvas` … emits `canvas.init` / `canvas.resized` / `canvas.destroy` on the **injected eventBus**." — `packages/canvas/CLAUDE.md:8`
 - **Hard rule**: "D3 slices are **peer** deps — import from the specific `d3-*` package, never a `d3` bundle." — `packages/core/CLAUDE.md:22`
 - Convention: CI is fixed & mirrored before pushing — `CLAUDE.md:34`. No absolute rule forbids re-typing the emitter surface itself.
@@ -52,7 +52,7 @@ pnpm + Turborepo monorepo (TypeScript/ESM) publishing `@d3-polytree/*` v2 packag
 ## Dependencies
 
 - Data / schema: none (compile-time typing only; the runtime `.pfdn` model is untouched).
-- External contracts: the **public event surface** consumers observe via `Viewer.get('eventBus')` — today an untyped `EventEmitter`. Typing it is additive at runtime but changes the exported *type* (packages at `0.1.0`; a Changesets minor with a note, per the O12 precedent for pre-1.0 typed changes).
+- External contracts: the **public event surface** consumers observe via `Viewer.get('eventBus')` — today an untyped `EventEmitter`. Typing it is additive at runtime but changes the exported _type_ (packages at `0.1.0`; a Changesets minor with a note, per the O12 precedent for pre-1.0 typed changes).
 - Config / environment: none.
 - Cross-area edges: declaration merging must target the same exported interface across `canvas → core → interactive-viewer → editor`; `viewer` currently has **no direct `eventemitter3` dep** (`packages/viewer/package.json` — a decision point: add it, or keep viewer type-only).
 
@@ -62,7 +62,7 @@ pnpm + Turborepo monorepo (TypeScript/ESM) publishing `@d3-polytree/*` v2 packag
   - `${className}.created|updated|removed` where `_className ∈ {node,link,label,zone}` — `BaseElement.ts:92,119,131` (`className` set in `draw/{Nodes,Links,Labels,Zones}.ts`)
   - `${type}.${kind}` — a **36-combo** matrix (4 types × 9 kinds) — `mouseEvents.ts:46` (kinds enumerated `:7-17`)
   - `${localName}.click` — `SearchPanel.ts:137`; `${getLocalName(def)}.moving` — `drag.ts:139`; `${cls}.click` subscribe — `selection.ts:97`
-  Whether these emit/subscribe sites type-check against a template-literal-keyed map (and whether `_className` etc. are typed as the literal union vs `string`) is an **open risk the debate must resolve**.
+    Whether these emit/subscribe sites type-check against a template-literal-keyed map (and whether `_className` etc. are typed as the literal union vs `string`) is an **open risk the debate must resolve**.
 - **No existing `EventMap`/event-name constant/enum/types file anywhere** (canvas, core, or components) — greenfield; nothing to extend, must create the seam.
 - **`Viewer.get<T>('eventBus')` is a generic escape hatch** — returns whatever `T` the caller asks for; a typed map does not retroactively constrain `get`-based access unless a typed accessor is added or callers annotate `EventEmitter<DiagramEventMap>`.
 - **Command-name strings are NOT bus events** — `element.create`, `element.delete`, `element.resize`, `element.move` go through `commandStack.execute` (`modelling/commands.ts:260-273`); they must stay OUT of the EventMap (distinct namespace) to avoid conflating the two vocabularies. **Correction (round-2 finding):** `elements.delete` is NOT a command string — it is a real **bus event** emitted at `selection.ts:79` and subscribed at `Modelling.ts:109` (which then dispatches to `commandStack.execute`). It stays IN the EventMap. The boundary is "emitted on the eventBus" vs "handed to `commandStack.execute`", not the `element(s).` prefix (note `element.updated` is also a bus event).
@@ -70,29 +70,29 @@ pnpm + Turborepo monorepo (TypeScript/ESM) publishing `@d3-polytree/*` v2 packag
 
 ## Complete distinct bus event inventory (evidence-cited)
 
-| Event (name) | Payload (args tuple) | Emit site |
-|---|---|---|
-| `d3canvas.init` / `d3canvas.destroy` / `d3canvas.clear` | `[]` | `Diagram.ts:65,74,78` |
-| `canvas.init` / `canvas.destroy` | `[{ svg: SvgSelection }]` | `Canvas.ts:56,63` |
-| `canvas.resized` / `canvas.zoomed` | `[]` | `Canvas.ts:122`, `zoom.ts:93` |
-| `<class>.created` / `.updated` / `.removed` (class ∈ node/link/label/zone) | `[DrawingSelection, ModellingModelElement]` | `BaseElement.ts:92,119,131` |
-| `<class>.moving` | `[DrawingSelection, def]` | `drag.ts:139` |
-| `label.deleted` | `[lblElement, label]` | `ModellingElement.ts:79` |
-| `<type>.<kind>` mouse matrix (4×9) | `[element, definition, event]` | `mouseEvents.ts:46` |
-| `element.updated` | `[elementId: string, definition]` | (editor emit; core subscribes `Modelling.ts:95`) |
-| `node.moved` | `[element, def]` | (drag release; subscribed `Links.ts:83`) |
-| `elements.delete` | `[Array<{ definition }>]` | `selection.ts:79` |
-| `background.click` | `[]` | `zoom.ts:146` |
-| `selection.changed` | `[prev: SelectionEntry[], next: SelectionEntry[]]` | `selection.ts:44,60` |
-| `outline.created` / `outline.updated` | `[element, definition, outline]` | `outline.ts:77,88` |
-| `zoom.preZoom` | `[x, y, scale]` | `zoom.ts:73` |
-| `zoom.start` / `zoom.end` / `zoom.init` | `[]` | `zoom.ts:133,141,182` |
-| `zoom.to.element` | `[element, definition]` | `zoom.ts` subscribe `:153`; `SearchPanel.ts:136` emit |
-| `commandStack.changed` | `[{ canUndo, canRedo }]` | `CommandStack.ts:202` |
-| `document.changed` | `[{ dirty: boolean }]` | `CommandStack.ts:206` |
-| `document.inconsistent` | `[aggregatedError]` | `CommandStack.ts:196` |
-| `sidetab.registered` | `[sideTab]` | `SideTabsProvider.ts:37` |
-| `PropertiesPanel.propertyChanged` | `[propertyId: string, definition]` | `EntryFactory.ts:71` |
+| Event (name)                                                               | Payload (args tuple)                               | Emit site                                             |
+| -------------------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------- |
+| `d3canvas.init` / `d3canvas.destroy` / `d3canvas.clear`                    | `[]`                                               | `Diagram.ts:65,74,78`                                 |
+| `canvas.init` / `canvas.destroy`                                           | `[{ svg: SvgSelection }]`                          | `Canvas.ts:56,63`                                     |
+| `canvas.resized` / `canvas.zoomed`                                         | `[]`                                               | `Canvas.ts:122`, `zoom.ts:93`                         |
+| `<class>.created` / `.updated` / `.removed` (class ∈ node/link/label/zone) | `[DrawingSelection, ModellingModelElement]`        | `BaseElement.ts:92,119,131`                           |
+| `<class>.moving`                                                           | `[DrawingSelection, def]`                          | `drag.ts:139`                                         |
+| `label.deleted`                                                            | `[lblElement, label]`                              | `ModellingElement.ts:79`                              |
+| `<type>.<kind>` mouse matrix (4×9)                                         | `[element, definition, event]`                     | `mouseEvents.ts:46`                                   |
+| `element.updated`                                                          | `[elementId: string, definition]`                  | (editor emit; core subscribes `Modelling.ts:95`)      |
+| `node.moved`                                                               | `[element, def]`                                   | (drag release; subscribed `Links.ts:83`)              |
+| `elements.delete`                                                          | `[Array<{ definition }>]`                          | `selection.ts:79`                                     |
+| `background.click`                                                         | `[]`                                               | `zoom.ts:146`                                         |
+| `selection.changed`                                                        | `[prev: SelectionEntry[], next: SelectionEntry[]]` | `selection.ts:44,60`                                  |
+| `outline.created` / `outline.updated`                                      | `[element, definition, outline]`                   | `outline.ts:77,88`                                    |
+| `zoom.preZoom`                                                             | `[x, y, scale]`                                    | `zoom.ts:73`                                          |
+| `zoom.start` / `zoom.end` / `zoom.init`                                    | `[]`                                               | `zoom.ts:133,141,182`                                 |
+| `zoom.to.element`                                                          | `[element, definition]`                            | `zoom.ts` subscribe `:153`; `SearchPanel.ts:136` emit |
+| `commandStack.changed`                                                     | `[{ canUndo, canRedo }]`                           | `CommandStack.ts:202`                                 |
+| `document.changed`                                                         | `[{ dirty: boolean }]`                             | `CommandStack.ts:206`                                 |
+| `document.inconsistent`                                                    | `[aggregatedError]`                                | `CommandStack.ts:196`                                 |
+| `sidetab.registered`                                                       | `[sideTab]`                                        | `SideTabsProvider.ts:37`                              |
+| `PropertiesPanel.propertyChanged`                                          | `[propertyId: string, definition]`                 | `EntryFactory.ts:71`                                  |
 
 ## Recommended Scope (advisory, non-binding)
 

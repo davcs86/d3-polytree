@@ -1,5 +1,5 @@
 ---
-"@d3-polytree/viewer": patch
+'@d3-polytree/viewer': patch
 ---
 
 Move `eventemitter3` from `dependencies` to `devDependencies`: it is used only via `import type`
