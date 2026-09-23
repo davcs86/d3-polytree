@@ -1,3 +1,16 @@
+<!-- context-forge:behavioral-contract:start -->
+## How to Act
+
+1. **Don't assume — ask, and surface tradeoffs.** *(enforced by `PLAT-01`/`PLAT-03`; `CORE-03` — the `d3polytree` value/`ensureSettings` boot contract)*
+2. **Write the minimum that solves the stated problem.**
+3. **Touch only what the task requires; keep diffs surgical.** *(enforced by `CORE-01` — never mutate `status` on a re-render; `PLAT-04` — never hand-edit generated files)*
+4. **Define success up front, then loop until verified.** *(enforced by `CORE-04` reroute-on-stack-change; `PLAT-06` determinism)*
+<!-- context-forge:behavioral-contract:end -->
+
+<!-- context-forge:constitution-pointer:start -->
+> 📜 **Constitution:** [`docs/context-constitution.md`](docs/context-constitution.md) · defects: [`docs/context-constitution-findings.md`](docs/context-constitution-findings.md) · inherits the root constitution. Forged by context-forge.
+<!-- context-forge:constitution-pointer:end -->
+
 # CLAUDE.md — @d3-polytree/core
 
 Package-specific notes; see the repo-root `CLAUDE.md` for the DI model, boot-order invariant, and

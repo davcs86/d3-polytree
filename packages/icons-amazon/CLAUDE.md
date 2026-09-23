@@ -1,3 +1,16 @@
+<!-- context-forge:behavioral-contract:start -->
+## How to Act
+
+1. **Don't assume — ask, and surface tradeoffs.** *(enforced by `PLAT-03`)*
+2. **Write the minimum that solves the stated problem.**
+3. **Touch only what the task requires; keep diffs surgical.** *(enforced by `ICONS-01` — filename IS the node type; `PLAT-04` — regenerate, never hand-edit `icons.generated.ts`)*
+4. **Define success up front, then loop until verified.** *(enforced by `ICONS-02` — pack spreads `{...createIcons(), ...pack}`, composed after core)*
+<!-- context-forge:behavioral-contract:end -->
+
+<!-- context-forge:constitution-pointer:start -->
+> 📜 **Constitution:** [`docs/context-constitution.md`](docs/context-constitution.md) · defects: [`docs/context-constitution-findings.md`](docs/context-constitution-findings.md) · inherits the root constitution. Forged by context-forge.
+<!-- context-forge:constitution-pointer:end -->
+
 # CLAUDE.md — @d3-polytree/icons-amazon
 
 Package-specific notes; see the repo-root `CLAUDE.md` for the big picture.
