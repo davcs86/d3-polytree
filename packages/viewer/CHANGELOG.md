@@ -1,5 +1,16 @@
 # @d3-polytree/viewer
 
+## 0.2.2
+
+### Patch Changes
+
+- 5bc151d: Move `eventemitter3` from `dependencies` to `devDependencies`: it is used only via `import type`
+  (erased at compile), so it should not ship as a runtime dependency of the published package.
+- 5bc151d: Declare the six D3 v7 slices as `peerDependencies` (required at runtime via `core`), so consumers get
+  the standard peer-dependency install prompt.
+- Updated dependencies [5bc151d]
+  - @d3-polytree/core@0.5.2
+
 ## 0.2.1
 
 ### Patch Changes

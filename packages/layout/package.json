@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/layout",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Framework-free layered (Sugiyama) auto-layout for d3-polytree diagrams — pure solver + Worker host",
   "license": "MIT",
   "author": "David Castillo",

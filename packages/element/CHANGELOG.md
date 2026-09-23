@@ -1,5 +1,21 @@
 # @d3-polytree/element
 
+## 0.3.1
+
+### Patch Changes
+
+- 5bc151d: Remove the unused direct `@d3-polytree/viewer` dependency (never imported by `src`, absent from the
+  built `.d.ts`; the compiled shadow CSS is generated from `editor` + `interactive-viewer`).
+
+  Also declare the six D3 v7 slices as `peerDependencies` (required by the wrapped editor for the
+  ESM/CJS build; the UMD bundle inlines them), so ESM consumers get the standard peer-dependency prompt.
+
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+  - @d3-polytree/editor@0.7.1
+  - @d3-polytree/interactive-viewer@0.6.1
+
 ## 0.3.0
 
 ### Minor Changes

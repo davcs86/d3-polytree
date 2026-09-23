@@ -1,5 +1,25 @@
 # @d3-polytree/core
 
+## 0.5.2
+
+### Patch Changes
+
+- 5bc151d: Two internal hardening changes, no behavior change to public rendering:
+
+  - Introduce a shared `ElementStatus` const (New/Persisted/Dirty/Deleted) and replace the bare `0/1/2/3`
+    status literals across the draw/modelling/feature layers (identical numeric values; the `toXML`
+    round-trip contract is preserved).
+  - Harden notifications: `NotificationParams` gains a dedicated `trustedHtml` field for pre-sanitized
+    markup, and the notice popup uses it. Plain `text` is always rendered as textContent, so untrusted
+    content can no longer reach `innerHTML` via a boolean flag.
+
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+  - @d3-polytree/canvas@0.2.2
+  - @d3-polytree/layout@0.2.2
+  - @d3-polytree/pfdn-moddle@0.2.2
+
 ## 0.5.1
 
 ### Patch Changes
