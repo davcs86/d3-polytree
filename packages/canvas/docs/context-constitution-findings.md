@@ -15,9 +15,7 @@ _None._
 
 ## Dead / orphaned code
 
-| What | Why it looks dead | Evidence |
-|---|---|---|
-| Legacy `.eslintrc` (eslintrc format: `"es6": false`, `env.commonjs`, `extends: eslint:recommended`) | Repo uses flat config (`eslint.config.js`), which never reads `.eslintrc`; its rules are not what runs | `packages/canvas/.eslintrc` |
+_None open._
 
 ## Open questions (unresolved *why* — needs a maintainer)
 
@@ -30,7 +28,9 @@ _None._
 
 ## Resolved
 
-_None._
+| What the docs say / issue | Evidence (was) | Resolved | How confirmed |
+|---|---|---|---|
+| Dead legacy `.eslintrc` | `packages/canvas/.eslintrc` | 2026-09-23 | Deleted (flat config never read it) |
 
 ---
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,

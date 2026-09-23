@@ -57,7 +57,9 @@ Everything on [`Viewer`](https://github.com/davcs86/d3-polytree/tree/main/packag
 | `select(definition)` | Select an element programmatically. |
 | `deleteSelected()` | Delete the current selection. |
 | `autoLayout(options?)` → `Promise<void>` | Re-lay the whole diagram (layered/Sugiyama) as a **single undoable command**. Provide a `layoutRunner` DI value to run it on a Worker. |
+| `setLinkPinned(id, pinned?)` | Pin/unpin a link's routing (`pinned` defaults to `true`) as an undoable command. |
 | `undo()` / `redo()` | Walk the command stack. |
+| `canUndo()` / `canRedo()` → `boolean` | Whether the command stack currently has anything to undo / redo. |
 
 ## Styling & theming
 

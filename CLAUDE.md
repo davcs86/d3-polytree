@@ -57,11 +57,15 @@ build-storybook. Mirror that before pushing. The package manager is pinned in `p
 **Layered composition, not a monolith.** The dependency graph is the mental model:
 
 ```
-canvas  +  pfdn-moddle  ->  core  ->  viewer  ->  interactive-viewer  ->  editor
-                                       (icons-amazon composes into any component)
+canvas  +  pfdn-moddle  +  layout  ->  core  ->  viewer  ->  interactive-viewer  ->  editor
+                                        (icons-amazon composes into any component)
+                        element / react wrap editor · ssr renders a Viewer headless in Node
 ```
 
 - `@d3-polytree/canvas` — base SVG surface (`Canvas`, `ElementRegistry`, `ElementBuilder`, SVG export).
+- `@d3-polytree/layout` — framework-free layered (Sugiyama) auto-layout solver (pure + `./worker`); a
+  direct dependency of `core` (its `autoLayout` feature). `@d3-polytree/ssr` renders a read-only
+  `Viewer` against jsdom to a deterministic SVG string in Node.
 - `@d3-polytree/pfdn-moddle` — the `.pfdn` XML model (a `moddle` schema). `createPfdnModdle()`,
   `moddle.create('pfdn:Node', …)`, `fromXML`/`toXML`.
 - `@d3-polytree/core` — the engine: `draw/` (Nodes/Links/Labels/Zones drawers, `IconLoader`,
@@ -117,9 +121,9 @@ the reference. `icons-amazon` generates `src/icons.generated.ts` from `src/svg/`
 - **CSS ships compiled.** Panel SCSS is compiled with **dart-sass** to `dist/style.css` in the same
   `build` script and exposed via the `./style.css` export. `interactive-viewer/style.css` carries
   side-tabs + search; `editor/style.css` carries the properties panel. Editor consumers import both.
-- **UMD is a second tsup pass.** The three components emit a self-contained `dist/<name>.umd.js`
-  (`format: iife`, `noExternal: [/.*/]`, global `d3Polytree*`) alongside the ESM/CJS library build;
-  `clean` belongs to the first pass only.
+- **UMD is a second tsup pass.** The three components **and `@d3-polytree/element`** emit a
+  self-contained `dist/<name>.umd.js` (`format: iife`, `noExternal: [/.*/]`, global `d3Polytree*`)
+  alongside the ESM/CJS library build; `clean` belongs to the first pass only.
 
 ## Package READMEs
 

@@ -11,22 +11,15 @@ open row and retires resolved ones.
 
 | What the docs say | What the code does | Evidence | Suggested action |
 |---|---|---|---|
-| Architecture graph and package list name only `canvas + pfdn-moddle → core → …` | `@d3-polytree/layout` is a **public, publishable** package **and a direct dependency of core**, but appears **0×** in root `CLAUDE.md` | `packages/layout/package.json#name`, `packages/core/package.json` (`"@d3-polytree/layout": "workspace:*"`), `grep -c layout CLAUDE.md` = 0 | Add `layout` to the architecture graph + package list in `CLAUDE.md` |
-| README lists the published package surface | Both `@d3-polytree/layout` and `@d3-polytree/ssr` are **absent** from `README.md` though both are public | `README.md` (`grep -c ssr` = 0, `grep -c layout` = 0) | Add `layout` + `ssr` rows to the README package table |
 | `CLAUDE.md` lists `pnpm format:check` as a project command | **No** workflow runs `format:check`; CI is only lint→typecheck→test→build→build-storybook, so unformatted code merges green | `.github/workflows/*` (no `format` match) | Either add a format gate to CI or note in `CLAUDE.md` that it is unenforced |
 
 ## Latent bugs (looks broken, not merely non-obvious)
 
-| Issue | Impact | Evidence |
-|---|---|---|
-| The CI "generated files up to date" drift gate covers **only** `pfdn-moddle`; `icons.generated.ts` and `styles.generated.ts` have no equivalent gate | An agent editing `packages/icons-amazon/src/svg/*` or `packages/element` SCSS can commit stale generated output and CI stays green (build regenerates in-tree but never diffs; a turbo cache hit can mask it) | `.github/workflows/ci.yml#"Verify generated files are up to date"` (runs `generate-pfdn.mjs` + `git diff --exit-code` on `pfdn.generated.ts` alone) |
-| `.prettierignore` exempts only `pfdn.generated.ts`; `icons.generated.ts` / `styles.generated.ts` are not exempt | `pnpm format` would rewrite the other two generated files (low impact only because format is ungated — see above) | `.prettierignore` |
+_None open._
 
 ## Dead / orphaned code
 
-| What | Why it looks dead | Evidence |
-|---|---|---|
-| Per-package legacy `.eslintrc` files | The repo uses flat config (`eslint.config.js`); ESLint flat config never reads `.eslintrc`, so these lint nothing and their rules contradict the ESM/TS packages | `packages/canvas/.eslintrc`, `packages/icons-amazon/.eslintrc` |
+_None open._
 
 ## Open questions (unresolved *why* — needs a maintainer)
 
@@ -39,7 +32,13 @@ _None._
 
 ## Resolved
 
-_None._
+| What the docs say / issue | Evidence (was) | Resolved | How confirmed |
+|---|---|---|---|
+| `layout` absent from root `CLAUDE.md` architecture graph | `grep -c layout CLAUDE.md` = 0 | 2026-09-23 | Added `layout` (+ `ssr`) to the architecture graph and bullets in `CLAUDE.md` |
+| `layout` & `ssr` absent from `README.md` package table | `README.md` grep = 0 | 2026-09-23 | Added both rows to the README package table |
+| Generated-file drift gate covered only `pfdn-moddle` | `.github/workflows/ci.yml` | 2026-09-23 | Gate extended to run `generate-icons.mjs` + `generate-styles.mjs` and diff all three generated files |
+| `.prettierignore` exempted only `pfdn.generated.ts` | `.prettierignore` | 2026-09-23 | Added `icons.generated.ts` + `styles.generated.ts` |
+| Dead legacy `.eslintrc` files | `packages/canvas/.eslintrc`, `packages/icons-amazon/.eslintrc` | 2026-09-23 | Deleted both (flat config never read them) |
 
 ---
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items above are defects to

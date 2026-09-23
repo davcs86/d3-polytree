@@ -12,8 +12,9 @@ basis for golden-file / visual-regression tests, thumbnails, and OG images.
 pnpm add @d3-polytree/ssr
 ```
 
-Ships ESM + CJS + `.d.ts`. Bundles `@d3-polytree/viewer`, `@d3-polytree/core`, `@d3-polytree/canvas`,
-and `jsdom` — **no D3 peer deps** to add, since it renders entirely in Node.
+Ships ESM + CJS + `.d.ts`. The `@d3-polytree/*` engine packages (`viewer`, `core`, `canvas`) are
+bundled into `dist`; `jsdom` is a regular runtime dependency (installed, not bundled). **No D3 peer
+deps** to add, since it renders entirely in Node.
 
 ## Usage
 

@@ -26,7 +26,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@d3-polytree/core": "workspace:*",
+    "@d3-polytree/core": "workspace:*"
+  },
+  "devDependencies": {
     "eventemitter3": "^5.0.1"
   },
   "unpkg": "./dist/viewer.umd.js",

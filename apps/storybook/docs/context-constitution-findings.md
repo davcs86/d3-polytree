@@ -5,9 +5,7 @@ Defects and drift surfaced by `/context-constitution` (context-forge) on 2026-09
 
 ## Documentation that lies (docs claim behavior the code lacks)
 
-| What the docs say | What the code does | Evidence | Suggested action |
-|---|---|---|---|
-| `AutoLayout.stories.ts` comment attributes auto-layout to package `@d3-polytree/layout` | that package is **not** a Storybook dependency; the story reaches `autoLayout()`/`LayoutDirection` through `@d3-polytree/core`/`editor` (transitive) | `apps/storybook/src/AutoLayout.stories.ts`, `apps/storybook/package.json` | Fix the comment (harmless label) |
+_None open._
 
 ## Latent bugs (looks broken, not merely non-obvious)
 
@@ -29,7 +27,9 @@ _None._
 
 ## Resolved
 
-_None._
+| What the docs say / issue | Evidence (was) | Resolved | How confirmed |
+|---|---|---|---|
+| `AutoLayout.stories.ts` comment implied a direct `@d3-polytree/layout` dep | `apps/storybook/src/AutoLayout.stories.ts` | 2026-09-23 | Comment clarified: the layout solver is reached via `core`/`editor`, not a direct Storybook dependency |
 
 ---
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,

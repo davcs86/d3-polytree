@@ -12,7 +12,8 @@ service symbols — and use it as the template for authoring your own pack.
 pnpm add @d3-polytree/icons-amazon
 ```
 
-Ships ESM + CJS + `.d.ts`. `@d3-polytree/core` is a bundled workspace dependency.
+Ships ESM + CJS + `.d.ts`. `@d3-polytree/core` is a regular workspace dependency, kept **external** at
+build (consumers resolve their own copy) — not bundled into `dist`.
 
 ## The icon-pack convention
 
@@ -48,14 +49,18 @@ export const myIconsModule = {
 
 ## Scope & the full catalogue
 
-A representative subset (8 icons) is bundled in `src/svg/`; the full ~300-icon AWS catalogue is
-preserved in `catalog/` as raw assets (**not** bundled, to keep the published package small). Promote
-the full set with no code change:
+A curated subset (8 icons) is bundled in `src/svg/`; the full ~300-icon AWS catalogue is preserved in
+`catalog/` as raw assets (**not** bundled, to keep the published package small). Add the icons you need
+by copying them from `catalog/` into `src/svg/` and regenerating — each file becomes a node `type`
+keyed by its **filename**, so the `catalog/` filenames are the `type` strings you'll reference:
 
 ```sh
-cp catalog/*.svg src/svg/
+cp catalog/Storage_AmazonS3_bucket.svg src/svg/   # copy the icons you want
 pnpm --filter @d3-polytree/icons-amazon generate
 ```
+
+> Note: the 8 curated `src/svg/` icons were hand-renamed and are **not** a key-for-key subset of
+> `catalog/`, so copying catalogue files adds new `type` keys rather than replacing the curated ones.
 
 The build regenerates `src/icons.generated.ts` from `src/svg/` via `scripts/generate-icons.mjs`.
 

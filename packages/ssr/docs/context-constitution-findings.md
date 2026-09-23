@@ -5,9 +5,7 @@ Defects and drift surfaced by `/context-constitution` (context-forge) on 2026-09
 
 ## Documentation that lies (docs claim behavior the code lacks)
 
-| What the docs say | What the code does | Evidence | Suggested action |
-|---|---|---|---|
-| README: the package "Bundles … `jsdom`" | `jsdom` is `external` in tsup and a plain `dependencies` entry (`jsdom: 25.0.1`) — installed transitively, not bundled into `dist` | `packages/ssr/README.md#Install`, `packages/ssr/tsup.config.ts#external` | Correct the README wording; also add the template feature/API table |
+_None open._
 
 ## Latent bugs (looks broken, not merely non-obvious)
 
@@ -28,7 +26,9 @@ _None._
 
 ## Resolved
 
-_None._
+| What the docs say / issue | Evidence (was) | Resolved | How confirmed |
+|---|---|---|---|
+| README: "Bundles … `jsdom`" | `packages/ssr/tsup.config.ts#external` | 2026-09-23 | README fixed: `jsdom` is a regular runtime dep (external at build); only the `@d3-polytree/*` engine is bundled |
 
 ---
 _Surfaced by [context-forge](https://github.com/davcs86/agent-plugins). Open items are defects to action,
