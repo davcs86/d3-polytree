@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/editor",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Polytree editor (create and modify diagrams)",
   "license": "MIT",
   "author": "David Castillo",

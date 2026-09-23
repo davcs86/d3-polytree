@@ -1,5 +1,22 @@
 # @d3-polytree/editor
 
+## 0.7.1
+
+### Patch Changes
+
+- 5bc151d: Fix the tsup library build to keep `@d3-polytree/interactive-viewer` external (it was omitted from the
+  `external` list, so the ESM/CJS bundle inlined all of the parent package). Also correct the README API
+  table (add `setLinkPinned`, `canUndo`, `canRedo`).
+- 5bc151d: Declare the six D3 v7 slices as `peerDependencies` (required at runtime via `core`), and move
+  `eventemitter3` to `devDependencies` (used only via `import type`).
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+  - @d3-polytree/core@0.5.2
+  - @d3-polytree/interactive-viewer@0.6.1
+  - @d3-polytree/viewer@0.2.2
+
 ## 0.7.0
 
 ### Minor Changes

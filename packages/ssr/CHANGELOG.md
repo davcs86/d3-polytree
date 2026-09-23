@@ -1,5 +1,19 @@
 # @d3-polytree/ssr
 
+## 0.2.5
+
+### Patch Changes
+
+- 5bc151d: Correct the README: `jsdom` is a regular runtime dependency (installed, not bundled); only the
+  `@d3-polytree/*` engine packages are bundled into `dist`.
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+  - @d3-polytree/canvas@0.2.2
+  - @d3-polytree/core@0.5.2
+  - @d3-polytree/viewer@0.2.2
+
 ## 0.2.4
 
 ### Patch Changes

@@ -1,5 +1,21 @@
 # @d3-polytree/interactive-viewer
 
+## 0.6.1
+
+### Patch Changes
+
+- 5bc151d: - `DomNotifications` renders `text` as textContent by default and only renders markup supplied via the
+  dedicated `trustedHtml` field — closing an unguarded `innerHTML` path.
+  - Declare the six D3 v7 slices as `peerDependencies` (they are required at runtime via `core`).
+  - Move `eventemitter3` to `devDependencies` (used only via `import type`).
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+- Updated dependencies [5bc151d]
+  - @d3-polytree/canvas@0.2.2
+  - @d3-polytree/core@0.5.2
+  - @d3-polytree/viewer@0.2.2
+
 ## 0.6.0
 
 ### Minor Changes

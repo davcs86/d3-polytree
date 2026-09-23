@@ -1,5 +1,15 @@
 # @d3-polytree/icons-amazon
 
+## 0.1.6
+
+### Patch Changes
+
+- 5bc151d: Correct README inaccuracies: `@d3-polytree/core` is kept external at build (not bundled); and the
+  curated `src/svg/` icons are not a key-for-key subset of `catalog/`, so copying catalogue files adds
+  new `type` keys rather than promoting the same set with "no code change".
+- Updated dependencies [5bc151d]
+  - @d3-polytree/core@0.5.2
+
 ## 0.1.5
 
 ### Patch Changes
