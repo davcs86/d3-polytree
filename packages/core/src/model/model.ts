@@ -90,7 +90,7 @@ export async function loadModel(xml: string): Promise<ModelHost> {
  */
 export async function loadModelFromJson(
   input: string | PfdnDocument,
-  opts: { lax?: boolean } = {}
+  opts: { lax?: boolean; packages?: Record<string, unknown> } = {}
 ): Promise<ModelHost> {
   let doc: PfdnDocument;
   if (typeof input === 'string') {

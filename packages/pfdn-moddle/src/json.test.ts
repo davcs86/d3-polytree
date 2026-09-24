@@ -8,6 +8,8 @@ import createPfdnModdle, {
   type ModelElement,
   type PfdnDocument
 } from './index';
+import { liveSchema } from './json';
+import { SCHEMA, CONCRETE_TYPES, type PropInfo } from './pfdn.generated';
 
 /**
  * Build the "sharp" fixture (design gate 3) directly via moddle — the proven XML
@@ -248,5 +250,83 @@ describe('fromJson / assertValid error contract', () => {
       expect(error).toBeInstanceOf(PfdnValidationError);
       expect((error as PfdnValidationError).errors.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('caller-extended schema (C14)', () => {
+  const extPackage = {
+    name: 'Ext',
+    uri: 'http://example.com/ext',
+    prefix: 'ext',
+    types: [
+      {
+        name: 'Custom',
+        superClass: ['pfdn:Node'],
+        properties: [{ name: 'flavor', type: 'String', isAttr: true }]
+      }
+    ]
+  };
+  const packages = { ext: extPackage };
+
+  const norm = (p: PropInfo) => ({
+    name: p.name,
+    type: p.type,
+    isMany: !!p.isMany,
+    isReference: !!p.isReference,
+    isId: !!p.isId,
+    isSimple: !!p.isSimple
+  });
+
+  it('base-parity pin: liveSchema(base moddle) matches the generated tables for every base type', () => {
+    const live = liveSchema(createPfdnModdle());
+    for (const type of CONCRETE_TYPES) {
+      expect(live.isConcrete(type), type).toBe(true);
+    }
+    for (const [type, gen] of Object.entries(SCHEMA)) {
+      const got = live.typeInfo(type);
+      expect(got, type).toBeDefined();
+      if (!got) continue;
+      expect(got.abstract, type).toBe(gen.abstract);
+      // set-equal: live is ancestor-first, generated self-first — order is immaterial
+      expect(new Set(got.allTypesByName), type).toEqual(new Set(gen.allTypesByName));
+      const genProps = new Map(gen.properties.map((p) => [p.name, norm(p)]));
+      const gotProps = new Map(got.properties.map((p) => [p.name, norm(p)]));
+      expect(gotProps.size, type).toBe(genProps.size);
+      for (const [name, gp] of genProps) {
+        expect(gotProps.get(name), `${type}.${name}`).toEqual(gp);
+      }
+    }
+  });
+
+  it('validate accepts an extended-type document with packages, and rejects it without', () => {
+    const doc = {
+      $type: 'pfdn:Diagram',
+      id: 'd1',
+      node: [{ $type: 'ext:Custom', id: 'c1', flavor: 'spicy' }]
+    } as unknown as PfdnDocument;
+    expect(validate(doc, { packages }).ok).toBe(true);
+    expect(validate(doc).ok).toBe(false); // ext:Custom is unknown to the base schema
+  });
+
+  it('fromJson round-trips an extended model when packages are supplied', () => {
+    const doc = {
+      $type: 'pfdn:Diagram',
+      id: 'd1',
+      node: [{ $type: 'ext:Custom', id: 'c1', name: 'X', flavor: 'spicy' }]
+    } as unknown as PfdnDocument;
+    const r = fromJson(doc, { packages });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(toJson(r.value)).toEqual(doc);
+  });
+
+  it('assertValid threads packages through to validate', () => {
+    const doc = {
+      $type: 'pfdn:Diagram',
+      id: 'd1',
+      node: [{ $type: 'ext:Custom', id: 'c1', flavor: 'spicy' }]
+    };
+    expect(() => assertValid(doc, { packages })).not.toThrow();
+    expect(() => assertValid(doc)).toThrow(PfdnValidationError);
   });
 });

@@ -56,4 +56,33 @@ describe('loadModelFromJson', () => {
     const { definitions } = await loadModelFromJson(doc as PfdnDocument, { lax: true });
     expect((definitions.node as ModelElement[])[0].label).toBeUndefined();
   });
+
+  it('loads a caller-extended model when packages are supplied, and rejects it without (C14)', async () => {
+    const packages = {
+      ext: {
+        name: 'Ext',
+        uri: 'http://example.com/ext',
+        prefix: 'ext',
+        types: [
+          {
+            name: 'Custom',
+            superClass: ['pfdn:Node'],
+            properties: [{ name: 'flavor', type: 'String', isAttr: true }]
+          }
+        ]
+      }
+    };
+    const doc = {
+      $type: 'pfdn:Diagram',
+      id: 'D1',
+      node: [{ $type: 'ext:Custom', id: 'c1', flavor: 'spicy' }]
+    } as unknown as PfdnDocument;
+
+    const { definitions } = await loadModelFromJson(doc, { packages });
+    const custom = (definitions.node as ModelElement[])[0];
+    expect(custom.$type).toBe('ext:Custom');
+    expect(custom.flavor).toBe('spicy');
+
+    await expect(loadModelFromJson(doc)).rejects.toBeInstanceOf(PfdnValidationError);
+  });
 });
