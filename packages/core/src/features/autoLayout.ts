@@ -10,6 +10,7 @@ import type { ElementClass } from '../modelling';
 import type { MoveItem, Placement } from '../modelling/commands';
 import type { ModellingModelElement } from '../modelling/types';
 import { ElementStatus } from '../model/status';
+import { buildModelGraph } from '../model/graph';
 
 /** The `d3polytree` model host surface auto-layout reads. */
 interface ModelHostLike {
@@ -82,23 +83,12 @@ export class AutoLayout {
   }
 
   private _buildGraph(nodes: ModellingModelElement[]): LayoutGraph {
-    const ids = new Set(nodes.map((n) => n.id as string));
-    const graphNodes = nodes.map((n) => {
-      const size = this._sizeOf(n);
-      return { id: n.id as string, width: size, height: size };
+    return buildModelGraph({
+      nodes,
+      links: (this._model.definitions.link ?? []) as ModellingModelElement[],
+      isLive: (id) => this._drawingRegistry.get(id) !== false,
+      sizeOf: (n) => this._sizeOf(n)
     });
-    const links = (this._model.definitions.link ?? []) as ModellingModelElement[];
-    const edges = links
-      .filter((l) => this._drawingRegistry.get(l.id as string) !== false)
-      .map((l) => ({
-        source: (l.source as ModellingModelElement | undefined)?.id as string | undefined,
-        target: (l.target as ModellingModelElement | undefined)?.id as string | undefined
-      }))
-      .filter(
-        (e): e is { source: string; target: string } =>
-          !!e.source && !!e.target && ids.has(e.source) && ids.has(e.target)
-      );
-    return { nodes: graphNodes, edges };
   }
 
   private _buildMoveItems(

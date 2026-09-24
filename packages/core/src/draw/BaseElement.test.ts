@@ -74,6 +74,15 @@ describe('BaseElement', () => {
     expect(events).toEqual(['created', 'updated', 'removed']);
   });
 
+  it('writes a <title>/<desc> accessible name into each element <g> (C2)', () => {
+    const { drawingRegistry } = build([makeDef('n1', { name: 'Alpha' })]);
+    const g = drawingRegistry.get('n1') as DrawingSelection;
+    expect(g.select('title').text()).toBe('node: Alpha');
+    expect(g.select('desc').text()).toBe('n1');
+    // the concrete drawing (a <rect>) is still present and selectable
+    expect(g.select('rect').empty()).toBe(false);
+  });
+
   it('removeElementById detaches the drawing', () => {
     const { el, drawingRegistry } = build([makeDef('n1')]);
     el.removeElementById('n1');

@@ -41,7 +41,7 @@ pnpm + Turbo monorepo; `@d3-polytree/pfdn-moddle` owns the `.pfdn` moddle model 
 
 - **Hard rule** (root `CLAUDE.md` `PLAT-04` / "never hand-edit generated files"): caller-extended types must be threaded at **runtime**, never baked into `pfdn.generated.ts` — the CI drift gate (`.github/workflows/ci.yml:40-51`, `git diff --exit-code` on `*.generated.ts`) would fail otherwise.
 - **Hard rule** (root `CLAUDE.md`): "all tooling is Python 3 stdlib only"/no new deps — but this is the JS side; keep zero new runtime deps in pfdn-moddle.
-- **Hard rule** (root `CLAUDE.md`, C11 note / O1): the JSON path is "additive… over the *same* moddle model" — C14 must not fork the model or diverge JSON semantics from XML.
+- **Hard rule** (root `CLAUDE.md`, C11 note / O1): the JSON path is "additive… over the _same_ moddle model" — C14 must not fork the model or diverge JSON semantics from XML.
 - **Hard rule** (`ROADMAP.md:537`): the goal is JSON round-trips extended models "the way XML already does" — parity with `fromXML`/`toXML` is the acceptance bar.
 - Convention: `packages/pfdn-moddle/CLAUDE.md` — `Node.label` is an IDREF not a string; refs collapse to id in JSON.
 

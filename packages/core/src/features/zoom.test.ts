@@ -100,6 +100,20 @@ describe('@d3-polytree/core Zoom', () => {
     expect(() => bus.emit('zoom.to.element', undefined, node)).not.toThrow();
   });
 
+  it('honours prefers-reduced-motion by jumping instead of tweening (C2)', () => {
+    const { bus, canvas, calculateCenter, options } = setup();
+    const zoom = new Zoom(options, canvas, bus, calculateCenter);
+    zoom.setZoomable(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    try {
+      zoom.setInitialZoom(10, 20, 2, 500);
+      // reduced motion → the transform is applied synchronously (no tween in flight)
+      expect(canvas.getDrawingLayer().attr('transform')).toBe('translate(10, 20) scale(2)');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('ZoomScroll enables interactive zoom', () => {
     const { bus, canvas, calculateCenter, options } = setup();
     const zoom = new Zoom(options, canvas, bus, calculateCenter);

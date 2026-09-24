@@ -26,15 +26,18 @@ Expose the runtime schema first (Step 1: pfdn-moddle `/schema` subpath — a dep
 
 **Status**: `pending`
 **Files**:
+
 - `packages/pfdn-moddle/src/schema.ts` — create
 - `packages/pfdn-moddle/tsup.config.ts` — modify
 - `packages/pfdn-moddle/package.json` — modify
 
 **Evidence**:
+
 - `pfdn.generated.ts` is import-free (banner `:1-3`, zero imports — adversary-verified pure), exports `SCHEMA` `:148`, `CONCRETE_TYPES` `:314`, `TypeInfo`/`PropInfo` `:132-145`. `index.ts:10-25` re-exports **types only**, not the runtime consts.
 - 2nd-entry precedent: `packages/layout/tsup.config.ts:6` (`entry` array), `packages/layout/package.json` `./worker` export block; `"files":["dist"]` already ships built entries.
 
 **Instructions**:
+
 1. Create `src/schema.ts`: `export { SCHEMA, CONCRETE_TYPES } from './pfdn.generated'; export type { PropInfo, TypeInfo } from './pfdn.generated';`.
 2. `tsup.config.ts`: change `entry` to `['src/index.ts', 'src/schema.ts']`.
 3. `package.json` `exports`: add a `"./schema"` entry mirroring `"."` (`{ types: ./dist/schema.d.ts, import: ./dist/schema.js, require: ./dist/schema.cjs }`). Do **not** touch `pfdn.generated.ts` or the generator (PLAT-04 / drift gate).
@@ -49,6 +52,7 @@ Expose the runtime schema first (Step 1: pfdn-moddle `/schema` subpath — a dep
 
 **Status**: `pending`
 **Files**:
+
 - `packages/diff/package.json` — create
 - `packages/diff/tsup.config.ts` — create
 - `packages/diff/tsconfig.json` — create
@@ -56,10 +60,12 @@ Expose the runtime schema first (Step 1: pfdn-moddle `/schema` subpath — a dep
 - `packages/diff/README.md` — create
 
 **Evidence**:
+
 - Pure-package template `packages/layout`: `package.json` (dual ESM/CJS exports, `sideEffects:false`, scripts `build:tsup`/`typecheck`/`test:vitest run`), `tsup.config.ts`, `tsconfig.json` (extends `../../tsconfig.base.json`), `src/index.ts` barrel; no `vitest.config.ts` (node env). Workspace auto-globs `packages/*` (`pnpm-workspace.yaml`) — no edit.
 - README rules `docs/README-template.md`: section order `:19-21`, absolute `/tree/main/` URLs `:28-30`, pure-logic no-demo `:78-79`, `MIT © David Castillo` `:131`.
 
 **Instructions**:
+
 1. `package.json`: name `@d3-polytree/diff`, version `0.0.0`, `type:module`, dual `exports`/`main`/`module`/`types`, `files:["dist"]`, `sideEffects:false`, `publishConfig.access:public`, `repository.directory:"packages/diff"`, `homepage` `.../tree/main/packages/diff#readme`, scripts `build:"tsup"`/`typecheck:"tsc --noEmit"`/`test:"vitest run"`, `dependencies: { "@d3-polytree/pfdn-moddle": "workspace:*" }`.
 2. `tsup.config.ts`: `entry:['src/index.ts']`, `format:['esm','cjs']`, `dts:true`, `clean:true`, `sourcemap:true`, `external:['@d3-polytree/pfdn-moddle']`.
 3. `tsconfig.json`: extends `../../tsconfig.base.json`, `outDir:dist`, `rootDir:src`, `lib:["ES2020"]` (no DOM/WebWorker).
@@ -76,15 +82,18 @@ Expose the runtime schema first (Step 1: pfdn-moddle `/schema` subpath — a dep
 
 **Status**: `pending`
 **Files**:
+
 - `packages/diff/src/diff.ts` — create
 
 **Evidence**:
+
 - Op field mapping from `pfdn.generated.ts`: id `:156-164`; Node fields `:63-74` (`type` `:69`, `position` `:72`, refs `label` `:245`/`propertiesSet` `:248`); Link `:96-111` (`source`/`target` `:285-286`, `waypoint` `:290`, `pinned` `:291`, refs `label`/`propertiesSet` `:284,293`); Zone `:82-93` (`position`, `border` `:274`, ref `label` `:268`); Label `:51-61` (`position` `:231`); PropertiesSet `:12-17`; Diagram root `status`/`name` `:300,302`, collections `:304-308`; Coordinates `Real` `:188-189`.
 - Canonical input: `toJson` collapses refs `json.ts:90,93`, omits defaults `json.ts:6`.
 - `SCHEMA`/`CONCRETE_TYPES` imported from `@d3-polytree/pfdn-moddle/schema` (Step 1); `import type { PfdnDocument }` (**named**) from `@d3-polytree/pfdn-moddle`.
 
 **Instructions**:
 Implement per design: the frozen `DiffOp` union + `Coord`/`DiffKind`/`CollectionKind`; `class DiffError extends Error`; `diff(a, b)`:
+
 1. Validate single-root ids match (`DiffError` on mismatch/missing).
 2. For each of the five collections, build `Map<id, element>` from `a`/`b` (fail-fast `DiffError` on a member lacking `id`); union-of-ids → `added`/`removed`/compared.
 3. For a compared element: emit `retyped` (`Node.type`), `reattached` (`Link.source`/`target`), `moved` (`Node`/`Zone`/`Label` `position` via `deepEq` on `Coord`), pinned-`waypoint` `modified` (only when `Link.pinned` on either side), then the generic SCHEMA-driven `modified` walk over the type's `properties` **minus** `MODIFIED_CARVE_OUTS[kind]` and any `isId` field (covers scalars + single-ref leaves + `border` + `pinned`).
@@ -102,6 +111,7 @@ Implement per design: the frozen `DiffOp` union + `Coord`/`DiffKind`/`Collection
 
 **Status**: `pending`
 **Files**:
+
 - `packages/diff/src/diff.test.ts` — create
 
 **Evidence**: `layout.test.ts` fixture idiom (`import { describe, expect, it } from 'vitest'`, inline literals, determinism `expect(f(x)).toEqual(f(x))` `:112-124`). Ground-truth doc build via `@d3-polytree/pfdn-moddle` `toJson`.
@@ -118,19 +128,22 @@ Implement per design: the frozen `DiffOp` union + `Coord`/`DiffKind`/`Collection
 
 **Status**: `pending`
 **Files**:
+
 - `README.md` (root) — modify (add a `@d3-polytree/diff` Packages-table row)
 - `.changeset/c5-semantic-pfdn-diff.md` — create
 
 **Evidence**: root README Packages table `README.md:15-30` (add a row mirroring `:29`); `.changeset/config.json` (`baseBranch: main`, `access: public`).
 
 **Instructions**:
-1. Add a root README row: `| [`@d3-polytree/diff`](./packages/diff) | Pure structural diff of two `.pfdn` documents → an ordered `DiffOp[]` (added/removed/moved/retyped/reattached/modified). |`.
+
+1. Add a root README row: `| [`@d3-polytree/diff`](./packages/diff) | Pure structural diff of two `.pfdn`documents → an ordered`DiffOp[]` (added/removed/moved/retyped/reattached/modified). |`.
 2. Create the changeset:
    ```md
    ---
-   "@d3-polytree/diff": minor
-   "@d3-polytree/pfdn-moddle": minor
+   '@d3-polytree/diff': minor
+   '@d3-polytree/pfdn-moddle': minor
    ---
+
    Add @d3-polytree/diff: a pure structural diff over two .pfdn documents
    producing a deterministic DiffOp[]. Adds a pfdn-moddle "./schema" subpath
    exporting the runtime SCHEMA/CONCRETE_TYPES the diff engine consumes.

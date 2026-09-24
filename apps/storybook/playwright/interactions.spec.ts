@@ -57,4 +57,43 @@ test.describe('interaction', () => {
     await expect(nodes).toHaveCount(1);
     expect(await page.evaluate(() => window.__polytreeEditor!.canRedo())).toBe(false);
   });
+
+  // C2 keyboard-first a11y. axe cannot detect a keyboard trap, so these assert the
+  // roving/cone navigation and — critically — that Escape/Tab leave the region.
+  test('keyboard: arrow-cone navigation moves a roving focus and drives selection', async ({
+    page
+  }) => {
+    const svg = page.locator('svg[role="application"]');
+    await expect(svg).toHaveCount(1);
+    await svg.focus();
+
+    await page.keyboard.press('ArrowRight'); // enter the diagram at the first element
+    const first = await page.evaluate(() => document.activeElement?.getAttribute('element-id'));
+    expect(first).toBeTruthy();
+    await expect(page.locator(`g[element-id="${first}"]`)).toHaveClass(/(^|\s)selected(\s|$)/);
+
+    await page.keyboard.press('ArrowRight'); // cone move → a different element
+    const second = await page.evaluate(() => document.activeElement?.getAttribute('element-id'));
+    expect(second).toBeTruthy();
+    expect(second).not.toBe(first); // proves traversal, not just first-focus
+  });
+
+  test('keyboard: Escape leaves the application region (no keyboard trap)', async ({ page }) => {
+    const svg = page.locator('svg[role="application"]');
+    await svg.focus();
+    await page.keyboard.press('ArrowRight');
+    expect(await page.evaluate(() => !!document.activeElement?.closest?.('g[element-id]'))).toBe(
+      true
+    );
+
+    await page.keyboard.press('Escape');
+    const after = await page.evaluate(() => {
+      const el = document.activeElement;
+      const svgEl = document.querySelector('svg[role="application"]');
+      return { inElement: !!el?.closest?.('g[element-id]'), isSvg: el === svgEl };
+    });
+    // Focus left the diagram entirely — neither an element nor the application svg.
+    expect(after.inElement).toBe(false);
+    expect(after.isSvg).toBe(false);
+  });
 });

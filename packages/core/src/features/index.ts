@@ -13,6 +13,8 @@ import { ResizeElement } from './resizeElement';
 import { NoticePopup } from './noticePopup';
 import { AlertIcons } from './alertIcons';
 import { Tooltip } from './tooltip';
+import { KeyboardNav } from './keyboardNav';
+import { AriaAnnouncer } from './ariaAnnouncer';
 import { autoLayoutModule } from './autoLayout';
 import { defsModule } from '../draw';
 import { AddNodeHandler, AddLabelHandler, AddLinkTool, PaletteProvider, Palette } from './palette';
@@ -43,6 +45,8 @@ export { AlertIcons } from './alertIcons';
 export type { AlertType } from './alertIcons';
 export { Tooltip } from './tooltip';
 export type { TooltipFn } from './tooltip';
+export { KeyboardNav } from './keyboardNav';
+export { AriaAnnouncer } from './ariaAnnouncer';
 export { AutoLayout, autoLayoutModule } from './autoLayout';
 export {
   BaseAddHandler,
@@ -101,6 +105,24 @@ export const axesModule = {
 export const outlineModule = {
   __init__: ['outline'],
   outline: ['type', Outline]
+};
+
+/**
+ * didi module contributing keyboard-first navigation (C2): roving focus,
+ * arrow-cone movement, per-element focus ring, and the ARIA `application` +
+ * Escape hatch. Must be composed **before** the drawers so it observes the
+ * initial `<class>.created` storm; needs the `selection` service.
+ */
+export const keyboardNavModule = {
+  __init__: ['keyboardNav'],
+  keyboardNav: ['type', KeyboardNav],
+  __depends__: [selectionModule]
+};
+
+/** didi module contributing the aria-live announcer (C2). */
+export const ariaAnnouncerModule = {
+  __init__: ['ariaAnnouncer'],
+  ariaAnnouncer: ['type', AriaAnnouncer]
 };
 
 /** didi module enabling dragging of outlined elements. */

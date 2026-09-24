@@ -26,16 +26,18 @@ Land the coalescing seam bottom-up: first the `CommandHandler.merge?` contract (
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/command/CommandHandler.ts` — modify
 
 **Evidence**:
+
 - Confirmed via recon + `grep -n "postExecute" packages/core/src/command/CommandHandler.ts` → the interface is at `CommandHandler.ts:27-38` with optional `canExecute`/`preExecute`/`postExecute` and required `execute`/`revert`.
 - `CommandContext` is the open string-keyed memento (`CommandHandler.ts:14-16`).
 
 **Instructions**:
 Append one optional member after `postExecute?` in the `CommandHandler<C>` interface:
 `merge?(prev: C, next: C): boolean;`
-Add a doc comment stating the contract exactly: the stack calls `merge` on the *surviving earlier* command's handler when it decides two consecutive top-level commands may coalesce (same `mergeKey`, live top, empty redo tail); the handler folds `next`'s forward state into `prev` **in place**, keeps `prev`'s captured pre-state, **must not mutate `next`**, and returns `true` to coalesce (return `false` or omit to record `next` as its own entry).
+Add a doc comment stating the contract exactly: the stack calls `merge` on the _surviving earlier_ command's handler when it decides two consecutive top-level commands may coalesce (same `mergeKey`, live top, empty redo tail); the handler folds `next`'s forward state into `prev` **in place**, keeps `prev`'s captured pre-state, **must not mutate `next`**, and returns `true` to coalesce (return `false` or omit to record `next` as its own entry).
 
 **Verification**: `pnpm --filter @d3-polytree/core typecheck` passes.
 
@@ -47,15 +49,18 @@ Add a doc comment stating the contract exactly: the stack calls `merge` on the *
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/command/CommandStack.ts` — modify
 
 **Evidence**:
+
 - Close block `CommandStack.ts:82-91` (truncate `:86`, push `:87`, pointer `:88`, `_emitChanged` `:89`); nested-join guard `if (!opened) return` `:79-81`.
 - `_handlers` is `Map<string, CommandHandler>` (`CommandStack.ts:39,57-59`); `Command.command` is the recorded name (`:6-9`).
 - `_lastMergeKey` cleared points: `undo` `:118`, `redo` `:133`, `clear` `:155`, `_quarantine` `:183`.
 - `execute` signature `:65`; `_pointer`/`_stack`/`_enabled` `:40-45`; `canUndo` pointer-derived `:108`.
 
 **Instructions**:
+
 1. Change `execute(command: string, context: CommandContext)` → `execute(command: string, context: CommandContext, mergeKey?: string)` (`:65`).
 2. Add private field `_lastMergeKey: string | null = null` alongside `:40-45`.
 3. In the close block, after `if (!opened) return;` and after `const txn = this._txn; this._txn = null;`, restructure to:
@@ -79,12 +84,15 @@ Add a doc comment stating the contract exactly: the stack calls `merge` on the *
 
 **Status**: `pending`
 **Files**:
+
 - `packages/core/src/command/CommandStack.test.ts` — modify
 
 **Evidence**:
+
 - Vitest; `beforeEach` builds `bus`/`stack`/`model`, registers `add`, emits `d3canvas.init` (`CommandStack.test.ts:30-36`). Redo-tail test template `:83-91`; quarantine template `:119-138`; `_emitChanged` spy template `:148-157`.
 
 **Instructions**: Add a `describe` with a generic handler exposing `merge` (folds `next.amount`/forward state into `prev`) registered under a name, driven via `execute(name, ctx, key)`. Cases:
+
 1. merge-collapses-to-one-entry (two same-key executes → `_stack.length` grows by 1; one `undo` restores pre-first state).
 2. redo-tail-resets-merge (after `undo`, next same-key execute truncates + pushes, does not merge).
 3. quarantine-of-merged-entry (a merged entry whose `revert` throws routes through `_fail`, disables the stack, emits `document.inconsistent`).
@@ -104,12 +112,15 @@ Add a doc comment stating the contract exactly: the stack calls `merge` on the *
 
 **Status**: `pending`
 **Files**:
+
 - `packages/editor/src/properties-panel/PropertiesPanel.ts` — modify
 
 **Evidence**:
+
 - Handler registration `PropertiesPanel.ts:96-105`; `UpdatePropsContext` `:8-14`; `_commit` execute call `:200-216`; existing `selection.changed` listener `:118`; `debounce(...,300)` `:168`.
 
 **Instructions**:
+
 1. In `_registerUpdatePropertiesCommand()` (`:101-105`) add `merge: (prev, next) => { (prev as UpdatePropsContext).after = (next as UpdatePropsContext).after; return true; }` to the handler object.
 2. Add a private `_editSession = 0`; in the existing `selection.changed` listener (`:118`) increment it (`this._editSession++`).
 3. In `_commit` (`:210`), pass a third arg to `execute`: `` `${entry.definition.id}::${entryId}::${this._editSession}` ``.
@@ -125,23 +136,27 @@ Add a doc comment stating the contract exactly: the stack calls `merge` on the *
 
 **Status**: `pending`
 **Files**:
+
 - `packages/editor/src/properties-panel/index.test.ts` — modify
 - `packages/editor/src/command.roundtrip.test.ts` — modify
 - `.changeset/c15-coalesced-text-edit-undo.md` — create
 
 **Evidence**:
+
 - "routes a property edit through the command stack" test `index.test.ts:208-224`; `element.updated` spy `:199-205`. `assertGestureRoundTrip` snapshots full `exportDiagram()` before/after `command.roundtrip.test.ts:18-24`.
 - Changeset format: `.changeset/config.json` (`baseBranch: main`, `access: public`).
 
 **Instructions**:
+
 1. `index.test.ts`: add (a) same-element-reselect = separate undo entries (dispatch edits, fire `selection.changed`, edit again → two `undo`s needed); (b) live-preview-intact (a debounced burst emits `element.updated` more than once while a single `undo` fully restores the pre-burst value).
 2. `command.roundtrip.test.ts`: add a coalesced `updateProperties` burst case, then `assertGestureRoundTrip`'s single `undo` restores byte-identical `exportDiagram()`.
 3. Create the changeset:
    ```md
    ---
-   "@d3-polytree/core": minor
-   "@d3-polytree/editor": patch
+   '@d3-polytree/core': minor
+   '@d3-polytree/editor': patch
    ---
+
    Coalesce consecutive property-panel text edits into a single undo step via a
    CommandStack merge seam (CommandHandler.merge hook + optional execute mergeKey).
    ```

@@ -19,31 +19,43 @@ A new **pure, dependency-light package `@d3-polytree/diff`** exporting one funct
 ```ts
 export type CollectionKind = 'Node' | 'Link' | 'Zone' | 'Label' | 'PropertiesSet';
 export type DiffKind = CollectionKind | 'Diagram';
-export interface Coord { x?: number; y?: number }
+export interface Coord {
+  x?: number;
+  y?: number;
+}
 
 export type DiffOp =
-  | { op: 'added';      kind: CollectionKind; id: string }
-  | { op: 'removed';    kind: CollectionKind; id: string }
-  | { op: 'moved';      kind: 'Node' | 'Zone' | 'Label'; id: string; from?: Coord; to?: Coord }
-  | { op: 'retyped';    kind: 'Node'; id: string; from?: string; to?: string }        // Node.type
-  | { op: 'reattached'; kind: 'Link'; id: string;
+  | { op: 'added'; kind: CollectionKind; id: string }
+  | { op: 'removed'; kind: CollectionKind; id: string }
+  | { op: 'moved'; kind: 'Node' | 'Zone' | 'Label'; id: string; from?: Coord; to?: Coord }
+  | { op: 'retyped'; kind: 'Node'; id: string; from?: string; to?: string } // Node.type
+  | {
+      op: 'reattached';
+      kind: 'Link';
+      id: string;
       from: { source?: string; target?: string };
-      to:   { source?: string; target?: string } }
-  | { op: 'modified';   kind: DiffKind; id: string; field: string; from?: unknown; to?: unknown };
+      to: { source?: string; target?: string };
+    }
+  | { op: 'modified'; kind: DiffKind; id: string; field: string; from?: unknown; to?: unknown };
 ```
 
-`modified` is the completeness op: it covers every changed leaf not owned by a structural op — scalars, the five single-*reference* leaves (`Node.label`/`Node.propertiesSet`, `Zone.label`, `Link.label`/`Link.propertiesSet`, all `isReference:true, isSimple:false`, collapsed to id-strings by `toJson`), the **Diagram root scalars** `status`/`name` (`kind:'Diagram'`, id = diagram id), and the **pinned-link waypoint** case (`field:'waypoint'`, `from`/`to` typed `Coord[]`). `import type { PfdnDocument }` is a **named** import from `@d3-polytree/pfdn-moddle`.
+`modified` is the completeness op: it covers every changed leaf not owned by a structural op — scalars, the five single-_reference_ leaves (`Node.label`/`Node.propertiesSet`, `Zone.label`, `Link.label`/`Link.propertiesSet`, all `isReference:true, isSimple:false`, collapsed to id-strings by `toJson`), the **Diagram root scalars** `status`/`name` (`kind:'Diagram'`, id = diagram id), and the **pinned-link waypoint** case (`field:'waypoint'`, `from`/`to` typed `Coord[]`). `import type { PfdnDocument }` is a **named** import from `@d3-polytree/pfdn-moddle`.
 
 **Element identity + matching.** Elements are matched by `id` (`pfdn:Base.id`, the sole `isId`, `pfdn.generated.ts:156-164`) within their typed collection across the five id-keyed Diagram collections (`node`/`link`/`zone`/`label`/`propertiesSet`, `pfdn.generated.ts:304-308`); union-of-ids → `added` (b-only) / `removed` (a-only) / compared (both). A missing id on a collection member, or a root-id mismatch, is a fail-fast `DiffError` (single-root assumed). `settings`/`Zoom`/`Grid` are **scoped out** (viewport/presentation chrome; a future `kind:'Settings'` op is additive/non-breaking and, when built, must split ephemeral zoom out from persistent `backgroundColor`/`grid`).
 
 **Carve-outs (no double-emit).** The SCHEMA-driven `modified` walk excludes fields owned by structural ops (plus any `isId` field):
+
 ```ts
 const MODIFIED_CARVE_OUTS: Record<DiffKind, readonly string[]> = {
-  Node: ['type', 'position'], Zone: ['position'], Label: ['position'],
-  Link: ['source', 'target', 'waypoint'], PropertiesSet: [],
-  Diagram: ['settings', 'node', 'link', 'label', 'zone', 'propertiesSet'],
+  Node: ['type', 'position'],
+  Zone: ['position'],
+  Label: ['position'],
+  Link: ['source', 'target', 'waypoint'],
+  PropertiesSet: [],
+  Diagram: ['settings', 'node', 'link', 'label', 'zone', 'propertiesSet']
 };
 ```
+
 `border` (Zone) and `pinned` (Link, Boolean) are **not** carved — they stay in the generic `modified` walk. `waypoint` is carved from the generic walk and routed to a pinned-only comparator (unpinned → skipped as C4 layout output; pinned → `modified{field:'waypoint'}`).
 
 **Determinism.** Scalar equality is NaN-safe (`a === b || (Number.isNaN(a) && Number.isNaN(b))`); value objects (`Coordinates`, `Border`, `property[]`, `waypoint[]`) use a structural `deepEq` bottoming out in that scalar `eq` (Coordinates x/y are `Real`, `pfdn.generated.ts:188-189`). Emission order is total: Diagram-root ops first, then collections in fixed order `[Node, Link, Zone, Label, PropertiesSet]`, elements within a collection sorted by id ascending; per surviving element `retyped → reattached → moved → modified{waypoint} → modified` (remaining leaves in SCHEMA property-declaration order). No `Set`/`Map` iteration-order, `Math.random`, or `Date` reliance.
@@ -71,7 +83,7 @@ const MODIFIED_CARVE_OUTS: Record<DiffKind, readonly string[]> = {
 - `DN-9` (staff-engineer) — honored by: the generic `modified` op ships at v0.1.0 so the public type is future-proof for the merge helper; settings scope-out is a recorded, non-breaking-to-extend trade-off.
 - `DN-7` (YAGNI) — honored by: only the pure `diff()` engine ships; overlay/three-way deferred; union kept at 6 ops (pinned waypoint reuses `modified`).
 - `DN-2` (reuse) — honored by: the `layout` scaffold, the generated `PfdnDocument` types + `SCHEMA`/`CONCRETE_TYPES` via `/schema`, and the `toJson` canonical form.
-- Host rule "never hand-edit generated files" (`PLAT-04`) / drift gate — honored by: `src/schema.ts` re-exports *from* `pfdn.generated.ts`; the generated file and generator are untouched.
+- Host rule "never hand-edit generated files" (`PLAT-04`) / drift gate — honored by: `src/schema.ts` re-exports _from_ `pfdn.generated.ts`; the generated file and generator are untouched.
 - Host rule "every publishable package ships a template README; absolute `/tree/main/` URLs; new package → changeset" (`d3-polytree/CLAUDE.md`) — honored by: `packages/diff/README.md` from the skeleton + minor changesets + root README row.
 - Host rule "surface design forks at a gate" (`d3-polytree/CLAUDE.md` #1) — honored by: forks A/B/C and the settings scope-out were decided at the debate gates.
 
