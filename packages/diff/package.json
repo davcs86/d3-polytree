@@ -1,7 +1,7 @@
 {
-  "name": "@d3-polytree/pfdn-moddle",
-  "version": "0.2.2",
-  "description": "Read/write Process Flow Diagram Notation (.pfdn) documents — a moddle model for the d3-polytree v2 ecosystem",
+  "name": "@d3-polytree/diff",
+  "version": "0.0.0",
+  "description": "Pure structural diff of two .pfdn documents → an ordered DiffOp[] for review overlays and three-way merge",
   "license": "MIT",
   "author": "David Castillo",
   "type": "module",
@@ -13,11 +13,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./schema": {
-      "types": "./dist/schema.d.ts",
-      "import": "./dist/schema.js",
-      "require": "./dist/schema.cjs"
     }
   },
   "files": [
@@ -25,21 +20,19 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "generate": "node scripts/generate-pfdn.mjs",
-    "build": "node scripts/generate-pfdn.mjs && tsup",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "moddle": "^7.0.0",
-    "moddle-xml": "^11.0.0"
+    "@d3-polytree/pfdn-moddle": "workspace:*"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/davcs86/d3-polytree.git",
-    "directory": "packages/pfdn-moddle"
+    "directory": "packages/diff"
   },
-  "homepage": "https://github.com/davcs86/d3-polytree/tree/main/packages/pfdn-moddle#readme",
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/main/packages/diff#readme",
   "publishConfig": {
     "access": "public"
   }
