@@ -43,6 +43,13 @@ export class CommandStack {
   /** The open transaction accumulator, or null when none is in flight. */
   private _txn: Transaction | null = null;
   private _enabled = false;
+  /**
+   * The merge key of the last recorded top-level transaction, or null when no
+   * burst is in flight. Only a fresh top-level `execute` carrying the same key,
+   * with the mergeable entry still the live top and an empty redo tail, coalesces
+   * (C15). Cleared on undo/redo/clear/quarantine and on any non-mergeable close.
+   */
+  private _lastMergeKey: string | null = null;
 
   constructor(eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
@@ -62,7 +69,7 @@ export class CommandStack {
    * Apply `command` with `context`. Opens a transaction when none is in flight;
    * a nested call (from a handler's pre/postExecute) joins the open one.
    */
-  execute(command: string, context: CommandContext): void {
+  execute(command: string, context: CommandContext, mergeKey?: string): void {
     const opened = this._txn === null;
     if (opened) {
       this._txn = [];
@@ -76,17 +83,42 @@ export class CommandStack {
       }
       throw err;
     }
+    // A nested (joining) call never touches the burst state — only the
+    // enclosing top-level close records and updates `_lastMergeKey`.
     if (!opened) {
       return;
     }
     const txn = this._txn as Transaction;
     this._txn = null;
-    // Pre-boot (disabled) mutations apply but are never recorded.
+    // Pre-boot (disabled) mutations apply but are never recorded, and a
+    // canExecute no-op (empty txn) breaks any in-flight burst.
     if (this._enabled && txn.length > 0) {
+      // Coalesce into the live top when the caller opts in with a matching key
+      // and the handler folds the newer memento into the surviving one (C15).
+      // Guarded by an empty redo tail (`_pointer === _stack.length - 1`) so a
+      // burst never merges into an entry left behind by an undo.
+      const top = this._pointer >= 0 ? this._stack[this._pointer] : undefined;
+      if (
+        mergeKey != null &&
+        this._lastMergeKey === mergeKey &&
+        this._pointer === this._stack.length - 1 &&
+        top !== undefined &&
+        txn.length === 1 &&
+        top.length === 1 &&
+        top[0].command === txn[0].command &&
+        this._handlers.get(txn[0].command)?.merge?.(top[0].context, txn[0].context)
+      ) {
+        this._lastMergeKey = mergeKey;
+        this._emitChanged();
+        return;
+      }
       this._stack.length = this._pointer + 1; // truncate any redo tail
       this._stack.push(txn);
       this._pointer = this._stack.length - 1;
+      this._lastMergeKey = mergeKey ?? null;
       this._emitChanged();
+    } else {
+      this._lastMergeKey = null;
     }
   }
 
@@ -121,6 +153,7 @@ export class CommandStack {
     }
     const txn = this._stack[this._pointer];
     this._pointer -= 1;
+    this._lastMergeKey = null; // an undo ends any in-flight merge burst
     const errors = this._revertAll(txn);
     if (errors.length > 0) {
       this._fail(errors);
@@ -136,6 +169,7 @@ export class CommandStack {
     }
     const txn = this._stack[this._pointer + 1];
     this._pointer += 1;
+    this._lastMergeKey = null; // a redo ends any in-flight merge burst
     const errors: unknown[] = [];
     for (const { command, context } of txn) {
       try {
@@ -155,6 +189,7 @@ export class CommandStack {
   clear(): void {
     this._stack = [];
     this._pointer = -1;
+    this._lastMergeKey = null;
     this._emitChanged();
   }
 
@@ -185,6 +220,7 @@ export class CommandStack {
     this._stack = [];
     this._pointer = -1;
     this._txn = null;
+    this._lastMergeKey = null;
   }
 
   /** A revert/redo threw: quarantine and surface the fatal inconsistency. */
