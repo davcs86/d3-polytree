@@ -16,6 +16,8 @@
 // accent FILL (kept mid-blue so white text on it stays legible in dark).
 @mixin pfd-tokens-invariant {
   --pfd-color-selection: #ff0000;
+  // Keyboard focus ring (C2), drawn on the always-light canvas like selection.
+  --pfd-color-focus-ring: #1a73e8;
   --pfd-color-accent-invariant: #ff4800;
   --pfd-color-accent-fill: #5990bd;
   --pfd-color-toast-bg: #333333;

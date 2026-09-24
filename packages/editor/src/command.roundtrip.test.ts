@@ -165,6 +165,40 @@ describe('@d3-polytree/editor command round-trips', () => {
     expect(editor.exportDiagram()).toBe(before); // size + position restored
   });
 
+  it('a coalesced element.updateProperties burst round-trips through a single undo (C15)', () => {
+    const addNode = editor.get<AppendHandler>('addNodeHandler');
+    const node = addNode.append({ position: { x: 0, y: 0 } }) as unknown as Def & {
+      name?: string;
+    };
+    const before = editor.exportDiagram();
+
+    // A property scope that writes onto the model element, mirroring the panel's
+    // EntryResource.set; the panel-registered updateProperties handler uses it.
+    const scope = {
+      set: (d: Def, props: Record<string, unknown>) => Object.assign(d, props)
+    };
+    const original = node.name;
+    const key = `${(node as unknown as { id: string }).id}::name::1`;
+    const commit = (from: string | undefined, to: string) =>
+      cs.execute(
+        'element.updateProperties',
+        { scope, definition: node, before: { name: from }, after: { name: to } },
+        key
+      );
+
+    // a same-session typing burst → one coalesced undo entry
+    commit(original, 'Aa');
+    commit('Aa', 'Aab');
+    commit('Aab', 'Aabc');
+    expect(editor.exportDiagram()).not.toBe(before);
+
+    cs.undo(); // ONE undo restores the pre-burst document, byte-for-byte
+    expect(editor.exportDiagram()).toBe(before);
+    // Had the burst not coalesced, one undo would land on 'Aab', not `before`.
+    // canUndo stays true because the earlier node-create entry remains.
+    expect(cs.canUndo()).toBe(true);
+  });
+
   it('element.move restores incident-link waypoints on undo (both endpoints moved)', () => {
     const addNode = editor.get<AppendHandler>('addNodeHandler');
     const a = addNode.append({ position: { x: 0, y: 0 } });

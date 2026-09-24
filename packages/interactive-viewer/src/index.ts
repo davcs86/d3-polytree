@@ -16,6 +16,8 @@ import {
   mouseEventsModule,
   selectionModule,
   outlineModule,
+  keyboardNavModule,
+  ariaAnnouncerModule,
   type DiagramModule
 } from '@d3-polytree/core';
 // The side-tabs host and the search panel used to be their own packages; they
@@ -41,6 +43,11 @@ export class InteractiveViewer extends Viewer {
     mouseEventsModule as DiagramModule,
     selectionModule as DiagramModule,
     outlineModule as DiagramModule,
+    // keyboard-first a11y (C2): roving focus + arrow-cone nav + focus ring, and
+    // the aria-live announcer — both subscribe to <class>.created, so they boot
+    // before the drawers.
+    keyboardNavModule as DiagramModule,
+    ariaAnnouncerModule as DiagramModule,
     // side panel host + the search panel (subscribes to <class>.created, so it
     // must boot before the drawers emit — hence it lives in interactionModules)
     sideTabsModule as DiagramModule,

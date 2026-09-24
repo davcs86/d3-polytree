@@ -17,6 +17,11 @@ const ZOOM_TO_SCALE = 1.2;
 /** Duration (ms) of the animated zoom-to-element. */
 const ZOOM_TO_DURATION = 1800;
 
+/** True when the user asked for reduced motion (jsdom-safe: no `matchMedia` → false). */
+function prefersReducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 /** The `pfdn:Zoom` settings element: an offset point and a scale. */
 interface ZoomModel extends ModellingModelElement {
   scale?: number;
@@ -110,7 +115,8 @@ export class Zoom {
     const parent = drawingLayer.node()!.parentNode as SVGGElement;
     const selection = select<SVGGElement, unknown>(parent);
     const transform = zoomIdentity.translate(tX, tY).scale(s);
-    if (duration) {
+    // Honour `prefers-reduced-motion` (WCAG 2.3.3 / C2): skip the tween and jump.
+    if (duration && !prefersReducedMotion()) {
       selection.transition().duration(duration).call(this._zoom.transform, transform);
     } else {
       selection.call(this._zoom.transform, transform);

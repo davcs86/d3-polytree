@@ -17,11 +17,90 @@ import pfdnPackage from './pfdn.json';
 import { PfdnModdle } from './PfdnModdle';
 import type { ModelElement } from './PfdnModdle';
 import { SCHEMA, CONCRETE_TYPES } from './pfdn.generated';
-import type { PropInfo, PfdnDocument } from './pfdn.generated';
+import type { PropInfo, TypeInfo, PfdnDocument } from './pfdn.generated';
 
 export type { PfdnDocument, PfdnElement } from './pfdn.generated';
 
 const BUILTINS = new Set(['String', 'Boolean', 'Integer', 'Real']);
+
+// ---------------------------------------------------------------------------
+// SchemaSource — the schema view the validator/builder read (C14)
+// ---------------------------------------------------------------------------
+
+/**
+ * The two reads {@link validate}/{@link buildTree} perform against schema. The
+ * **base** provider wraps the committed generated tables (default path — byte
+ * identical to before C14); the **live** provider projects a caller-extended
+ * moddle's `$descriptor` on demand, so JSON round-trips extended models the way
+ * XML already does (`fromXML` reads the live model). Selected by `opts.packages`.
+ */
+interface SchemaSource {
+  isConcrete(type: string): boolean;
+  typeInfo(type: string): TypeInfo | undefined;
+}
+
+/** Base provider — the committed generated `SCHEMA`/`CONCRETE_TYPES`, no allocation. */
+const baseSchema: SchemaSource = {
+  isConcrete: (type) => CONCRETE_TYPES.includes(type),
+  typeInfo: (type) => SCHEMA[type]
+};
+
+/** Build a moddle from the base package plus any caller packages (cycle-free — no `./index`). */
+function createModdle(packages?: Record<string, unknown>): PfdnModdle {
+  return new PfdnModdle({ pfdn: pfdnPackage, ...(packages ?? {}) });
+}
+
+interface LiveDescriptorProperty extends DescriptorProperty {
+  isId?: boolean;
+  isSimple?: boolean;
+}
+interface LiveModdle {
+  getType(name: string): { prototype: { $descriptor: LiveDescriptor } };
+  getTypeDescriptor(name: string): { isAbstract?: boolean } | undefined;
+}
+interface LiveDescriptor {
+  allTypesByName: Record<string, unknown>;
+  properties: LiveDescriptorProperty[];
+}
+
+/**
+ * Live provider — reduce a moddle's effective `$descriptor` to the generated
+ * {@link TypeInfo}/{@link PropInfo} shape. Strict 6-field projection: carry
+ * `isId` (id indexing), skip `isVirtual` (moddle keeps them; the generator does
+ * not), and derive `isSimple` from {@link BUILTINS} — the SAME builtin set
+ * moddle-xml's reader uses, so the element/simple decision matches XML for
+ * every type incl. enums. `allTypesByName` is set membership only (both reads
+ * are `.includes`), so live's ancestor-first order vs generated's self-first is
+ * immaterial.
+ */
+export function liveSchema(moddle: PfdnModdle): SchemaSource {
+  const m = moddle as unknown as LiveModdle;
+  return {
+    isConcrete: (type) => {
+      const td = m.getTypeDescriptor(type);
+      return !!td && !td.isAbstract;
+    },
+    typeInfo: (type) => {
+      const td = m.getTypeDescriptor(type);
+      if (!td) return undefined;
+      const d = m.getType(type).prototype.$descriptor;
+      return {
+        abstract: !!td.isAbstract,
+        allTypesByName: Object.keys(d.allTypesByName),
+        properties: d.properties
+          .filter((p) => !p.isVirtual)
+          .map((p) => ({
+            name: p.name,
+            type: p.type,
+            isMany: !!p.isMany,
+            isReference: !!p.isReference,
+            isId: !!p.isId,
+            isSimple: BUILTINS.has(p.type)
+          }))
+      };
+    }
+  };
+}
 
 /** A single validation failure, addressed by a JSON Pointer. */
 export interface ValidationError {
@@ -131,10 +210,16 @@ function scalarMatches(value: unknown, type: string): boolean {
  * unresolvable references are all reported. Pass `{ lax: true }` to downgrade an
  * unresolvable reference to a silent drop (matching moddle's XML tolerance).
  */
-export function validate(doc: unknown, opts: { lax?: boolean } = {}): Result<PfdnDocument> {
+export function validate(
+  doc: unknown,
+  opts: { lax?: boolean; packages?: Record<string, unknown> } = {}
+): Result<PfdnDocument> {
   const errors: ValidationError[] = [];
   const ids = new Map<string, string>();
   const refs: DeferredRef[] = [];
+  // Extended models are validated against the live moddle descriptor; the base
+  // model against the committed generated tables (no moddle built).
+  const schema = opts.packages ? liveSchema(createModdle(opts.packages)) : baseSchema;
 
   const scalar = (value: unknown, type: string, path: string): void => {
     if (!scalarMatches(value, type)) {
@@ -149,7 +234,7 @@ export function validate(doc: unknown, opts: { lax?: boolean } = {}): Result<Pfd
     }
     const obj = node as Record<string, unknown>;
     const type = obj.$type;
-    if (typeof type !== 'string' || !CONCRETE_TYPES.includes(type)) {
+    if (typeof type !== 'string' || !schema.isConcrete(type)) {
       errors.push({
         instancePath: `${path}/$type`,
         keyword: 'type',
@@ -157,7 +242,8 @@ export function validate(doc: unknown, opts: { lax?: boolean } = {}): Result<Pfd
       });
       return;
     }
-    const info = SCHEMA[type];
+    const info = schema.typeInfo(type);
+    if (!info) return; // unreachable when isConcrete(type) is true
     if (!info.allTypesByName.includes(expectedType)) {
       errors.push({
         instancePath: `${path}/$type`,
@@ -234,7 +320,10 @@ export function validate(doc: unknown, opts: { lax?: boolean } = {}): Result<Pfd
           message: `unresolved reference "${ref.id}"`
         });
       }
-    } else if (!ref.propSimple && !SCHEMA[targetType].allTypesByName.includes(ref.propType)) {
+    } else if (
+      !ref.propSimple &&
+      !(schema.typeInfo(targetType)?.allTypesByName.includes(ref.propType) ?? true)
+    ) {
       errors.push({
         instancePath: ref.path,
         keyword: 'refType',
@@ -247,8 +336,11 @@ export function validate(doc: unknown, opts: { lax?: boolean } = {}): Result<Pfd
 }
 
 /** Assert a document is valid, narrowing it to {@link ValidatedPfdnDocument}. */
-export function assertValid(doc: unknown): asserts doc is ValidatedPfdnDocument {
-  const result = validate(doc);
+export function assertValid(
+  doc: unknown,
+  opts: { packages?: Record<string, unknown> } = {}
+): asserts doc is ValidatedPfdnDocument {
+  const result = validate(doc, opts);
   if (!result.ok) throw new PfdnValidationError(result.errors);
 }
 
@@ -267,14 +359,19 @@ interface DeferredLink {
  * `create` every element (children post-order) omitting references, indexing by
  * id; (2) re-link each reference via the moddle setter (non-enumerable storage).
  */
-function buildTree(doc: PfdnDocument): { root: ModelElement; moddle: PfdnModdle } {
-  const moddle = new PfdnModdle({ pfdn: pfdnPackage });
+function buildTree(
+  doc: PfdnDocument,
+  opts: { packages?: Record<string, unknown> } = {}
+): { root: ModelElement; moddle: PfdnModdle } {
+  const moddle = createModdle(opts.packages);
+  const schema = opts.packages ? liveSchema(moddle) : baseSchema;
   const index = new Map<string, ModelElement>();
   const deferred: DeferredLink[] = [];
 
   const create = (node: Record<string, unknown>): ModelElement => {
     const type = node.$type as string;
-    const info = SCHEMA[type];
+    const info = schema.typeInfo(type);
+    if (!info) throw new TypeError(`no schema for $type "${type}"`);
     const attrs: Record<string, unknown> = {};
     const links: { name: string; id: string }[] = [];
     for (const p of info.properties) {
@@ -321,11 +418,14 @@ function buildTree(doc: PfdnDocument): { root: ModelElement; moddle: PfdnModdle 
  * {@link Result}; never throws on invalid data (only on a non-object argument).
  * With `{ lax: true }`, unresolvable references are dropped rather than rejected.
  */
-export function fromJson(doc: unknown, opts: { lax?: boolean } = {}): Result<ModelElement> {
+export function fromJson(
+  doc: unknown,
+  opts: { lax?: boolean; packages?: Record<string, unknown> } = {}
+): Result<ModelElement> {
   if (typeof doc !== 'object' || doc === null) {
     throw new TypeError('fromJson expects a PFDN JSON document object');
   }
   const result = validate(doc, opts);
   if (!result.ok) return result;
-  return { ok: true, value: buildTree(result.value).root };
+  return { ok: true, value: buildTree(result.value, opts).root };
 }

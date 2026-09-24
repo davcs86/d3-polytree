@@ -1,0 +1,39 @@
+{
+  "name": "@d3-polytree/diff",
+  "version": "0.0.0",
+  "description": "Pure structural diff of two .pfdn documents → an ordered DiffOp[] for review overlays and three-way merge",
+  "license": "MIT",
+  "author": "David Castillo",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@d3-polytree/pfdn-moddle": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davcs86/d3-polytree.git",
+    "directory": "packages/diff"
+  },
+  "homepage": "https://github.com/davcs86/d3-polytree/tree/main/packages/diff#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

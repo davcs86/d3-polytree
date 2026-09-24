@@ -101,6 +101,21 @@ export abstract class BaseElement {
     this.removeElement({ id });
   }
 
+  /**
+   * A short accessible name for `definition`, sourced only from the model (so it
+   * is deterministic and available headless in SSR/`exportSVG`): the element
+   * class plus its `name`/`text`/`type` when present, else the class alone.
+   */
+  protected _accessibleName(definition: DiagramElement): string {
+    const name = definition.get('name');
+    if (typeof name === 'string' && name) return `${this._className}: ${name}`;
+    const text = definition.get('text');
+    if (typeof text === 'string' && text) return `${this._className}: ${text}`;
+    const type = definition.get('type');
+    if (typeof type === 'string' && type) return `${this._className} (${type})`;
+    return this._className;
+  }
+
   appendElement(definition: DiagramElement): void {
     this._elementRegistry.claimId(definition, this._className);
 
@@ -108,6 +123,11 @@ export abstract class BaseElement {
       .datum(definition)
       .attr('element-id', definition.id as string)
       .attr('class', `${this._className}Item element`);
+
+    // Per-element accessible name (first children of the <g>) — read by assistive
+    // tech, and carried into SSR/exportSVG output since it lives in the draw layer.
+    newElem.append('title').text(this._accessibleName(definition));
+    newElem.append('desc').text(definition.id as string);
 
     newElem.append('g').attr('class', 'innerElement').attr('transform', 'translate(3, 3)');
 

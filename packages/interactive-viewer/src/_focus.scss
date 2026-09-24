@@ -1,0 +1,29 @@
+// Keyboard focus ring (C2). The keyboardNav feature draws a
+// `<rect class="element-focus-ring" fill="none">` per element (stroke-width 0 at
+// rest) and toggles `.pfd-focus` on the focused element group; this rule makes it
+// visible only while focused. Mirrors the two-part Outline mechanism, but is
+// deliberately DISTINCT from selection: a SOLID blue 2px ring vs selection's
+// dashed red 1px, so focus and selection read as different states.
+.pfdjs-container {
+  .element {
+    & > .element-focus-ring {
+      stroke-width: 0;
+      // Theme-invariant (drawn on the always-light canvas); literal fallback keeps
+      // a no-stylesheet/SSR export of a focused element visible.
+      stroke: var(--pfd-color-focus-ring, #1a73e8);
+    }
+
+    &.pfd-focus > .element-focus-ring {
+      stroke-width: 2px;
+    }
+  }
+}
+
+// High-contrast: map focus to the system LinkText colour — distinct from
+// selection's Highlight — so the two states stay separable under a forced palette.
+@media (forced-colors: active) {
+  .pfdjs-container .element > .element-focus-ring {
+    stroke: LinkText;
+    forced-color-adjust: none;
+  }
+}

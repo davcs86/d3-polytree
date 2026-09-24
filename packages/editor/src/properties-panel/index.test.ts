@@ -223,6 +223,59 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
     expect(node.name).toBe('Alpha'); // the prior value was captured and restored
   });
 
+  it('coalesces a same-field edit burst into one undo; a reselection starts a new one (C15)', () => {
+    const stack = new CommandStack(bus);
+    bus.emit('d3canvas.init');
+    new PropertiesPanel(registrar, bus, provider, settingsDef(), stack);
+    const content = registrar.open();
+    const node = nodeDef();
+    bus.emit('selection.changed', [], [{ element: node, definition: node }]);
+
+    const nameInput = content.querySelector('input[name="name"]') as HTMLInputElement;
+    // a burst of commits on the SAME field within one selection → one entry
+    nameInput.value = 'A';
+    nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+    nameInput.value = 'B';
+    nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(node.name).toBe('B');
+
+    // deselect then reselect → the edit session rotates
+    bus.emit('selection.changed', [{ element: node, definition: node }], []);
+    bus.emit('selection.changed', [], [{ element: node, definition: node }]);
+    const nameInput2 = content.querySelector('input[name="name"]') as HTMLInputElement;
+    nameInput2.value = 'C';
+    nameInput2.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(node.name).toBe('C');
+
+    stack.undo();
+    expect(node.name).toBe('B'); // the post-reselection edit is its own entry
+    stack.undo();
+    expect(node.name).toBe('Alpha'); // the first burst collapsed to a single entry
+    expect(stack.canUndo()).toBe(false);
+  });
+
+  it('keeps the live drawing updating per commit while collapsing to one undo (C15)', () => {
+    const stack = new CommandStack(bus);
+    bus.emit('d3canvas.init');
+    new PropertiesPanel(registrar, bus, provider, settingsDef(), stack);
+    const content = registrar.open();
+    const node = nodeDef();
+    bus.emit('selection.changed', [], [{ element: node, definition: node }]);
+
+    const nameInput = content.querySelector('input[name="name"]') as HTMLInputElement;
+    const updated = vi.fn();
+    bus.on('element.updated', updated);
+    for (const v of ['R', 'Re', 'Ren']) {
+      nameInput.value = v;
+      nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    expect(node.name).toBe('Ren');
+    expect(updated.mock.calls.length).toBeGreaterThan(1); // live preview fired per commit
+    stack.undo(); // a single undo restores the pre-burst value
+    expect(node.name).toBe('Alpha');
+    expect(stack.canUndo()).toBe(false);
+  });
+
   it('switches tabs on click', () => {
     new PropertiesPanel(registrar, bus, provider, settingsDef(), new CommandStack(bus));
     const content = registrar.open();

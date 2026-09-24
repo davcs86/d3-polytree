@@ -66,6 +66,12 @@ export class PropertiesPanel {
   private readonly _diagramSettings: Definition;
   private readonly _commandStack: CommandStack;
   private _entries: Record<string, TrackedEntry> = {};
+  /**
+   * Monotonic editing-session counter, bumped on every selection change. Folded
+   * into the merge key so a text-edit burst coalesces only within one selection
+   * (C15): re-selecting an element starts a fresh, separately-undoable session.
+   */
+  private _editSession = 0;
 
   private _container: HTMLElement | null = null;
   private _tabsEl: HTMLElement | null = null;
@@ -100,7 +106,14 @@ export class PropertiesPanel {
     };
     this._commandStack.registerHandler('element.updateProperties', {
       execute: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).after),
-      revert: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).before)
+      revert: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).before),
+      // Coalesce a debounced typing burst on one field into a single undo step
+      // (C15): keep the surviving (earlier) memento's `before`, adopt the newer
+      // `after`. The model already sits at `next.after` when this runs.
+      merge: (prev, next) => {
+        (prev as UpdatePropsContext).after = (next as UpdatePropsContext).after;
+        return true;
+      }
     });
   }
 
@@ -119,6 +132,9 @@ export class PropertiesPanel {
     this._eventBus.on(
       'selection.changed',
       (oldSelection: SelectionEntry[], newSelection: SelectionEntry[]) => {
+        // A selection change ends the current edit session, so a later edit on
+        // the same field is a separate undo entry (C15).
+        this._editSession += 1;
         let selected: Definition = this._diagramSettings;
         if (
           newSelection.length === 1 &&
@@ -207,12 +223,17 @@ export class PropertiesPanel {
     // Capture the prior value of the same path so the edit is undoable.
     const before: Record<string, unknown> = {};
     deepSet(before, entryId, deepGet(entry.definition, entryId));
-    this._commandStack.execute('element.updateProperties', {
-      scope: entry.scope,
-      definition: entry.definition,
-      before,
-      after
-    } satisfies UpdatePropsContext);
+    this._commandStack.execute(
+      'element.updateProperties',
+      {
+        scope: entry.scope,
+        definition: entry.definition,
+        before,
+        after
+      } satisfies UpdatePropsContext,
+      // Same element + same field + same selection session ⇒ one coalesced undo.
+      `${entry.definition.id}::${entryId}::${this._editSession}`
+    );
   }
 
   private _selectTab(tabId: string | null): void {
