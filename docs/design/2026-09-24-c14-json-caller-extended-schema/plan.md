@@ -5,7 +5,9 @@
 **Design**: [design.md](./design.md)
 **Test harness**: `pnpm --filter @d3-polytree/pfdn-moddle test` and `pnpm --filter @d3-polytree/core test` (vitest; CI runs `turbo run test`)
 **Total Steps**: 5
-**Review**: `not-reviewed`
+**Review**: `passed-with-warnings @ 2026-09-24`
+
+> **Known limitation (extended packages)**: a caller-extended property that is redefined with a distinct moddle `effectiveType` may classify differently between the XML reader (`propertyDesc.effectiveType || propertyDesc.type`) and this JSON path (which reads `p.type`). Absent in base `pfdn.json`; documented here per the design's Open Risks.
 
 ---
 
@@ -127,9 +129,19 @@ round-trip on the JSON path the way XML already does. Base path unchanged.
 ```
 Then run the drift gate + full parity: regenerate and diff generated files, then `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
-**Verification**: `pnpm --filter @d3-polytree/pfdn-moddle generate && git diff --exit-code packages/pfdn-moddle/src/pfdn.generated.ts` (drift gate stays clean — no generated-file change), then `pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook` mirror CI.
+**Verification**: `pnpm --filter @d3-polytree/pfdn-moddle generate && git diff --exit-code packages/pfdn-moddle/src/pfdn.generated.ts` (drift gate stays clean — no generated-file change), then the full CI mirror in exact pipeline order (`.github/workflows/ci.yml`): `pnpm install --frozen-lockfile && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook`.
 
 **Test**: N/A (changeset + verification only).
+
+---
+
+## Review Log
+
+### 2026-09-24 — plan-review — passed-with-warnings
+
+- **Verdict**: PASS WITH WARNINGS (reviewer agent); no blockers — every cited `path:line` resolves, no step edits the generated file, two-provider design honored.
+- **Warning 1 (addressed)**: design Open Risk "effectiveType-refined properties" was not surfaced in the plan → added a "Known limitation" note to the header.
+- **Warning 2 (addressed)**: Step 5 CI mirror omitted `pnpm format:check` → Step 5 verification now lists the full CI order incl. `format:check` and `build-storybook`.
 
 ---
 

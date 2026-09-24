@@ -5,7 +5,7 @@
 **Design**: [design.md](./design.md)
 **Test harness**: `pnpm --filter @d3-polytree/core test` and `pnpm --filter @d3-polytree/editor test` (vitest; CI `.github/workflows/ci.yml` runs `pnpm test` = `turbo run test`)
 **Total Steps**: 5
-**Review**: `not-reviewed`
+**Review**: `passed-with-warnings @ 2026-09-24`
 
 ---
 
@@ -146,9 +146,19 @@ Add a doc comment stating the contract exactly: the stack calls `merge` on the *
    CommandStack merge seam (CommandHandler.merge hook + optional execute mergeKey).
    ```
 
-**Verification**: `pnpm --filter @d3-polytree/editor test` green; then full parity `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (mirrors CI `.github/workflows/ci.yml`).
+**Verification**: `pnpm --filter @d3-polytree/editor test` green; then the full CI mirror in exact pipeline order (`.github/workflows/ci.yml`): `pnpm install --frozen-lockfile && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook`.
 
 **Test**: this step includes the tests.
+
+---
+
+## Review Log
+
+### 2026-09-24 — plan-review — passed-with-warnings
+
+- **Verdict**: PASS WITH WARNINGS (reviewer agent); no blockers — every cited `path:line` resolves; Chosen Approach honored; every Rejected Alternative stays rejected; host rules (boot latch, EDITOR-01, byte-identical `toXML`, last-def-wins) intact.
+- **Warning (addressed)**: Step 5 CI mirror omitted `format:check` and `build-storybook` → Step 5 verification now lists the full CI order.
+- **Warning (no change needed)**: Steps 1 & 4 defer behavioral verification to their paired test steps (3 & 5) — explicit and dependency-ordered.
 
 ---
 
