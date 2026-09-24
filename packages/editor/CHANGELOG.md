@@ -1,5 +1,29 @@
 # @d3-polytree/editor
 
+## 0.7.2
+
+### Patch Changes
+
+- 02e77ae: Coalesce consecutive property-panel text edits into a single undo step. Adds a
+  `CommandStack` merge seam — an optional `mergeKey` on `execute` plus an optional
+  `CommandHandler.merge(prev, next)` hook — so a debounced typing burst on one
+  field collapses to one transaction while every keystroke still updates the live
+  drawing. The editor's `element.updateProperties` implements the hook and keys the
+  burst by element + property + selection session, so re-selecting an element
+  starts a new, separately-undoable edit.
+- 02e77ae: Keyboard-first accessibility for the diagram: `role="application"` with roving
+  focus, arrow-cone navigation, an Escape hatch out of application mode, an
+  `aria-live` announcer, per-element accessible names (`<title>`/`<desc>`, also in
+  SSR/`exportSVG` output), a forced-colors-aware focus ring, and reduced-motion-aware
+  zoom. AT forms-mode navigation is verified structurally (axe) and behaviourally
+  (Playwright); a manual screen-reader pass is recommended (tracked as ROADMAP C2.a).
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+  - @d3-polytree/core@0.6.0
+  - @d3-polytree/viewer@0.2.3
+  - @d3-polytree/interactive-viewer@0.6.2
+
 ## 0.7.1
 
 ### Patch Changes
