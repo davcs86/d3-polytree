@@ -1,5 +1,35 @@
 # @d3-polytree/core
 
+## 0.6.0
+
+### Minor Changes
+
+- 02e77ae: JSON adapter: support caller-extended moddle packages. `validate`, `fromJson`,
+  `assertValid` (and core's `loadModelFromJson`) accept an optional `packages`
+  option; when supplied, the JSON path validates and rebuilds against the live
+  extended moddle descriptor — so JSON documents round-trip caller-extended models
+  the way XML already does. The default (no-`packages`) path is unchanged, reading
+  the committed generated schema tables.
+- 02e77ae: Coalesce consecutive property-panel text edits into a single undo step. Adds a
+  `CommandStack` merge seam — an optional `mergeKey` on `execute` plus an optional
+  `CommandHandler.merge(prev, next)` hook — so a debounced typing burst on one
+  field collapses to one transaction while every keystroke still updates the live
+  drawing. The editor's `element.updateProperties` implements the hook and keys the
+  burst by element + property + selection session, so re-selecting an element
+  starts a new, separately-undoable edit.
+
+### Patch Changes
+
+- 02e77ae: Keyboard-first accessibility for the diagram: `role="application"` with roving
+  focus, arrow-cone navigation, an Escape hatch out of application mode, an
+  `aria-live` announcer, per-element accessible names (`<title>`/`<desc>`, also in
+  SSR/`exportSVG` output), a forced-colors-aware focus ring, and reduced-motion-aware
+  zoom. AT forms-mode navigation is verified structurally (axe) and behaviourally
+  (Playwright); a manual screen-reader pass is recommended (tracked as ROADMAP C2.a).
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+  - @d3-polytree/pfdn-moddle@0.3.0
+
 ## 0.5.2
 
 ### Patch Changes

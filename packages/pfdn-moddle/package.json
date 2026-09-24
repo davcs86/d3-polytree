@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/pfdn-moddle",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Read/write Process Flow Diagram Notation (.pfdn) documents — a moddle model for the d3-polytree v2 ecosystem",
   "license": "MIT",
   "author": "David Castillo",

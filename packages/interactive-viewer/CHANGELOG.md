@@ -1,5 +1,21 @@
 # @d3-polytree/interactive-viewer
 
+## 0.6.2
+
+### Patch Changes
+
+- 02e77ae: Keyboard-first accessibility for the diagram: `role="application"` with roving
+  focus, arrow-cone navigation, an Escape hatch out of application mode, an
+  `aria-live` announcer, per-element accessible names (`<title>`/`<desc>`, also in
+  SSR/`exportSVG` output), a forced-colors-aware focus ring, and reduced-motion-aware
+  zoom. AT forms-mode navigation is verified structurally (axe) and behaviourally
+  (Playwright); a manual screen-reader pass is recommended (tracked as ROADMAP C2.a).
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+  - @d3-polytree/core@0.6.0
+  - @d3-polytree/viewer@0.2.3
+
 ## 0.6.1
 
 ### Patch Changes
