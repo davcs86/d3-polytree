@@ -28,7 +28,7 @@ import { Editor, type EditorOptions } from '@d3-polytree/editor';
 export type EditorModules = NonNullable<EditorOptions['modules']>;
 
 export interface PolytreeChange {
-  /** Whether the document has an undoable change past the baseline. */
+  /** Whether the document changed since the last save (`Editor.markSaved()`) or since it was opened. */
   dirty: boolean;
   /** Lazily serialize the current document to a `.pfdn` string. */
   getValue: () => string;

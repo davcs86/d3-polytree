@@ -53,16 +53,28 @@ Constructor: `new Viewer(options?: ViewerOptions)`.
 | `container` | `HTMLElement`     | Host element the diagram renders into.                                                                               |
 | `modules`   | `DiagramModule[]` | Extra didi modules layered **after** the component's own (last definition wins) — the no-subclassing extension seam. |
 
-| Method / property                      | Description                                                                                                                                                |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `importDiagram(xml)` → `Promise<void>` | Parse and render a `.pfdn` document (a reboot).                                                                                                            |
-| `createEmpty()`                        | Render a fresh, empty diagram.                                                                                                                             |
-| `exportDiagram()` → `string`           | Serialize the current diagram back to `.pfdn` XML.                                                                                                         |
-| `exportSVG()` → `string`               | The current rendering as a standalone SVG string.                                                                                                          |
-| `on(event, handler)` / `off(...)`      | Subscribe to post-boot engine events — `document.changed`, `selection.changed`, `commandStack.changed`. Subscriptions **survive `importDiagram` reboots**. |
-| `get(name, strict?)`                   | Resolve any service from the running engine (`viewer.get('eventBus')`).                                                                                    |
-| `getHost()`                            | The loaded model host (`{ definitions, moddle }`).                                                                                                         |
-| `destroy()`                            | Tear down the diagram and drop all subscriptions.                                                                                                          |
+| Method / property                      | Description                                                                                                               |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `importDiagram(xml)` → `Promise<void>` | Parse and render a `.pfdn` document (a reboot).                                                                           |
+| `createEmpty()`                        | Render a fresh, empty diagram.                                                                                            |
+| `exportDiagram()` → `string`           | Serialize the current diagram back to `.pfdn` XML.                                                                        |
+| `exportSVG()` → `string`               | The current rendering as a standalone SVG string.                                                                         |
+| `on(event, handler)` / `off(...)`      | Subscribe to post-boot engine events. Subscriptions **survive `importDiagram` reboots**. Typed per component — see below. |
+| `get(name, strict?)`                   | Resolve any service from the running engine (`viewer.get('eventBus')`).                                                   |
+| `getHost()`                            | The loaded model host (`{ definitions, moddle }`).                                                                        |
+| `destroy()`                            | Tear down the diagram and drop all subscriptions.                                                                         |
+
+`Viewer<E>` is generic over the events its `on()`/`off()` accept, narrowed to what each component's
+modules actually emit, so a subscription that could never fire is a compile error:
+
+| Component           | Events (`E`)                                                    | Type alias               |
+| ------------------- | --------------------------------------------------------------- | ------------------------ |
+| `Viewer`            | none                                                            | `ViewerEvent`            |
+| `InteractiveViewer` | `selection.changed`                                             | `InteractiveViewerEvent` |
+| `Editor`            | `document.changed`, `selection.changed`, `commandStack.changed` | `EditorEvent`            |
+
+A `Viewer` composed (via `modules`) with a feature that emits one of these opts in with the type
+parameter: `new Viewer<'selection.changed'>({ container, modules: [selectionModule] })`.
 
 The running `Viewer` registers itself as the `d3polytree` value module, so drawers/modelling resolve
 `d3polytree.definitions` / `d3polytree.moddle` off the instance.

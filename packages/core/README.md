@@ -96,8 +96,9 @@ modules (`nodesModule`, `linksModule`, `labelsModule`, `zonesModule`); the featu
 (`zoomModule`, `zoomScrollModule`, `axesModule`, `backgroundColorModule`, `mouseEventsModule`,
 `selectionModule`, `outlineModule`, `dragModule`, `exportingModule`, `localStorageModule`,
 `uploadModule`, `paletteModule`, `resizeElementModule`, `autoLayoutModule`, …); `createIcons` and the
-icon-pack convention; plus a broad set of TypeScript types (`DiagramModule`, `DiagramEventMap`,
-`CreateParameters`, `CommandStack`, `Selection`, `DrawingRegistry`, `LayoutOptions`, …).
+icon-pack convention; `LocalStorage` (`save()`, `restore()`) and `readSavedDiagram()`; the element
+status state machine (`ElementStatus`, `markModified`); plus a broad set of TypeScript types (`DiagramModule`, `DiagramEventMap`,
+`CreateParameters`, `CommandStack` (undo/redo plus the `markSaved()` / `isDirty()` save point), `Selection`, `DrawingRegistry`, `LayoutOptions`, …).
 
 ## Links
 

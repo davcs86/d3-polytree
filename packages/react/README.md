@@ -61,15 +61,17 @@ function App() {
 
 ### Props — `PolytreeEditorProps`
 
-| Prop                | Type                               | Description                                                       |
-| ------------------- | ---------------------------------- | ----------------------------------------------------------------- |
-| `defaultValue`      | `string`                           | The `.pfdn` document to open on mount (applied once).             |
-| `onChange`          | `(change: PolytreeChange) => void` | Fired on every committed edit.                                    |
-| `onSelectionChange` | `(prev, next) => void`             | Fired on selection changes, in the engine's `(prev, next)` order. |
-| `className`         | `string`                           | Class on the host `<div>`.                                        |
-| `style`             | `CSSProperties`                    | Inline style on the host `<div>`.                                 |
+| Prop                | Type                               | Description                                                                                                                                                                                                                                 |
+| ------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `defaultValue`      | `string`                           | The `.pfdn` document to open on mount (applied once).                                                                                                                                                                                       |
+| `modules`           | `EditorModules`                    | Extra didi modules (e.g. `[awsIconsModule]`) composed after the editor's own. A **different array** after mount reboots the engine and re-imports the current document (undo/selection reset) — keep it stable (module scope or `useMemo`). |
+| `onChange`          | `(change: PolytreeChange) => void` | Fired on every committed edit.                                                                                                                                                                                                              |
+| `onSelectionChange` | `(prev, next) => void`             | Fired on selection changes, in the engine's `(prev, next)` order.                                                                                                                                                                           |
+| `className`         | `string`                           | Class on the host `<div>`.                                                                                                                                                                                                                  |
+| `style`             | `CSSProperties`                    | Inline style on the host `<div>`.                                                                                                                                                                                                           |
 
-`PolytreeChange` = `{ dirty: boolean; getValue: () => string }` — `getValue` serializes lazily so a
+`PolytreeChange` = `{ dirty: boolean; getValue: () => string }` — `dirty` is "changed since the last
+save" (`getEditor().markSaved()` records a save point; the palette's Save does it too). `getValue` serializes lazily so a
 handler that only checks `dirty` never pays the serialization cost.
 
 ### Ref handle — `PolytreeEditorHandle`
