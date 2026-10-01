@@ -22,7 +22,10 @@ import {
   useSyncExternalStore,
   type CSSProperties
 } from 'react';
-import { Editor } from '@d3-polytree/editor';
+import { Editor, type EditorOptions } from '@d3-polytree/editor';
+
+/** Extra didi modules (icon packs, custom features) — the `Editor` `modules` option. */
+export type EditorModules = NonNullable<EditorOptions['modules']>;
 
 export interface PolytreeChange {
   /** Whether the document has an undoable change past the baseline. */
@@ -45,6 +48,14 @@ export interface PolytreeEditorProps {
   defaultValue?: string;
   /** Fired on every committed edit (via the engine's `document.changed`). */
   onChange?: (change: PolytreeChange) => void;
+  /**
+   * Extra didi modules composed after the editor's own (last definition wins),
+   * e.g. `[awsIconsModule]`. Modules are boot-time in didi, so a *different*
+   * array after mount reboots the engine and re-imports the current document
+   * (undo history and selection reset). Compared by identity — keep it stable
+   * (module scope or `useMemo`) to avoid needless reboots.
+   */
+  modules?: EditorModules;
   /** Fired on selection changes, in the engine's `(prev, next)` order. */
   onSelectionChange?: (prev: readonly unknown[], next: readonly unknown[]) => void;
   className?: string;
@@ -58,10 +69,12 @@ interface Store {
 
 export const PolytreeEditor = forwardRef<PolytreeEditorHandle, PolytreeEditorProps>(
   function PolytreeEditor(props, ref) {
-    const { defaultValue, onChange, onSelectionChange, className, style } = props;
+    const { defaultValue, modules, onChange, onSelectionChange, className, style } = props;
 
     const hostRef = useRef<HTMLDivElement | null>(null);
     const editorRef = useRef<Editor | null>(null);
+    /** The options the editor booted with; `modules` is re-read on every reboot. */
+    const optionsRef = useRef<EditorOptions | null>(null);
     // Always call the latest props without re-subscribing the bus.
     const cbRef = useRef({ onChange, onSelectionChange });
     cbRef.current = { onChange, onSelectionChange };
@@ -102,7 +115,9 @@ export const PolytreeEditor = forwardRef<PolytreeEditorHandle, PolytreeEditorPro
       if (!host) {
         return;
       }
-      const editor = new Editor({ container: host });
+      const options: EditorOptions = { container: host, modules };
+      optionsRef.current = options;
+      const editor = new Editor(options);
       editorRef.current = editor;
 
       const bump = (): void => {
@@ -135,9 +150,25 @@ export const PolytreeEditor = forwardRef<PolytreeEditorHandle, PolytreeEditorPro
         editor.off('selection.changed', onSel);
         editor.destroy();
         editorRef.current = null;
+        optionsRef.current = null;
       };
-      // Mount once; `defaultValue` is uncontrolled (later changes use ref.load()).
+      // Mount once; `defaultValue` is uncontrolled (later changes use ref.load()),
+      // and `modules` changes are applied by the reboot effect below.
     }, []);
+
+    // A new `modules` array reboots the engine in place (the boot reads
+    // `options.modules`); the `on()` subscriptions above survive the reboot.
+    useEffect(() => {
+      const editor = editorRef.current;
+      const options = optionsRef.current;
+      if (!editor || !options || options.modules === modules) {
+        return; // first mount (already booted with these) or unchanged identity
+      }
+      options.modules = modules;
+      if (editor.getHost()) {
+        void editor.importDiagram(editor.exportDiagram());
+      }
+    }, [modules]);
 
     return <div ref={hostRef} className={className} style={style} />;
   }

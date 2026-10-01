@@ -8,10 +8,13 @@
  * `CustomEvent` on every committed edit. Styling is inlined into the shadow root
  * from the components' compiled CSS (see `styles.generated.ts`).
  */
-import { Editor } from '@d3-polytree/editor';
+import { Editor, type EditorOptions } from '@d3-polytree/editor';
 import { shadowCss } from './styles.generated';
 
 const TAG = 'd3-polytree-editor';
+
+/** Extra didi modules (icon packs, custom features) — the `Editor` `modules` option. */
+export type EditorModules = NonNullable<EditorOptions['modules']>;
 
 export class D3PolytreeEditorElement extends HTMLElement {
   /** Opt into form association (guarded: not all engines/hosts support it). */
@@ -19,6 +22,9 @@ export class D3PolytreeEditorElement extends HTMLElement {
   static readonly observedAttributes = ['value'];
 
   private _editor: Editor | null = null;
+  /** The options the editor boots with; `modules` is re-read on every (re)boot. */
+  private _options: EditorOptions | null = null;
+  private _modules: EditorModules | undefined;
   private _internals: ElementInternals | null = null;
   /** The last `.pfdn` this element emitted — guards attribute echoes. */
   private _lastEmitted: string | null = null;
@@ -38,6 +44,42 @@ export class D3PolytreeEditorElement extends HTMLElement {
     } catch {
       this._internals = null;
     }
+    // A `modules` assigned before the tag was defined is an own property that
+    // would shadow the accessor; re-route it through the setter.
+    if (Object.prototype.hasOwnProperty.call(this, 'modules')) {
+      const pending = (this as unknown as { modules: EditorModules }).modules;
+      delete (this as unknown as { modules?: EditorModules }).modules;
+      this.modules = pending;
+    }
+  }
+
+  /**
+   * Extra didi modules composed after the editor's own (last definition wins) —
+   * e.g. `el.modules = [awsIconsModule]`. A JS property only (modules are not
+   * serializable). Modules are boot-time in didi, so assigning a different array
+   * after mount reboots the engine with them and re-imports the current
+   * document (undo history and selection reset). Compared by identity: keep the
+   * array stable to avoid needless reboots.
+   */
+  get modules(): EditorModules | undefined {
+    return this._modules;
+  }
+
+  set modules(modules: EditorModules | undefined) {
+    if (modules === this._modules) {
+      return;
+    }
+    this._modules = modules;
+    if (!this._editor || !this._options) {
+      return; // applied at connect
+    }
+    this._options.modules = modules;
+    if (this._editor.getHost()) {
+      // reboot in place: _boot re-reads options.modules; on() subscriptions survive
+      void this._editor
+        .importDiagram(this._editor.exportDiagram())
+        .then(() => this._updateFormValue());
+    }
   }
 
   connectedCallback(): void {
@@ -55,7 +97,8 @@ export class D3PolytreeEditorElement extends HTMLElement {
     container.style.height = '100%';
     root.appendChild(container);
 
-    const editor = new Editor({ container });
+    this._options = { container, modules: this._modules };
+    const editor = new Editor(this._options);
     this._editor = editor;
     // Subscribe once; the subscription survives importDiagram reboots (C7 surface).
     editor.on('document.changed', this._onDocChanged);
@@ -74,6 +117,7 @@ export class D3PolytreeEditorElement extends HTMLElement {
       this._editor.off('document.changed', this._onDocChanged);
       this._editor.destroy();
       this._editor = null;
+      this._options = null;
     }
     this._lastEmitted = null;
   }
