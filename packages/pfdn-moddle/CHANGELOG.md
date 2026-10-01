@@ -1,5 +1,25 @@
 # @d3-polytree/pfdn-moddle
 
+## 0.3.0
+
+### Minor Changes
+
+- 02e77ae: JSON adapter: support caller-extended moddle packages. `validate`, `fromJson`,
+  `assertValid` (and core's `loadModelFromJson`) accept an optional `packages`
+  option; when supplied, the JSON path validates and rebuilds against the live
+  extended moddle descriptor — so JSON documents round-trip caller-extended models
+  the way XML already does. The default (no-`packages`) path is unchanged, reading
+  the committed generated schema tables.
+- 02e77ae: Add `@d3-polytree/diff`: a pure, dependency-light structural diff over two
+  `toJson`-canonical `.pfdn` documents. `diff(a, b)` returns a deterministic,
+  totally-ordered `DiffOp[]` (added / removed / moved / retyped / reattached /
+  modified) for review overlays and three-way merge helpers, DOM-free and
+  moddle-free at runtime.
+
+  Also adds a `@d3-polytree/pfdn-moddle/schema` subpath exporting the generated
+  `SCHEMA`/`CONCRETE_TYPES` runtime tables (moddle-free), which the diff engine
+  consumes to drive its schema walk off the single generated source of truth.
+
 ## 0.2.2
 
 ### Patch Changes

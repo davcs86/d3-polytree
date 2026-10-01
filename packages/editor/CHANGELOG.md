@@ -1,5 +1,65 @@
 # @d3-polytree/editor
 
+## 0.8.0
+
+### Minor Changes
+
+- d615807: Save gets a restore path and a real save point. The palette gains **Restore saved
+  diagram** (re-opens what **Save** stored in `localStorage`, after a confirmation);
+  `LocalStorage.restore()` and `readSavedDiagram()` are exported, and the Editor adds
+  `restoreSaved()`, `markSaved()`, `isDirty()` plus an opt-in `restoreSaved` option
+  that opens the saved diagram at boot. `CommandStack` records a save point
+  (`markSaved()` / a new `document.saved` event): `document.changed`'s `dirty` now
+  means "changed since the last save" — undo/redo back to the save point is clean —
+  instead of "has anything to undo". Save no longer reports success after a failed
+  `localStorage` write.
+- d615807: Command-owned element `status` state machine. The draw layer and the live drag no
+  longer write `status`, so `execute → undo` is byte-identical for documents whose
+  elements carry no `status` attribute (previously undo left `status="2"`).
+  `element.move` / `element.resize` / `element.updateProperties` apply
+  `markModified` (`Persisted` → `Dirty`) and restore the exact prior status on
+  undo. New elements are now created `New` (the default, not serialized) instead of
+  `Persisted`. Soft-deleted (`status="3"`) elements are no longer redrawn when a
+  saved document is reopened. `ElementStatus` and `markModified` are exported.
+- d615807: **Breaking (types):** `on()` / `off()` now accept only the events a component
+  actually emits. `Viewer` is generic over its event set — `Viewer` (none),
+  `InteractiveViewer` (`selection.changed`), `Editor` (`document.changed`,
+  `selection.changed`, `commandStack.changed`) — so a subscription that could never
+  fire is a compile error instead of a silent no-op. A `Viewer` composed with an
+  emitting module opts in via the type parameter, e.g.
+  `new Viewer<'selection.changed'>({ modules: [selectionModule] })`. New type
+  aliases: `ViewerEvent`, `InteractiveViewerEvent`, `EditorEvent`.
+
+### Patch Changes
+
+- 02e77ae: Coalesce consecutive property-panel text edits into a single undo step. Adds a
+  `CommandStack` merge seam — an optional `mergeKey` on `execute` plus an optional
+  `CommandHandler.merge(prev, next)` hook — so a debounced typing burst on one
+  field collapses to one transaction while every keystroke still updates the live
+  drawing. The editor's `element.updateProperties` implements the hook and keys the
+  burst by element + property + selection session, so re-selecting an element
+  starts a new, separately-undoable edit.
+- 02e77ae: Keyboard-first accessibility for the diagram: `role="application"` with roving
+  focus, arrow-cone navigation, an Escape hatch out of application mode, an
+  `aria-live` announcer, per-element accessible names (`<title>`/`<desc>`, also in
+  SSR/`exportSVG` output), a forced-colors-aware focus ring, and reduced-motion-aware
+  zoom. AT forms-mode navigation is verified structurally (axe) and behaviourally
+  (Playwright); a manual screen-reader pass is recommended (tracked as ROADMAP C2.a).
+- d615807: Fix a properties-panel edit landing on the wrong element: typing in a field and
+  then selecting something else within the 300 ms debounce window wrote the text
+  into the newly selected element (e.g. the diagram settings). The pending edit is
+  now flushed into the element it was typed into before the panel re-renders, and
+  dropped when the engine is torn down.
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [d615807]
+- Updated dependencies [d615807]
+- Updated dependencies [d615807]
+  - @d3-polytree/core@0.6.0
+  - @d3-polytree/viewer@0.3.0
+  - @d3-polytree/interactive-viewer@0.7.0
+
 ## 0.7.1
 
 ### Patch Changes

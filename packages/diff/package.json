@@ -1,6 +1,6 @@
 {
   "name": "@d3-polytree/diff",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Pure structural diff of two .pfdn documents → an ordered DiffOp[] for review overlays and three-way merge",
   "license": "MIT",
   "author": "David Castillo",

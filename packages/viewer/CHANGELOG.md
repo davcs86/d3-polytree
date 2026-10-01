@@ -1,5 +1,33 @@
 # @d3-polytree/viewer
 
+## 0.3.0
+
+### Minor Changes
+
+- d615807: **Breaking (types):** `on()` / `off()` now accept only the events a component
+  actually emits. `Viewer` is generic over its event set — `Viewer` (none),
+  `InteractiveViewer` (`selection.changed`), `Editor` (`document.changed`,
+  `selection.changed`, `commandStack.changed`) — so a subscription that could never
+  fire is a compile error instead of a silent no-op. A `Viewer` composed with an
+  emitting module opts in via the type parameter, e.g.
+  `new Viewer<'selection.changed'>({ modules: [selectionModule] })`. New type
+  aliases: `ViewerEvent`, `InteractiveViewerEvent`, `EditorEvent`.
+
+### Patch Changes
+
+- 02e77ae: Keyboard-first accessibility for the diagram: `role="application"` with roving
+  focus, arrow-cone navigation, an Escape hatch out of application mode, an
+  `aria-live` announcer, per-element accessible names (`<title>`/`<desc>`, also in
+  SSR/`exportSVG` output), a forced-colors-aware focus ring, and reduced-motion-aware
+  zoom. AT forms-mode navigation is verified structurally (axe) and behaviourally
+  (Playwright); a manual screen-reader pass is recommended (tracked as ROADMAP C2.a).
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [d615807]
+- Updated dependencies [d615807]
+  - @d3-polytree/core@0.6.0
+
 ## 0.2.2
 
 ### Patch Changes

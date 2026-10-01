@@ -1,5 +1,32 @@
 # @d3-polytree/element
 
+## 0.4.0
+
+### Minor Changes
+
+- d615807: Both adapters accept extra didi `modules` (icon packs, custom features): a
+  `modules` JS property on `<d3-polytree-editor>` and a `modules` prop on
+  `<PolytreeEditor>`. A different array after mount reboots the engine in place and
+  re-imports the current document (undo/selection reset); arrays are compared by
+  identity.
+
+### Patch Changes
+
+- 02e77ae: Keyboard-first accessibility for the diagram: `role="application"` with roving
+  focus, arrow-cone navigation, an Escape hatch out of application mode, an
+  `aria-live` announcer, per-element accessible names (`<title>`/`<desc>`, also in
+  SSR/`exportSVG` output), a forced-colors-aware focus ring, and reduced-motion-aware
+  zoom. AT forms-mode navigation is verified structurally (axe) and behaviourally
+  (Playwright); a manual screen-reader pass is recommended (tracked as ROADMAP C2.a).
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [d615807]
+- Updated dependencies [d615807]
+- Updated dependencies [d615807]
+- Updated dependencies [d615807]
+  - @d3-polytree/editor@0.8.0
+  - @d3-polytree/interactive-viewer@0.7.0
+
 ## 0.3.1
 
 ### Patch Changes
