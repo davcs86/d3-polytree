@@ -165,4 +165,61 @@ describe('<d3-polytree-editor>', () => {
       expect(importSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe('import failures and pending imports', () => {
+    const VALID = (): string => {
+      const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+      document.body.appendChild(el);
+      const xml = el.value;
+      el.remove();
+      return xml;
+    };
+
+    it('dispatches `error` when the initial value fails to import', async () => {
+      const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+      el.setAttribute('value', '<not-pfdn');
+      const onError = vi.fn();
+      el.addEventListener('error', onError);
+      document.body.appendChild(el);
+      await vi.waitFor(() => expect(onError).toHaveBeenCalledOnce());
+      expect((onError.mock.calls[0][0] as CustomEvent).detail).toBeInstanceOf(Error);
+      // nothing loaded: value is the last assigned value, not a throw
+      expect(el.value).toBe('<not-pfdn');
+    });
+
+    it('a failed re-import keeps the open document and re-syncs value', async () => {
+      const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+      document.body.appendChild(el);
+      const before = el.value;
+      const onError = vi.fn();
+      el.addEventListener('error', onError);
+      el.value = '<not-pfdn';
+      await vi.waitFor(() => expect(onError).toHaveBeenCalledOnce());
+      expect(el.value).toBe(before);
+      expect(el.getAttribute('value')).toBe(before);
+    });
+
+    it('value does not throw while the initial import is pending', () => {
+      const xml = VALID();
+      const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+      el.setAttribute('value', xml);
+      document.body.appendChild(el);
+      expect(() => el.value).not.toThrow();
+      expect(el.value).toBe(xml);
+    });
+
+    it('disconnecting during a pending import never boots a second engine', async () => {
+      const xml = VALID();
+      const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+      el.setAttribute('value', xml);
+      document.body.appendChild(el);
+      el.remove(); // destroy before the import resolves
+      document.body.appendChild(el); // reconnect (e.g. a DOM move)
+      await vi.waitFor(() =>
+        expect(el.shadowRoot!.querySelectorAll('svg[pointer-events="all"]')).toHaveLength(1)
+      );
+      await new Promise((r) => setTimeout(r, 0));
+      expect(el.shadowRoot!.querySelectorAll('svg[pointer-events="all"]')).toHaveLength(1);
+    });
+  });
 });

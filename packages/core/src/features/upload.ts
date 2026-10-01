@@ -1,4 +1,5 @@
 import type { Canvas } from '@d3-polytree/canvas';
+import type { NotificationService } from './notifications';
 
 /** The `d3polytree` host surface upload needs (provided by the viewer). */
 export interface UploadHost {
@@ -12,13 +13,15 @@ export interface UploadHost {
  * `min-dom` / `lodash` onto native DOM and the `FileReader` API.
  */
 export class Upload {
-  static readonly $inject = ['canvas', 'd3polytree'];
+  static readonly $inject = ['canvas', 'd3polytree', 'notifications'];
 
   private readonly _host: UploadHost;
+  private readonly _notifications?: NotificationService;
   private readonly _fileInput: HTMLInputElement;
 
-  constructor(canvas: Canvas, host: UploadHost) {
+  constructor(canvas: Canvas, host: UploadHost, notifications?: NotificationService) {
     this._host = host;
+    this._notifications = notifications;
     this._fileInput = this._createInput(canvas);
   }
 
@@ -58,7 +61,12 @@ export class Upload {
     reader.onload = (event) => {
       const xml = event.target?.result;
       if (typeof xml === 'string') {
-        void this._host.importDiagram(xml);
+        // the current diagram stays open when the file fails to import
+        this._host.importDiagram(xml).catch((error: unknown) => {
+          const text = 'The file could not be opened as a .pfdn diagram';
+          console.error(text, error);
+          this._notifications?.error({ title: 'Error', text });
+        });
       }
     };
     reader.readAsText(file);

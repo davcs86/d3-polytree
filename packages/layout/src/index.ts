@@ -18,6 +18,8 @@ export {
 export {
   type LayoutRequest,
   type LayoutResponse,
+  type LayoutErrorResponse,
+  encodeError,
   encodeResult,
   decodeResult,
   handleLayoutRequest

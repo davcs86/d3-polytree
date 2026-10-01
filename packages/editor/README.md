@@ -50,19 +50,19 @@ const xml = editor.exportDiagram(); // serialize to .pfdn
 Everything on [`Viewer`](https://github.com/davcs86/d3-polytree/tree/main/packages/viewer) /
 `InteractiveViewer`, plus the editing surface:
 
-| Method                                   | Description                                                                                                                            |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `createDiagram()` → `Promise<void>`      | Open the built-in starter diagram — or, at boot with the `restoreSaved` option, the last saved one.                                    |
-| `createNode(params?)` → element          | Create a node (`{ type, position }`) as an undoable command.                                                                           |
-| `select(definition)`                     | Select an element programmatically.                                                                                                    |
-| `deleteSelected()`                       | Delete the current selection.                                                                                                          |
-| `autoLayout(options?)` → `Promise<void>` | Re-lay the whole diagram (layered/Sugiyama) as a **single undoable command**. Provide a `layoutRunner` DI value to run it on a Worker. |
-| `setLinkPinned(id, pinned?)`             | Pin/unpin a link's routing (`pinned` defaults to `true`) as an undoable command.                                                       |
-| `undo()` / `redo()`                      | Walk the command stack.                                                                                                                |
-| `canUndo()` / `canRedo()` → `boolean`    | Whether the command stack currently has anything to undo / redo.                                                                       |
-| `markSaved()`                            | Record the current state as saved (call after persisting elsewhere); `document.changed` reports `dirty: false` until the next edit.    |
-| `isDirty()` → `boolean`                  | Whether the document changed since the last save (or since it was opened). Undo/redo back to the save point is clean.                  |
-| `restoreSaved()` → `Promise<boolean>`    | Re-open the diagram last stored by the palette's **Save**; `false` (with a notification) when nothing is stored or it fails to import. |
+| Method                                   | Description                                                                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createDiagram()` → `Promise<void>`      | Open the built-in starter diagram — or, at boot with the `restoreSaved` option, the last saved one.                                        |
+| `createNode(params?)` → element          | Create a node (`{ type, position }`) as an undoable command.                                                                               |
+| `select(definition)`                     | Select an element programmatically.                                                                                                        |
+| `deleteSelected()`                       | Delete the current selection.                                                                                                              |
+| `autoLayout(options?)` → `Promise<void>` | Re-lay the whole diagram (layered/Sugiyama) as a **single undoable command**. Provide a `layoutRunner` DI value to run it on a Worker.     |
+| `setLinkPinned(id, pinned?)`             | Pin/unpin a link's routing (`pinned` defaults to `true`) as an undoable command.                                                           |
+| `undo()` / `redo()`                      | Walk the command stack. No-op when there is nothing to undo/redo, or before a diagram is loaded.                                           |
+| `canUndo()` / `canRedo()` → `boolean`    | Whether the command stack currently has anything to undo / redo (`false` before load).                                                     |
+| `markSaved()`                            | Record the current state as saved (call after persisting elsewhere); `document.changed` reports `dirty: false` until the next edit.        |
+| `isDirty()` → `boolean`                  | Whether the document changed since the last save (or since it was opened); `false` before load. Undo/redo back to the save point is clean. |
+| `restoreSaved()` → `Promise<boolean>`    | Re-open the diagram last stored by the palette's **Save**; `false` (with a notification) when nothing is stored or it fails to import.     |
 
 Options: everything `ViewerOptions` takes, plus `restoreSaved?: boolean` — when `createDiagram()` runs
 with no diagram open yet, open the diagram saved in `localStorage` instead of the starter diagram
@@ -71,6 +71,24 @@ marks the document clean; **Restore saved diagram** re-opens it after a confirma
 
 `on()` accepts all three engine events — `document.changed` (`{ dirty }`), `selection.changed`,
 `commandStack.changed` (`EditorEvent`).
+
+Palette actions never fail silently: a failed export (`.pfdn`/SVG/PNG), auto-layout, **New**, or
+**Open** (a file that is not a valid `.pfdn`) shows an error notification and leaves the current
+diagram open.
+
+### Keyboard
+
+Scoped to the focused editor container (never while typing in a panel field):
+
+| Keys                                                                                | Action                                                             |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| <kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd>                                                    | Undo                                                               |
+| <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>, <kbd>Ctrl/Cmd</kbd>+<kbd>Y</kbd> | Redo                                                               |
+| <kbd>Ctrl/Cmd</kbd>+click                                                           | Add an element to the selection (a plain click replaces it)        |
+| Arrow keys / <kbd>Esc</kbd>                                                         | Move between elements / leave (inherited from `InteractiveViewer`) |
+
+In a confirmation dialog, <kbd>Enter</kbd> confirms and <kbd>Esc</kbd> cancels — only while the
+dialog has focus, never from elsewhere on the page.
 
 ## Styling & theming
 

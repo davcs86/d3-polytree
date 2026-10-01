@@ -76,6 +76,66 @@ if (validate(doc).ok) {
 }
 ```
 
+## API
+
+### Engine & model
+
+| Export                                                      | Kind             | Description                                                                                                                          |
+| ----------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `Diagram`                                                   | class            | Bootstraps a didi injector from a module list; `get('<token>')` reaches any service.                                                 |
+| `coreModules`                                               | `unknown[]`      | The base engine modules (canvas + drawing registry).                                                                                 |
+| `loadModel`, `loadModelFromJson`, `emptyModel`              | function         | Load a `.pfdn` XML / typed JSON document (or an empty one) into a `ModelHost` (`{ definitions, moddle }`).                           |
+| `ModelHost`                                                 | type             | The model host the drawers resolve off the `d3polytree` token.                                                                       |
+| `buildModelGraph(input)`                                    | function         | Assembles a `LayoutGraph` from node/link definitions (`{ nodes, links, isLive, sizeOf? }`); shared by `autoLayout` and keyboard nav. |
+| `ElementStatus`, `markModified`                             | const / function | The element status state machine.                                                                                                    |
+| `nodesModule`, `linksModule`, `labelsModule`, `zonesModule` | didi module      | The drawers.                                                                                                                         |
+| `createIcons`                                               | function         | The base icon set; icon packs spread it in their own `icons` factory.                                                                |
+
+### Features
+
+| Export                                                                                       | Kind        | Description                                                                                                                                         |
+| -------------------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zoomModule`, `zoomScrollModule`, `axesModule`, `backgroundColorModule`, `mouseEventsModule` | didi module | Pan/zoom, scroll zoom, grid, background, and the DOM-to-bus mouse-event bridge.                                                                     |
+| `selectionModule` / `Selection`                                                              | didi module | Selection tracking; emits `selection.changed`. A Ctrl (Windows/Linux) or Cmd (macOS) click adds to the selection, a plain click replaces it.        |
+| `AdditiveModifiers`                                                                          | type        | `{ ctrlKey?, metaKey? }` — the modifier keys `Selection.select(element, definition, event?)` reads to add rather than replace.                      |
+| `outlineModule`, `dragModule`, `resizeElementModule`, `autoLayoutModule`, `paletteModule`    | didi module | Selection outline, dragging, resize handles, auto-layout, and the palette (toolbar + add-handlers + link tool).                                     |
+| `keyboardNavModule` / `KeyboardNav`                                                          | didi module | Keyboard-first navigation: roving focus moved by arrow-key direction, a per-element focus ring, and an Escape hatch. Compose it before the drawers. |
+| `ariaAnnouncerModule` / `AriaAnnouncer`                                                      | didi module | Announces selection and post-boot create/remove events through a visually hidden `aria-live="polite"` region.                                       |
+| `exportingModule` / `Exporting`                                                              | didi module | `trigger(format)` downloads the diagram. `trigger('png')` rejects if the SVG cannot be rendered.                                                    |
+| `ExportFormat`                                                                               | type        | `'pfdn' \| 'svg' \| 'png'`.                                                                                                                         |
+| `uploadModule` / `Upload`                                                                    | didi module | Opens a `.pfdn` file from disk. A file that fails to import is reported through the `notifications` service, and the current diagram stays open.    |
+| `localStorageModule` / `LocalStorage`, `readSavedDiagram()`                                  | didi module | Browser persistence (`save()`, `restore()`).                                                                                                        |
+
+### Commands (undo/redo)
+
+| Export                                                                                                                                | Kind        | Description                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commandStackModule` / `CommandStack`                                                                                                 | didi module | Transactional undo/redo: `execute(command, context, mergeKey?)`, `undo()`, `redo()`, `canUndo()`, `canRedo()`, `clear()`, `registerHandler()`.        |
+| `CommandStack#markSaved()` / `isDirty()`                                                                                              | method      | Record the save point / ask whether the document differs from it. A `document.saved` bus event also calls `markSaved()`.                              |
+| `CommandHandler`, `CommandContext`                                                                                                    | type        | The handler contract (`execute`/`revert`, optional `canExecute`, `preExecute`, `postExecute`, `merge`) and its serializable memento.                  |
+| `registerModellingCommands(commandStack, handlers, definitions)`                                                                      | function    | Registers every modelling command on the stack (`element.create`, `element.delete`, `elements.delete`, `element.resize`, `element.move`, `link.pin`). |
+| `createElementCommand`, `deleteElementCommand`, `deleteBatchCommand`, `resizeElementCommand`, `moveElementsCommand`, `pinLinkCommand` | function    | The individual `CommandHandler` factories behind those commands.                                                                                      |
+
+**Failure semantics.** A failed `execute` is unwound (the commands it had already applied are reverted)
+and the original error is rethrown; nothing is recorded. If that unwind also throws, a
+`document.inconsistent` event is emitted first (its error carries `cause` = the original error and
+`causes` = the unwind errors), and the stack stays live. If an `undo`/`redo` revert throws, the stack
+is **quarantined** (disabled and cleared), `document.inconsistent` is emitted, and the error is
+rethrown.
+
+### Link routing
+
+| Export                                             | Kind     | Description                                                                                                                                  |
+| -------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `avoidObstacles(waypoints, obstacles, excludeIds)` | function | Pure obstacle-avoidance router (roadmap C4): nudges a four-point elbow's mid-channel around node boxes; other shapes are returned unchanged. |
+| `segmentIntersectsObstacle`                        | function | The segment-vs-box test the router uses.                                                                                                     |
+| `RoutePoint`, `Obstacle`                           | type     | `{ x, y }` and `{ id, x, y, size }`.                                                                                                         |
+
+The package also exports a broad set of TypeScript types (`DiagramModule`, `DiagramEventMap`,
+`CreateParameters`, `DrawingRegistry`, `LayoutOptions`, …) and re-exports the layout runners
+(`createSyncLayoutRunner`, `WorkerLayoutRunner`). See
+[`src/index.ts`](https://github.com/davcs86/d3-polytree/tree/main/packages/core/src/index.ts) for the full surface.
+
 ## Dependency injection (didi)
 
 The engine is a module list, not a monolith. A module is a plain object —
@@ -88,17 +148,6 @@ invariants govern composition:
 2. **Boot order = event-subscription order.** Drawers emit `<class>.created` (`node.created`,
    `link.created`, …) _during_ boot; any feature that must see those initial elements (selection,
    outline, search) has to be registered **before** the drawer modules.
-
-## Key exports
-
-`Diagram`, `coreModules`, `loadModel`, `loadModelFromJson`, `emptyModel`, `ModelHost`; the drawer
-modules (`nodesModule`, `linksModule`, `labelsModule`, `zonesModule`); the feature modules
-(`zoomModule`, `zoomScrollModule`, `axesModule`, `backgroundColorModule`, `mouseEventsModule`,
-`selectionModule`, `outlineModule`, `dragModule`, `exportingModule`, `localStorageModule`,
-`uploadModule`, `paletteModule`, `resizeElementModule`, `autoLayoutModule`, …); `createIcons` and the
-icon-pack convention; `LocalStorage` (`save()`, `restore()`) and `readSavedDiagram()`; the element
-status state machine (`ElementStatus`, `markModified`); plus a broad set of TypeScript types (`DiagramModule`, `DiagramEventMap`,
-`CreateParameters`, `CommandStack` (undo/redo plus the `markSaved()` / `isDirty()` save point), `Selection`, `DrawingRegistry`, `LayoutOptions`, …).
 
 ## Links
 

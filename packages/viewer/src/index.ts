@@ -93,6 +93,13 @@ export class Viewer<E extends ReboundEvent = ViewerEvent> {
   private _bus: EventEmitter<DiagramEventMap> | null = null;
   /** Consumer subscriptions, re-attached to each new bus across reboots. */
   private readonly _handlers = new Set<HandlerEntry>();
+  /**
+   * Bumped by every load ({@link importDiagram}, {@link createEmpty}) and by
+   * {@link destroy}; an async import boots only if it is still the latest, so a
+   * slower earlier import can't overwrite a newer one and an import that
+   * resolves after `destroy()` never resurrects the engine.
+   */
+  private _generation = 0;
 
   constructor(options: ViewerOptions = {}) {
     this.options = options;
@@ -131,13 +138,23 @@ export class Viewer<E extends ReboundEvent = ViewerEvent> {
     return Viewer.modules;
   }
 
-  /** Parse a `.pfdn` document and render it. */
+  /**
+   * Parse a `.pfdn` document and render it. Rejects (leaving the current
+   * diagram open) if the document cannot be parsed. Resolves without rendering
+   * when superseded — a later `importDiagram`/`createEmpty`, or `destroy()`,
+   * was called before this one finished parsing.
+   */
   async importDiagram(xml: string): Promise<void> {
-    this._boot(await loadModel(xml));
+    const generation = ++this._generation;
+    const host = await loadModel(xml);
+    if (generation === this._generation) {
+      this._boot(host);
+    }
   }
 
-  /** Render a fresh, empty diagram. */
+  /** Render a fresh, empty diagram (supersedes any pending import). */
   createEmpty(): void {
+    this._generation += 1;
     this._boot(emptyModel());
   }
 
@@ -167,8 +184,9 @@ export class Viewer<E extends ReboundEvent = ViewerEvent> {
     return this._diagram.get<T>(name, strict);
   }
 
-  /** Tear down the current diagram and forget all subscriptions. */
+  /** Tear down the current diagram and forget all subscriptions (cancels a pending import). */
   destroy(): void {
+    this._generation += 1;
     this._teardown();
     this._handlers.clear();
   }

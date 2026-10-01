@@ -35,7 +35,10 @@ const UNREACHABLE = -2;
  * (dirty until the next save).
  *
  * **Failure semantics.** If an `execute` throws mid-transaction, the commands
- * already applied are best-effort reverted and the entry is never recorded. If a
+ * already applied are best-effort reverted and the entry is never recorded; the
+ * original error is rethrown, and if that unwind also throws, a
+ * `document.inconsistent` event (`cause` = the original error, `causes` = the
+ * unwind errors) is emitted first — the stack stays live. If a
  * `revert`/`redo` throws, the rest of the transaction is still best-effort
  * unwound, then the whole stack is **quarantined** (disabled + cleared) and a
  * fatal `document.inconsistent` event is emitted — never a silently half-mutated
@@ -90,8 +93,9 @@ export class CommandStack {
       this._runCommand(command, context);
     } catch (err) {
       if (opened) {
-        this._bestEffortRevert(this._txn as Transaction);
+        const txn = this._txn as Transaction;
         this._txn = null;
+        this._unwindFailed(txn, err);
       }
       throw err;
     }
@@ -245,9 +249,23 @@ export class CommandStack {
     return errors;
   }
 
-  /** Unwind a failed in-flight transaction; secondary errors are swallowed. */
-  private _bestEffortRevert(txn: Transaction): void {
-    this._revertAll(txn);
+  /**
+   * Unwind a failed in-flight transaction. If the unwind itself throws (a double
+   * fault) the document may be half-mutated: surface it as
+   * `document.inconsistent` — the stack stays live (its recorded entries were
+   * never touched); the host decides whether to reload.
+   */
+  private _unwindFailed(txn: Transaction, primary: unknown): void {
+    const errors = this._revertAll(txn);
+    if (errors.length === 0) {
+      return;
+    }
+    const aggregated = new Error(
+      'a failed command could not be fully reverted; document may be inconsistent'
+    ) as Error & { cause?: unknown; causes?: unknown[] };
+    aggregated.cause = primary;
+    aggregated.causes = errors;
+    this._eventBus.emit('document.inconsistent', aggregated);
   }
 
   private _quarantine(): void {

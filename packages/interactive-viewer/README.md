@@ -38,6 +38,16 @@ Also ships a self-contained **UMD** bundle (`dist/interactive-viewer.umd.js`, gl
   `selectionModule`, `outlineModule`).
 - **Side tabs + search panel** — a folded-in tab host and a searchable index of the diagram's
   elements.
+- **Keyboard navigation** (`keyboardNavModule`) — the diagram `<svg>` is a labelled tab stop with
+  `role="application"`; the arrow keys move a focus ring (and the selection) to the nearest element in
+  that direction, and <kbd>Esc</kbd> leaves the diagram so <kbd>Tab</kbd> follows normal page order.
+  <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+click adds to the selection; a plain click replaces it.
+- **Screen-reader announcements** (`ariaAnnouncerModule`) — a visually hidden `aria-live="polite"`
+  region announces selection changes and elements added or removed after load (opening a document
+  does not flood the reader).
+- **DOM notifications** (`domNotificationsModule`) — toasts and a confirm dialog. The dialog's
+  <kbd>Enter</kbd>/<kbd>Esc</kbd> act only while it has focus; `destroy()` cancels an open dialog
+  (its callback receives `false`) and stops pending toast timers.
 
 The interaction modules are ordered **before** the draw modules on purpose: `Zoom` replaces the
 canvas drawing layer on boot, and the event-driven features must be subscribed before the drawers

@@ -37,9 +37,13 @@ export interface PolytreeChange {
 export interface PolytreeEditorHandle {
   /** The underlying editor instance (or null before mount / after unmount). */
   getEditor(): Editor | null;
-  /** Load a `.pfdn` document (a reboot — clears undo/selection). */
+  /** Load a `.pfdn` document (a reboot — clears undo/selection). Rejects if it fails to import. */
   load(xml: string): Promise<void>;
-  /** Serialize the current document to a `.pfdn` string. */
+  /**
+   * Serialize the current document to a `.pfdn` string. While no document is
+   * loaded yet (the initial import is pending or failed), returns the last
+   * document handed to the editor (`defaultValue`/`load`), or `''`.
+   */
   export(): string;
 }
 
@@ -48,6 +52,12 @@ export interface PolytreeEditorProps {
   defaultValue?: string;
   /** Fired on every committed edit (via the engine's `document.changed`). */
   onChange?: (change: PolytreeChange) => void;
+  /**
+   * Fired when `defaultValue` (or the re-import after a `modules` change) fails
+   * to import; the previously open document, if any, stays open. Without it the
+   * error is logged with `console.error`. `ref.load()` rejects instead.
+   */
+  onError?: (error: unknown) => void;
   /**
    * Extra didi modules composed after the editor's own (last definition wins),
    * e.g. `[awsIconsModule]`. Modules are boot-time in didi, so a *different*
@@ -69,15 +79,17 @@ interface Store {
 
 export const PolytreeEditor = forwardRef<PolytreeEditorHandle, PolytreeEditorProps>(
   function PolytreeEditor(props, ref) {
-    const { defaultValue, modules, onChange, onSelectionChange, className, style } = props;
+    const { defaultValue, modules, onChange, onError, onSelectionChange, className, style } = props;
 
     const hostRef = useRef<HTMLDivElement | null>(null);
     const editorRef = useRef<Editor | null>(null);
     /** The options the editor booted with; `modules` is re-read on every reboot. */
     const optionsRef = useRef<EditorOptions | null>(null);
     // Always call the latest props without re-subscribing the bus.
-    const cbRef = useRef({ onChange, onSelectionChange });
-    cbRef.current = { onChange, onSelectionChange };
+    const cbRef = useRef({ onChange, onError, onSelectionChange });
+    cbRef.current = { onChange, onError, onSelectionChange };
+    /** The last document handed to the editor — what `export()` reports pre-load. */
+    const lastInputRef = useRef('');
 
     const storeRef = useRef<Store | null>(null);
     if (storeRef.current === null) {
@@ -96,6 +108,24 @@ export const PolytreeEditor = forwardRef<PolytreeEditorHandle, PolytreeEditorPro
     );
     const getSnapshot = useCallback(() => store.counter, [store]);
     const getServerSnapshot = useCallback(() => 0, []);
+
+    /**
+     * Import without dropping the failure: report it via the latest `onError`
+     * (or the console), unless this editor was unmounted meanwhile — the engine
+     * itself never boots an import superseded by a later one or by `destroy()`.
+     */
+    const importReporting = (editor: Editor, xml: string): void => {
+      editor.importDiagram(xml).catch((error: unknown) => {
+        if (editorRef.current !== editor) {
+          return;
+        }
+        if (cbRef.current.onError) {
+          cbRef.current.onError(error);
+        } else {
+          console.error('PolytreeEditor: the document could not be imported', error);
+        }
+      });
+    };
     // Tear-free bridge; the return value (the counter) is intentionally unused —
     // subscribing is what keeps React in sync with the engine.
     useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -104,8 +134,14 @@ export const PolytreeEditor = forwardRef<PolytreeEditorHandle, PolytreeEditorPro
       ref,
       () => ({
         getEditor: () => editorRef.current,
-        load: (xml: string) => editorRef.current?.importDiagram(xml) ?? Promise.resolve(),
-        export: () => editorRef.current?.exportDiagram() ?? ''
+        load: (xml: string) => {
+          lastInputRef.current = xml;
+          return editorRef.current?.importDiagram(xml) ?? Promise.resolve();
+        },
+        export: () => {
+          const editor = editorRef.current;
+          return editor?.getHost() ? editor.exportDiagram() : lastInputRef.current;
+        }
       }),
       []
     );
@@ -140,7 +176,8 @@ export const PolytreeEditor = forwardRef<PolytreeEditorHandle, PolytreeEditorPro
       editor.on('selection.changed', onSel);
 
       if (defaultValue != null && defaultValue !== '') {
-        void editor.importDiagram(defaultValue);
+        lastInputRef.current = defaultValue;
+        importReporting(editor, defaultValue);
       } else {
         editor.createEmpty();
       }
@@ -166,7 +203,7 @@ export const PolytreeEditor = forwardRef<PolytreeEditorHandle, PolytreeEditorPro
       }
       options.modules = modules;
       if (editor.getHost()) {
-        void editor.importDiagram(editor.exportDiagram());
+        importReporting(editor, editor.exportDiagram());
       }
     }, [modules]);
 

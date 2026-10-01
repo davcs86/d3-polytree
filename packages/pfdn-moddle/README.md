@@ -67,16 +67,49 @@ if (parsed.ok) {
 // fromJson(doc, { lax: true }) drops unresolvable references instead of rejecting them
 ```
 
+To throw instead of branching on a `Result`, `assertValid(doc)` raises a `PfdnValidationError`
+(carrying `.errors`) and narrows `doc` to `ValidatedPfdnDocument`. For a model extended with extra
+moddle packages, pass the same packages to `createPfdnModdle(additionalPackages)` and to
+`validate` / `fromJson` / `assertValid` via `{ packages }`, so JSON is checked against the extended
+schema rather than the base one.
+
+> **Strict JSON vs lax XML.** `moddle.fromXML` defaults to `lax: true` (override with
+> `fromXML(xml, 'pfdn:Diagram', { lax: false })`), whereas `validate` / `fromJson` are **strict** by
+> default. The same invalid document can therefore load from XML yet be rejected from JSON; pass
+> `{ lax: true }` to `fromJson` / `validate` to tolerate unresolvable references.
+
+### Schema tables (`./schema`)
+
+The `@d3-polytree/pfdn-moddle/schema` subpath exposes the generated descriptor tables without pulling
+`moddle` / `moddle-xml` into your runtime graph:
+
+```ts
+import { SCHEMA, CONCRETE_TYPES, type TypeInfo } from '@d3-polytree/pfdn-moddle/schema';
+
+const node: TypeInfo = SCHEMA['pfdn:Node']; // { abstract, allTypesByName, properties }
+CONCRETE_TYPES.includes('pfdn:Link'); // true
+```
+
 Pair it with [`@d3-polytree/core`](https://github.com/davcs86/d3-polytree/tree/main/packages/core)'s
 `loadModelFromJson(doc)` to boot a diagram straight from a validated JSON document.
 
 ## API
 
-- `createPfdnModdle()` / `PfdnModdle` — the moddle instance and its class.
-- `moddle.create(type, attrs)`, `moddle.fromXML(xml)`, `moddle.toXML(element)` — standard moddle IO.
-- `toJson(definitions)` → `PfdnDocument`, `fromJson(doc, opts?)` → `Result<element tree>` (validates first).
-- `validate(doc)` → `Result` (`{ ok: true } | { ok: false, errors: [...] }`).
-- Types: `PfdnDocument` and the per-element document types, all generated from the schema.
+| Export / Method                                   | Type                                                                | Description                                                                                                                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createPfdnModdle(additionalPackages?, options?)` | `(Record<string, unknown>?, Record<string, unknown>?) → PfdnModdle` | Create the moddle instance (also the default export); `additionalPackages` (default `{}`) extends the base `pfdn` package.                                                            |
+| `PfdnModdle`                                      | class                                                               | The `Moddle` subclass behind `createPfdnModdle`.                                                                                                                                      |
+| `moddle.create(type, attrs?)`                     | `→ ModelElement`                                                    | Instantiate a model element.                                                                                                                                                          |
+| `moddle.fromXML(xml, typeName?, options?)`        | `→ Promise<ParseResult>`                                            | Parse XML; `typeName` defaults to `'pfdn:Diagram'`, `options: FromXmlOptions` go to the moddle-xml reader (`lax` default `true`).                                                     |
+| `moddle.toXML(element, options?)`                 | `→ string`                                                          | Serialize a model tree to XML.                                                                                                                                                        |
+| `toJson(element)`                                 | `→ PfdnDocument`                                                    | Serialize a moddle element to plain JSON (refs collapse to ids, defaults omitted).                                                                                                    |
+| `validate(doc, { lax?, packages? })`              | `→ Result<PfdnDocument>`                                            | Strict validation collecting every `ValidationError`; `lax` drops unresolvable refs; `packages` validates an extended schema.                                                         |
+| `fromJson(doc, { lax?, packages? })`              | `→ Result<ModelElement>`                                            | Validate, then rebuild the moddle tree. Throws `TypeError` only for a non-object argument.                                                                                            |
+| `assertValid(doc, { packages? })`                 | `asserts doc is ValidatedPfdnDocument`                              | Throw `PfdnValidationError` if invalid; otherwise narrow `doc`.                                                                                                                       |
+| `PfdnValidationError`                             | class (`extends Error`)                                             | Thrown by `assertValid`; `errors: ValidationError[]`.                                                                                                                                 |
+| Types                                             | type                                                                | `ModelElement`, `ParseResult`, `FromXmlOptions`, `Result`, `ValidationError`, `ValidatedPfdnDocument`, `PfdnDocument` and the per-element document types (`PfdnNode`, `PfdnLink`, …). |
+| `SCHEMA` (`./schema`)                             | `Record<string, TypeInfo>`                                          | Generated per-type descriptor table (`abstract`, `allTypesByName`, `properties: PropInfo[]`).                                                                                         |
+| `CONCRETE_TYPES` (`./schema`)                     | `string[]`                                                          | The non-abstract `pfdn:` types. The subpath also exports the `TypeInfo` / `PropInfo` types.                                                                                           |
 
 ## Links
 

@@ -25,9 +25,16 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@d3-polytree/editor": "workspace:*"
+    "@d3-polytree/editor": "workspace:*",
+    "@d3-polytree/interactive-viewer": "workspace:*"
   },
   "peerDependencies": {
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "d3-transition": "^3.0.0",
+    "d3-scale": "^4.0.0",
+    "d3-axis": "^3.0.0",
+    "d3-drag": "^3.0.0",
     "react": ">=18",
     "react-dom": ">=18"
   },

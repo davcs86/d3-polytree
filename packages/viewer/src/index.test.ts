@@ -95,3 +95,34 @@ describe('@d3-polytree/viewer', () => {
     expect(viewer.exportSVG()).toContain('<svg');
   });
 });
+
+describe('@d3-polytree/viewer import sequencing', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('an import that resolves after destroy() never boots the engine', async () => {
+    const viewer = new Viewer({ container: document.body });
+    const pending = viewer.importDiagram(oneNodeDiagram());
+    viewer.destroy();
+    await pending;
+    expect(viewer.getHost()).toBeNull();
+    expect(document.body.querySelector('svg')).toBeNull();
+  });
+
+  it('a superseded import does not overwrite the newer document', async () => {
+    const viewer = new Viewer({ container: document.body });
+    const first = viewer.importDiagram(oneNodeDiagram());
+    viewer.createEmpty(); // newer load wins
+    await first;
+    expect(viewer.getHost()?.definitions.node ?? []).toHaveLength(0);
+    expect(document.body.querySelectorAll('svg')).toHaveLength(1);
+  });
+
+  it('a failed import rejects and leaves the current diagram open', async () => {
+    const viewer = new Viewer({ container: document.body });
+    await viewer.importDiagram(oneNodeDiagram());
+    await expect(viewer.importDiagram('<not-pfdn')).rejects.toThrow();
+    expect(viewer.getHost()?.definitions.node).toHaveLength(1);
+  });
+});

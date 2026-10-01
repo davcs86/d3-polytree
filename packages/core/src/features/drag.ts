@@ -8,7 +8,7 @@ import type { CommandStack } from '../command';
 import type { ElementClass } from '../modelling';
 import type { MoveItem, Placement } from '../modelling/commands';
 import type { ModellingModelElement } from '../modelling/types';
-import type { Selection } from './selection';
+import type { AdditiveModifiers, Selection } from './selection';
 import { ElementStatus, markModified } from '../model/status';
 
 type DragEvent = D3DragEvent<SVGGElement, DiagramElement, DiagramElement>;
@@ -175,7 +175,7 @@ export class Drag {
   beginDrag(
     element: DrawingSelection,
     definition: ModellingModelElement,
-    sourceEvent?: { ctrlKey?: boolean }
+    sourceEvent?: AdditiveModifiers
   ): boolean {
     // Grabbing a member of a multi-selection must drag the whole group, not
     // collapse it: d3-drag's default filter strips ctrlKey, so a select() here is
@@ -206,7 +206,7 @@ export class Drag {
   private _setElemToDrag(element: DrawingSelection, definition: ModellingModelElement): void {
     element.call(
       d3drag<SVGGElement, DiagramElement>().on('start', (event: DragEvent) => {
-        if (this.beginDrag(element, definition, event.sourceEvent as { ctrlKey?: boolean })) {
+        if (this.beginDrag(element, definition, event.sourceEvent as AdditiveModifiers)) {
           event
             .on('drag', (e: DragEvent) => this.applyOffsetToSelected(e.dx, e.dy))
             .on('end', () => this.endDrag());

@@ -48,3 +48,63 @@ describe('@d3-polytree/interactive-viewer DomNotifications', () => {
     expect(cb).toHaveBeenCalledWith(false);
   });
 });
+
+describe('DomNotifications teardown + keyboard scope', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  function setupWithBus() {
+    const bus = new EventEmitter<DiagramEventMap>();
+    const canvas = new Canvas({ container: document.body }, bus);
+    const notifications = new DomNotifications(canvas, bus);
+    return { bus, canvas, notifications };
+  }
+
+  it('never listens on document: a page-wide Enter does not confirm', () => {
+    const add = vi.spyOn(document, 'addEventListener');
+    const { canvas, notifications } = setupWithBus();
+    const cb = vi.fn();
+    notifications.warning({ title: 'Are you sure?' }, cb);
+    expect(add.mock.calls.map((c) => c[0])).not.toContain('keydown');
+
+    const hostInput = document.createElement('input');
+    document.body.appendChild(hostInput);
+    hostInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(cb).not.toHaveBeenCalled();
+
+    // Enter inside the dialog (not on a button) still confirms; Escape cancels
+    const dialog = canvas.getContainer().querySelector('.pfdjs-dialog') as HTMLElement;
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(cb).toHaveBeenCalledWith(true);
+    add.mockRestore();
+  });
+
+  it('Enter on the focused Cancel button does not confirm', () => {
+    const { canvas, notifications } = setupWithBus();
+    const cb = vi.fn();
+    notifications.warning({ title: 'Are you sure?' }, cb);
+    const cancel = canvas.getContainer().querySelector('.pfdjs-dialog-cancel') as HTMLElement;
+    cancel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(cb).not.toHaveBeenCalledWith(true);
+  });
+
+  it('on d3canvas.destroy cancels open confirmations and stops toast timers', () => {
+    vi.useFakeTimers();
+    try {
+      const { bus, notifications } = setupWithBus();
+      const cb = vi.fn();
+      notifications.warning({ title: 'Are you sure?' }, cb);
+      // timers not owned by the notifications (jsdom's focus handling)
+      const baseline = vi.getTimerCount();
+      notifications.info({ text: 'hello' });
+      expect(vi.getTimerCount()).toBe(baseline + 1); // the toast's auto-dismiss
+      bus.emit('d3canvas.destroy');
+      expect(cb).toHaveBeenCalledOnce();
+      expect(cb).toHaveBeenCalledWith(false);
+      expect(vi.getTimerCount()).toBe(baseline);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

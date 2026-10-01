@@ -91,7 +91,10 @@ swap one for the other without changing calling code.
 | `coordIterations` | `number`                       | `12`    | Coordinate-alignment sweeps.                         |
 
 `WorkerLayoutRunner(worker, timeoutMs = 30000)` — `run()` rejects if the worker does not answer within
-`timeoutMs` (pass `0` to disable), so a crashed worker never leaves the promise pending.
+`timeoutMs` (pass `0` to disable), so a crashed worker never leaves the promise pending. A solver
+error inside the worker is posted back as a `polytree:layout:error` message (`LayoutErrorResponse`,
+built with `encodeError`), so `run()` rejects with that error's `name` and message rather than timing
+out.
 
 ## Where it fits
 

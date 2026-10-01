@@ -168,14 +168,15 @@ export class Editor extends InteractiveViewer<EditorEvent> {
    * Mark the current document as saved — call after persisting it elsewhere
    * (the palette's Save does this itself). `document.changed` then reports
    * `dirty: false` until the next edit; undo/redo back to this point is clean.
+   * No-op before a diagram is loaded.
    */
   markSaved(): void {
-    this.get<CommandStack>('commandStack').markSaved();
+    this._commandStack()?.markSaved();
   }
 
-  /** Whether the document has changed since the last save (or since it was opened). */
+  /** Whether the document has changed since the last save (or since it was opened); `false` before load. */
   isDirty(): boolean {
-    return this.get<CommandStack>('commandStack').isDirty();
+    return this._commandStack()?.isDirty() ?? false;
   }
 
   getModules(): readonly DiagramModule[] {
@@ -244,24 +245,29 @@ export class Editor extends InteractiveViewer<EditorEvent> {
     this.get<CommandStack>('commandStack').execute('link.pin', ctx);
   }
 
-  /** Undo the last edit (a whole gesture is one step). No-op if nothing to undo. */
+  /** Undo the last edit (a whole gesture is one step). No-op if nothing to undo, or before load. */
   undo(): void {
-    this.get<CommandStack>('commandStack').undo();
+    this._commandStack()?.undo();
   }
 
-  /** Redo the last undone edit. No-op if nothing to redo. */
+  /** Redo the last undone edit. No-op if nothing to redo, or before load. */
   redo(): void {
-    this.get<CommandStack>('commandStack').redo();
+    this._commandStack()?.redo();
   }
 
-  /** Whether there is an edit to undo. */
+  /** Whether there is an edit to undo (`false` before load). */
   canUndo(): boolean {
-    return this.get<CommandStack>('commandStack').canUndo();
+    return this._commandStack()?.canUndo() ?? false;
   }
 
-  /** Whether there is an undone edit to redo. */
+  /** Whether there is an undone edit to redo (`false` before load). */
   canRedo(): boolean {
-    return this.get<CommandStack>('commandStack').canRedo();
+    return this._commandStack()?.canRedo() ?? false;
+  }
+
+  /** The live command stack, or `null` while no diagram is loaded. */
+  private _commandStack(): CommandStack | null {
+    return this.getHost() ? this.get<CommandStack>('commandStack') : null;
   }
 }
 

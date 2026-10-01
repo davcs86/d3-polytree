@@ -55,4 +55,24 @@ describe('@d3-polytree/core Exporting', () => {
     expect(decodeDataUrl(anchor.getAttribute('href') ?? '')).toBe('<svg><g/></svg>');
     expect(anchor.getAttribute('download')).toBe('diagram.svg');
   });
+
+  it('rejects a PNG export whose SVG cannot be decoded (never hangs)', async () => {
+    class FailingImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_value: string) {
+        queueMicrotask(() => this.onerror?.());
+      }
+    }
+    vi.stubGlobal('Image', FailingImage);
+    try {
+      const exporting = new Exporting(canvas, host);
+      const anchor = canvas.getContainer().querySelector('a') as HTMLAnchorElement;
+      const click = vi.spyOn(anchor, 'click').mockImplementation(() => {});
+      await expect(exporting.trigger('png')).rejects.toThrow(/PNG export failed/);
+      expect(click).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

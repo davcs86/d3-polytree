@@ -10,9 +10,10 @@ name: E2E · visual-regression · a11y · interaction
 # this image, so every push to a branch SEEDS the MISSING baselines
 # (`--update-snapshots=missing` — it never overwrites an existing baseline, so a
 # newly-added story is seeded while real drift in existing stories is still
-# gated by the pull_request compare run) and commits any new PNGs from within
-# the container. Seeding is self-limiting: once nothing is missing there is
-# nothing to commit, so it never loops. pull_request runs always compare (gate).
+# gated) and commits any new PNGs from within the container, then compares
+# against the completed baselines (gate). Seeding is self-limiting: once nothing
+# is missing there is nothing to commit, so it never loops. pull_request runs
+# always compare (gate).
 
 on:
   push:
@@ -92,9 +93,9 @@ jobs:
             pnpm --filter @d3-polytree/storybook test:e2e:update-snapshots
           else
             # Create only missing baselines; never overwrite an existing one, so
-            # real drift stays gated by the pull_request compare run. Tolerate a
-            # non-zero exit (Playwright may signal that snapshots were written)
-            # so the commit step still runs; the PR compare is the real gate.
+            # real drift stays gated. Tolerate a non-zero exit here (Playwright may
+            # signal that snapshots were written) so the commit step still runs;
+            # the compare step after it is the gate for pushes.
             pnpm --filter @d3-polytree/storybook test:e2e:seed-missing || true
           fi
 
@@ -112,6 +113,13 @@ jobs:
           git commit -m "chore(e2e): seed visual-regression baselines (pinned container)"
           # Push to the branch that triggered this run; the follow-up run compares.
           git push origin "HEAD:${{ github.ref_name }}"
+
+      # The seeding pass above tolerates failures, so on a push (including main)
+      # re-run against the now-complete baselines: real VR / a11y / interaction
+      # failures turn the run red instead of being swallowed.
+      - name: Run e2e (compare / gate after seeding)
+        if: steps.mode.outputs.mode == 'seed'
+        run: pnpm --filter @d3-polytree/storybook test:e2e
 
       - name: Upload Playwright report
         if: always()

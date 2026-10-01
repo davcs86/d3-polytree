@@ -61,7 +61,7 @@ export class Exporting {
   }
 
   private _svgToImage(data: string): Promise<string> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const imgSrc = `data:image/svg+xml;base64,${toBase64(data)}`;
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
@@ -77,6 +77,8 @@ export class Exporting {
         context?.drawImage(image, 0, 0, width, height);
         resolve(canvas.toDataURL('image/png'));
       };
+      // an undecodable SVG must reject, not leave the export pending forever
+      image.onerror = () => reject(new Error('PNG export failed: the SVG could not be rendered'));
       image.src = imgSrc;
     });
   }

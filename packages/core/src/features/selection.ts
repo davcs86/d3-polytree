@@ -3,6 +3,12 @@ import type { DiagramEventMap } from '@d3-polytree/canvas';
 import type { DrawingSelection } from '../draw';
 import type { ModellingModelElement } from '../modelling/types';
 
+/** The modifier keys that make a click add to the selection instead of replacing it. */
+export interface AdditiveModifiers {
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+}
+
 /** A currently-selected element: its drawing and its model definition. */
 export interface SelectionEntry {
   element: DrawingSelection;
@@ -49,9 +55,10 @@ export class Selection {
   private _selectElement(
     element: DrawingSelection,
     definition: ModellingModelElement,
-    event?: { ctrlKey?: boolean }
+    event?: AdditiveModifiers
   ): void {
-    if (!event || !event.ctrlKey) {
+    // Ctrl (Windows/Linux) or Cmd (macOS) adds to the selection; a plain click replaces it.
+    if (!event || !(event.ctrlKey || event.metaKey)) {
       // replace the selection with the clicked element
       this._unSelectAllElements(true);
     }
@@ -88,7 +95,7 @@ export class Selection {
   select(
     element: DrawingSelection,
     definition: ModellingModelElement,
-    event?: { ctrlKey?: boolean }
+    event?: AdditiveModifiers
   ): void {
     this._selectElement(element, definition, event);
   }
