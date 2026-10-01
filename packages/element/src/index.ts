@@ -5,7 +5,8 @@
  * {@link Editor} (no engine fork). It reflects the serialized `.pfdn` document as
  * a `value` property/attribute, participates in `<form>`s via `ElementInternals`
  * (feature-gated — degrades gracefully where unsupported), and emits a `change`
- * `CustomEvent` on every committed edit. Styling is inlined into the shadow root
+ * `CustomEvent` on every committed edit and an `error` `CustomEvent` (`detail`:
+ * the thrown error) when a `.pfdn` document fails to import. Styling is inlined into the shadow root
  * from the components' compiled CSS (see `styles.generated.ts`).
  */
 import { Editor, type EditorOptions } from '@d3-polytree/editor';
@@ -76,9 +77,7 @@ export class D3PolytreeEditorElement extends HTMLElement {
     this._options.modules = modules;
     if (this._editor.getHost()) {
       // reboot in place: _boot re-reads options.modules; on() subscriptions survive
-      void this._editor
-        .importDiagram(this._editor.exportDiagram())
-        .then(() => this._updateFormValue());
+      this._import(this._editor.exportDiagram());
     }
   }
 
@@ -105,7 +104,7 @@ export class D3PolytreeEditorElement extends HTMLElement {
 
     const initial = this.getAttribute('value');
     if (initial != null && initial !== '') {
-      void editor.importDiagram(initial).then(() => this._updateFormValue());
+      this._import(initial);
     } else {
       editor.createEmpty();
       this._updateFormValue(); // report the current document as the form value up front
@@ -130,12 +129,19 @@ export class D3PolytreeEditorElement extends HTMLElement {
     if (value === this._lastEmitted) {
       return;
     }
-    void this._editor.importDiagram(value).then(() => this._updateFormValue());
+    this._import(value);
   }
 
-  /** The current diagram as a `.pfdn` XML string (the form/submission value). */
+  /**
+   * The current diagram as a `.pfdn` XML string (the form/submission value).
+   * While no diagram is loaded yet — an import is pending, or the first one
+   * failed — this is the last value assigned (the `value` attribute) rather
+   * than a throw.
+   */
   get value(): string {
-    return this._editor ? this._editor.exportDiagram() : (this.getAttribute('value') ?? '');
+    return this._editor?.getHost()
+      ? this._editor.exportDiagram()
+      : (this.getAttribute('value') ?? '');
   }
 
   set value(xml: string) {
@@ -146,6 +152,8 @@ export class D3PolytreeEditorElement extends HTMLElement {
    * The current SVG, with the shadow-scoped CSS inlined. The engine's own
    * `exportSVG` inlines CSS from `document.styleSheets`, which cannot see the
    * shadow root's styles — so we inject the compiled CSS into the returned markup.
+   * Returns `''` while disconnected; throws `no diagram loaded` while connected
+   * but no diagram is loaded yet (an import is pending, or the first one failed).
    */
   exportSVG(): string {
     if (!this._editor) {
@@ -161,6 +169,35 @@ export class D3PolytreeEditorElement extends HTMLElement {
     // theme-invariant. Stamp the attribute onto the opening <svg> tag, then inject.
     const stamped = svg.replace(/<svg\b/, '<svg data-pfd-theme="light"');
     return stamped.replace(/(<svg\b[^>]*>)/, `$1${styleTag}`);
+  }
+
+  /**
+   * Import `xml` into the current editor. On success, sync the form value; on
+   * failure, re-sync to the document still open (if any) and dispatch `error`.
+   * Either continuation is dropped if the element was torn down meanwhile (the
+   * editor itself never boots a superseded or post-destroy import).
+   */
+  private _import(xml: string): void {
+    const editor = this._editor;
+    if (!editor) {
+      return;
+    }
+    editor.importDiagram(xml).then(
+      () => {
+        if (this._editor === editor) {
+          this._updateFormValue();
+        }
+      },
+      (error: unknown) => {
+        if (this._editor !== editor) {
+          return;
+        }
+        if (editor.getHost()) {
+          this._updateFormValue(); // the previous document is still open
+        }
+        this.dispatchEvent(new CustomEvent('error', { detail: error }));
+      }
+    );
   }
 
   /**

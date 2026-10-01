@@ -86,4 +86,48 @@ describe('<PolytreeEditor /> (React wrapper)', () => {
     expect(ref.current!.getEditor()).toBe(editor);
     expect(ref.current!.export()).toBe(before);
   });
+
+  it('reports a defaultValue that fails to import via onError', async () => {
+    const onError = vi.fn();
+    const ref = createRef<PolytreeEditorHandle>();
+    await act(async () => {
+      root.render(<PolytreeEditor ref={ref} defaultValue="<not-pfdn" onError={onError} />);
+    });
+    await vi.waitFor(() => expect(onError).toHaveBeenCalledOnce());
+    expect(onError.mock.calls[0][0]).toBeInstanceOf(Error);
+    // nothing loaded: export() reports the last input instead of throwing
+    expect(ref.current!.export()).toBe('<not-pfdn');
+  });
+
+  it('logs the import failure when no onError is given', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await act(async () => {
+      root.render(<PolytreeEditor defaultValue="<not-pfdn" />);
+    });
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalled());
+  });
+
+  it('StrictMode double-mount boots exactly one engine for a pending defaultValue', async () => {
+    const { StrictMode } = await import('react');
+    const seed = createRef<PolytreeEditorHandle>();
+    act(() => {
+      root.render(<PolytreeEditor ref={seed} />);
+    });
+    const xml = seed.current!.export();
+    act(() => root.unmount());
+    root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <StrictMode>
+          <PolytreeEditor defaultValue={xml} />
+        </StrictMode>
+      );
+    });
+    await vi.waitFor(() =>
+      expect(container.querySelectorAll('svg[pointer-events="all"]')).toHaveLength(1)
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(container.querySelectorAll('svg[pointer-events="all"]')).toHaveLength(1);
+  });
 });
