@@ -157,7 +157,10 @@ describe('<d3-polytree-editor>', () => {
       el.modules = mods;
       document.body.appendChild(el);
       const editor = (el as unknown as WithEditor)._editor!;
-      const importSpy = vi.spyOn(editor as unknown as { importDiagram(): Promise<void> }, 'importDiagram');
+      const importSpy = vi.spyOn(
+        editor as unknown as { importDiagram(): Promise<void> },
+        'importDiagram'
+      );
       el.modules = mods;
       expect(importSpy).not.toHaveBeenCalled();
     });

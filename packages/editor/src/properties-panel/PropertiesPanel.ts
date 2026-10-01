@@ -113,7 +113,11 @@ export class PropertiesPanel {
    * the core modelling orchestrator.
    */
   private _registerUpdatePropertiesCommand(): void {
-    const apply = (ctx: UpdatePropsContext, props: Record<string, unknown>, status: number): void => {
+    const apply = (
+      ctx: UpdatePropsContext,
+      props: Record<string, unknown>,
+      status: number
+    ): void => {
       ctx.scope.set(ctx.definition, props);
       // The command owns the status transition (never the draw layer), and the
       // memento restores the exact prior value on undo (CORE-01).

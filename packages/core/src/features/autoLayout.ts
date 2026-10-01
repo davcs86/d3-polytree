@@ -119,7 +119,10 @@ export class AutoLayout {
         labelItem = {
           def: label,
           from: lf,
-          to: { position: { x: lf.position.x + dx, y: lf.position.y + dy }, status: markModified(lf.status) }
+          to: {
+            position: { x: lf.position.x + dx, y: lf.position.y + dy },
+            status: markModified(lf.status)
+          }
         };
       }
       items.push({ def, className: 'node' as ElementClass, from, to, label: labelItem });

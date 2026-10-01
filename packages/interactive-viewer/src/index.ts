@@ -39,9 +39,7 @@ export type InteractiveViewerOptions = ViewerOptions;
  */
 export type InteractiveViewerEvent = 'selection.changed';
 
-export class InteractiveViewer<
-  E extends ReboundEvent = InteractiveViewerEvent
-> extends Viewer<E> {
+export class InteractiveViewer<E extends ReboundEvent = InteractiveViewerEvent> extends Viewer<E> {
   /** Interaction modules layered on top of the base draw modules. */
   static readonly interactionModules: readonly DiagramModule[] = [
     backgroundColorModule as DiagramModule,

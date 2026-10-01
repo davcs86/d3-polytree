@@ -128,7 +128,10 @@ export class PaletteProvider {
         action: {
           click: () => {
             this._notifications.warning(
-              { title: 'Are you sure?', text: 'Unsaved changes will be replaced by the saved diagram.' },
+              {
+                title: 'Are you sure?',
+                text: 'Unsaved changes will be replaced by the saved diagram.'
+              },
               (confirmed) => {
                 if (confirmed) {
                   void this._localStorage.restore();
