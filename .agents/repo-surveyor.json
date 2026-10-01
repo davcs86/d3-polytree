@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "outputDir": ".repo-surveyor",
+  "findings": {
+    "debt-radar": "debt-radar-findings.md",
+    "feature-gap": "feature-gap-findings.md",
+    "signal-map": "signal-map-findings.md"
+  },
+  "userFacingGlobs": [],
+  "created": "2026-09-30"
+}
