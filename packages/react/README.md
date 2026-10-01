@@ -10,10 +10,11 @@ rendering) and exposes the editor through props + an imperative `ref`.
 ## Install
 
 ```sh
-pnpm add @d3-polytree/react react react-dom
+pnpm add @d3-polytree/react react react-dom d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag
 ```
 
-`react` and `react-dom` (`>=18`) are **peer dependencies**. Ships ESM + CJS + `.d.ts`.
+`react` and `react-dom` (`>=18`) and the six D3 v7 slices (inherited from the wrapped
+`@d3-polytree/editor`) are **peer dependencies**. Ships ESM + CJS + `.d.ts`.
 
 ## Uncontrolled by design
 
@@ -22,7 +23,7 @@ and selection — so a fully controlled `value` prop would echo-loop and destroy
 The component is therefore **uncontrolled**:
 
 - `defaultValue` seeds the document **once**, on mount.
-- `onChange` / `onSelectionChange` report edits.
+- `onChange` / `onSelectionChange` report edits; `onError` reports a document that fails to import.
 - An imperative `ref` (`load` / `export` / `getEditor`) covers external reloads.
 
 ## Usage
@@ -66,6 +67,7 @@ function App() {
 | `defaultValue`      | `string`                           | The `.pfdn` document to open on mount (applied once).                                                                                                                                                                                       |
 | `modules`           | `EditorModules`                    | Extra didi modules (e.g. `[awsIconsModule]`) composed after the editor's own. A **different array** after mount reboots the engine and re-imports the current document (undo/selection reset) — keep it stable (module scope or `useMemo`). |
 | `onChange`          | `(change: PolytreeChange) => void` | Fired on every committed edit.                                                                                                                                                                                                              |
+| `onError`           | `(error: unknown) => void`         | Fired when `defaultValue` (or the re-import after a `modules` change) fails to import; any open document stays open. Without it the error is logged with `console.error`. `ref.load()` rejects instead.                                     |
 | `onSelectionChange` | `(prev, next) => void`             | Fired on selection changes, in the engine's `(prev, next)` order.                                                                                                                                                                           |
 | `className`         | `string`                           | Class on the host `<div>`.                                                                                                                                                                                                                  |
 | `style`             | `CSSProperties`                    | Inline style on the host `<div>`.                                                                                                                                                                                                           |
@@ -76,11 +78,11 @@ handler that only checks `dirty` never pays the serialization cost.
 
 ### Ref handle — `PolytreeEditorHandle`
 
-| Method                        | Description                                                                |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| `getEditor()`                 | The underlying `Editor` instance (or `null` before mount / after unmount). |
-| `load(xml)` → `Promise<void>` | Load a `.pfdn` document (a reboot — clears undo/selection).                |
-| `export()` → `string`         | Serialize the current document to a `.pfdn` string.                        |
+| Method                        | Description                                                                                                                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `getEditor()`                 | The underlying `Editor` instance (or `null` before mount / after unmount).                                                                                                                 |
+| `load(xml)` → `Promise<void>` | Load a `.pfdn` document (a reboot — clears undo/selection). Rejects if it fails to import; the open document stays.                                                                        |
+| `export()` → `string`         | Serialize the current document to a `.pfdn` string. Before a document has loaded (initial import pending or failed), returns the last document passed in (`defaultValue`/`load`), or `''`. |
 
 `PolytreeEditor` is also the default export. The event-bus bridge subscribes through the editor's
 stable `on`/`off` surface, so the subscription survives `load()` reboots.

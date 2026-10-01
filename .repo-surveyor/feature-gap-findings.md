@@ -28,6 +28,36 @@
 
 Leverage is written `impact ÷ LOE` (impact H/M/L, LOE T-shirt XS–XL) — both are **estimates** (RS-4).
 
+## Resolution status (updated 2026-10-01)
+
+"#90" means fixed in PR #90 (P0–P1 batch). "This batch" means fixed on branch `ccr-c7320029-ky9hg6` (P2 hardening + docs). Findings marked "Deferred" have no fix yet.
+
+| Finding                                                      | Sev | Status                                                                                                                                                                                                  |
+| ------------------------------------------------------------ | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Palette Save has no restore path                             | P0  | ✅ #90                                                                                                                                                                                                  |
+| Adapters cannot compose modules                              | P1  | ✅ #90                                                                                                                                                                                                  |
+| Dirty flag never resets on save                              | P1  | ✅ #90                                                                                                                                                                                                  |
+| `ssr` README vs published shape                              | P1  | ✅ #90                                                                                                                                                                                                  |
+| `Viewer.on` advertises events that never fire                | P1  | ✅ #90                                                                                                                                                                                                  |
+| ROADMAP status drift                                         | P1  | ✅ #90                                                                                                                                                                                                  |
+| Adapters are editor-only (no viewer mode)                    | P1  | ⏸ Deferred — own design gate (ROADMAP C7)                                                                                                                                                               |
+| `diff` ships only half of C5                                 | P1  | ⏸ Deferred — own design gate (C5 remainder)                                                                                                                                                             |
+| Modifier keys disagree (Ctrl-only multi-select)              | P2  | ✅ This batch — Cmd+click (`metaKey`) adds to the selection                                                                                                                                             |
+| Element `value` setter silently resets history               | P2  | ✅ This batch — README warning (behaviour unchanged)                                                                                                                                                    |
+| Error contracts differ across sibling APIs                   | P2  | ◐ This batch partially. `Editor.undo/redo` are safe before load, import failures are observable, PNG export rejects. A unified result-vs-throw contract is deferred (cross-package, possibly breaking). |
+| Strict vs lax defaults differ by format                      | P2  | ✅ This batch — documented in the `pfdn-moddle` README                                                                                                                                                  |
+| `@d3-polytree/react` install contract incomplete             | P2  | ✅ This batch — D3 peers + `interactive-viewer` dependency                                                                                                                                              |
+| Editor keyboard shortcuts undocumented                       | P2  | ✅ This batch — editor README "Keyboard" table                                                                                                                                                          |
+| Keyboard nav + announcer omitted from InteractiveViewer docs | P2  | ✅ This batch                                                                                                                                                                                           |
+| `pfdn-moddle` README omits validation / schema               | P2  | ✅ This batch                                                                                                                                                                                           |
+| `core` README omits command / routing / a11y exports         | P2  | ✅ This batch — template `## API` tables                                                                                                                                                                |
+| Adapter change contracts diverge                             | P2  | ⏸ Deferred — aligning payloads is breaking for element listeners                                                                                                                                        |
+| No keyboard actions on the focused element                   | P2  | ⏸ Deferred — Editor keymap feature PR                                                                                                                                                                   |
+| No copy / paste / duplicate                                  | P2  | ⏸ Deferred — feature PR                                                                                                                                                                                 |
+| No marquee selection / select-all                            | P2  | ⏸ Deferred — feature PR                                                                                                                                                                                 |
+| JSON documents have no path into the components              | P2  | ⏸ Deferred — feature PR                                                                                                                                                                                 |
+| P3 gaps / discoverability                                    | P3  | ⏸ Deferred                                                                                                                                                                                              |
+
 ---
 
 ## Feature gaps

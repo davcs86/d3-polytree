@@ -53,16 +53,16 @@ Constructor: `new Viewer(options?: ViewerOptions)`.
 | `container` | `HTMLElement`     | Host element the diagram renders into.                                                                               |
 | `modules`   | `DiagramModule[]` | Extra didi modules layered **after** the component's own (last definition wins) — the no-subclassing extension seam. |
 
-| Method / property                      | Description                                                                                                               |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `importDiagram(xml)` → `Promise<void>` | Parse and render a `.pfdn` document (a reboot).                                                                           |
-| `createEmpty()`                        | Render a fresh, empty diagram.                                                                                            |
-| `exportDiagram()` → `string`           | Serialize the current diagram back to `.pfdn` XML.                                                                        |
-| `exportSVG()` → `string`               | The current rendering as a standalone SVG string.                                                                         |
-| `on(event, handler)` / `off(...)`      | Subscribe to post-boot engine events. Subscriptions **survive `importDiagram` reboots**. Typed per component — see below. |
-| `get(name, strict?)`                   | Resolve any service from the running engine (`viewer.get('eventBus')`).                                                   |
-| `getHost()`                            | The loaded model host (`{ definitions, moddle }`).                                                                        |
-| `destroy()`                            | Tear down the diagram and drop all subscriptions.                                                                         |
+| Method / property                      | Description                                                                                                                                                                                                                                      |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `importDiagram(xml)` → `Promise<void>` | Parse and render a `.pfdn` document (a reboot). Rejects if it cannot be parsed, leaving the current diagram open. Imports are sequenced: one superseded by a later `importDiagram`/`createEmpty`, or by `destroy()`, resolves without rendering. |
+| `createEmpty()`                        | Render a fresh, empty diagram (supersedes a pending import).                                                                                                                                                                                     |
+| `exportDiagram()` → `string`           | Serialize the current diagram back to `.pfdn` XML.                                                                                                                                                                                               |
+| `exportSVG()` → `string`               | The current rendering as a standalone SVG string.                                                                                                                                                                                                |
+| `on(event, handler)` / `off(...)`      | Subscribe to post-boot engine events. Subscriptions **survive `importDiagram` reboots**. Typed per component — see below.                                                                                                                        |
+| `get(name, strict?)`                   | Resolve any service from the running engine (`viewer.get('eventBus')`).                                                                                                                                                                          |
+| `getHost()`                            | The loaded model host (`{ definitions, moddle }`).                                                                                                                                                                                               |
+| `destroy()`                            | Tear down the diagram and drop all subscriptions; a pending import never renders afterwards.                                                                                                                                                     |
 
 `Viewer<E>` is generic over the events its `on()`/`off()` accept, narrowed to what each component's
 modules actually emit, so a subscription that could never fire is a compile error:
