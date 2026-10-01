@@ -59,7 +59,7 @@ describe('@d3-polytree/core PaletteProvider', () => {
   function build() {
     const bus = new EventEmitter<DiagramEventMap>();
     const host = { createDiagram: vi.fn() };
-    const localStorage = { save: vi.fn() };
+    const localStorage = { save: vi.fn(), restore: vi.fn(() => Promise.resolve(true)) };
     const upload = { openDialog: vi.fn() };
     const exporting = { trigger: vi.fn() };
     const axes = { toggleVisible: vi.fn() };
@@ -91,6 +91,7 @@ describe('@d3-polytree/core PaletteProvider', () => {
     );
     return {
       provider,
+      notifications,
       addNodeHandler,
       addLabelHandler,
       addLinkTool,
@@ -136,5 +137,19 @@ describe('@d3-polytree/core PaletteProvider', () => {
     expect(ctx.exporting.trigger).toHaveBeenCalledWith('pfdn');
     fire(ctx.provider, 'auto-layout');
     expect(ctx.autoLayout.apply).toHaveBeenCalled();
+  });
+
+  it('restores the saved diagram only after the user confirms', () => {
+    const ctx = build();
+    fire(ctx.provider, 'restore');
+    expect(ctx.localStorage.restore).not.toHaveBeenCalled();
+    const [, onConfirm] = ctx.notifications.warning.mock.calls[0] as unknown as [
+      unknown,
+      (confirmed: boolean) => void
+    ];
+    onConfirm(false);
+    expect(ctx.localStorage.restore).not.toHaveBeenCalled();
+    onConfirm(true);
+    expect(ctx.localStorage.restore).toHaveBeenCalled();
   });
 });

@@ -11,6 +11,9 @@ interface Command {
 /** A transaction is the unit of undo/redo — one or more commands, one entry. */
 type Transaction = Command[];
 
+/** Save-point sentinel: the saved state can no longer be reached by undo/redo. */
+const UNREACHABLE = -2;
+
 /**
  * Transactional undo/redo for the engine.
  *
@@ -24,6 +27,12 @@ type Transaction = Command[];
  * `Diagram` after the injector — and therefore the initial render — is built),
  * so the boot render never records undo entries: `canUndo()` is false on a
  * freshly imported document. `d3canvas.destroy`/`d3canvas.clear` quarantine it.
+ *
+ * **Save point.** {@link markSaved} (or a `document.saved` event) records the
+ * current pointer as the persisted baseline; `document.changed`'s `dirty` is
+ * `pointer !== savePoint`, so undoing back to the save point is clean again.
+ * Truncating or coalescing into the saved entry makes the baseline unreachable
+ * (dirty until the next save).
  *
  * **Failure semantics.** If an `execute` throws mid-transaction, the commands
  * already applied are best-effort reverted and the entry is never recorded. If a
@@ -50,6 +59,8 @@ export class CommandStack {
    * (C15). Cleared on undo/redo/clear/quarantine and on any non-mergeable close.
    */
   private _lastMergeKey: string | null = null;
+  /** The pointer at the last save (-1: the boot baseline; {@link UNREACHABLE}). */
+  private _savePoint = -1;
 
   constructor(eventBus: EventEmitter<DiagramEventMap>) {
     this._eventBus = eventBus;
@@ -58,6 +69,7 @@ export class CommandStack {
     eventBus.on('d3canvas.init', this._enable, this);
     eventBus.on('d3canvas.destroy', this._quarantine, this);
     eventBus.on('d3canvas.clear', this._quarantine, this);
+    eventBus.on('document.saved', this.markSaved, this);
   }
 
   /** Register the handler that applies/inverts `command`. Last registration wins. */
@@ -108,9 +120,15 @@ export class CommandStack {
         top[0].command === txn[0].command &&
         this._handlers.get(txn[0].command)?.merge?.(top[0].context, txn[0].context)
       ) {
+        if (this._savePoint === this._pointer) {
+          this._savePoint = UNREACHABLE; // the saved entry itself changed
+        }
         this._lastMergeKey = mergeKey;
         this._emitChanged();
         return;
+      }
+      if (this._savePoint > this._pointer) {
+        this._savePoint = UNREACHABLE; // the save point is in the dropped redo tail
       }
       this._stack.length = this._pointer + 1; // truncate any redo tail
       this._stack.push(txn);
@@ -185,8 +203,25 @@ export class CommandStack {
     this._emitChanged();
   }
 
+  /**
+   * Record the current state as saved: `document.changed` reports clean until
+   * the next change, and undo/redo back to this point is clean again. Also
+   * ends any in-flight merge burst, so a post-save edit is its own entry.
+   */
+  markSaved(): void {
+    this._savePoint = this._pointer;
+    this._lastMergeKey = null;
+    this._emitChanged();
+  }
+
+  /** True when the document differs from the last save (or the boot baseline). */
+  isDirty(): boolean {
+    return this._pointer !== this._savePoint;
+  }
+
   /** Drop all history (keeps the stack enabled). */
   clear(): void {
+    this._savePoint = this._savePoint === this._pointer ? -1 : UNREACHABLE;
     this._stack = [];
     this._pointer = -1;
     this._lastMergeKey = null;
@@ -221,6 +256,7 @@ export class CommandStack {
     this._pointer = -1;
     this._txn = null;
     this._lastMergeKey = null;
+    this._savePoint = -1;
   }
 
   /** A revert/redo threw: quarantine and surface the fatal inconsistency. */
@@ -235,11 +271,12 @@ export class CommandStack {
   }
 
   private _emitChanged(): void {
-    const canUndo = this.canUndo();
-    this._eventBus.emit('commandStack.changed', { canUndo, canRedo: this.canRedo() });
-    // A document is dirty once it has an undoable change past the boot baseline
-    // (the stack records nothing until `d3canvas.init`). Save-baseline reset /
-    // debounce is a deferred refinement (design Open Risk).
-    this._eventBus.emit('document.changed', { dirty: canUndo });
+    this._eventBus.emit('commandStack.changed', {
+      canUndo: this.canUndo(),
+      canRedo: this.canRedo()
+    });
+    // Dirty = away from the save point (the boot baseline until a save; the
+    // stack records nothing until `d3canvas.init`).
+    this._eventBus.emit('document.changed', { dirty: this.isDirty() });
   }
 }

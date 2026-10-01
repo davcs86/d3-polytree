@@ -121,6 +121,23 @@ export class PaletteProvider {
         icon: 'save',
         action: { click: () => this._localStorage.save() }
       },
+      restore: {
+        title: 'Restore saved diagram',
+        group: 'file-ops',
+        icon: 'restore',
+        action: {
+          click: () => {
+            this._notifications.warning(
+              { title: 'Are you sure?', text: 'Unsaved changes will be replaced by the saved diagram.' },
+              (confirmed) => {
+                if (confirmed) {
+                  void this._localStorage.restore();
+                }
+              }
+            );
+          }
+        }
+      },
       open: {
         title: 'Open diagram',
         group: 'file-ops',
