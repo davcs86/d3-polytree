@@ -100,6 +100,14 @@ describe('@d3-polytree/core Selection', () => {
     expect(b.classes.has('selected')).toBe(false);
   });
 
+  it('cmd-click (metaKey, macOS) extends the selection like ctrl-click', () => {
+    const a = sel();
+    const b = sel();
+    bus.emit('node.click', a as unknown as DrawingSelection, node('A'), {});
+    bus.emit('node.click', b as unknown as DrawingSelection, node('B'), { metaKey: true });
+    expect(selection.getSelectedElements()).toHaveLength(2);
+  });
+
   it('clears the selection on background.click', () => {
     bus.emit('node.click', sel() as unknown as DrawingSelection, node('N1'), {});
     bus.emit('background.click');
