@@ -9,12 +9,13 @@ for golden-file / visual-regression tests, thumbnails, and OG images.
 ## Install
 
 ```sh
-pnpm add @d3-polytree/ssr
+pnpm add @d3-polytree/ssr d3-selection d3-zoom d3-transition d3-scale d3-axis d3-drag
 ```
 
-**No peer dependencies** — it renders entirely in Node. The `@d3-polytree/*` engine packages (`viewer`,
-`core`, `canvas`) are bundled into `dist`; `jsdom` is a regular runtime dependency (installed, not
-bundled). No D3 v7 slices to add.
+It renders entirely in Node — no browser. The `@d3-polytree/*` engine packages (`viewer`, `core`,
+`canvas`) and `jsdom` are regular runtime dependencies (installed, not bundled). The six D3 v7 slices
+are **peer dependencies** (inherited from the engine); add the ones your project doesn't already
+provide.
 
 ## What's inside
 
