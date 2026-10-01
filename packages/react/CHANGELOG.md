@@ -1,5 +1,36 @@
 # @d3-polytree/react
 
+## 0.4.0
+
+### Minor Changes
+
+- 4c49962: `.pfdn` import failures are no longer dropped:
+
+  - `<d3-polytree-editor>` dispatches an `error` `CustomEvent` (`detail`: the error).
+  - `<PolytreeEditor>` gains an `onError` prop. Without it, the error is logged with `console.error`.
+  - The palette's **Open** reports the failure through the `notifications` service. `Upload` now
+    injects `notifications`.
+
+  In every case, a document that is already open stays open.
+
+### Patch Changes
+
+- 4c49962: Safe before a diagram has loaded:
+
+  - `Editor.undo/redo/markSaved` are no-ops, and `canUndo/canRedo/isDirty` return
+    `false`. They used to throw `no diagram loaded`.
+  - `<d3-polytree-editor>.value` and the React handle's `export()` return the last
+    document handed in.
+
+- 4c49962: Declare the six D3 v7 slices as peer dependencies, and
+  `@d3-polytree/interactive-viewer` (whose `style.css` the README imports) as a
+  dependency, so strict installs resolve them.
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+  - @d3-polytree/interactive-viewer@0.7.1
+  - @d3-polytree/editor@0.8.1
+
 ## 0.3.0
 
 ### Minor Changes

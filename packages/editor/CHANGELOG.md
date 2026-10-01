@@ -1,5 +1,37 @@
 # @d3-polytree/editor
 
+## 0.8.1
+
+### Patch Changes
+
+- 4c49962: Safe before a diagram has loaded:
+
+  - `Editor.undo/redo/markSaved` are no-ops, and `canUndo/canRedo/isDirty` return
+    `false`. They used to throw `no diagram loaded`.
+  - `<d3-polytree-editor>.value` and the React handle's `export()` return the last
+    document handed in.
+
+- 4c49962: README updates:
+
+  - `pfdn-moddle`: validation and schema API; the strict-JSON vs lax-XML defaults.
+  - `core`: command, routing, a11y and export API.
+  - `editor`: keyboard shortcuts and pre-load semantics.
+  - `interactive-viewer`: keyboard navigation, the screen-reader announcer, and
+    notifications.
+  - `viewer`: import sequencing.
+  - `layout`: the worker error protocol.
+
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+  - @d3-polytree/core@0.7.0
+  - @d3-polytree/viewer@0.4.0
+  - @d3-polytree/interactive-viewer@0.7.1
+
 ## 0.8.0
 
 ### Minor Changes
