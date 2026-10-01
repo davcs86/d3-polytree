@@ -15,7 +15,7 @@ set -uo pipefail
 
 REPO_URL="https://github.com/davcs86/agent-plugins"
 REF="main"
-PLUGINS=(repo-surveyor)
+PLUGINS=(repo-surveyor design-buddy context-forge)
 
 SKILLS_DIR="$HOME/.claude/skills"
 AGENTS_DIR="$HOME/.claude/agents"
