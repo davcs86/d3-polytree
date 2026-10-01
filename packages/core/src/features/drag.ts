@@ -9,7 +9,7 @@ import type { ElementClass } from '../modelling';
 import type { MoveItem, Placement } from '../modelling/commands';
 import type { ModellingModelElement } from '../modelling/types';
 import type { Selection } from './selection';
-import { ElementStatus } from '../model/status';
+import { ElementStatus, markModified } from '../model/status';
 
 type DragEvent = D3DragEvent<SVGGElement, DiagramElement, DiagramElement>;
 
@@ -58,6 +58,11 @@ export class Drag {
       position: { x: pos.x, y: pos.y },
       status: Number(def.get('status') ?? ElementStatus.New)
     };
+  }
+
+  /** The post-drag placement: current position, `from` status marked modified. */
+  private _movedPlacement(def: ModellingModelElement, from: Placement): Placement {
+    return { position: this._placement(def).position, status: markModified(from.status) };
   }
 
   /**
@@ -120,9 +125,13 @@ export class Drag {
     }
     const items: MoveItem[] = this._origin.map(({ item }) => ({
       ...item,
-      to: this._placement(item.def),
+      to: this._movedPlacement(item.def, item.from),
       label: item.label
-        ? { def: item.label.def, from: item.label.from, to: this._placement(item.label.def) }
+        ? {
+            def: item.label.def,
+            from: item.label.from,
+            to: this._movedPlacement(item.label.def, item.label.from)
+          }
         : undefined
     }));
     this._origin = [];
@@ -154,9 +163,7 @@ export class Drag {
     position.x = x;
     position.y = y;
 
-    if (def.get('status') !== ElementStatus.Persisted) {
-      def.set('status', ElementStatus.Dirty);
-    }
+    // Position only: the `element.move` command owns the status transition.
     this._eventBus.emit(`${getLocalName(def) as ElementClass}.moving`, elem, def);
   }
 

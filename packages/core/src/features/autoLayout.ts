@@ -9,7 +9,7 @@ import type { DrawingRegistry, Point } from '../draw';
 import type { ElementClass } from '../modelling';
 import type { MoveItem, Placement } from '../modelling/commands';
 import type { ModellingModelElement } from '../modelling/types';
-import { ElementStatus } from '../model/status';
+import { ElementStatus, markModified } from '../model/status';
 import { buildModelGraph } from '../model/graph';
 
 /** The `d3polytree` model host surface auto-layout reads. */
@@ -105,7 +105,7 @@ export class AutoLayout {
       const from = this._placement(def);
       const to: Placement = {
         position: { x: Math.round(center.x - size / 2), y: Math.round(center.y - size / 2) },
-        status: from.status
+        status: markModified(from.status)
       };
       const dx = to.position.x - from.position.x;
       const dy = to.position.y - from.position.y;
@@ -119,7 +119,7 @@ export class AutoLayout {
         labelItem = {
           def: label,
           from: lf,
-          to: { position: { x: lf.position.x + dx, y: lf.position.y + dy }, status: lf.status }
+          to: { position: { x: lf.position.x + dx, y: lf.position.y + dy }, status: markModified(lf.status) }
         };
       }
       items.push({ def, className: 'node' as ElementClass, from, to, label: labelItem });

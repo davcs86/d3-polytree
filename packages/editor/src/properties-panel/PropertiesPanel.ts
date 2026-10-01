@@ -1,6 +1,7 @@
 import type EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/core';
 import type { CommandStack, CommandContext, UiIconName } from '@d3-polytree/core';
+import { ElementStatus, markModified } from '@d3-polytree/core';
 import type { EntryResource } from './EntryFactory';
 import type { PropertiesProvider } from './PfdnPropertiesProvider';
 import { debounce, deepGet, deepSet, type Definition } from './utils';
@@ -11,6 +12,8 @@ interface UpdatePropsContext extends CommandContext {
   definition: Definition;
   before: Record<string, unknown>;
   after: Record<string, unknown>;
+  /** Set by the first `execute` (the memento): the status before the edit. */
+  prevStatus?: number;
 }
 
 /** The side-tab registration surface the panel needs (structural). */
@@ -100,13 +103,23 @@ export class PropertiesPanel {
    * the core modelling orchestrator.
    */
   private _registerUpdatePropertiesCommand(): void {
-    const apply = (ctx: UpdatePropsContext, props: Record<string, unknown>): void => {
+    const apply = (ctx: UpdatePropsContext, props: Record<string, unknown>, status: number): void => {
       ctx.scope.set(ctx.definition, props);
+      // The command owns the status transition (never the draw layer), and the
+      // memento restores the exact prior value on undo (CORE-01).
+      ctx.definition.status = status;
       this._propertiesProvider.updateDrawing(ctx.definition);
     };
     this._commandStack.registerHandler('element.updateProperties', {
-      execute: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).after),
-      revert: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).before),
+      execute: (c) => {
+        const ctx = c as UpdatePropsContext;
+        ctx.prevStatus ??= Number(ctx.definition.get('status') ?? ElementStatus.New);
+        apply(ctx, ctx.after, markModified(ctx.prevStatus));
+      },
+      revert: (c) => {
+        const ctx = c as UpdatePropsContext;
+        apply(ctx, ctx.before, ctx.prevStatus ?? ElementStatus.New);
+      },
       // Coalesce a debounced typing burst on one field into a single undo step
       // (C15): keep the surviving (earlier) memento's `before`, adopt the newer
       // `after`. The model already sits at `next.after` when this runs.

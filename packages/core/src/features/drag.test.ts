@@ -60,7 +60,8 @@ describe('@d3-polytree/core Drag', () => {
     expect(el.attr('transform')).toBe('translate(15,27)');
     expect((def.position as { x: number; y: number }).x).toBe(15);
     expect((def.position as { x: number; y: number }).y).toBe(27);
-    expect(def.get('status')).toBe(2);
+    // the live drag writes position only; `element.move` owns the status
+    expect(def.get('status')).toBe(0);
     expect(moving).toHaveBeenCalled();
   });
 
