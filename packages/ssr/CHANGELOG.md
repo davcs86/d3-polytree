@@ -1,5 +1,31 @@
 # @d3-polytree/ssr
 
+## 0.3.0
+
+### Minor Changes
+
+- d615807: Declare the six D3 v7 slices as peer dependencies and correct the README: the
+  engine packages are regular dependencies (not bundled), and their D3 slices must
+  be resolvable by the consumer.
+
+### Patch Changes
+
+- 02e77ae: Keyboard-first accessibility for the diagram: `role="application"` with roving
+  focus, arrow-cone navigation, an Escape hatch out of application mode, an
+  `aria-live` announcer, per-element accessible names (`<title>`/`<desc>`, also in
+  SSR/`exportSVG` output), a forced-colors-aware focus ring, and reduced-motion-aware
+  zoom. AT forms-mode navigation is verified structurally (axe) and behaviourally
+  (Playwright); a manual screen-reader pass is recommended (tracked as ROADMAP C2.a).
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [02e77ae]
+- Updated dependencies [d615807]
+- Updated dependencies [d615807]
+- Updated dependencies [d615807]
+  - @d3-polytree/core@0.6.0
+  - @d3-polytree/viewer@0.3.0
+  - @d3-polytree/canvas@0.3.0
+
 ## 0.2.5
 
 ### Patch Changes
