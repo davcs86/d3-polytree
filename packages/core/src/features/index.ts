@@ -35,7 +35,7 @@ export { Outline } from './outline';
 export { Drag } from './drag';
 export { Exporting } from './exporting';
 export type { ExportFormat, ExportHost } from './exporting';
-export { LocalStorage } from './localStorage';
+export { LocalStorage, readSavedDiagram } from './localStorage';
 export type { StorageHost } from './localStorage';
 export { Upload } from './upload';
 export type { UploadHost } from './upload';

@@ -61,9 +61,8 @@ export abstract class BaseElement {
   protected _builder(elementId: string, definition: DiagramElement | undefined): void {
     const element = this._elementRegistry.get(elementId);
     if (element && definition) {
-      if (definition.get('status') !== ElementStatus.Persisted) {
-        definition.set('status', ElementStatus.Dirty);
-      }
+      // Draw-only: status transitions belong to the modelling/command layers
+      // (see model/status.ts) — writing it here leaked `status="2"` into undo.
       this.updateElement(definition);
     } else if (element && !definition) {
       this.removeElementById((element as DiagramElement).id as string);
@@ -161,7 +160,10 @@ export abstract class BaseElement {
   protected _init(items: DiagramElement[] | undefined): void {
     this._drawContainer();
     if (items) {
-      items.forEach((definition) => this._builder(definition.id as string, definition));
+      // Soft-deleted elements stay in the model (round-trip) but are never drawn.
+      items
+        .filter((definition) => definition.get('status') !== ElementStatus.Deleted)
+        .forEach((definition) => this._builder(definition.id as string, definition));
     }
   }
 }

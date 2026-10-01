@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { Canvas } from '@d3-polytree/canvas';
-import { LocalStorage, type StorageHost } from './localStorage';
+import { LocalStorage, readSavedDiagram, type StorageHost } from './localStorage';
 import { Upload, type UploadHost } from './upload';
 import type { NotificationService } from './notifications';
 
@@ -47,6 +47,60 @@ describe('@d3-polytree/core LocalStorage', () => {
     window.localStorage.setItem('diagram', '<pfdn:diagram stored="1"/>');
     ls.loadSaved();
     expect(importDiagram).toHaveBeenLastCalledWith('<pfdn:diagram stored="1"/>');
+  });
+
+  it('emits document.saved only when the write succeeds', () => {
+    const bus = new EventEmitter<DiagramEventMap>();
+    const saved = vi.fn();
+    bus.on('document.saved', saved);
+    const host: StorageHost = { exportDiagram: () => '<pfdn:diagram/>', importDiagram: vi.fn() };
+    const ls = new LocalStorage(host, noopNotifications, bus);
+
+    ls.save();
+    expect(saved).toHaveBeenCalledTimes(1);
+    expect(readSavedDiagram()).toBe('<pfdn:diagram/>');
+
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    try {
+      ls.save();
+    } finally {
+      setItem.mockRestore();
+    }
+    expect(saved).toHaveBeenCalledTimes(1); // no save point for a failed write
+    expect(noopNotifications.error).toHaveBeenCalled();
+    expect(noopNotifications.success).toHaveBeenCalledTimes(1);
+  });
+
+  it('restore() imports the stored diagram and resolves true', async () => {
+    window.localStorage.setItem('diagram', '<pfdn:diagram stored="1"/>');
+    const importDiagram = vi.fn().mockResolvedValue(undefined);
+    const ls = new LocalStorage({ exportDiagram: () => '', importDiagram }, noopNotifications);
+
+    await expect(ls.restore()).resolves.toBe(true);
+    expect(importDiagram).toHaveBeenCalledWith('<pfdn:diagram stored="1"/>');
+  });
+
+  it('restore() notifies and resolves false when nothing is stored', async () => {
+    const importDiagram = vi.fn();
+    const ls = new LocalStorage(
+      { exportDiagram: () => '', importDiagram, initialDiagram: '<pfdn:diagram/>' },
+      noopNotifications
+    );
+
+    await expect(ls.restore()).resolves.toBe(false);
+    expect(importDiagram).not.toHaveBeenCalled(); // never falls back to the initial
+    expect(noopNotifications.info).toHaveBeenCalled();
+  });
+
+  it('restore() notifies and resolves false when the stored document is invalid', async () => {
+    window.localStorage.setItem('diagram', 'not xml');
+    const importDiagram = vi.fn().mockRejectedValue(new Error('unparsable'));
+    const ls = new LocalStorage({ exportDiagram: () => '', importDiagram }, noopNotifications);
+
+    await expect(ls.restore()).resolves.toBe(false);
+    expect(noopNotifications.error).toHaveBeenCalled();
   });
 });
 

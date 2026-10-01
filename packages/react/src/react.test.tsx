@@ -59,4 +59,31 @@ describe('<PolytreeEditor /> (React wrapper)', () => {
     // re-create a root so afterEach's unmount is a no-op-safe call
     root = createRoot(container);
   });
+
+  it('composes `modules` and reboots (preserving the document) when the array changes', async () => {
+    const probe = (tag: string) => ({ probe: ['value', { tag }] }) as never;
+    const ref = createRef<PolytreeEditorHandle>();
+    const a = [probe('A')];
+    act(() => {
+      root.render(<PolytreeEditor ref={ref} modules={a} />);
+    });
+    const editor = ref.current!.getEditor()!;
+    expect(editor.get<{ tag: string }>('probe').tag).toBe('A');
+    const before = ref.current!.export();
+
+    // same identity → no reboot
+    const importSpy = vi.spyOn(editor, 'importDiagram');
+    act(() => {
+      root.render(<PolytreeEditor ref={ref} modules={a} />);
+    });
+    expect(importSpy).not.toHaveBeenCalled();
+
+    // new array → in-place reboot with the new modules, same document
+    await act(async () => {
+      root.render(<PolytreeEditor ref={ref} modules={[probe('B')]} />);
+    });
+    await vi.waitFor(() => expect(editor.get<{ tag: string }>('probe').tag).toBe('B'));
+    expect(ref.current!.getEditor()).toBe(editor);
+    expect(ref.current!.export()).toBe(before);
+  });
 });

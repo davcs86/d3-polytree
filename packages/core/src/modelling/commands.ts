@@ -5,7 +5,7 @@ import { getLocalName } from '../utils/localName';
 import type { ModellingElement } from './ModellingElement';
 import type { ElementClass } from './Modelling';
 import type { ModellingModelElement } from './types';
-import { ElementStatus } from '../model/status';
+import { ElementStatus, markModified } from '../model/status';
 
 /** A node's resizable geometry — the memento for `element.resize`. */
 export interface Geometry {
@@ -178,6 +178,8 @@ export interface ResizeContext extends CommandContext {
   className: ElementClass;
   from: Geometry;
   to: Geometry;
+  /** Set by the first `execute` (the memento): the status before the resize. */
+  prevStatus?: number;
 }
 
 /** Build the `element.resize` command handler. */
@@ -186,11 +188,14 @@ export function resizeElementCommand(handlers: ElementHandlers): CommandHandler<
     execute(ctx) {
       // The live drag already wrote `to`; re-applying is idempotent and makes
       // redo work from any state.
+      ctx.prevStatus ??= Number(ctx.def.get('status') ?? ElementStatus.New);
       applyGeometry(ctx.def, ctx.to);
+      ctx.def.set('status', markModified(ctx.prevStatus));
       handlers[ctx.className].reconcile(ctx.def.id as string, ctx.def);
     },
     revert(ctx) {
       applyGeometry(ctx.def, ctx.from);
+      ctx.def.set('status', ctx.prevStatus);
       handlers[ctx.className].reconcile(ctx.def.id as string, ctx.def);
     }
   };

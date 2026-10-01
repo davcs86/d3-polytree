@@ -67,7 +67,9 @@ per instance with a `data-pfd-theme="light|dark"` attribute.
 
 Same surface as [`Viewer`](https://github.com/davcs86/d3-polytree/tree/main/packages/viewer)
 (`importDiagram`, `createEmpty`, `exportDiagram`, `exportSVG`, `on`/`off`, `get`, `destroy`) plus the
-interaction modules above. Ships ESM + CJS + `.d.ts`, the UMD bundle, and compiled CSS at
+interaction modules above. `on()`/`off()` accept `selection.changed` only (`InteractiveViewerEvent`) —
+there is no command stack, so `document.changed` / `commandStack.changed` never fire here and do not
+type-check. Ships ESM + CJS + `.d.ts`, the UMD bundle, and compiled CSS at
 `./style.css`.
 
 ## Links

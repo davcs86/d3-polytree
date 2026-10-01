@@ -316,6 +316,25 @@ importers:
       jsdom:
         specifier: 25.0.1
         version: 25.0.1
+    devDependencies:
+      d3-axis:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-drag:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-scale:
+        specifier: ^4.0.0
+        version: 4.0.2
+      d3-selection:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-transition:
+        specifier: ^3.0.0
+        version: 3.0.1(d3-selection@3.0.0)
+      d3-zoom:
+        specifier: ^3.0.0
+        version: 3.0.0
 
   packages/viewer:
     dependencies:

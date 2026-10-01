@@ -121,4 +121,48 @@ describe('<d3-polytree-editor>', () => {
     expect(() => el.remove()).not.toThrow();
     expect((el as unknown as WithEditor)._editor).toBeNull();
   });
+
+  describe('modules', () => {
+    /** A didi module registering a `probe` value token we can resolve. */
+    const probe = (tag: string) => ({ probe: ['value', { tag }] }) as never;
+    const probeOf = (el: D3PolytreeEditorElement): string =>
+      (el as unknown as WithEditor)._editor!.get<{ tag: string }>('probe').tag;
+
+    it('composes modules assigned before connect', () => {
+      const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+      el.modules = [probe('A')];
+      document.body.appendChild(el);
+      expect(probeOf(el)).toBe('A');
+    });
+
+    it('reboots with new modules after mount, preserving the document and change events', async () => {
+      const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+      el.modules = [probe('A')];
+      document.body.appendChild(el);
+      const before = el.value;
+
+      el.modules = [probe('B')];
+      await vi.waitFor(() => expect(probeOf(el)).toBe('B'));
+      expect(el.value).toBe(before); // same document re-imported
+
+      const onChange = vi.fn();
+      el.addEventListener('change', onChange);
+      fireDocumentChanged(el); // the reboot-surviving subscription still fires
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not reboot when the same array is re-assigned', () => {
+      const mods = [probe('A')];
+      const el = document.createElement('d3-polytree-editor') as D3PolytreeEditorElement;
+      el.modules = mods;
+      document.body.appendChild(el);
+      const editor = (el as unknown as WithEditor)._editor!;
+      const importSpy = vi.spyOn(
+        editor as unknown as { importDiagram(): Promise<void> },
+        'importDiagram'
+      );
+      el.modules = mods;
+      expect(importSpy).not.toHaveBeenCalled();
+    });
+  });
 });

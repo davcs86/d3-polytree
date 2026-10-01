@@ -56,7 +56,7 @@ describe('@d3-polytree/core modelling handlers', () => {
     const label = labels.create({ position: { x: 4, y: 8 } });
 
     expect(label.$type).toBe('pfdn:Label');
-    expect(label.status).toBe(1);
+    expect(label.status).toBe(0); // created this session → New (not serialized)
     expect(label.text).toBe(label.id);
     // reconciled once to render, once after naming
     expect(recorder.calls).toHaveLength(2);

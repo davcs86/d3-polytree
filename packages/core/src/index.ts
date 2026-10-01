@@ -35,6 +35,7 @@ export * from './command';
 export * from './Diagram';
 export * from './model/model';
 export * from './model/graph';
+export { ElementStatus, markModified } from './model/status';
 export * from './uiIcons';
 
 /** didi modules that make up the core engine (extended as B3 lands more draw/features). */

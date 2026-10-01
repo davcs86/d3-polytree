@@ -1,9 +1,10 @@
 import type EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/core';
 import type { CommandStack, CommandContext, UiIconName } from '@d3-polytree/core';
+import { ElementStatus, markModified } from '@d3-polytree/core';
 import type { EntryResource } from './EntryFactory';
 import type { PropertiesProvider } from './PfdnPropertiesProvider';
-import { debounce, deepGet, deepSet, type Definition } from './utils';
+import { debounce, deepGet, deepSet, type Debounced, type Definition } from './utils';
 
 /** The memento for an `element.updateProperties` command. */
 interface UpdatePropsContext extends CommandContext {
@@ -11,6 +12,8 @@ interface UpdatePropsContext extends CommandContext {
   definition: Definition;
   before: Record<string, unknown>;
   after: Record<string, unknown>;
+  /** Set by the first `execute` (the memento): the status before the edit. */
+  prevStatus?: number;
 }
 
 /** The side-tab registration surface the panel needs (structural). */
@@ -72,6 +75,16 @@ export class PropertiesPanel {
    * (C15): re-selecting an element starts a fresh, separately-undoable session.
    */
   private _editSession = 0;
+  /**
+   * Debounced keystroke commit. It resolves its target through `_entries`, which
+   * a selection change rebuilds — so it is flushed *before* that rebuild (or the
+   * pending text would be written into the newly selected element) and cancelled
+   * on teardown.
+   */
+  private readonly _debouncedApply: Debounced<[HTMLElement]> = debounce(
+    (target: HTMLElement) => this._applyChange(target),
+    300
+  );
 
   private _container: HTMLElement | null = null;
   private _tabsEl: HTMLElement | null = null;
@@ -100,13 +113,27 @@ export class PropertiesPanel {
    * the core modelling orchestrator.
    */
   private _registerUpdatePropertiesCommand(): void {
-    const apply = (ctx: UpdatePropsContext, props: Record<string, unknown>): void => {
+    const apply = (
+      ctx: UpdatePropsContext,
+      props: Record<string, unknown>,
+      status: number
+    ): void => {
       ctx.scope.set(ctx.definition, props);
+      // The command owns the status transition (never the draw layer), and the
+      // memento restores the exact prior value on undo (CORE-01).
+      deepSet(ctx.definition, 'status', status);
       this._propertiesProvider.updateDrawing(ctx.definition);
     };
     this._commandStack.registerHandler('element.updateProperties', {
-      execute: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).after),
-      revert: (ctx) => apply(ctx as UpdatePropsContext, (ctx as UpdatePropsContext).before),
+      execute: (c) => {
+        const ctx = c as UpdatePropsContext;
+        ctx.prevStatus ??= Number(ctx.definition.get('status') ?? ElementStatus.New);
+        apply(ctx, ctx.after, markModified(ctx.prevStatus));
+      },
+      revert: (c) => {
+        const ctx = c as UpdatePropsContext;
+        apply(ctx, ctx.before, ctx.prevStatus ?? ElementStatus.New);
+      },
       // Coalesce a debounced typing burst on one field into a single undo step
       // (C15): keep the surviving (earlier) memento's `before`, adopt the newer
       // `after`. The model already sits at `next.after` when this runs.
@@ -132,6 +159,9 @@ export class PropertiesPanel {
     this._eventBus.on(
       'selection.changed',
       (oldSelection: SelectionEntry[], newSelection: SelectionEntry[]) => {
+        // Commit any in-flight keystrokes against the *outgoing* element first,
+        // within its own edit session.
+        this._debouncedApply.flush();
         // A selection change ends the current edit session, so a later edit on
         // the same field is a separate undo entry (C15).
         this._editSession += 1;
@@ -146,6 +176,8 @@ export class PropertiesPanel {
         this._update(selected);
       }
     );
+    // The engine is going away (reboot/destroy): never commit into a torn-down stack.
+    this._eventBus.on('d3canvas.destroy', () => this._debouncedApply.cancel());
   }
 
   private _drawPanel(content: HTMLElement | null): void {
@@ -181,11 +213,10 @@ export class PropertiesPanel {
       return;
     }
     // debounce keystroke updates on text inputs/areas; selects fire on change.
-    const debouncedApply = debounce((target: HTMLElement) => this._applyChange(target), 300);
     container.addEventListener('input', (event) => {
       const target = event.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        debouncedApply(target);
+        this._debouncedApply(target);
       }
     });
     container.addEventListener('change', (event) => {

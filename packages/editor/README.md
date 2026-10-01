@@ -52,7 +52,7 @@ Everything on [`Viewer`](https://github.com/davcs86/d3-polytree/tree/main/packag
 
 | Method                                   | Description                                                                                                                            |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `createDiagram()` → `Promise<void>`      | Open the built-in starter diagram.                                                                                                     |
+| `createDiagram()` → `Promise<void>`      | Open the built-in starter diagram — or, at boot with the `restoreSaved` option, the last saved one.                                    |
 | `createNode(params?)` → element          | Create a node (`{ type, position }`) as an undoable command.                                                                           |
 | `select(definition)`                     | Select an element programmatically.                                                                                                    |
 | `deleteSelected()`                       | Delete the current selection.                                                                                                          |
@@ -60,6 +60,17 @@ Everything on [`Viewer`](https://github.com/davcs86/d3-polytree/tree/main/packag
 | `setLinkPinned(id, pinned?)`             | Pin/unpin a link's routing (`pinned` defaults to `true`) as an undoable command.                                                       |
 | `undo()` / `redo()`                      | Walk the command stack.                                                                                                                |
 | `canUndo()` / `canRedo()` → `boolean`    | Whether the command stack currently has anything to undo / redo.                                                                       |
+| `markSaved()`                            | Record the current state as saved (call after persisting elsewhere); `document.changed` reports `dirty: false` until the next edit.    |
+| `isDirty()` → `boolean`                  | Whether the document changed since the last save (or since it was opened). Undo/redo back to the save point is clean.                  |
+| `restoreSaved()` → `Promise<boolean>`    | Re-open the diagram last stored by the palette's **Save**; `false` (with a notification) when nothing is stored or it fails to import. |
+
+Options: everything `ViewerOptions` takes, plus `restoreSaved?: boolean` — when `createDiagram()` runs
+with no diagram open yet, open the diagram saved in `localStorage` instead of the starter diagram
+(falling back to it when nothing valid is stored). The palette's **Save** writes to `localStorage` and
+marks the document clean; **Restore saved diagram** re-opens it after a confirmation.
+
+`on()` accepts all three engine events — `document.changed` (`{ dirty }`), `selection.changed`,
+`commandStack.changed` (`EditorEvent`).
 
 ## Styling & theming
 

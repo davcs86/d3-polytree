@@ -34,4 +34,4 @@ Package-specific notes; see the repo-root `CLAUDE.md` for the big picture.
   (editor consumers also import `interactive-viewer/style.css`).
 - API beyond the base: `createDiagram()` (opens `INITIAL_DIAGRAM`), `createNode(params)`, `select(def)`,
   `deleteSelected()`, `autoLayout(opts?)`, `setLinkPinned(id, pinned?)`, `undo()`/`redo()`,
-  `canUndo()`/`canRedo()`. Ships a UMD pass (global `d3PolytreeEditor`).
+  `canUndo()`/`canRedo()`, `markSaved()`/`isDirty()`, `restoreSaved()` (+ the `restoreSaved` boot option). Ships a UMD pass (global `d3PolytreeEditor`).

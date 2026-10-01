@@ -30,6 +30,22 @@
     "@d3-polytree/viewer": "workspace:*",
     "jsdom": "25.0.1"
   },
+  "peerDependencies": {
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "d3-transition": "^3.0.0",
+    "d3-scale": "^4.0.0",
+    "d3-axis": "^3.0.0",
+    "d3-drag": "^3.0.0"
+  },
+  "devDependencies": {
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "d3-transition": "^3.0.0",
+    "d3-scale": "^4.0.0",
+    "d3-axis": "^3.0.0",
+    "d3-drag": "^3.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/davcs86/d3-polytree.git",

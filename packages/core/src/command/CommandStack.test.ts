@@ -299,6 +299,94 @@ describe('@d3-polytree/core CommandStack — coalescing (C15)', () => {
   });
 });
 
+describe('@d3-polytree/core CommandStack save point', () => {
+  let bus: EventEmitter<DiagramEventMap>;
+  let stack: CommandStack;
+  let model: Model;
+  let dirty: boolean[];
+
+  beforeEach(() => {
+    bus = new EventEmitter<DiagramEventMap>();
+    stack = new CommandStack(bus);
+    model = { value: 0 };
+    stack.registerHandler('add', addHandler(model));
+    stack.registerHandler('set', {
+      execute: (ctx) => void (model.value = ctx.after as number),
+      revert: (ctx) => void (model.value = ctx.before as number),
+      merge: (prev, next) => {
+        prev.after = next.after;
+        return true;
+      }
+    });
+    bus.emit('d3canvas.init');
+    dirty = [];
+    bus.on('document.changed', (p) => dirty.push(p.dirty));
+  });
+
+  it('markSaved() makes the current state clean; undo past it is dirty, redo back is clean', () => {
+    stack.execute('add', { amount: 1 });
+    stack.execute('add', { amount: 2 });
+    expect(stack.isDirty()).toBe(true);
+    stack.markSaved();
+    expect(dirty.at(-1)).toBe(false);
+    stack.undo();
+    expect(dirty.at(-1)).toBe(true);
+    stack.redo();
+    expect(dirty.at(-1)).toBe(false);
+    expect(stack.canUndo()).toBe(true); // history is kept across a save
+  });
+
+  it('a document.saved event records the save point', () => {
+    stack.execute('add', { amount: 1 });
+    bus.emit('document.saved');
+    expect(stack.isDirty()).toBe(false);
+  });
+
+  it('the boot baseline is unreachable after saving later, then reachable states stay dirty', () => {
+    stack.execute('add', { amount: 1 });
+    stack.markSaved();
+    stack.undo(); // back at the boot baseline, which is no longer the saved state
+    expect(stack.isDirty()).toBe(true);
+  });
+
+  it('truncating the saved redo tail makes the save point unreachable', () => {
+    stack.execute('add', { amount: 1 });
+    stack.execute('add', { amount: 2 });
+    stack.markSaved();
+    stack.undo();
+    stack.execute('add', { amount: 5 }); // drops the saved entry from the redo tail
+    expect(stack.isDirty()).toBe(true);
+    stack.undo();
+    expect(stack.isDirty()).toBe(true); // never clean again until the next save
+  });
+
+  it('a save ends a merge burst, so the next edit cannot mutate the saved entry', () => {
+    stack.execute('set', { before: 0, after: 1 }, 'k');
+    stack.markSaved();
+    stack.execute('set', { before: 1, after: 2 }, 'k'); // new entry, not a coalesce
+    expect(stack.isDirty()).toBe(true);
+    stack.undo();
+    expect(model.value).toBe(1);
+    expect(stack.isDirty()).toBe(false); // exactly the saved state again
+  });
+
+  it('clear() keeps clean when at the save point, dirty otherwise', () => {
+    stack.execute('add', { amount: 1 });
+    stack.markSaved();
+    stack.clear();
+    expect(stack.isDirty()).toBe(false);
+    stack.execute('add', { amount: 1 });
+    stack.clear();
+    expect(stack.isDirty()).toBe(true);
+  });
+
+  it('a quarantine (engine teardown) resets to a clean baseline', () => {
+    stack.execute('add', { amount: 1 });
+    bus.emit('d3canvas.destroy');
+    expect(stack.isDirty()).toBe(false);
+  });
+});
+
 describe('DiagramEventMap (compile-time contract, core surface)', () => {
   // Checked by `tsc --noEmit` (tsconfig include: ["src"]). Each @ts-expect-error
   // fails the typecheck before the bus is typed and passes after — a real

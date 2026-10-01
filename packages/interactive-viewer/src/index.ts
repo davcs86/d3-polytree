@@ -7,7 +7,7 @@
  * and the event-driven features (mouse events, selection, outline) must be
  * subscribed before the drawers emit their initial `<class>.created` events.
  */
-import { Viewer, type ViewerOptions } from '@d3-polytree/viewer';
+import { Viewer, type ReboundEvent, type ViewerOptions } from '@d3-polytree/viewer';
 import {
   backgroundColorModule,
   zoomModule,
@@ -33,7 +33,13 @@ export * from './notifications';
 
 export type InteractiveViewerOptions = ViewerOptions;
 
-export class InteractiveViewer extends Viewer {
+/**
+ * The {@link ReboundEvent}s an `InteractiveViewer` emits: `selection.changed`
+ * (it composes `selection`, but no command stack).
+ */
+export type InteractiveViewerEvent = 'selection.changed';
+
+export class InteractiveViewer<E extends ReboundEvent = InteractiveViewerEvent> extends Viewer<E> {
   /** Interaction modules layered on top of the base draw modules. */
   static readonly interactionModules: readonly DiagramModule[] = [
     backgroundColorModule as DiagramModule,

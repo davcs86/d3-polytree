@@ -2,15 +2,15 @@
  * @d3-polytree/editor — create and modify polytree diagrams.
  *
  * Extends the {@link InteractiveViewer} with the editing layer: element
- * dragging plus the modelling create/save/delete flows. Element creation is
- * exposed programmatically here; the palette toolbar UI is layered on next.
+ * dragging, the modelling create/save/delete flows, the palette toolbar and
+ * the properties panel.
  */
 import {
   InteractiveViewer,
   domNotificationsModule,
   type InteractiveViewerOptions
 } from '@d3-polytree/interactive-viewer';
-import { Viewer } from '@d3-polytree/viewer';
+import { Viewer, type ReboundEvent } from '@d3-polytree/viewer';
 import {
   dragModule,
   modellingModule,
@@ -29,7 +29,9 @@ import {
   type CreateContext,
   type PinContext,
   type Selection,
-  type LayoutOptions
+  type LayoutOptions,
+  type LocalStorage,
+  readSavedDiagram
 } from '@d3-polytree/core';
 // The properties panel used to be its own package; it is now folded in here
 // (the editor was its only consumer) and re-exported below.
@@ -53,9 +55,25 @@ const INITIAL_DIAGRAM =
   '<position x="33" y="140" /><text>Node 1</text></label>' +
   '</pfdn:diagram>';
 
-export type EditorOptions = InteractiveViewerOptions;
+export interface EditorOptions extends InteractiveViewerOptions {
+  /**
+   * Open the diagram last saved with the palette's Save (browser `localStorage`)
+   * instead of {@link Editor.initialDiagram} when {@link Editor.createDiagram}
+   * runs with no diagram open yet (i.e. at boot). Falls back to the initial
+   * diagram when nothing is stored or the stored document fails to import.
+   * Later `createDiagram()` calls (the palette's New) always open the initial one.
+   */
+  restoreSaved?: boolean;
+}
 
-export class Editor extends InteractiveViewer {
+/**
+ * The {@link ReboundEvent}s an `Editor` emits: all of them — `selection.changed`
+ * from the interaction layer, `document.changed` + `commandStack.changed` from
+ * the command stack its modelling layer composes.
+ */
+export type EditorEvent = ReboundEvent;
+
+export class Editor extends InteractiveViewer<EditorEvent> {
   /** Editing modules on top of the interaction layer. */
   static readonly editionModules: readonly DiagramModule[] = [
     dragModule as DiagramModule,
@@ -77,6 +95,8 @@ export class Editor extends InteractiveViewer {
   initialDiagram = INITIAL_DIAGRAM;
 
   private readonly _onKeydown = (event: KeyboardEvent): void => this._handleKeydown(event);
+
+  declare readonly options: EditorOptions;
 
   constructor(options: EditorOptions = {}) {
     super(options);
@@ -118,9 +138,44 @@ export class Editor extends InteractiveViewer {
     super.destroy();
   }
 
-  /** (Re)open the initial diagram. */
-  createDiagram(): Promise<void> {
-    return this.importDiagram(this.initialDiagram);
+  /**
+   * (Re)open the initial diagram — or, at boot with
+   * {@link EditorOptions.restoreSaved}, the last saved one.
+   */
+  async createDiagram(): Promise<void> {
+    const saved = this.options.restoreSaved && !this.getHost() ? readSavedDiagram() : null;
+    if (saved) {
+      try {
+        await this.importDiagram(saved);
+        return;
+      } catch {
+        // an unreadable stored document must not block the editor from opening
+      }
+    }
+    await this.importDiagram(this.initialDiagram);
+  }
+
+  /**
+   * Re-open the diagram last saved with the palette's Save. Resolves `false`
+   * (and notifies) when nothing is stored or it fails to import, leaving the
+   * current diagram untouched.
+   */
+  restoreSaved(): Promise<boolean> {
+    return this.get<LocalStorage>('localStorage').restore();
+  }
+
+  /**
+   * Mark the current document as saved — call after persisting it elsewhere
+   * (the palette's Save does this itself). `document.changed` then reports
+   * `dirty: false` until the next edit; undo/redo back to this point is clean.
+   */
+  markSaved(): void {
+    this.get<CommandStack>('commandStack').markSaved();
+  }
+
+  /** Whether the document has changed since the last save (or since it was opened). */
+  isDirty(): boolean {
+    return this.get<CommandStack>('commandStack').isDirty();
   }
 
   getModules(): readonly DiagramModule[] {

@@ -33,18 +33,44 @@ export function deepSet(obj: Record<string, unknown>, path: string, value: unkno
   cursor[keys[keys.length - 1]] = value;
 }
 
-/** Trailing-nothing leading-edge? No — trailing debounce, like lodash's default. */
+/** A trailing debounce (lodash's default) that can be flushed or cancelled. */
+export interface Debounced<A extends unknown[]> {
+  (...args: A): void;
+  /** Run the pending call now (if any) instead of waiting for the timer. */
+  flush(): void;
+  /** Drop the pending call (if any). */
+  cancel(): void;
+}
+
+/** Trailing debounce, like lodash's default, with `flush`/`cancel`. */
 export function debounce<A extends unknown[]>(
   fn: (...args: A) => void,
   wait: number
-): (...args: A) => void {
+): Debounced<A> {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  return (...args: A) => {
+  let pending: A | undefined;
+  const cancel = (): void => {
     if (timer) {
       clearTimeout(timer);
     }
-    timer = setTimeout(() => fn(...args), wait);
+    timer = undefined;
+    pending = undefined;
   };
+  const flush = (): void => {
+    const args = pending;
+    cancel();
+    if (args) {
+      fn(...args);
+    }
+  };
+  const debounced = (...args: A): void => {
+    if (timer) {
+      clearTimeout(timer);
+    }
+    pending = args;
+    timer = setTimeout(flush, wait);
+  };
+  return Object.assign(debounced, { flush, cancel });
 }
 
 /** Title-case a token (`lineColor` → `Line Color`, `aws-ec2` → `Aws Ec 2`). */

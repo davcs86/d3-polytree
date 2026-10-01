@@ -102,6 +102,8 @@ interface LiteralEvents {
   'zoom.to.element': [EventSelection, EventModel];
   'commandStack.changed': [{ canUndo: boolean; canRedo: boolean }];
   'document.changed': [{ dirty: boolean }];
+  /** The current document was persisted; the command stack records a save point. */
+  'document.saved': [];
   'document.inconsistent': [unknown];
   'sidetab.registered': [unknown];
   'PropertiesPanel.propertyChanged': [string, EventModel];
