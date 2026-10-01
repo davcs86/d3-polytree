@@ -1,4 +1,5 @@
-import type { Canvas } from '@d3-polytree/canvas';
+import type EventEmitter from 'eventemitter3';
+import type { Canvas, DiagramEventMap } from '@d3-polytree/canvas';
 import type {
   NotificationService,
   NotificationParams,
@@ -19,14 +20,34 @@ import type {
  * role to `sweetalert`; this is the modern, dependency-free replacement).
  */
 export class DomNotifications implements NotificationService {
-  static readonly $inject = ['canvas'];
+  static readonly $inject = ['canvas', 'eventBus'];
 
   private readonly _root: HTMLElement;
+  /** Pending toast timers — cleared on teardown. */
+  private readonly _timers = new Set<number>();
+  /** Open confirmations' cancel hooks — settled (as cancelled) on teardown. */
+  private readonly _pending = new Set<() => void>();
 
-  constructor(canvas: Canvas) {
+  constructor(canvas: Canvas, eventBus?: EventEmitter<DiagramEventMap>) {
     this._root = document.createElement('div');
     this._root.className = 'pfdjs-notifications';
     canvas.getContainer().appendChild(this._root);
+    eventBus?.on('d3canvas.destroy', () => this._destroy());
+  }
+
+  /** Stop toast timers and cancel open confirmations (their callback gets `false`). */
+  private _destroy(): void {
+    this._timers.forEach((id) => window.clearTimeout(id));
+    this._timers.clear();
+    [...this._pending].forEach((cancel) => cancel());
+  }
+
+  private _later(fn: () => void, ms: number): void {
+    const id = window.setTimeout(() => {
+      this._timers.delete(id);
+      fn();
+    }, ms);
+    this._timers.add(id);
   }
 
   info(params: NotificationParams, callback?: NotificationCallback): void {
@@ -86,10 +107,10 @@ export class DomNotifications implements NotificationService {
 
     const dismiss = (): void => {
       toast.classList.add('pfdjs-toast-out');
-      window.setTimeout(() => toast.remove(), 250);
+      this._later(() => toast.remove(), 250);
     };
     toast.addEventListener('click', dismiss);
-    window.setTimeout(dismiss, 3200);
+    this._later(dismiss, 3200);
   }
 
   private _confirm(
@@ -137,14 +158,17 @@ export class DomNotifications implements NotificationService {
         return;
       }
       settled = true;
+      this._pending.delete(cancelOnDestroy);
       overlay.remove();
-      document.removeEventListener('keydown', onKey);
       callback(confirmed);
     };
+    const cancelOnDestroy = (): void => finish(false);
+    this._pending.add(cancelOnDestroy);
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         finish(false);
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'Enter' && !(e.target instanceof HTMLButtonElement)) {
+        // on a focused button, Enter activates *that* button (OK or Cancel)
         finish(true);
       }
     };
@@ -155,7 +179,9 @@ export class DomNotifications implements NotificationService {
         finish(false);
       }
     });
-    document.addEventListener('keydown', onKey);
+    // Scoped to the dialog (which takes focus), never `document`: a page-wide
+    // Enter — e.g. from a host-page input — must not confirm a destructive action.
+    overlay.addEventListener('keydown', onKey);
     ok.focus();
   }
 }
