@@ -116,6 +116,41 @@ describe('@d3-polytree/core CommandStack', () => {
     expect(stack.canUndo()).toBe(false); // nothing recorded
   });
 
+  it('emits document.inconsistent but stays live when a failed execute cannot be unwound', () => {
+    const inconsistent = vi.fn();
+    bus.on('document.inconsistent', inconsistent);
+    stack.registerHandler('badRevert', {
+      execute() {
+        model.value += 1;
+      },
+      revert() {
+        throw new Error('revert failed');
+      }
+    });
+    stack.registerHandler('outer', {
+      preExecute() {
+        stack.execute('badRevert', {});
+      },
+      execute() {
+        throw new Error('execute failed');
+      },
+      revert() {
+        /* n/a */
+      }
+    });
+    stack.execute('add', { amount: 5 });
+    expect(() => stack.execute('outer', {})).toThrow('execute failed'); // primary rethrown
+    expect(inconsistent).toHaveBeenCalledOnce();
+    const err = inconsistent.mock.calls[0][0] as Error & { cause: Error; causes: Error[] };
+    expect(err.message).toMatch(/document may be inconsistent/);
+    expect(err.cause.message).toBe('execute failed');
+    expect(err.causes.map((e) => e.message)).toEqual(['revert failed']);
+    // the recorded history is untouched and the stack stays usable
+    expect(stack.canUndo()).toBe(true);
+    stack.undo();
+    expect(model.value).toBe(1); // the +5 reverted; the torn +1 remains
+  });
+
   it('quarantines the stack and emits document.inconsistent when a revert throws', () => {
     const inconsistent = vi.fn();
     bus.on('document.inconsistent', inconsistent);

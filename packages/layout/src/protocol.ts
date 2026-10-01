@@ -21,6 +21,22 @@ export interface LayoutResponse {
   height: number;
 }
 
+/** Posted instead of a {@link LayoutResponse} when the solver throws, so the
+ *  runner rejects with the real error rather than timing out. */
+export interface LayoutErrorResponse {
+  type: 'polytree:layout:error';
+  requestId: number;
+  /** The thrown error's `name` (e.g. `TypeError`). */
+  name: string;
+  message: string;
+}
+
+/** Wrap a solver failure as a {@link LayoutErrorResponse}. */
+export function encodeError(requestId: number, error: unknown): LayoutErrorResponse {
+  const err = error instanceof Error ? error : new Error(String(error));
+  return { type: 'polytree:layout:error', requestId, name: err.name, message: err.message };
+}
+
 /** Pack a {@link LayoutResult} into an order array + transferable buffer. */
 export function encodeResult(result: LayoutResult): { order: string[]; buffer: ArrayBuffer } {
   const order = Object.keys(result.positions);

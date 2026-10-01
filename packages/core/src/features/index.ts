@@ -26,7 +26,7 @@ import { calculateCenterModule } from '../utils/calculateCenter';
 export * from './notifications';
 export { MouseEvents } from './mouseEvents';
 export { Selection } from './selection';
-export type { SelectionEntry } from './selection';
+export type { SelectionEntry, AdditiveModifiers } from './selection';
 export { Zoom } from './zoom';
 export { ZoomScroll } from './zoomScroll';
 export { BackgroundColor } from './backgroundColor';
@@ -147,7 +147,8 @@ export const localStorageModule = {
 /** didi module opening a `.pfdn` document from disk. */
 export const uploadModule = {
   __init__: ['upload'],
-  upload: ['type', Upload]
+  upload: ['type', Upload],
+  __depends__: [notificationsModule]
 };
 
 /** didi module contributing the add-node palette handler. */

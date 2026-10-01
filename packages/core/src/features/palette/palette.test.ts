@@ -152,4 +152,31 @@ describe('@d3-polytree/core PaletteProvider', () => {
     onConfirm(true);
     expect(ctx.localStorage.restore).toHaveBeenCalled();
   });
+
+  it('surfaces export / auto-layout failures as an error notification', async () => {
+    const ctx = build();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    ctx.exporting.trigger.mockImplementation(() => Promise.reject(new Error('decode')));
+    ctx.autoLayout.apply.mockImplementation(() => Promise.reject(new Error('worker')));
+    fire(ctx.provider, 'export-png');
+    expect(ctx.exporting.trigger).toHaveBeenCalledWith('png'); // still synchronous
+    fire(ctx.provider, 'auto-layout');
+    await vi.waitFor(() => expect(ctx.notifications.error).toHaveBeenCalledTimes(2));
+    expect(ctx.notifications.error).toHaveBeenCalledWith({
+      title: 'Error',
+      text: 'The diagram could not be exported as PNG'
+    });
+    consoleError.mockRestore();
+  });
+
+  it('surfaces a synchronous export throw too', async () => {
+    const ctx = build();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    ctx.exporting.trigger.mockImplementation(() => {
+      throw new Error('no diagram loaded');
+    });
+    expect(() => fire(ctx.provider, 'download')).not.toThrow();
+    await vi.waitFor(() => expect(ctx.notifications.error).toHaveBeenCalledOnce());
+    consoleError.mockRestore();
+  });
 });

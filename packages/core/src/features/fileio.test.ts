@@ -136,4 +136,21 @@ describe('@d3-polytree/core Upload', () => {
       expect(importDiagram).toHaveBeenCalledWith('<pfdn:diagram uploaded="1"/>')
     );
   });
+
+  it('notifies (and keeps the current diagram) when the chosen file fails to import', async () => {
+    const canvas = new Canvas({ container: document.body }, new EventEmitter<DiagramEventMap>());
+    const importDiagram = vi.fn().mockRejectedValue(new Error('not xml'));
+    const notifications = { error: vi.fn() };
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    new Upload(canvas, { importDiagram }, notifications as never);
+
+    const input = canvas.getContainer().querySelector('input[type=file]') as HTMLInputElement;
+    const file = new File(['garbage'], 'd.pfdn', { type: 'application/xml' });
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+    input.dispatchEvent(new Event('change'));
+
+    await vi.waitFor(() => expect(notifications.error).toHaveBeenCalledOnce());
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
 });

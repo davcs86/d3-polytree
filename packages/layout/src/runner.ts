@@ -1,5 +1,10 @@
 import { layout } from './layout';
-import { decodeResult, type LayoutRequest, type LayoutResponse } from './protocol';
+import {
+  decodeResult,
+  type LayoutErrorResponse,
+  type LayoutRequest,
+  type LayoutResponse
+} from './protocol';
 import type { LayoutGraph, LayoutOptions, LayoutResult } from './types';
 
 /**
@@ -19,10 +24,13 @@ export function createSyncLayoutRunner(): LayoutRunner {
 /** The subset of the DOM `Worker` API {@link WorkerLayoutRunner} needs. */
 export interface LayoutWorkerLike {
   postMessage(message: LayoutRequest, transfer?: Transferable[]): void;
-  addEventListener(type: 'message', listener: (event: MessageEvent<LayoutResponse>) => void): void;
+  addEventListener(
+    type: 'message',
+    listener: (event: MessageEvent<LayoutResponse | LayoutErrorResponse>) => void
+  ): void;
   removeEventListener(
     type: 'message',
-    listener: (event: MessageEvent<LayoutResponse>) => void
+    listener: (event: MessageEvent<LayoutResponse | LayoutErrorResponse>) => void
   ): void;
   terminate?(): void;
 }
@@ -30,7 +38,8 @@ export interface LayoutWorkerLike {
 /**
  * Runs layout on a Web Worker built from `@d3-polytree/layout/worker`.
  * Correlates responses by `requestId`, so concurrent calls on one worker never
- * cross-wire, and reads back the transferable position buffer.
+ * cross-wire, and reads back the transferable position buffer. A solver error
+ * in the worker rejects `run` with that error's name and message.
  */
 export class WorkerLayoutRunner implements LayoutRunner {
   private _seq = 0;
@@ -54,13 +63,20 @@ export class WorkerLayoutRunner implements LayoutRunner {
         this._worker.removeEventListener('message', onMessage);
         if (timer !== undefined) clearTimeout(timer);
       };
-      const onMessage = (event: MessageEvent<LayoutResponse>): void => {
+      const onMessage = (event: MessageEvent<LayoutResponse | LayoutErrorResponse>): void => {
         const data = event.data;
-        if (!data || data.type !== 'polytree:layout:result' || data.requestId !== requestId) {
+        if (!data || data.requestId !== requestId) {
           return;
         }
-        cleanup();
-        resolve(decodeResult(data));
+        if (data.type === 'polytree:layout:result') {
+          cleanup();
+          resolve(decodeResult(data));
+        } else if (data.type === 'polytree:layout:error') {
+          cleanup();
+          const error = new Error(`WorkerLayoutRunner: ${data.message}`);
+          error.name = data.name;
+          reject(error);
+        }
       };
       this._worker.addEventListener('message', onMessage);
       if (this._timeoutMs > 0 && typeof setTimeout === 'function') {

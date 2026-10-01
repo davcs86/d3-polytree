@@ -4,7 +4,7 @@ import type { UiIconName } from '../../uiIcons';
 import type { NotificationService } from '../notifications';
 import type { Axes } from '../axes';
 import type { Selection } from '../selection';
-import type { Exporting } from '../exporting';
+import type { Exporting, ExportFormat } from '../exporting';
 import type { LocalStorage } from '../localStorage';
 import type { Upload } from '../upload';
 import type { AutoLayout } from '../autoLayout';
@@ -92,6 +92,31 @@ export class PaletteProvider {
     this._tools = { addLinkTool };
   }
 
+  /**
+   * Run a (possibly async) palette action synchronously — downloads keep the
+   * click's user activation — and surface its failure, sync throw or rejection,
+   * to the user instead of dropping it.
+   */
+  private _run(action: () => unknown, text: string): void {
+    let result: Promise<unknown>;
+    try {
+      result = Promise.resolve(action());
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+    result.catch((error: unknown) => {
+      console.error(text, error);
+      this._notifications.error({ title: 'Error', text });
+    });
+  }
+
+  private _export(format: ExportFormat): void {
+    this._run(
+      () => this._exporting.trigger(format),
+      `The diagram could not be exported as ${format.toUpperCase()}`
+    );
+  }
+
   getPaletteTools(): Record<string, Tool> {
     return this._tools;
   }
@@ -108,7 +133,7 @@ export class PaletteProvider {
               { title: 'Are you sure?', text: 'All current progress will be unrecoverable.' },
               (confirmed) => {
                 if (confirmed) {
-                  void this._host.createDiagram();
+                  this._run(() => this._host.createDiagram(), 'A new diagram could not be created');
                 }
               }
             );
@@ -151,19 +176,19 @@ export class PaletteProvider {
         title: 'Download diagram',
         group: 'file-ops',
         icon: 'download',
-        action: { click: () => void this._exporting.trigger('pfdn') }
+        action: { click: () => this._export('pfdn') }
       },
       'export-svg': {
         title: 'Download as SVG image',
         group: 'file-export',
         icon: 'export-code',
-        action: { click: () => void this._exporting.trigger('svg') }
+        action: { click: () => this._export('svg') }
       },
       'export-png': {
         title: 'Download as PNG image',
         group: 'file-export',
         icon: 'export-image',
-        action: { click: () => void this._exporting.trigger('png') }
+        action: { click: () => this._export('png') }
       },
       'new-connection': {
         title: 'New connection',
@@ -199,7 +224,10 @@ export class PaletteProvider {
         title: 'Auto-layout diagram',
         group: 'settings',
         icon: 'layout',
-        action: { click: () => void this._autoLayout.apply() }
+        action: {
+          click: () =>
+            this._run(() => this._autoLayout.apply(), 'The diagram could not be laid out')
+        }
       }
     };
   }
