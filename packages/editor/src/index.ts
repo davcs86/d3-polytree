@@ -10,7 +10,7 @@ import {
   domNotificationsModule,
   type InteractiveViewerOptions
 } from '@d3-polytree/interactive-viewer';
-import { Viewer } from '@d3-polytree/viewer';
+import { Viewer, type ReboundEvent } from '@d3-polytree/viewer';
 import {
   dragModule,
   modellingModule,
@@ -66,7 +66,14 @@ export interface EditorOptions extends InteractiveViewerOptions {
   restoreSaved?: boolean;
 }
 
-export class Editor extends InteractiveViewer {
+/**
+ * The {@link ReboundEvent}s an `Editor` emits: all of them — `selection.changed`
+ * from the interaction layer, `document.changed` + `commandStack.changed` from
+ * the command stack its modelling layer composes.
+ */
+export type EditorEvent = ReboundEvent;
+
+export class Editor extends InteractiveViewer<EditorEvent> {
   /** Editing modules on top of the interaction layer. */
   static readonly editionModules: readonly DiagramModule[] = [
     dragModule as DiagramModule,

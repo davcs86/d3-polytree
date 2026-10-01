@@ -29,6 +29,14 @@ import {
  */
 export type ReboundEvent = 'document.changed' | 'selection.changed' | 'commandStack.changed';
 
+/**
+ * The {@link ReboundEvent}s a plain {@link Viewer} actually emits: none — it has
+ * no selection and no command stack. A viewer composed with extra `modules`
+ * that do emit them opts in via the type parameter, e.g.
+ * `new Viewer<'selection.changed'>({ modules: [selectionModule] })`.
+ */
+export type ViewerEvent = never;
+
 interface HandlerEntry {
   event: ReboundEvent;
   handler: (...args: never[]) => void;
@@ -56,7 +64,14 @@ export interface ViewerOptions {
   [key: string]: unknown;
 }
 
-export class Viewer {
+/**
+ * @typeParam E - the {@link ReboundEvent}s this component emits, and therefore
+ *   the only ones {@link Viewer.on}/{@link Viewer.off} accept. Each component
+ *   narrows it to what its modules really fire (`Viewer`: none,
+ *   `InteractiveViewer`: `selection.changed`, `Editor`: all three), so a
+ *   subscription that could never fire is a compile error, not a silent no-op.
+ */
+export class Viewer<E extends ReboundEvent = ViewerEvent> {
   /** The draw-layer modules a static viewer boots with. */
   static readonly modules: readonly DiagramModule[] = [
     labelsModule as DiagramModule,
@@ -90,7 +105,7 @@ export class Viewer {
    * re-attaches every registered handler to the new bus on each boot. This is the
    * seam the custom-element and React adapters (and Track D) bridge through.
    */
-  on<K extends ReboundEvent>(event: K, handler: (...args: DiagramEventMap[K]) => void): void {
+  on<K extends E>(event: K, handler: (...args: DiagramEventMap[K]) => void): void {
     const entry: HandlerEntry = {
       event,
       handler: handler as unknown as (...args: never[]) => void
@@ -100,7 +115,7 @@ export class Viewer {
   }
 
   /** Remove a subscription added with {@link on}. Safe to call after destroy. */
-  off<K extends ReboundEvent>(event: K, handler: (...args: DiagramEventMap[K]) => void): void {
+  off<K extends E>(event: K, handler: (...args: DiagramEventMap[K]) => void): void {
     const target = handler as unknown as (...args: never[]) => void;
     for (const entry of this._handlers) {
       if (entry.event === event && entry.handler === target) {

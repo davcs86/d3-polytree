@@ -117,7 +117,7 @@ export class PropertiesPanel {
       ctx.scope.set(ctx.definition, props);
       // The command owns the status transition (never the draw layer), and the
       // memento restores the exact prior value on undo (CORE-01).
-      ctx.definition.status = status;
+      deepSet(ctx.definition, 'status', status);
       this._propertiesProvider.updateDrawing(ctx.definition);
     };
     this._commandStack.registerHandler('element.updateProperties', {
