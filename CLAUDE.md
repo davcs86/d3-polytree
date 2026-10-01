@@ -168,7 +168,7 @@ Constraints that are load-bearing (don't regress them):
 - Publishing must go through **pnpm** (it rewrites `workspace:*` to real versions) — both phases do
   (`pnpm publish` for the bootstrap, `changeset publish` → pnpm for updates). OIDC therefore needs
   **pnpm 10** (pnpm 9 has no OIDC; pnpm 11 has an OIDC 404 regression).
-- The release job upgrades npm to **≥ 11.5.1** (`npm install -g npm@latest`) — the OIDC token exchange
+- The release job upgrades npm to an exact pinned **11.x ≥ 11.5.1** (never `npm@latest`) — the OIDC token exchange
   goes through the npm CLI — and needs `id-token: write` + setup-node `registry-url` + Node ≥ 22.14.
 - The **`NPM_TOKEN`** repo secret must exist (npm automation/granular token, publish rights on the
   `@d3-polytree` scope) whenever a release introduces a brand-new package; existing-only releases

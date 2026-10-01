@@ -59,11 +59,17 @@ jobs:
       # The OIDC token exchange for Trusted Publishing runs through the npm CLI,
       # which must be >= 11.5.1. Node 22 ships npm 10.x, so upgrade it here or the
       # exchange yields no credential and the publish 404s (unauthenticated PUT).
+      # Pinned to an exact, validated version: this job holds publish credentials,
+      # so it must never pick up an unreviewed npm release (`latest` is a new major).
       - name: Ensure npm supports Trusted Publishing (OIDC)
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.21.0
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      # Gate the publish on the test suite: this job does not wait for ci.yml.
+      - name: Test
+        run: pnpm test
 
       - name: Create Release Pull Request or publish
         uses: changesets/action@v1
