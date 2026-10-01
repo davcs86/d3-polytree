@@ -276,6 +276,53 @@ describe('@d3-polytree/properties-panel PropertiesPanel', () => {
     expect(stack.canUndo()).toBe(false);
   });
 
+  it('commits pending keystrokes into the OUTGOING element on a selection change', () => {
+    vi.useFakeTimers();
+    try {
+      const stack = new CommandStack(bus);
+      bus.emit('d3canvas.init');
+      const settings = settingsDef();
+      new PropertiesPanel(registrar, bus, provider, settings, stack);
+      const content = registrar.open();
+      const node = nodeDef();
+      bus.emit('selection.changed', [], [{ element: node, definition: node }]);
+
+      const nameInput = content.querySelector('input[name="name"]') as HTMLInputElement;
+      nameInput.value = 'Typed';
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      // click empty canvas within the 300 ms debounce window → settings selected
+      bus.emit('selection.changed', [{ element: node, definition: node }], []);
+      vi.advanceTimersByTime(1000);
+
+      expect(node.name).toBe('Typed'); // landed on the element it was typed into
+      expect(settings.name).toBe('Diagram'); // never on the newly selected one
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('drops pending keystrokes when the engine is torn down', () => {
+    vi.useFakeTimers();
+    try {
+      const stack = new CommandStack(bus);
+      bus.emit('d3canvas.init');
+      new PropertiesPanel(registrar, bus, provider, settingsDef(), stack);
+      const content = registrar.open();
+      const node = nodeDef();
+      bus.emit('selection.changed', [], [{ element: node, definition: node }]);
+
+      const nameInput = content.querySelector('input[name="name"]') as HTMLInputElement;
+      nameInput.value = 'Late';
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      bus.emit('d3canvas.destroy');
+      vi.advanceTimersByTime(1000);
+
+      expect(node.name).toBe('Alpha');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('switches tabs on click', () => {
     new PropertiesPanel(registrar, bus, provider, settingsDef(), new CommandStack(bus));
     const content = registrar.open();
