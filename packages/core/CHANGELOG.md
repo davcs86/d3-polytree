@@ -1,5 +1,45 @@
 # @d3-polytree/core
 
+## 0.7.0
+
+### Minor Changes
+
+- 4c49962: Palette actions surface their failures as an error notification instead of
+  dropping them. This covers `.pfdn`/SVG/PNG export, auto-layout, and New.
+  `Exporting.trigger('png')` now rejects when the SVG cannot be rendered; it used
+  to hang forever.
+- 4c49962: Cmd+click (`metaKey`, macOS) adds to the selection like Ctrl+click. The new
+  `AdditiveModifiers` type is exported.
+- 4c49962: When a failed `execute` cannot be fully unwound (a double fault), `CommandStack`
+  now emits `document.inconsistent`, where `cause` is the original error and
+  `causes` holds the unwind errors. It still rethrows the original error, and the
+  stack stays live. Previously the unwind errors were swallowed.
+- 4c49962: `.pfdn` import failures are no longer dropped:
+
+  - `<d3-polytree-editor>` dispatches an `error` `CustomEvent` (`detail`: the error).
+  - `<PolytreeEditor>` gains an `onError` prop. Without it, the error is logged with `console.error`.
+  - The palette's **Open** reports the failure through the `notifications` service. `Upload` now
+    injects `notifications`.
+
+  In every case, a document that is already open stays open.
+
+### Patch Changes
+
+- 4c49962: README updates:
+
+  - `pfdn-moddle`: validation and schema API; the strict-JSON vs lax-XML defaults.
+  - `core`: command, routing, a11y and export API.
+  - `editor`: keyboard shortcuts and pre-load semantics.
+  - `interactive-viewer`: keyboard navigation, the screen-reader announcer, and
+    notifications.
+  - `viewer`: import sequencing.
+  - `layout`: the worker error protocol.
+
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+  - @d3-polytree/layout@0.3.0
+  - @d3-polytree/pfdn-moddle@0.3.1
+
 ## 0.6.0
 
 ### Minor Changes

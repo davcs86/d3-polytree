@@ -1,5 +1,26 @@
 # @d3-polytree/layout
 
+## 0.3.0
+
+### Minor Changes
+
+- 4c49962: The `./worker` entry posts a `polytree:layout:error` response
+  (`LayoutErrorResponse`, built with the new `encodeError`) when the solver throws.
+  `WorkerLayoutRunner.run()` then rejects with that error's name and message
+  instead of timing out.
+
+### Patch Changes
+
+- 4c49962: README updates:
+
+  - `pfdn-moddle`: validation and schema API; the strict-JSON vs lax-XML defaults.
+  - `core`: command, routing, a11y and export API.
+  - `editor`: keyboard shortcuts and pre-load semantics.
+  - `interactive-viewer`: keyboard navigation, the screen-reader announcer, and
+    notifications.
+  - `viewer`: import sequencing.
+  - `layout`: the worker error protocol.
+
 ## 0.2.2
 
 ### Patch Changes

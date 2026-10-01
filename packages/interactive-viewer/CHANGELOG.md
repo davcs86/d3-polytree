@@ -1,5 +1,32 @@
 # @d3-polytree/interactive-viewer
 
+## 0.7.1
+
+### Patch Changes
+
+- 4c49962: The confirm dialog listens for Enter/Escape on itself instead of `document`.
+  Enter from a host-page input can no longer confirm a destructive action, and
+  Enter on the focused Cancel button cancels. `destroy()` cancels an open
+  confirmation (its callback receives `false`) and clears pending toast timers.
+- 4c49962: README updates:
+
+  - `pfdn-moddle`: validation and schema API; the strict-JSON vs lax-XML defaults.
+  - `core`: command, routing, a11y and export API.
+  - `editor`: keyboard shortcuts and pre-load semantics.
+  - `interactive-viewer`: keyboard navigation, the screen-reader announcer, and
+    notifications.
+  - `viewer`: import sequencing.
+  - `layout`: the worker error protocol.
+
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+  - @d3-polytree/core@0.7.0
+  - @d3-polytree/viewer@0.4.0
+
 ## 0.7.0
 
 ### Minor Changes

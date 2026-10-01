@@ -1,5 +1,18 @@
 # @d3-polytree/ssr
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+  - @d3-polytree/core@0.7.0
+  - @d3-polytree/viewer@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

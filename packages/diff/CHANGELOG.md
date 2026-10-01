@@ -1,5 +1,12 @@
 # @d3-polytree/diff
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [4c49962]
+  - @d3-polytree/pfdn-moddle@0.3.1
+
 ## 0.1.0
 
 ### Minor Changes

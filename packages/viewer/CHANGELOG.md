@@ -1,5 +1,34 @@
 # @d3-polytree/viewer
 
+## 0.4.0
+
+### Minor Changes
+
+- 4c49962: `importDiagram` is sequenced. An import superseded by a later
+  `importDiagram`/`createEmpty`, or by `destroy()`, resolves without rendering.
+  This fixes two bugs: overlapping imports where the slowest one won, and a
+  pending import booting a second engine after teardown (for example under React
+  StrictMode, or a custom-element disconnect).
+
+### Patch Changes
+
+- 4c49962: README updates:
+
+  - `pfdn-moddle`: validation and schema API; the strict-JSON vs lax-XML defaults.
+  - `core`: command, routing, a11y and export API.
+  - `editor`: keyboard shortcuts and pre-load semantics.
+  - `interactive-viewer`: keyboard navigation, the screen-reader announcer, and
+    notifications.
+  - `viewer`: import sequencing.
+  - `layout`: the worker error protocol.
+
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+- Updated dependencies [4c49962]
+  - @d3-polytree/core@0.7.0
+
 ## 0.3.0
 
 ### Minor Changes
