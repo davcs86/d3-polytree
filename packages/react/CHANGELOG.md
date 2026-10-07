@@ -1,5 +1,12 @@
 # @d3-polytree/react
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [f34bdb9]
+  - @d3-polytree/editor@0.8.3
+
 ## 0.4.1
 
 ### Patch Changes

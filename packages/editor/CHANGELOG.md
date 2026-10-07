@@ -1,5 +1,11 @@
 # @d3-polytree/editor
 
+## 0.8.3
+
+### Patch Changes
+
+- f34bdb9: Fix missing resize handles on nodes drawn when a diagram first loads: `ResizeElement` now subscribes to `outline.created` before the drawers render the initial model.
+
 ## 0.8.2
 
 ### Patch Changes
