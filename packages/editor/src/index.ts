@@ -77,13 +77,15 @@ export class Editor extends InteractiveViewer<EditorEvent> {
   /** Editing modules on top of the interaction layer. */
   static readonly editionModules: readonly DiagramModule[] = [
     dragModule as DiagramModule,
+    // must precede modellingModule: that pulls in the drawers, which render the
+    // loaded model during boot — a later outline.created subscriber misses it
+    resizeElementModule as DiagramModule,
     modellingModule as DiagramModule,
     exportingModule as DiagramModule,
     localStorageModule as DiagramModule,
     uploadModule as DiagramModule,
     autoLayoutModule as DiagramModule,
     paletteModule as DiagramModule,
-    resizeElementModule as DiagramModule,
     // the properties panel (registers a side tab; side-tabs + search-panel are
     // inherited from InteractiveViewer)
     entryFactoryModule as DiagramModule,

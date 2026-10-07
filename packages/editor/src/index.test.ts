@@ -45,6 +45,16 @@ describe('@d3-polytree/editor', () => {
     expect(window.localStorage.getItem('diagram')).toContain('node_1');
   });
 
+  it('gives every initially-rendered node resize handles (resize subscribes before the boot render)', async () => {
+    const editor = new Editor({ container: document.body });
+    await editor.createDiagram();
+
+    // node_1 was drawn during boot; ResizeElement must have seen its outline.created
+    const nodes = document.body.querySelectorAll('.nodeItem');
+    expect(nodes.length).toBeGreaterThan(0);
+    nodes.forEach((n) => expect(n.querySelector('.resize-container')).not.toBeNull());
+  });
+
   it('imports a diagram with an empty undo stack (boot render never enters it)', async () => {
     const editor = new Editor({ container: document.body });
     await editor.createDiagram();
