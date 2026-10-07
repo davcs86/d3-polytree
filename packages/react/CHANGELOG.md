@@ -1,5 +1,13 @@
 # @d3-polytree/react
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [f8c6206]
+  - @d3-polytree/interactive-viewer@0.7.2
+  - @d3-polytree/editor@0.8.2
+
 ## 0.4.0
 
 ### Minor Changes
