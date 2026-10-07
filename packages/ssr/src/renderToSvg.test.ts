@@ -35,6 +35,9 @@ describe('@d3-polytree/ssr renderToSvg', () => {
     const svg = await renderToSvg(WITH_IDS);
     expect(svg).toMatch(/^<svg/);
     expect(svg).toContain('element-id="node_1"');
+    // culling never runs headlessly and must leave no residue in the output (C10)
+    expect(svg).not.toContain('data-pfd-transient');
+    expect(svg).not.toContain('display="none"');
   });
 
   it('is deterministic: the same document renders byte-identically', async () => {
