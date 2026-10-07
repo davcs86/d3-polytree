@@ -145,6 +145,13 @@ async function parkViewport(page: Page): Promise<void> {
     v.get<Zoomish>('zoom').setInitialZoom(-5000, -3000, 1);
   });
   await page.waitForTimeout(250);
+  // With culling on, parking triggers a hide drain; measure only once it has settled.
+  await page.waitForFunction(
+    () =>
+      document.querySelector('.pfdjs-container')?.getAttribute('data-pfd-culling-idle') !== 'false',
+    undefined,
+    { timeout: 120_000 }
+  );
 }
 
 /** Median-of-runs summary of `panOnce` for the arm currently loaded. */
@@ -236,6 +243,49 @@ test.describe('C10 perf baseline (culling off)', () => {
       expect(r.frames).toBeGreaterThanOrEqual(10);
       expect(r.metricsMs.TaskDuration).toBeGreaterThan(0);
     }
+  });
+});
+
+/**
+ * The culling-ON arm over the same fixture and gesture (C10 PR2). RECORD-ONLY until the blocking
+ * ceiling is derived from ≥ 5 pinned-container runs (plan Step 24, `perf-budget.json`); the
+ * separation safeguard (design §7: off median p95 − on max p95 ≥ 2 × on-arm spread) decides
+ * whether the ceiling may be enforced without going back to the user.
+ */
+test.describe('C10 perf (culling on)', () => {
+  test('pan across the 23k-element fixture', async ({ page, context }, testInfo) => {
+    const { drawn, bootMs } = await bootArm(page, { culling: true, viewer: 'interactive' });
+    expect(drawn, 'fixture failed to boot').toBeGreaterThanOrEqual(20_000);
+    const m = await measurePans(page, context, 5);
+    const p95s = m.runs.map((r) => r.frameMs.p95);
+    const stats = await page.evaluate(() =>
+      (
+        window as unknown as {
+          __polytreePerfViewer: {
+            get<T>(n: string): T;
+          };
+        }
+      ).__polytreePerfViewer
+        .get<{ inspect(): { stats: { passes: number; maxHides: number }; active: boolean } }>(
+          'culling'
+        )
+        .inspect()
+    );
+    await testInfo.attach('perf-on.json', {
+      body: JSON.stringify(
+        { arm: { culling: true, viewer: 'interactive' }, drawn, bootMs, runs: m.runs, stats },
+        null,
+        2
+      ),
+      contentType: 'application/json'
+    });
+    console.log(
+      `[perf] arm=on drawn=${drawn} boot=${bootMs}ms frame p95 median=${m.frameP95Median.toFixed(1)}ms ` +
+        `(min ${Math.min(...p95s).toFixed(1)} / max ${Math.max(...p95s).toFixed(1)}, spread ${m.frameP95Spread.toFixed(1)}); ` +
+        `task/pan=${m.taskMsMedian.toFixed(0)}ms; culling active=${stats.active} passes=${stats.stats.passes} maxHides=${stats.stats.maxHides}`
+    );
+    expect(stats.active).toBe(true);
+    for (const r of m.runs) expect(r.frames).toBeGreaterThanOrEqual(10);
   });
 });
 

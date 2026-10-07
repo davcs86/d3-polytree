@@ -64,7 +64,7 @@ Everything on [`Viewer`](https://github.com/davcs86/d3-polytree/tree/main/packag
 | `isDirty()` → `boolean`                  | Whether the document changed since the last save (or since it was opened); `false` before load. Undo/redo back to the save point is clean. |
 | `restoreSaved()` → `Promise<boolean>`    | Re-open the diagram last stored by the palette's **Save**; `false` (with a notification) when nothing is stored or it fails to import.     |
 
-Options: everything `ViewerOptions` takes, plus `restoreSaved?: boolean` — when `createDiagram()` runs
+Options: everything `ViewerOptions` takes (including `culling?: boolean`, default on), plus `restoreSaved?: boolean` — when `createDiagram()` runs
 with no diagram open yet, open the diagram saved in `localStorage` instead of the starter diagram
 (falling back to it when nothing valid is stored). The palette's **Save** writes to `localStorage` and
 marks the document clean; **Restore saved diagram** re-opens it after a confirmation.

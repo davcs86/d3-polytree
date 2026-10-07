@@ -36,4 +36,5 @@ didi bootstrap) and `index.ts` (re-exports everything + per-feature `*Module` ob
 - The eventBus is a single `eventemitter3` instance provided by `canvasModule`; every feature injects
   the same one. Model tokens (`d3polytree.definitions` / `.moddle`) are resolved off the running
   component, which registers itself as the `d3polytree` value.
+- **Culling** (`features/culling.ts`, `spatial/`): registered in `interactionModules` right after `selection` and before `outline` and the drawers. It writes exactly one thing — the transient `data-pfd-transient` attribute on an element `<g>` (never `status`, never model state). Labels are revealed on `label.created`/`.updated` _before_ Outline measures them (`getBBox` of a hidden subtree is 0×0); `CULL_MIN_ELEMENTS`/`CULL_PAD`/`HIDE_BUDGET` live in `spatial/types.ts` and are backed by `docs/design/…c10…/measurements.md`. Soft-deleted elements are not drawn, so they are never in the index.
 - D3 slices are **peer** deps — import from the specific `d3-*` package, never a `d3` bundle.

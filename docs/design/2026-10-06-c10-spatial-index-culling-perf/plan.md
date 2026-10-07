@@ -283,7 +283,7 @@ N/A (docs-only).
 
 ### Step 10a — Resize the correctness fixture (`SMALL`) to ≥ 2 × `CULL_MIN_ELEMENTS`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/src/perf/fixture.data.ts` — modify
@@ -312,7 +312,7 @@ Set `SMALL = { nodes: 4_600, links: 5_520, labelRatio: 0.1, zones: 18, longRange
 
 ### Step 10 — `core/src/spatial/`: seam, `FlatIndex`, `elementBounds`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/spatial/types.ts` — create
@@ -345,7 +345,7 @@ Set `SMALL = { nodes: 4_600, links: 5_520, labelRatio: 0.1, zones: 18, longRange
 
 ### Step 11 — `BaseElement.updateElement` title refresh (N1)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/draw/BaseElement.ts` — modify
@@ -371,7 +371,7 @@ Extend `BaseElement.test.ts`: after `build([makeDef('n1', { name: 'Alpha' })])`,
 
 ### Step 12 — canvas: transient-attribute constant + clone-only strip
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/canvas/src/SvgExportingUtils.ts` — modify
@@ -398,7 +398,7 @@ Extend `SvgExportingUtils.test.ts`: (a) a node with `data-pfd-transient="culled"
 
 ### Step 13 — `ViewerOptions.culling`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/viewer/src/index.ts` — modify
@@ -424,7 +424,7 @@ N/A (type/docs-only; exercised by Steps 14–17 which read `options.culling`).
 
 ### Step 14 — `Culling` slice A: class, module, upsert/remove/update handlers
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — create
@@ -453,7 +453,7 @@ Create `Culling` with `static readonly $inject = ['canvas', 'eventBus', 'd3polyt
 
 ### Step 15 — `Culling` slice B: viewport, synchronous SHOW, rAF two-sided pass
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -482,7 +482,7 @@ Extend `culling.test.ts` with stubs: `getSize` → `{width:800,height:600}`, `re
 
 ### Step 16 — `Culling` slice C: inert rules, ResizeObserver, lifecycle, idle attribute
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -509,7 +509,7 @@ Extend `culling.test.ts` (stub `globalThis.ResizeObserver` with a class capturin
 
 ### Step 17 — `Culling` slice D: label reveal-before-measure and CSS self-check
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -534,7 +534,7 @@ Extend `culling.test.ts`: construct `Culling` then `Outline` on one bus, stub `g
 
 ### Step 18 — CSS rule, module registration, module-order tests
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/interactive-viewer/src/_culling.scss` — create
@@ -566,7 +566,7 @@ Extend `culling.test.ts`: construct `Culling` then `Outline` on one bus, stub `g
 
 ### Step 19 — Regenerate `styles.generated.ts`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/element/src/styles.generated.ts` — modify (generated; never hand-edit)
@@ -590,7 +590,7 @@ N/A (generated artifact; drift is the existing CI gate).
 
 ### Step 20 — Palette placement fix
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/palette/BaseAddHandler.ts` — modify
@@ -615,7 +615,7 @@ Replace the body of `_calculatePosition` with the center of the viewport in worl
 
 ### Step 21 — Random-sequence property test (index ⇄ model consistency)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/editor/src/culling.property.test.ts` — create
@@ -639,7 +639,7 @@ The file is the test; it fails if any writer in the design §10 table emits no e
 
 ### Step 22 — ssr: no-residue assertion
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/ssr/src/renderToSvg.test.ts` — modify
@@ -661,7 +661,7 @@ This is the test (extends `renderToSvg.test.ts:34-38`). It passes before and aft
 
 ### Step 23 — `culling.spec.ts`: required correctness lane (G1–G6)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/culling.spec.ts` — create
@@ -718,7 +718,7 @@ The spec assertion is the test; verify it **fails** against the OFF arm (the bud
 
 ### Step 25 — PR2 docs and changesets
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/interactive-viewer/CLAUDE.md` — modify
@@ -844,6 +844,8 @@ _Populated during execution. Step bodies above are immutable (DN-5); record any 
 - **Step 9 — `measurements.md` written; §9 triggers FIRED.** Per Step Dependencies ("Contingency (design §9)") **no PR2 step starts**: (1) chunked/budgeted hides — fired (hiding all 23k `<g>` = 1.2–2.7 s main-thread for every mechanism tried); (2) dual-pad — fires by construction (the trigger as worded cannot not-fire; needs re-wording); (3) free-list — borderline/inconclusive; plus a data-driven change to `CULL_MIN_ELEMENTS` (≈5,000 instead of the provisional 1,000, forcing a ≥ ~10k-element correctness fixture). Returned to the user for a design amendment (DF-2).
 
 - **Free-list stays conditional (Step 10, 2026-10-07; user decision).** An interim edit shipped it unconditionally on a capacity argument (tombstone-only: 50,000 slots for 5,000 live); the user directed it back to conditional. Step 10 records capacity and scan ratio (non-asserting); the free-list is added only if the ≥ 5-run median scan ratio > 2×.
+
+- **PR2 implementation notes (2026-10-07).** (a) **G5 reformulated (Step 23):** `exportSVG()` is quadratic in DOM size (canvas `getCSSStyles`: 12.6 s at ~1.2k drawn elements, 60 s at ~2.8k, 207 s at ~5.5k — pre-existing, independent of culling), so a byte-compare through it is infeasible above `CULL_MIN_ELEMENTS`. G5 now asserts the DOM parity the export relies on (live SVG minus `data-pfd-transient` serializes byte-identically to the culling-OFF SVG); the clone-strip itself is unit-tested in canvas (Step 12). A follow-up to fix `getCSSStyles` is recommended but out of scope. (b) **Free-list (Step 10) conditional trigger reading:** the non-asserting benchmark logged `capacity=55000 live=5000 scanRatioMedian=2.84` locally (non-pinned; tombstone-only, 10 churn generations, worst case). That is above the 2× trigger on this host; per the user's decision it is evaluated by a human with the pinned `perf.yml` numbers — **not promoted yet**. (c) **Step 21:** boot ≈ 3.4 s for 5,250 elements and ≈ 0.25 s/op in jsdom (well inside the 60 s / 2 s stop limits), 81 s for 12 seeds × 25 ops; the model keeps soft-deleted defs (`ElementStatus.Deleted`), so the test compares against drawn (non-deleted) defs only. Mutation check: dropping the `<cls>.updated` subscription fails seed 1 at the first `create`. (d) **G1/G2 pass on both arms with `CULL_PAD` = 7** against the real-DOM oracle (stroke + marker inflation); mutation check: undersized node bounds + pad 0 fails G1 at the first synchronous SHOW. (e) **G7 (record-only):** 6 attribute writes/frame (mean = max) at a populated ±1 px boundary — well under `HIDE_BUDGET / 10` (30); dual-pad hysteresis not indicated. (f) **Observed hide cost:** ~75–80 ms per 300-hide frame in this container (vs the 20–33 ms budget assumed from PR1's 65–110 µs/toggle) — to be re-read from the pinned `perf.yml` numbers in Step 24; `HIDE_BUDGET` may need to drop (design: "provisional, tuned from PR2 perf data"). (g) **CSS self-check** gives a stylesheet one extra frame after `readyState === 'complete'` before it fails open. (h) G6's missing-stylesheet arm serves the real CSS minus the culling rule (aborting every stylesheet breaks Storybook's own CSS preload).
 
 ## Review Log
 
