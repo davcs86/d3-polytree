@@ -73,7 +73,12 @@ export function iframeUrl(id: string, args?: StoryArgs): string {
 export async function gotoStory(
   page: Page,
   id: string,
-  media: { colorScheme?: 'light' | 'dark'; forcedColors?: 'none' | 'active' } = {},
+  media: {
+    colorScheme?: 'light' | 'dark';
+    forcedColors?: 'none' | 'active';
+    /** Defaults to 'reduce'; G1b needs 'no-preference' so zoom tweens actually run. */
+    reducedMotion?: 'reduce' | 'no-preference';
+  } = {},
   args?: StoryArgs
 ): Promise<void> {
   // Merge with the always-on reducedMotion; omitted keys are left unchanged, so
