@@ -63,6 +63,21 @@ Carried from the predecessor recon (verbatim quotes with `path:line` there): "La
 
 At fit-all, culling already removes the off-screen half but ~10.3k elements (mostly nodes ≈ 4.4k and links ≈ 5.2k; labels ≈ 460) stay painted and the pan is still ≈ 270 ms/frame (≈ 16 fps). A label-only LOD (the plan's Step 26) would remove ≈ 4% of what is painted. Pinned-container ON-arm at scale 1 is 16.8 ms (`measurements.md` §8) — the problem is specific to low scale. Not measured: which of nodes/links dominates the painted cost at scale 0.1; per-class LOD gains.
 
+## Spike results (round 1, throwaway spec, local dev container, not committed)
+
+Same setup as above (23,040 `LARGE`, interactive arm, culling ON, scale 0.1, culling idle, 3 scripted pans per mode). LOD simulated by injecting CSS keyed on a container attribute; "flip" = set/remove the attribute then force style+layout (`getBoundingClientRect`), `flipTask` = CDP `TaskDuration` delta over the flip.
+
+| Mode (what is hidden at low scale)                                                                                         | pan frame p95 (ms)                  | flip wall / task (ms) |
+| -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | --------------------- |
+| none (culling only)                                                                                                        | 283, 300, 283 (later 317, 300, 317) | —                     |
+| **A** all painted children of every node + link (`<g>`, title, desc stay; `.selected` exempt)                              | **83, 83, 67**                      | 2,590 / 3,116         |
+| **B** nodes: hide `.innerElement`, outline rect becomes a filled placeholder; links: drop subpath + marker, keep main path | 217, 233, 233                       | 1,264 / 1,524         |
+| **N** only nodes fully hidden                                                                                              | 217, 217, 217                       | 1,317 / 1,767         |
+| **L** only links fully hidden                                                                                              | 167, 167, 167                       | 1,355 / 1,805         |
+| remove attribute (back to none)                                                                                            | 317, 300, 317                       | 1,235 / 1,687         |
+
+Reading: (1) links dominate paint cost, nodes second, and only hiding BOTH removes most of it (≈ 4×); keeping any placeholder geometry (B) recovers only ≈ 20%. (2) The floor with nothing painted is still ≈ 70–80 ms: the ~10k `<g>` boxes themselves (style/layout/transform invalidation) dominate — going lower needs hiding whole layers (drops AX nodes, non-waived) or an aggregate/canvas overlay (waived/deferred). (3) A container-level flip is NOT O(1): one 1.2–3.1 s long task in either direction (descendant style recalc over ~23k elements), i.e. the same order as 10k per-element writes.
+
 ## Risks / Not-found
 
 - **No LOD code, no `MIN_LEGIBLE_PX`, no kind-per-slot, no scale predicate** in culling; state is boolean ⇒ needs richer per-slot state (visible / culled / lod) and a precedence rule.
