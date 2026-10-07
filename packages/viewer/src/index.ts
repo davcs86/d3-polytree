@@ -61,6 +61,8 @@ export interface ViewerOptions {
    * feature, drawer, or service without subclassing.
    */
   modules?: readonly DiagramModule[];
+  /** Viewport culling for large diagrams. Default: on (inert below a drawn-element count threshold). */
+  culling?: boolean;
   [key: string]: unknown;
 }
 

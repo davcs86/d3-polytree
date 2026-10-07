@@ -26,5 +26,5 @@ The static, read-only viewer and the base class of the other components.
   `d3polytree` value module (this instance) — this is the one place the extension seam is wired, so
   subclasses override `getModules()`, not `_boot`.
 - Public API: `importDiagram(xml)`, `createEmpty()`, `exportDiagram()` (→ `.pfdn`), `exportSVG()`,
-  `get(token)`, `destroy()`. `options` accepts `{ container, modules }` (`ViewerOptions`).
+  `get(token)`, `destroy()`. `options` accepts `{ container, modules, culling }` (`ViewerOptions`).
 - Ships a second **UMD** tsup pass (global `d3PolytreeViewer`); see root `CLAUDE.md`.

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import EventEmitter from 'eventemitter3';
 import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { Canvas, ElementRegistry, ElementBuilder } from '@d3-polytree/canvas';
@@ -81,6 +81,36 @@ describe('BaseElement', () => {
     expect(g.select('desc').text()).toBe('n1');
     // the concrete drawing (a <rect>) is still present and selectable
     expect(g.select('rect').empty()).toBe(false);
+  });
+
+  it('refreshes the <title> accessible name on update, leaving other children alone', () => {
+    const def = makeDef('n1', { name: 'Alpha' });
+    const { el, drawingRegistry } = build([def]);
+    const g = drawingRegistry.get('n1') as DrawingSelection;
+    // Outline displaces the first child; <title> must still be found by name.
+    g.insert('rect', ':first-child').attr('class', 'outline');
+    def.set('name', 'Beta');
+    el.updateElement(def);
+    expect(g.select('title').text()).toBe('node: Beta');
+    expect(g.selectAll('title').size()).toBe(1);
+    expect(g.select('desc').text()).toBe('n1');
+    expect(g.select('rect.outline').empty()).toBe(false);
+  });
+
+  it('does not rewrite <title> when the name is unchanged', () => {
+    const def = makeDef('n1', { name: 'Alpha' });
+    const { el, drawingRegistry } = build([def]);
+    const g = drawingRegistry.get('n1') as DrawingSelection;
+    const title = g.select('title').node() as SVGTitleElement;
+    const mutated = vi.fn();
+    new MutationObserver(mutated).observe(title, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+    el.updateElement(def);
+    expect(title.textContent).toBe('node: Alpha');
+    expect(mutated).not.toHaveBeenCalled();
   });
 
   it('removeElementById detaches the drawing', () => {

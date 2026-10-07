@@ -6,12 +6,17 @@
  * selector-match predicate never returned a value (so no CSS was ever inlined),
  * and drops debug `console.log`s.
  */
+/** Generic transient-render marker (e.g. viewport culling); stripped from exported clones. */
+export const TRANSIENT_ATTR = 'data-pfd-transient';
+
 export function getSvgString(svgNode: SVGSVGElement): string {
   // Serialize a CLONE, never the live node: setting the xlink attr and inserting
   // the inlined-CSS <style> mutate their target, so exporting the live node would
   // accumulate a fresh <style> on every call. Cloning keeps exportSVG idempotent
   // and side-effect-free for repeated exports on one instance.
   const clone = svgNode.cloneNode(true) as SVGSVGElement;
+  // Transient state must never leak into an export; the live node keeps it.
+  clone.querySelectorAll(`[${TRANSIENT_ATTR}]`).forEach((n) => n.removeAttribute(TRANSIENT_ATTR));
   clone.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
   appendCSS(getCSSStyles(svgNode), clone);
 

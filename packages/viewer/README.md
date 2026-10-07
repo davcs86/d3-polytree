@@ -48,10 +48,11 @@ drop it in with a plain `<script>` tag, no bundler required:
 
 Constructor: `new Viewer(options?: ViewerOptions)`.
 
-| Option      | Type              | Purpose                                                                                                              |
-| ----------- | ----------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `container` | `HTMLElement`     | Host element the diagram renders into.                                                                               |
-| `modules`   | `DiagramModule[]` | Extra didi modules layered **after** the component's own (last definition wins) — the no-subclassing extension seam. |
+| Option      | Type              | Purpose                                                                                                                 |
+| ----------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `container` | `HTMLElement`     | Host element the diagram renders into.                                                                                  |
+| `modules`   | `DiagramModule[]` | Extra didi modules layered **after** the component's own (last definition wins) — the no-subclassing extension seam.    |
+| `culling`   | `boolean`         | Viewport culling for large diagrams (default on; inert below a drawn-element threshold). Interactive viewer and editor. |
 
 | Method / property                      | Description                                                                                                                                                                                                                                      |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

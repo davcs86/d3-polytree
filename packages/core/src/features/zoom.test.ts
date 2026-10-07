@@ -36,6 +36,22 @@ describe('@d3-polytree/core Zoom', () => {
     expect((inner?.parentNode as Element).tagName.toLowerCase()).toBe('g');
   });
 
+  it('persisted settings equal the parsed drawing-layer transform (culling reads the settings)', () => {
+    const { bus, canvas, calculateCenter, options } = setup();
+    const zoom = new Zoom(options, canvas, bus, calculateCenter);
+    zoom.setZoomable(true);
+    zoom.setZoom(10, 20, 2);
+    const m = /translate\(([-\d.]+), ([-\d.]+)\) scale\(([-\d.]+)\)/.exec(
+      canvas.getDrawingLayer().attr('transform')
+    )!;
+    const persisted = options as unknown as { scale: number; offset: { x: number; y: number } };
+    expect([Number(m[1]), Number(m[2]), Number(m[3])]).toEqual([
+      persisted.offset.x,
+      persisted.offset.y,
+      persisted.scale
+    ]);
+  });
+
   it('applies and persists the transform only while zoomable', () => {
     const { bus, canvas, calculateCenter, options } = setup();
     const zoom = new Zoom(options, canvas, bus, calculateCenter);

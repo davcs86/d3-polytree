@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { InteractiveViewer } from '@d3-polytree/interactive-viewer';
 import { Viewer } from '@d3-polytree/viewer';
+import { cullingModule, zoomModule, outlineModule, keyboardNavModule } from '@d3-polytree/core';
+import { domNotificationsModule } from '@d3-polytree/interactive-viewer';
 import { Editor } from './index';
 
 describe('@d3-polytree/editor', () => {
@@ -14,6 +16,18 @@ describe('@d3-polytree/editor', () => {
     expect(editor.getModules().length).toBeGreaterThan(
       InteractiveViewer.interactionModules.length + Viewer.modules.length
     );
+  });
+
+  it('inherits the culling module order (after zoom, before outline/keyboardNav/drawers)', () => {
+    const mods = new Editor().getModules();
+    const at = (m: unknown) => mods.indexOf(m as never);
+    expect(at(cullingModule)).toBeGreaterThan(at(zoomModule));
+    expect(at(cullingModule)).toBeLessThan(at(outlineModule));
+    expect(at(cullingModule)).toBeLessThan(at(keyboardNavModule));
+    // before the first drawer module, so it sees the initial created events
+    expect(at(cullingModule)).toBeLessThan(at(Viewer.modules[0]));
+    // the DOM notifications module stays last
+    expect(mods[mods.length - 1]).toBe(domNotificationsModule);
   });
 
   it('creates a node (with associated label) into the model and the DOM', () => {
