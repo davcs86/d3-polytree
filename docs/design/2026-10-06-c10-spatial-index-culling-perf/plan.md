@@ -1,6 +1,6 @@
 # Implementation Plan: c10-spatial-index-culling-perf
 
-**Status**: `pending`
+**Status**: `in-progress`
 **Created**: 2026-10-07
 **Design**: [design.md](./design.md)
 **Test harness**: `pnpm test` → `turbo run test` → per-package `vitest run` (jsdom) (`package.json` scripts; `packages/core/package.json:22-26`; `packages/core/vitest.config.ts:1-2`); browser lane `pnpm --filter @d3-polytree/storybook test:e2e` → `playwright test` (`apps/storybook/package.json` `test:e2e`; `.github/workflows/visual-regression.yml:86,122`). Lint/format/typecheck: `pnpm lint`, `pnpm format:check`, `pnpm typecheck` (`.github/workflows/ci.yml:26,29,32`). No coverage threshold declared.
@@ -43,7 +43,7 @@ Conventions used throughout: "Verification" lists the repo's own commands; code 
 
 ### Step 1 — `loadStories` harness-only filter + filter spec
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/_support.ts` — modify
@@ -69,7 +69,7 @@ Change the signature to `loadStories(opts: { includeHarness?: boolean } = {})` a
 
 ### Step 2 — Perf/correctness fixture generators
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/src/perf/fixture.data.ts` — create (pure data: seeded PRNG + plain-object model spec)
@@ -98,7 +98,7 @@ Change the signature to `loadStories(opts: { includeHarness?: boolean } = {})` a
 
 ### Step 3 — Harness stories (`harness-only`)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/src/CullingHarness.stories.ts` — create
@@ -125,7 +125,7 @@ Extend Step 1's `harness-filter.spec.ts` with the behavioural teeth: `loadStorie
 
 ### Step 4 — Playwright `perf` project and script
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright.config.ts` — modify
@@ -150,7 +150,7 @@ N/A (config-only; behaviour is observed by the two `--list` runs above and exerc
 
 ### Step 5 — Baseline perf spec (off arm; CDP metrics)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/perf.spec.ts` — create
@@ -176,7 +176,7 @@ The spec is itself the measurement. Its sanity assertions (fixture booted: eleme
 
 ### Step 6 — Probes P1–P4 and the bulk-attribute-write probe
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/culling-probes.spec.ts` — create (small fixture only; required-lane safe)
@@ -202,7 +202,7 @@ The spec is the test (P1/P3 assertions fail on an unexpected AX/focus outcome). 
 
 ### Step 7 — Microbenchmarks and trigger measurements
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/perf.spec.ts` — modify (add a second `test` group)
@@ -226,7 +226,7 @@ Same spec file; sanity assertions only (iterations completed, no NaN).
 
 ### Step 8 — `perf.yml` workflow (informational in PR1) and deploy opt-out
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `.github/workflows/perf.yml` — create
@@ -255,7 +255,7 @@ N/A (CI/config-only). Observable outcome: the Pages build (`build-storybook:depl
 
 ### Step 9 — `measurements.md`, storybook docs
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `docs/design/2026-10-06-c10-spatial-index-culling-perf/measurements.md` — create
@@ -801,6 +801,16 @@ N/A (docs/changeset/roadmap-only).
 ## Deviation Log
 
 _Populated during execution. Step bodies above are immutable (DN-5); record any divergence here with the step number, what changed, and why._
+
+**2026-10-07 — PR1 (Steps 1–9) executed; all steps `done`.** Step bodies above are unchanged (DN-5); divergences:
+
+- **Branch/PR.** The session allows only the one designated branch, so PR1's commits land on `claude/roadmap-next-items-7y0lrz` / PR #93 alongside the RFC docs (not a separate PR1 branch).
+- **Step 3 — Editor arm filters only `searchPanelModule`.** `PropertiesPanel` injects `sideTabsProvider` (`packages/editor/src/properties-panel/PropertiesPanel.ts:60`), contributed by `sideTabsModule`, so the Editor cannot boot without side tabs. The interactive arm drops both modules. **Consequence for Step 21** (property test in the `editor` package): filter `searchPanelModule` only — filtering `sideTabsModule` would break the Editor's boot. Also: a `nodes` story arg and a shared `src/perf/harness.ts` were added (needed by Step 7's sweep; not in the step's Files).
+- **Step 5 — no "pure background" pan start.** 100% of sampled viewport points hit a link outline rect (`pointer-events: all`; long-range links' first→last-waypoint bbox), so the spec starts the pan at the viewport centre and asserts the drawing-layer `transform` changed instead (`measurements.md` §1).
+- **Step 6 — AX assertion is group-role count, not total node count.** Hiding painted children removes a few decorative AX descendants (3 for two elements), so the invariant is that every element's own `group` node (role+name) survives. The overhang probe first measured against the wrong origin (the first `.pfdjs-container svg` is a 20×20 chrome icon); it now uses `canvas.getContainer()`. **P4 is not observable**: the unmodified Editor renders no `.resize-container` handles (also in the stock Interaction Harness) — a pre-existing bug unrelated to C10, queued as a separate task.
+- **Step 7 — extra probe and a corrected benchmark.** Added a hide-mechanism variants test (V1–V6, not in the step) after the bulk-write probe showed style recalc dominating; the first jitter model omitted the pad and was fixed; the churn micro-benchmark is noise-level (ratio 1.87× then 2.56× on re-run).
+- **Step 8 — `--exclude-tags` does not exist in Storybook 8.6.18**, so the `STORYBOOK_DEPLOY=1`-gated `stories` globs in `.storybook/main.ts` are the primary mechanism (as the Post-review verification already recorded); verified: deploy build omits `Tests/Culling Harness` and `Tests/Perf Harness` and keeps `Tests/Interaction Harness` (10 vs 12 stories).
+- **Step 9 — `measurements.md` written; §9 triggers FIRED.** Per Step Dependencies ("Contingency (design §9)") **no PR2 step starts**: (1) chunked/budgeted hides — fired (hiding all 23k `<g>` = 1.2–2.7 s main-thread for every mechanism tried); (2) dual-pad — fires by construction (the trigger as worded cannot not-fire; needs re-wording); (3) free-list — borderline/inconclusive; plus a data-driven change to `CULL_MIN_ELEMENTS` (≈5,000 instead of the provisional 1,000, forcing a ≥ ~10k-element correctness fixture). Returned to the user for a design amendment (DF-2).
 
 ## Review Log
 
