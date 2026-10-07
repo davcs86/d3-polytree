@@ -1,4 +1,6 @@
 import { expect, test, type BrowserContext, type CDPSession, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { gotoStory, loadStories } from './_support';
 
 /**
@@ -247,10 +249,9 @@ test.describe('C10 perf baseline (culling off)', () => {
 });
 
 /**
- * The culling-ON arm over the same fixture and gesture (C10 PR2). RECORD-ONLY until the blocking
- * ceiling is derived from ≥ 5 pinned-container runs (plan Step 24, `perf-budget.json`); the
- * separation safeguard (design §7: off median p95 − on max p95 ≥ 2 × on-arm spread) decides
- * whether the ceiling may be enforced without going back to the user.
+ * The culling-ON arm over the same fixture and gesture (C10 PR2). The pan p95 is asserted against
+ * `perf-budget.json` (blocking). Separation safeguard (design §7: off median p95 − on max p95 ≥
+ * 2 × on-arm spread) held on the pinned run: 66.7 − 16.8 = 49.9 ≫ 2 × 0.1.
  */
 test.describe('C10 perf (culling on)', () => {
   test('pan across the 23k-element fixture', async ({ page, context }, testInfo) => {
@@ -286,6 +287,16 @@ test.describe('C10 perf (culling on)', () => {
     );
     expect(stats.active).toBe(true);
     for (const r of m.runs) expect(r.frames).toBeGreaterThanOrEqual(10);
+
+    // BLOCKING ceiling (user decision: blocking from day one). Derived in perf-budget.json with
+    // provenance; the culling-OFF arm's p95 (≈ 67–117 ms) is far above it by construction.
+    // Note: TaskDuration/frames are main-thread only — raster/compositor time is not included.
+    const { budgetMs } = JSON.parse(readFileSync(join(__dirname, 'perf-budget.json'), 'utf8')) as {
+      budgetMs: number;
+    };
+    expect(Math.max(...p95s), `ON-arm pan p95 over budget (${budgetMs} ms)`).toBeLessThanOrEqual(
+      budgetMs
+    );
   });
 });
 

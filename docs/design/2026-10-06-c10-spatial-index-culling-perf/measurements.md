@@ -93,3 +93,17 @@ The separation safeguard (design §7: `off median p95 − on max p95 ≥ 2 × on
 4. **Free-list reuse re-measured in PR2** against the real `FlatIndex` (≥ 5 runs, median).
 
 Local, non-pinned-image numbers: `CULL_MIN_ELEMENTS` and `HIDE_BUDGET` are re-checked against the pinned-container `perf.yml` output in PR2.
+
+## 8. PR2 — pinned-container result and the blocking ceiling (2026-10-07)
+
+Source: `perf.yml` run on commit `4748b68` (pinned `mcr.microsoft.com/playwright:v1.56.1-noble`), 23,040-element fixture, interactive arm, 5 pans per arm.
+
+| Arm         | pan frame p95              | spread | task / pan |
+| ----------- | -------------------------- | ------ | ---------- |
+| culling OFF | median 66.7 ms (66.7–83.3) | 16.6   | 5.1 s      |
+| culling ON  | **16.8 ms** (16.7–16.8)    | 0.1    | 1.2 s      |
+
+**Separation safeguard (design §7):** `off median − on max = 66.7 − 16.8 = 49.9 ms ≥ 2 × 0.1` — held, so the ceiling may be enforced without returning to the user.
+**Ceiling:** `perf-budget.json` `budgetMs` = **40** (≈ 2.4× the ON result; allows 2 frames at 60 Hz, rejects 3; well below the OFF median). **Provenance is n = 1 CI run** (user decision "commit now"); re-derive and tighten when more runs exist. The assertion is the max over the 5 ON pans; it fails (verified locally with a 10 ms budget) and the OFF arm is far above it by construction.
+**Hide cost in the pinned image:** hiding all 23,040 `<g>` = 1.1 s (≈ 48 µs/toggle), so `HIDE_BUDGET` = 300 ≈ 14 ms/frame — kept. (The ≈ 75–80 ms/300-hide frames seen in the local dev container do not reproduce in CI.)
+**Free-list (conditional):** pinned micro-benchmark `churnTombstone` ratio 3.0 vs free-list 1.6 on 0.12 ms vs 0.04 ms scans (noise-level); above the 2× trigger again but not promoted — for the user's decision.

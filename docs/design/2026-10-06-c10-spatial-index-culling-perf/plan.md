@@ -691,7 +691,7 @@ The spec is the test (each gate fails on a mutated build: e.g. temporarily shrin
 
 ### Step 24 — Blocking frame-time ceiling and `perf.yml` enforcement
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/perf.spec.ts` — modify
@@ -846,6 +846,8 @@ _Populated during execution. Step bodies above are immutable (DN-5); record any 
 - **Free-list stays conditional (Step 10, 2026-10-07; user decision).** An interim edit shipped it unconditionally on a capacity argument (tombstone-only: 50,000 slots for 5,000 live); the user directed it back to conditional. Step 10 records capacity and scan ratio (non-asserting); the free-list is added only if the ≥ 5-run median scan ratio > 2×.
 
 - **PR2 implementation notes (2026-10-07).** (a) **G5 reformulated (Step 23):** `exportSVG()` is quadratic in DOM size (canvas `getCSSStyles`: 12.6 s at ~1.2k drawn elements, 60 s at ~2.8k, 207 s at ~5.5k — pre-existing, independent of culling), so a byte-compare through it is infeasible above `CULL_MIN_ELEMENTS`. G5 now asserts the DOM parity the export relies on (live SVG minus `data-pfd-transient` serializes byte-identically to the culling-OFF SVG); the clone-strip itself is unit-tested in canvas (Step 12). A follow-up to fix `getCSSStyles` is recommended but out of scope. (b) **Free-list (Step 10) conditional trigger reading:** the non-asserting benchmark logged `capacity=55000 live=5000 scanRatioMedian=2.84` locally (non-pinned; tombstone-only, 10 churn generations, worst case). That is above the 2× trigger on this host; per the user's decision it is evaluated by a human with the pinned `perf.yml` numbers — **not promoted yet**. (c) **Step 21:** boot ≈ 3.4 s for 5,250 elements and ≈ 0.25 s/op in jsdom (well inside the 60 s / 2 s stop limits), 81 s for 12 seeds × 25 ops; the model keeps soft-deleted defs (`ElementStatus.Deleted`), so the test compares against drawn (non-deleted) defs only. Mutation check: dropping the `<cls>.updated` subscription fails seed 1 at the first `create`. (d) **G1/G2 pass on both arms with `CULL_PAD` = 7** against the real-DOM oracle (stroke + marker inflation); mutation check: undersized node bounds + pad 0 fails G1 at the first synchronous SHOW. (e) **G7 (record-only):** 6 attribute writes/frame (mean = max) at a populated ±1 px boundary — well under `HIDE_BUDGET / 10` (30); dual-pad hysteresis not indicated. (f) **Observed hide cost:** ~75–80 ms per 300-hide frame in this container (vs the 20–33 ms budget assumed from PR1's 65–110 µs/toggle) — to be re-read from the pinned `perf.yml` numbers in Step 24; `HIDE_BUDGET` may need to drop (design: "provisional, tuned from PR2 perf data"). (g) **CSS self-check** gives a stylesheet one extra frame after `readyState === 'complete'` before it fails open. (h) G6's missing-stylesheet arm serves the real CSS minus the culling rule (aborting every stylesheet breaks Storybook's own CSS preload).
+
+- **Step 24 (2026-10-07, user decision "commit now").** `perf-budget.json` is derived from ONE pinned CI run (5 pans per arm), not ≥ 5 runs: this session cannot re-run workflows (GitHub 403). Separation held (49.9 ms vs 2 × 0.1). Budget 40 ms (ON 16.8 ms; OFF median 66.7 ms). `continue-on-error` removed from `perf.yml`; whether the job is a _required_ check is branch-protection (not in repo). Tighten the budget once more runs exist.
 
 ## Review Log
 

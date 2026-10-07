@@ -1,0 +1,14 @@
+{
+  "metric": "pan frame-delta p95 (ms), culling ON, interactive arm, 23,040-element fixture; max over 5 pans",
+  "budgetMs": 40,
+  "margin": "≈2.4x the pinned ON result (16.8 ms); allows 2 frames at 60 Hz, rejects 3; below the OFF median p95 (66.7 ms)",
+  "provenance": {
+    "image": "mcr.microsoft.com/playwright:v1.56.1-noble (perf.yml)",
+    "commit": "4748b68cd8b52a9034188ee24804da03d507f35c",
+    "runs": 1,
+    "pansPerRun": 5,
+    "on": { "median": 16.8, "min": 16.7, "max": 16.8, "spread": 0.1 },
+    "off": { "median": 66.7, "min": 66.7, "max": 83.3 },
+    "note": "n=1 CI run by user decision (plan Step 24); re-derive from more runs and tighten when available"
+  }
+}

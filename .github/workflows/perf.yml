@@ -5,11 +5,9 @@ name: Perf · C10 frame-time
 # container as the e2e net, and publishes the numbers (CDP Task/Script/Layout/RecalcStyle durations
 # plus rAF frame deltas) to the job summary and as an artifact.
 #
-# PR1 (measure): informational — `continue-on-error: true`, because no budget exists yet; the
-# numbers recorded here derive it (docs/design/2026-10-06-c10-spatial-index-culling-perf/).
-# PR2 removes `continue-on-error` and makes the ceiling a blocking assertion (user decision:
-# the frame-time assertion is blocking from day one, subject to the separation safeguard in
-# design §7). `perf.spec.ts` is never collected by the required e2e job (its `chromium` project
+# The culling-ON arm asserts the frame-time ceiling in apps/storybook/playwright/perf-budget.json
+# (blocking; user decision: blocking from day one, separation safeguard in design §7 held).
+# Whether this job is a *required* check is a GitHub branch-protection setting, not in the repo. `perf.spec.ts` is never collected by the required e2e job (its `chromium` project
 # ignores it), so this lane cannot slow or flake `visual-regression.yml`.
 
 on:
@@ -34,8 +32,6 @@ jobs:
   perf:
     name: playwright perf (pinned container)
     runs-on: ubuntu-latest
-    # PR1 only — see header.
-    continue-on-error: true
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     steps:
