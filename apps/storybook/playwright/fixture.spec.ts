@@ -32,8 +32,8 @@ test.describe('perf fixture generator', () => {
     }
   });
 
-  test('SMALL stays above 2x the provisional CULL_MIN_ELEMENTS (1000)', () => {
-    expect(drawnElementCount(generateFixtureSpec(SMALL))).toBeGreaterThanOrEqual(2000);
+  test('SMALL stays above 2x CULL_MIN_ELEMENTS (5,000)', () => {
+    expect(drawnElementCount(generateFixtureSpec(SMALL))).toBeGreaterThanOrEqual(10_000);
   });
 
   test('LARGE matches the design shape: ~23k elements, 1:1.2 node:link, ~5% long-range', () => {

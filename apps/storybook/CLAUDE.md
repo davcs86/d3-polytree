@@ -52,7 +52,7 @@ serves it with `http-server`).
   ids currently known to fire (empty today); a new one fails the build. Refresh with
   `pnpm --filter @d3-polytree/storybook test:e2e:update-a11y` (C2 will shrink it toward empty).
 - The `Tests/Interaction Harness` story is fixture-only (`tags: ['!autodocs']`) — it parks a live
-  `Editor` on `window` for the interaction spec. The C10 `Tests/Culling Harness` (~2.7k elements) and
+  `Editor` on `window` for the interaction spec. The C10 `Tests/Culling Harness` (~10.6k elements) and
   `Tests/Perf Harness` (~23k) stories are tagged `harness-only`: `loadStories()` omits them so VR/a11y never
   screenshot or axe-scan them (specs opt in with `loadStories({ includeHarness: true })`); arms are chosen
   per load with `&args=culling:!false;viewer:editor` (declare args in `argTypes`; booleans are `!true`/`!false`).

@@ -83,12 +83,12 @@ export const LARGE: FixtureOptions = {
   seed: 1
 };
 
-/** ~2.7k drawn elements: the required-lane correctness fixture (≥ 2× CULL_MIN_ELEMENTS). */
+/** ~10.6k drawn elements: the required-lane correctness fixture (≥ 2× CULL_MIN_ELEMENTS = 5,000). */
 export const SMALL: FixtureOptions = {
-  nodes: 1_200,
-  links: 1_400,
+  nodes: 4_600,
+  links: 5_520,
   labelRatio: 0.1,
-  zones: 10,
+  zones: 18,
   longRangeRatio: 0.05,
   seed: 1
 };

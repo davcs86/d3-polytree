@@ -3,7 +3,7 @@ import { gotoStory, loadStories } from './_support';
 import { SMALL, generateFixtureSpec } from '../src/perf/fixture.data';
 
 /**
- * C10 PR1 probes on the SMALL fixture (required lane: ~2.7k elements, explicit timeout,
+ * C10 PR1 probes on the SMALL fixture (required lane: ~10.6k elements, explicit timeout,
  * no screenshots). They verify the assumptions the culling design rests on and record the
  * measurements that feed later steps (`measurements.md`):
  *
