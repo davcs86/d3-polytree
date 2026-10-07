@@ -84,3 +84,12 @@ Unculled panning holds one 60 Hz frame (16.8 ms) up to ~4.6k drawn elements and 
 ## 6. Not yet measured
 
 The separation safeguard (design §7: `off median p95 − on max p95 ≥ 2 × on-arm spread`) needs the culling-on arm, which does not exist until PR2; PR1 records only the off arm (baseline spread: p95 116.7–133.3 ms over 5 runs ≈ 14%). The blocking frame-time ceiling and `perf-budget.json` are therefore PR2 (plan Step 24).
+
+## 7. Decisions taken on these numbers (2026-10-07, user-directed; design Amendment A1)
+
+1. **Budgeted hide adopted** — `HIDE_BUDGET` = 300 toggles per frame (≈ 20–33 ms at the measured 65–110 µs per toggled element); stateless per-frame rescan, no cursor or epoch stamps.
+2. **`CULL_MIN_ELEMENTS` = 5,000**, and the required-lane correctness fixture grows to ≥ 10,000 drawn elements (`SMALL` = 4,600 nodes / 5,520 links / 460 labels / 18 zones = 10,598).
+3. **Dual-pad trigger reworded cost-based** (writes per frame under a ±1 px jitter ≤ `HIDE_BUDGET / 10`).
+4. **Free-list reuse re-measured in PR2** against the real `FlatIndex` (≥ 5 runs, median).
+
+Local, non-pinned-image numbers: `CULL_MIN_ELEMENTS` and `HIDE_BUDGET` are re-checked against the pinned-container `perf.yml` output in PR2.
