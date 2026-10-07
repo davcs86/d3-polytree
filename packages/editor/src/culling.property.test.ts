@@ -134,7 +134,7 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
 
   function viewport() {
     const z = (
-      editor.getHost()!.definitions as {
+      editor.getHost()!.definitions as unknown as {
         settings: { zoom: { scale: number; offset: { x: number; y: number } } };
       }
     ).settings.zoom;

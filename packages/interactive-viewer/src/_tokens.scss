@@ -12,14 +12,13 @@
 // the mandated derivations in the dark declarations only.
 
 // Invariant across themes: selection (drawn on the always-light canvas), the
-// #ff4800 accent, the dark-in-both-themes toast surface/link/severity, and the
-// accent FILL (kept mid-blue so white text on it stays legible in dark).
+// #ff4800 accent and the dark-in-both-themes toast surface/link/severity. The
+// accent FILL is mid-blue in light and re-declared darker in the dark scheme.
 @mixin pfd-tokens-invariant {
   --pfd-color-selection: #ff0000;
   // Keyboard focus ring (C2), drawn on the always-light canvas like selection.
   --pfd-color-focus-ring: #1a73e8;
   --pfd-color-accent-invariant: #ff4800;
-  --pfd-color-accent-fill: #5990bd;
   --pfd-color-toast-bg: #333333;
   --pfd-color-toast-link: #9ecbff;
   --pfd-color-toast-success: #2e7d32;
@@ -39,25 +38,31 @@
   --pfd-color-text-muted: #808080;
   --pfd-color-text-secondary: #555555;
   --pfd-color-accent-ink: #5990bd;
+  --pfd-color-accent-fill: #5990bd;
   --pfd-color-accent-fill-hover: #4d80a8;
   --pfd-color-list-item: #eeeeee;
   --pfd-color-list-item-hover: #f5f5f5;
 }
 
 @mixin pfd-tokens-dark {
-  --pfd-color-surface: #1e1e1e;
-  --pfd-color-surface-raised: #252526;
-  --pfd-color-surface-hover: #2d2d2d;
-  --pfd-color-border-strong: #3c3c3c;
-  --pfd-color-border-muted: #333333;
-  --pfd-color-border-subtle: #2a2a2a;
-  --pfd-color-text: #e4e4e4;
-  --pfd-color-text-muted: #a0a0a0;
-  --pfd-color-text-secondary: #c0c0c0;
-  --pfd-color-accent-ink: #6fb0e0;
+  // Cool-neutral, off-black surfaces (no pure #000/#fff: avoids halation).
+  // Text tokens are >= 7:1 (WCAG AAA) on every surface/hover pair below;
+  // border-strong/-muted are >= 3:1 (non-text UI) on surface + raised; border-subtle
+  // is a decorative divider. Accent fill is darkened so its white label is >= 7:1.
+  --pfd-color-surface: #1b1d21;
+  --pfd-color-surface-raised: #23262b;
+  --pfd-color-surface-hover: #2e3238;
+  --pfd-color-border-strong: #6f7a8a;
+  --pfd-color-border-muted: #66707f;
+  --pfd-color-border-subtle: #3d4450;
+  --pfd-color-text: #eceff4;
+  --pfd-color-text-muted: #c0c8d3;
+  --pfd-color-text-secondary: #cfd5de;
+  --pfd-color-accent-ink: #8cc2ee;
+  --pfd-color-accent-fill: #2a5a87;
   --pfd-color-accent-fill-hover: color-mix(in srgb, var(--pfd-color-accent-fill) 85%, black);
-  --pfd-color-list-item: #252526;
-  --pfd-color-list-item-hover: #2d2d2d;
+  --pfd-color-list-item: #23262b;
+  --pfd-color-list-item-hover: #2e3238;
 }
 
 // Light base (invariant + light) on both the document root and any shadow host.

@@ -21,7 +21,7 @@ function mount(direction: LayoutDirection): HTMLElement {
   host.style.position = 'relative';
   host.style.width = '820px';
   host.style.height = '520px';
-  host.style.border = '1px solid #dddddd';
+  host.style.border = '1px solid var(--sb-frame-border)';
   void (async (): Promise<void> => {
     const editor = new Editor({ container: host, modules: deterministicModules() });
     await editor.importDiagram(LAYOUT_DIAGRAM);
