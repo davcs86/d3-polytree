@@ -17,6 +17,11 @@ export interface HarnessArgs {
   culling: boolean;
   /** Which component to boot: the read-mostly interactive viewer or the full editor. */
   viewer: 'interactive' | 'editor';
+  /**
+   * Optional node count: scales the preset (links ×1.2, zones ∝ nodes) so the
+   * `CULL_MIN_ELEMENTS` sweep can vary the drawn-element count. Omit for the preset as-is.
+   */
+  nodes?: number;
 }
 
 export type HarnessKind = 'culling' | 'perf';
@@ -70,7 +75,18 @@ export function mountFixtureHarness(kind: HarnessKind, args: HarnessArgs): HTMLE
     culling
   }) as AnyViewer;
 
-  const xml = fixtureToXml(generateFixtureSpec(kind === 'perf' ? LARGE : SMALL));
+  const preset = kind === 'perf' ? LARGE : SMALL;
+  const n = Number(args.nodes);
+  const opts =
+    Number.isFinite(n) && n > 0
+      ? {
+          ...preset,
+          nodes: n,
+          links: Math.round(n * 1.2),
+          zones: Math.min(preset.zones, Math.max(1, Math.round(n / 250)))
+        }
+      : preset;
+  const xml = fixtureToXml(generateFixtureSpec(opts));
   const ready = viewer.importDiagram(xml);
   if (kind === 'perf') {
     window.__polytreePerfViewer = viewer;

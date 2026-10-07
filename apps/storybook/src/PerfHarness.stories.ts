@@ -11,7 +11,8 @@ const meta: Meta<HarnessArgs> = {
   tags: ['!autodocs', 'harness-only'],
   argTypes: {
     culling: { control: 'boolean' },
-    viewer: { control: 'select', options: ['interactive', 'editor'] }
+    viewer: { control: 'select', options: ['interactive', 'editor'] },
+    nodes: { control: 'number' }
   },
   args: { culling: true, viewer: 'interactive' }
 };
