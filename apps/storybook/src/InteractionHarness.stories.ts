@@ -38,7 +38,7 @@ function mount(): HTMLElement {
   host.style.position = 'relative';
   host.style.width = '820px';
   host.style.height = '520px';
-  host.style.border = '1px solid #dddddd';
+  host.style.border = '1px solid var(--sb-frame-border)';
   // Focusable so the container-scoped keydown handler (Ctrl+Z / Ctrl+Shift+Z)
   // receives real keyboard events dispatched by Playwright.
   host.tabIndex = 0;

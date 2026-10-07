@@ -1,0 +1,54 @@
+/* Story-shell colours (host frames, Kitchensink panels, page backdrop). The
+   light values equal the literals they replace, so light VR baselines do not move.
+   Dark values mirror the --pfd-* dark tokens (WCAG AAA text, >= 3:1 frame borders).
+   Mechanism matches packages/interactive-viewer/src/_tokens.scss: media = auto,
+   [data-pfd-theme] = forced and wins by specificity. */
+:root {
+  --sb-frame-border: #dddddd;
+  --sb-button-bg: #f8fafc;
+  --sb-button-border: #cbd5e1;
+  --sb-button-text: #0f172a;
+  --sb-log-bg: #0f172a;
+  --sb-log-text: #e2e8f0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sb-frame-border: #6f7a8a;
+    --sb-button-bg: #23262b;
+    --sb-button-border: #6f7a8a;
+    --sb-button-text: #eceff4;
+    --sb-log-bg: #121418;
+    --sb-log-text: #eceff4;
+  }
+  body {
+    background: #1b1d21;
+    color: #eceff4;
+  }
+}
+
+:root[data-pfd-theme='light'] {
+  --sb-frame-border: #dddddd;
+  --sb-button-bg: #f8fafc;
+  --sb-button-border: #cbd5e1;
+  --sb-button-text: #0f172a;
+  --sb-log-bg: #0f172a;
+  --sb-log-text: #e2e8f0;
+}
+:root[data-pfd-theme='light'] body {
+  background: #ffffff;
+  color: #333333;
+}
+
+:root[data-pfd-theme='dark'] {
+  --sb-frame-border: #6f7a8a;
+  --sb-button-bg: #23262b;
+  --sb-button-border: #6f7a8a;
+  --sb-button-text: #eceff4;
+  --sb-log-bg: #121418;
+  --sb-log-text: #eceff4;
+}
+:root[data-pfd-theme='dark'] body {
+  background: #1b1d21;
+  color: #eceff4;
+}

@@ -4,7 +4,7 @@
       outline: none;
       padding: 6px;
       // border colour tokenised (light #cccccc for consistency with other input
-      // borders; dark #3c3c3c). The search input is hidden by default, so no VR
+      // borders; dark #6f7a8a). The search input is hidden by default, so no VR
       // baseline paints its previous #333 border.
       border: 1px solid var(--pfd-color-border-strong, #cccccc);
       background: var(--pfd-color-surface-raised, #ffffff);

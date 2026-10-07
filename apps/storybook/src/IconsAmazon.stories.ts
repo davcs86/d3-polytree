@@ -23,7 +23,7 @@ function mount(render: (host: HTMLElement) => Promise<void>): HTMLElement {
   host.style.position = 'relative';
   host.style.width = '820px';
   host.style.height = '520px';
-  host.style.border = '1px solid #dddddd';
+  host.style.border = '1px solid var(--sb-frame-border)';
   void render(host);
   return host;
 }
