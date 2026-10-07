@@ -78,6 +78,22 @@ Same setup as above (23,040 `LARGE`, interactive arm, culling ON, scale 0.1, cul
 
 Reading: (1) links dominate paint cost, nodes second, and only hiding BOTH removes most of it (≈ 4×); keeping any placeholder geometry (B) recovers only ≈ 20%. (2) The floor with nothing painted is still ≈ 70–80 ms: the ~10k `<g>` boxes themselves (style/layout/transform invalidation) dominate — going lower needs hiding whole layers (drops AX nodes, non-waived) or an aggregate/canvas overlay (waived/deferred). (3) A container-level flip is NOT O(1): one 1.2–3.1 s long task in either direction (descendant style recalc over ~23k elements), i.e. the same order as 10k per-element writes.
 
+## Spike results 2 (round-1 follow-up, throwaway spec, local dev container, not committed; n = 2 runs per cell)
+
+Same setup (23,040 `LARGE`, interactive, culling ON, scale 0.1). "A" = hide all painted children of every node/link `<g>` except `.selected` (container-attribute rule). Zoom-tick metric: rAF-delta p95 over 40 frames of `zoom.setZoom` with the scale oscillating 0.100–0.157 (the d3-zoom tick path).
+
+| Variant                                             | pan p95 (ms) | zoom-tick p95 (ms) |
+| --------------------------------------------------- | ------------ | ------------------ |
+| none (culling only)                                 | 250, 283     | 583, 583           |
+| A                                                   | 50, 50       | 533, 333           |
+| A + `will-change: transform` on the drawing layer   | 67, 67       | 383, 483           |
+| A + `content-visibility: hidden` on node/link `<g>` | 67, 67       | 300, 183           |
+| none + `will-change: transform`                     | 217, 217     | 633, 767           |
+
+Per-slot budgeted drain emulation (300 `data-pfd-transient="lod"` writes/frame over the 4,142 in-view painted node/link `<g>`s at fit-all): 14 frames, 885 ms total, median frame 60 ms, max frame 89 ms (each frame also repaints the still-unhidden remainder).
+
+Reading: (1) hide-all cuts pan to ~50–67 ms but zoom ticks stay 180–530 ms — zooming re-lays-out/rasters whatever remains, and the 10k hidden-child `<g>` boxes still cost; `content-visibility: hidden` helped zoom ticks most (n = 2, noisy) while preserving the `<g>`/AX nodes; layer promotion (`will-change`) hurts. (2) The in-view painted set at fit-all on this fixture is ≈ 4.1k node/link `<g>`s (the rest of the ~10.3k painted are labels/zones/off-screen-padded), so the per-slot drain is ≈ 0.9 s — each frame is faster than the 270 ms steady frame it replaces. (3) Unmeasured: pinned-container numbers; wheel (not synthetic) zoom ticks; a transparent hit-rect variant; an aggregate-path layer.
+
 ## Risks / Not-found
 
 - **No LOD code, no `MIN_LEGIBLE_PX`, no kind-per-slot, no scale predicate** in culling; state is boolean ⇒ needs richer per-slot state (visible / culled / lod) and a precedence rule.
