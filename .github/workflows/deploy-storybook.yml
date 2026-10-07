@@ -43,8 +43,9 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      # The deploy build omits the large C10 harness fixtures (see .storybook/main.ts).
       - name: Build Storybook
-        run: pnpm build-storybook
+        run: pnpm --filter @d3-polytree/storybook build-storybook:deploy
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
