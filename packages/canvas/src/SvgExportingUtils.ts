@@ -41,10 +41,14 @@ function getCSSStyles(parentElement: SVGSVGElement): string {
     new RegExp(`.*${sels}${escapeRegExp(str)}${sels}.*`, 'gi');
 
   const matchers: RegExp[] = [];
+  // De-duplicate by selector text in O(1). (The previous `contains(selector, matchers)` guard never
+  // matched a bare selector, so every node pushed a duplicate matcher — export cost grew
+  // quadratically with the number of drawn elements.)
+  const seen = new Set<string>();
   const pushSelector = (selector: string): void => {
-    if (!contains(selector, matchers)) {
-      matchers.push(createRegExp(selector));
-    }
+    if (seen.has(selector)) return;
+    seen.add(selector);
+    matchers.push(createRegExp(selector));
   };
 
   pushSelector(`#${parentElement.id}`);

@@ -686,49 +686,43 @@ for (const arm of ['interactive', 'editor'] as const) {
       }
     });
 
-    test('G5: culling adds nothing to the exported SVG but data-pfd-transient (ON minus attr == OFF)', async ({
+    test('G5: exportSVG is byte-identical with culling ON vs OFF (live DOM untouched)', async ({
       page
     }) => {
-      // `exportSVG()` itself is quadratic in DOM size (canvas `getCSSStyles`: 12.6 s at ~1.2k
-      // elements, 207 s at ~48k nodes — pre-existing, see the plan's Deviation Log), so a
-      // byte-compare through it is infeasible above CULL_MIN_ELEMENTS. The clone-strip itself is
-      // unit-tested in canvas; here the DOM parity it relies on is proven: the live SVG with the
-      // transient attribute removed serializes byte-identically to the culling-OFF SVG.
       const view: State = { tx: -2500, ty: -1500, s: 0.8 };
-      const serialize = (strip: boolean) =>
-        page.evaluate(
-          ({ strip: st, attr }) => {
-            const v = (window as unknown as { __polytreeCullingViewer: PageViewer })
-              .__polytreeCullingViewer;
-            const layer = v.get<{ getDrawingLayer(): { node(): SVGGElement } }>('canvas');
-            const svg = layer.getDrawingLayer().node().ownerSVGElement!;
-            const clone = svg.cloneNode(true) as SVGSVGElement;
-            if (st) clone.querySelectorAll(`[${attr}]`).forEach((n) => n.removeAttribute(attr));
-            return new XMLSerializer().serializeToString(clone);
-          },
-          { strip, attr: ATTR }
+      const exportNow = () =>
+        page.evaluate(() =>
+          (
+            window as unknown as { __polytreeCullingViewer: PageViewer }
+          ).__polytreeCullingViewer.exportSVG()
         );
       await boot(page, arm, false);
       await setView(page, view);
       await settled(page);
-      const off = await serialize(false);
+      const off = await exportNow();
 
       await boot(page, arm, true);
       await setView(page, view);
       await settled(page);
-      const hidden = await page.evaluate(
+      const hiddenBefore = await page.evaluate(
         (a) => document.querySelectorAll(`g.element[${a}]`).length,
         ATTR
       );
-      expect(hidden).toBeGreaterThan(0);
-      const on = await serialize(true);
+      expect(hiddenBefore).toBeGreaterThan(0);
+      const on = await exportNow();
+      expect(on).not.toContain(ATTR + '=');
       if (on !== off) {
         let i = 0;
         while (i < on.length && on[i] === off[i]) i++;
         throw new Error(
-          `ON-minus-attr differs from OFF at ${i}: ON …${on.slice(Math.max(0, i - 60), i + 80)}… OFF …${off.slice(Math.max(0, i - 60), i + 80)}…`
+          `export differs at ${i}: ON …${on.slice(Math.max(0, i - 60), i + 80)}… OFF …${off.slice(Math.max(0, i - 60), i + 80)}…`
         );
       }
+      const hiddenAfter = await page.evaluate(
+        (a) => document.querySelectorAll(`g.element[${a}]`).length,
+        ATTR
+      );
+      expect(hiddenAfter, 'export must not touch the live DOM').toBe(hiddenBefore);
     });
 
     test('G6: the shipped CSS hides a culled element; a missing stylesheet fails open', async ({

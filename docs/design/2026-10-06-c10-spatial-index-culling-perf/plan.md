@@ -849,6 +849,8 @@ _Populated during execution. Step bodies above are immutable (DN-5); record any 
 
 - **Step 24 (2026-10-07, user decision "commit now").** `perf-budget.json` is derived from ONE pinned CI run (5 pans per arm), not ≥ 5 runs: this session cannot re-run workflows (GitHub 403). Separation held (49.9 ms vs 2 × 0.1). Budget 40 ms (ON 16.8 ms; OFF median 66.7 ms). `continue-on-error` removed from `perf.yml`; whether the job is a _required_ check is branch-protection (not in repo). Tighten the budget once more runs exist.
 
+- **Decisions after the PR2 gate (2026-10-07, user).** (a) **Free-list promoted** in `FlatIndex` (LIFO `free` stack; a removed id's slot is reused, `capacity` tracks peak live); the 3.0x vs 1.6x pinned churn reading (noise-level scans) was judged enough. (b) **`getCSSStyles` fixed in this PR** (canvas): matchers de-duplicated via a `Set` (the old `contains(selector, matchers)` guard never matched a bare selector, so every node pushed duplicates → export quadratic in DOM size: 207 s at ~48k nodes → ~5 s at ~96k nodes). **G5 is restored to the originally planned byte-compare** of `exportSVG()` ON vs OFF (+ live DOM untouched); the earlier DOM-parity reformulation is superseded. (c) Perf ceiling kept at 40 ms. (d) PR3 (Steps 26–28) next.
+
 ## Review Log
 
 **2026-10-07 — verdict: `passed-with-warnings`** (design-buddy plan-review; 3 review passes: initial FAIL, then two fix-and-re-review cycles = the cap).

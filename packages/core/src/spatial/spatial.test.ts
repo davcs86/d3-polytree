@@ -40,14 +40,15 @@ describe('FlatIndex', () => {
     }
   });
 
-  it('returns a stable slot for a live id and revives the same slot after remove', () => {
+  it('returns a stable slot for a live id; a removed slot is reused by the next new id', () => {
     const idx = new FlatIndex();
     const b = { x0: 0, y0: 0, x1: 1, y1: 1 };
     const s = idx.upsert('a', b);
     expect(idx.upsert('a', { x0: 5, y0: 5, x1: 6, y1: 6 })).toBe(s);
     idx.remove('a');
-    expect(idx.upsert('a', b)).toBe(s);
+    expect(idx.upsert('b', b)).toBe(s); // freed slot reused, no growth
     expect(idx.capacity).toBe(1);
+    expect(idx.upsert('a', b)).not.toBe(s); // the old id gets a fresh slot
   });
 
   it('skips removed slots, visits ascending, and tolerates unknown ids', () => {
@@ -79,37 +80,18 @@ describe('FlatIndex', () => {
     expect(inside).toBe(true);
   });
 
-  // Design §9 / A1: the free-list is CONDITIONAL. Capacity + scan ratio are recorded, not asserted
-  // on timing (PR1 saw 1.87x / 2.56x); a human evaluates the median against the 2x trigger.
-  it('records tombstone capacity and scan ratio under churn (non-asserting on timing)', () => {
+  it('bounds capacity under churn (free-list): capacity tracks the peak live count', () => {
     const live = 5000;
-    const rect = { x0: 0, y0: 0, x1: 10, y1: 10 };
-    const time = (idx: FlatIndex) => {
-      const t = performance.now();
-      for (let i = 0; i < 50; i++) idx.scan(rect, () => {});
-      return performance.now() - t;
-    };
-    const ratios: number[] = [];
-    let capacity = 0;
-    for (let run = 0; run < 5; run++) {
-      const base = new FlatIndex();
-      for (let i = 0; i < live; i++) base.upsert(`b${i}`, { x0: i, y0: 0, x1: i + 1, y1: 1 });
-      const churn = new FlatIndex();
-      for (let i = 0; i < live; i++) churn.upsert(`c0_${i}`, { x0: i, y0: 0, x1: i + 1, y1: 1 });
-      for (let c = 1; c <= 10; c++) {
-        for (let i = 0; i < live; i++) churn.remove(`c${c - 1}_${i}`);
-        for (let i = 0; i < live; i++)
-          churn.upsert(`c${c}_${i}`, { x0: i, y0: 0, x1: i + 1, y1: 1 });
-      }
-      capacity = churn.capacity;
-      ratios.push(time(churn) / Math.max(time(base), 1e-6));
+    const idx = new FlatIndex();
+    for (let i = 0; i < live; i++) idx.upsert(`c0_${i}`, { x0: i, y0: 0, x1: i + 1, y1: 1 });
+    for (let c = 1; c <= 10; c++) {
+      for (let i = 0; i < live; i++) idx.remove(`c${c - 1}_${i}`);
+      for (let i = 0; i < live; i++) idx.upsert(`c${c}_${i}`, { x0: i, y0: 0, x1: i + 1, y1: 1 });
     }
-    ratios.sort((a, b) => a - b);
-    console.info(
-      `[perf] free-list capacity=${capacity} live=${live} scanRatioMedian=${ratios[2].toFixed(2)}`
-    );
-    // Deterministic: 11 generations of distinct ids, tombstones never reused.
-    expect(capacity).toBe(live * 11);
+    expect(idx.capacity).toBe(live);
+    let seen = 0;
+    idx.scan({ x0: 0, y0: 0, x1: live, y1: 1 }, () => seen++);
+    expect(seen).toBe(live);
   });
 });
 

@@ -2,8 +2,9 @@ import type { Bounds, SpatialIndex } from './types';
 
 /**
  * Flat typed-array {@link SpatialIndex}: a linear scan, ascending slot order (deterministic).
- * A removed id's slot is tombstoned and revived in place on re-`upsert`; there is no free-list
- * (design §9: promoted only if the churn measurement fires).
+ * A removed id's slot goes on a LIFO free-list and is reused by the next new id, so capacity tracks
+ * the peak live count under create/delete churn (design §9, promoted by user decision after the
+ * pinned churn benchmark read 3.0x vs 1.6x). A re-`upsert` of a removed id may get a different slot.
  */
 export class FlatIndex implements SpatialIndex {
   private x0 = new Float64Array(64);
@@ -14,6 +15,7 @@ export class FlatIndex implements SpatialIndex {
   private ids: string[] = [];
   /** Lookup only — never iterated for output (PLAT-06). */
   private slots = new Map<string, number>();
+  private free: number[] = [];
 
   /** Allocated slot count (live + tombstoned). */
   get capacity(): number {
@@ -39,9 +41,15 @@ export class FlatIndex implements SpatialIndex {
   upsert(id: string, b: Bounds): number {
     let slot = this.slots.get(id);
     if (slot === undefined) {
-      slot = this.ids.length;
-      if (slot >= this.x0.length) this.grow();
-      this.ids.push(id);
+      const reused = this.free.pop();
+      if (reused !== undefined) {
+        slot = reused;
+        this.ids[slot] = id;
+      } else {
+        slot = this.ids.length;
+        if (slot >= this.x0.length) this.grow();
+        this.ids.push(id);
+      }
       this.slots.set(id, slot);
     }
     this.x0[slot] = b.x0;
@@ -54,7 +62,10 @@ export class FlatIndex implements SpatialIndex {
 
   remove(id: string): void {
     const slot = this.slots.get(id);
-    if (slot !== undefined) this.live[slot] = 0;
+    if (slot === undefined) return;
+    this.live[slot] = 0;
+    this.slots.delete(id);
+    this.free.push(slot);
   }
 
   scan(rect: Bounds, visit: (slot: number, inside: boolean) => void): void {

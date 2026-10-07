@@ -49,3 +49,27 @@ describe('getSvgString transient attribute', () => {
     expect(getSvgString(build(true).svg)).toBe(getSvgString(build(false).svg));
   });
 });
+
+describe('getSvgString with many repeated classes', () => {
+  it('still inlines only the rules whose classes are present', () => {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    for (let i = 0; i < 4000; i++) {
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'element node');
+      svg.appendChild(g);
+    }
+    const style = document.createElement('style');
+    style.textContent =
+      '.pfdjs-container .element { fill: red } .pfdjs-container .unused { fill: blue }';
+    document.head.appendChild(style);
+    document.body.appendChild(svg);
+    try {
+      const out = getSvgString(svg);
+      expect(out).toContain('fill: red');
+      expect(out).not.toContain('fill: blue');
+    } finally {
+      style.remove();
+    }
+  });
+});
