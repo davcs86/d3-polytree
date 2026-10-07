@@ -98,7 +98,7 @@ function build(): HTMLElement {
 
   const host = document.createElement('div');
   host.style.cssText =
-    'position:relative;width:600px;height:440px;border:1px solid #ddd;flex:0 0 auto';
+    'position:relative;width:600px;height:440px;border:1px solid var(--sb-frame-border);flex:0 0 auto';
 
   const logWrap = document.createElement('div');
   logWrap.style.cssText = 'flex:1 1 auto;min-width:220px;display:flex;flex-direction:column';
@@ -107,7 +107,7 @@ function build(): HTMLElement {
   logTitle.style.cssText = 'font-weight:600;margin-bottom:4px';
   const logEl = document.createElement('pre');
   logEl.style.cssText =
-    'flex:1;margin:0;padding:8px;overflow:auto;background:#0f172a;color:#e2e8f0;border-radius:6px;font-size:11px;line-height:1.5;white-space:pre-wrap';
+    'flex:1;margin:0;padding:8px;overflow:auto;background:var(--sb-log-bg);color:var(--sb-log-text);border-radius:6px;font-size:11px;line-height:1.5;white-space:pre-wrap';
   logWrap.append(logTitle, logEl);
 
   stage.append(host, logWrap);
@@ -134,7 +134,7 @@ function build(): HTMLElement {
     const b = document.createElement('button');
     b.textContent = label;
     b.style.cssText =
-      'padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;cursor:pointer';
+      'padding:6px 10px;border:1px solid var(--sb-button-border);border-radius:6px;background:var(--sb-button-bg);color:var(--sb-button-text);cursor:pointer';
     b.addEventListener('click', onClick);
     return b;
   };
