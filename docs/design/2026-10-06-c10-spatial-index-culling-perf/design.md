@@ -18,7 +18,7 @@ C10 (ROADMAP §11, closes H6) ships as **viewport culling that hides an element'
 - One CSS rule hides everything in the group except the accessible surface, in a new `packages/interactive-viewer/src/_culling.scss` (imported from `style.scss`, beside `_outline.scss` / `_focus.scss`):
   `.pfdjs-container .element[data-pfd-transient] > :not(title):not(desc) { display: none }`
 - The `<g>` itself is never `display:none`, so its `<title>`, `<desc>`, `tabindex` and focusability stay: **off-screen elements remain AT-discoverable (user decision: not waived)**. Hidden: `.innerElement`, the outline rect, the focus ring, `.resize-container` + corners, a zone's direct-child `<rect>`, and anything Outline/keyboardNav/Editor add later (no paint-target capture needed).
-- Nothing is removed: registries (`DrawingRegistry.ts:4-22`, `ElementRegistry`), `.created/.removed` events, selection (`selection.ts:127`), keyboardNav `_entries` (`keyboardNav.ts:255`), SearchPanel (`SearchPanel.ts:111`), alertIcons (`alertIcons.ts:63`), mouseEvents listeners and drag's label lookup (`drag.ts:195-209`) all stay valid (recon residency table).
+- Nothing is removed: registries (`DrawingRegistry.ts:4-22`, `ElementRegistry`), `.created/.removed` events, selection (`selection.ts:31`), keyboardNav `_entries` (`keyboardNav.ts:50`), SearchPanel (`SearchPanel.ts:111`), alertIcons (`alertIcons.ts:63`), mouseEvents listeners and drag's label lookup (`drag.ts:195-209`) all stay valid (recon residency table).
 - `visibility:hidden` and `display:none` on the whole `<g>` were rejected: both drop the element from the accessibility tree.
 - **CSS fail-open + self-check.** If the stylesheet is absent nothing hides (perf loss only). After the first hide pass, read `getComputedStyle(<first hidden child>).display`; if not `'none'`: if `document.readyState !== 'complete'` re-check on window `load` (or next rAF if already complete); a failure at/after `complete` is definitive → remove all attributes, `active=false`, `console.warn` once. Never reachable in jsdom/ssr (inert before any hide).
 
@@ -30,7 +30,7 @@ C10 (ROADMAP §11, closes H6) ships as **viewport culling that hides an element'
 
 ### 3. `Culling` feature — `packages/core/src/features/culling.ts`
 
-- Outline-shaped (`outline.ts:25-96`): `static readonly $inject = ['canvas','eventBus','d3polytree','d3polytree.definitions.settings.zoom']`; module `{ __init:['culling'], culling:['type', Culling], __depends__:[zoomModule] }` (Axes pattern, `features/index.ts:98-102`; PLAT-02).
+- Outline-shaped (`outline.ts:25-96`): `static readonly $inject = ['canvas','eventBus','d3polytree','d3polytree.definitions.settings.zoom']`; module `{ __init__:['culling'], culling:['type', Culling], __depends__:[zoomModule] }` (Axes pattern, `features/index.ts:98-102`; PLAT-02).
 - Registered in `InteractiveViewer.interactionModules` **immediately before `outlineModule`** (`interactive-viewer/src/index.ts:44-61`): ahead of the drawers (sees every boot `.created`; DI invariant 2) and ahead of Outline (reveal-before-measure). `getModules()` is unchanged, `domNotificationsModule` stays last (PLAT-01). Editor inherits via the spread (`editor/src/index.ts:182-193`); the static `Viewer`/ssr never load it.
 - Subscribes `<cls>.created/.updated/.removed/.moving`, `canvas.zoomed`, `canvas.resized`, `d3canvas.destroy`. (**No `d3canvas.clear` subscription**: it only emits, nothing is removed, resetting slots would orphan hidden `<g>`s.)
 - `.created` is an **idempotent upsert** that resets the slot to visible and binds the NEW `<g>` (undo/redo re-creates ids: `commands.ts:73-79`). `.removed` reads only `def.id` (bare `{id}`, `BaseElement.ts:99-101`; ledger c2). `.updated`/`.moving` refresh bounds and mark `slotsDirty`.
@@ -56,7 +56,7 @@ C10 (ROADMAP §11, closes H6) ships as **viewport culling that hides an element'
 
 ### 6. Palette fix (introduced bug)
 
-`BaseAddHandler._calculatePosition` (`BaseAddHandler.ts:36-52`) reads `getBoundingClientRect` of `drawingRegistry.getAll()[0]`, which is empty when that element is culled. New: `x = (cw/2 − tx)/k`, `y = (ch/2 − ty)/k` from `getSize()` + the persisted viewport. Differs from the old result by the reference element's `localLeft` ≤ ~3–4 world px (**N2, accepted**). PR2 probe: old vs new at 3 zooms × 3 pans `|Δ| ≤ 4`, and a culled `elements[0]` does not change the result.
+`BaseAddHandler._calculatePosition` (`BaseAddHandler.ts:35-52`) reads `getBoundingClientRect` of `drawingRegistry.getAll()[0]`, which is empty when that element is culled. New: `x = (cw/2 − tx)/k`, `y = (ch/2 − ty)/k` from `getSize()` + the persisted viewport. Differs from the old result by the reference element's `localLeft` ≤ ~3–4 world px (**N2, accepted**). PR2 probe: old vs new at 3 zooms × 3 pans `|Δ| ≤ 4`, and a culled `elements[0]` does not change the result.
 
 ### 7. Gates
 

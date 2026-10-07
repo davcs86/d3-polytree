@@ -17,8 +17,8 @@ pnpm + Turborepo TypeScript/ESM monorepo (`@d3-polytree/*`, D3 v7 slices as peer
 
 - **`packages/core/src/draw`** (TS)
   - Entry: `BaseElement.ts` — `_init` :160-168, `appendElement` :118-138 (emits `<cls>.created` :137), `updateElement` :140-150 (`.updated` :149), `removeElement` :84-97 (`.removed` :94 _before_ `elem.remove()` :95; by-id path passes a bare `{id}` :99-101).
-  - Registries: `DrawingRegistry.ts:4-22` (Map id→`<g>` selection), `canvas/src/ElementRegistry.ts:35-81`.
-  - Z-order by DOM insert-before per container: Zones `Zones.ts:316-324`, Links `Links.ts:182-190`, Nodes `Nodes.ts:75-83`, Labels append.
+  - Registries: `DrawingRegistry.ts:4-22` (Map id→`<g>` selection), `canvas/src/ElementRegistry.ts:13-59`.
+  - Z-order by DOM insert-before per container: Zones `Zones.ts:66`, Links `Links.ts:104`, Nodes `Nodes.ts:75-83`, Labels append.
   - Geometry **without `getBBox`** (jsdom-safe): node `position`+`size` (`definitions.ts:40-44`), link `waypoint[]` (`definitions.ts:32-37`), zone `position/width/height` (`definitions.ts:16-29`), label `position/fontSize/text` only — **no width/height in model** (`definitions.ts:9-14`).
   - Analogue: `Outline` (`features/outline.ts:25-96`).
   - Tests: `drawerTestUtils.ts` (`makeDef`, `makeServices`), `BaseElement.test.ts`, `Nodes/Links/Labels/Zones.test.ts`, `DrawingRegistry.test.ts`.
@@ -40,14 +40,14 @@ pnpm + Turborepo TypeScript/ESM monorepo (`@d3-polytree/*`, D3 v7 slices as peer
   - Boot-time routing: `model/model.ts` `loadModel` (~:61-76, `routeLinks` call ~:70) and `loadModelFromJson` (:116); `routeLinks` `linkRouting.ts:316-336` writes unconditionally, always O(L·(L+N log N)).
   - `CommandStack.ts`: `_enabled=false` boot latch :57; `_emitChanged` :291-299 payload `{canUndo,canRedo}` only (no ids); emitted also on `markSaved` :215-219 and `clear` :227-233.
   - `autoLayout.ts:54-64` → one `element.move` txn.
-- **`packages/ssr`** (TS) — `index.ts:46-74` `renderToSvg`: module-level promise chain :33,47-49, parse ×2 (`loadModel` + `importDiagram`), `new Viewer({... idGenerator})` → `viewer.exportSVG()`; jsdom add-only globals `dom.ts:95-117`; "geometrically flat" doc :35-45. Contract tests `renderToSvg.test.ts:34-68`.
+- **`packages/ssr`** (TS) — `index.ts:46-74` `renderToSvg`: module-level promise chain :33,47-49, parse ×2 (`loadModel` + `importDiagram`), `new Viewer({... idGenerator})` → `viewer.exportSVG()`; jsdom add-only globals `dom.ts:21-55`; "geometrically flat" doc :35-45. Contract tests `renderToSvg.test.ts:34-68`.
 - **`apps/storybook`** (TS)
   - `playwright/_support.ts` — `loadStories` :28-43 (carries `tags` but **never filters on them**), `gotoStory` :55-84 (reducedMotion, transitions off, fonts, 250 ms settle).
-  - `vr.spec.ts:10-18` and `a11y.spec.ts:35-65` iterate **every** story; **no opt-out exists**.
-  - Harness pattern: `InteractionHarness.stories.ts:119-157` (window `__polytreeEditor`, `__polytreeReady`); title-lookup `interactions.spec.ts:17`.
+  - `vr.spec.ts:10-18` and `a11y.spec.ts:16-47` iterate **every** story; **no opt-out exists**.
+  - Harness pattern: `InteractionHarness.stories.ts:21-57` (window `__polytreeEditor`, `__polytreeReady`); title-lookup `interactions.spec.ts:17`.
   - `playwright.config.ts`: `retries` CI 1 :107, `workers` CI 2 :108, 1 project, `trace: on-first-retry` :125, no global timeout :102-133.
-  - Fixtures: hand-written literal XML only (`src/sample.ts:87-153`); `deterministicModules()` `src/deterministic.ts:84-86`; `SequentialIdGenerator` `canvas/src/IdGenerator.ts:44-69`.
-  - Workflows: `ci.yml:3-185`, `visual-regression.yml:18-130` (build steps inlined in both; no composite action).
+  - Fixtures: hand-written literal XML only (`src/sample.ts:12-67`); `deterministicModules()` `src/deterministic.ts:18-20`; `SequentialIdGenerator` `canvas/src/IdGenerator.ts:44-67`.
+  - Workflows: `ci.yml:3-54`, `visual-regression.yml:18-130` (build steps inlined in both; no composite action).
 
 ## Patterns to REUSE
 
@@ -56,7 +56,7 @@ pnpm + Turborepo TypeScript/ESM monorepo (`@d3-polytree/*`, D3 v7 slices as peer
 - Pure, DOM-free, numerically testable geometry → reuse `core/src/route/` layout (`route/index.ts:1-8`, `route.test.ts`) and `buildModelGraph` (`core/src/model/graph.ts:23-42`).
 - Testing a `<cls>.created` listener without drawers → `bus.emit('node.created', el as unknown as DrawingSelection, def)` pattern (`outline.test.ts:38,57,70,80-85`).
 - Model-position (jsdom-safe) geometry → `keyboardNav.ts` `_center` :350-362 and `zoom.ts:174-186`.
-- Getting a programmatic handle to specs → harness pattern (`InteractionHarness.stories.ts:134-157`).
+- Getting a programmatic handle to specs → harness pattern (`InteractionHarness.stories.ts:35-57`).
 - Moddle-based programmatic model building → `moddle.create('pfdn:Node', …)` (`Nodes.ts:51-55`), `emptyModel()` (`model.ts:54-58`), `toXML`.
 - Reroute scoping seam → `commandStack` transaction contexts already carry ids (`modelling/commands.ts:226-228,102-110,37-42,268-272`).
 - Theme-/determinism-safe fixtures → `deterministicModules()` first in `modules` (SB-N04).
@@ -101,14 +101,14 @@ Conventions: `CLAUDE.md` (DI, jsdom shims, dist-not-src, README/changeset), `doc
 - Data / schema: none persisted by culling. Note `Zoom.setZoom` already persists scale/offset to the model per zoom event (`zoom.ts:94-98`) — a perf-relevant existing write.
 - External contracts: `@d3-polytree/ssr` `renderToSvg` byte-identical output (`renderToSvg.test.ts:34-68`); `Viewer.exportSVG`/PNG serialise the live DOM (`SvgExportingUtils.ts:9-23`); closed `ReboundEvent` set (`viewer/src/index.ts:30`); typed `DiagramEventMap` (`canvas/src/events.ts:118-121`); VR baselines in `apps/storybook/playwright/__screenshots__`.
 - Config / environment: no existing element-count threshold or perf config; Playwright config has no global timeout; CI `workers: 2`, `retries: 1`.
-- Cross-area edges: new core feature ↔ `selection` (stores `<g>` Map `selection.ts:127`), `keyboardNav` (`_entries` Map of `g` `keyboardNav.ts:255`), `drag` (label `<g>` via `drawingRegistry` `drag.ts:203`), `alertIcons` (`alertIcons.ts:63,70`), `SearchPanel`, `outline`/`resizeElement`, `ariaAnnouncer`, `exporting`, `ModellingLinks`.
+- Cross-area edges: new core feature ↔ `selection` (stores `<g>` Map `selection.ts:31`), `keyboardNav` (`_entries` Map of `g` `keyboardNav.ts:50`), `drag` (label `<g>` via `drawingRegistry` `drag.ts:203`), `alertIcons` (`alertIcons.ts:63,70`), `SearchPanel`, `outline`/`resizeElement`, `ariaAnnouncer`, `exporting`, `ModellingLinks`.
 
 ### Residency assumptions found (what a naive "remove culled `<g>`" would break)
 
 | Feature            | Assumption                                                                                                 | Evidence                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| selection          | caches `<g>`, sets `.selected` class; never listens to `.created/.removed`                                 | `selection.ts:127,145,151-165,200-203`       |
-| keyboardNav        | `_entries` Map of `g`; `.removed` nulls `_current`; focus needs DOM node; `_sizeRing` needs Outline's rect | `keyboardNav.ts:255,289-302,409-424,431-442` |
+| selection          | caches `<g>`, sets `.selected` class; never listens to `.created/.removed`                                 | `selection.ts:31,145,151-165,200-203`        |
+| keyboardNav        | `_entries` Map of `g`; `.removed` nulls `_current`; focus needs DOM node; `_sizeRing` needs Outline's rect | `keyboardNav.ts:50,289-302,409-424,431-442`  |
 | ariaAnnouncer      | announces every post-boot `.created`/`.removed`                                                            | `ariaAnnouncer.ts:65-77`                     |
 | outline            | label/zone `getBBox` needs rendered `<g>`                                                                  | `outline.ts:57-60`                           |
 | drag               | label `<g>` via `drawingRegistry`; missing label silently skipped → label model position **not** updated   | `drag.ts:195-209`                            |
@@ -124,8 +124,8 @@ Conventions: `CLAUDE.md` (DI, jsdom shims, dist-not-src, README/changeset), `doc
 - `loadModel`/`loadModelFromJson` always run full `routeLinks`, **including ssr and static Viewer**.
 - `SearchPanel._render` rebuilds the whole list per element event (O(N log N) each ⇒ ~O(N² log N) boot once the side-tab exists).
 - `KeyboardNav._rovingOrder`/`_move` O(N+L) per keypress; `_ensureRing` + `Outline._updateOutline` per `.updated`.
-- `Selection._unSelectAllElements` O(k²) snapshots (`selection.ts:138-149,167-171`).
-- `Drag._applyOffset` emits `.moving` per element per pointer event, unthrottled (`drag.ts:267`).
+- `Selection._unSelectAllElements` O(k²) snapshots (`selection.ts:71-77`).
+- `Drag._applyOffset` emits `.moving` per element per pointer event, unthrottled (`drag.ts:167`).
 - Boot = synchronous `forEach` over all items firing every `.created` listener (`BaseElement.ts:160-167`).
 
 ## Risks / Not-found
@@ -134,7 +134,7 @@ Not found (carried forward, DF-1 — never guessed):
 
 - Any perf/benchmark/frame-time tooling, CDP/tracing/RAF sampling, perf workflow or budget file.
 - Any numeric budget (ms/frame, fps), runner choice, or timing-noise tolerance for the "CI frame-time assertion" — ROADMAP says only "on a 10k-node fixture" (`ROADMAP.md:532`).
-- A 10k-node fixture/generator, seeded PRNG, `.pfdn` fixture files; all fixtures are literal XML (`sample.ts:87-153`).
+- A 10k-node fixture/generator, seeded PRNG, `.pfdn` fixture files; all fixtures are literal XML (`sample.ts:12-67`).
 - Any policy for culling × keyboard nav / announcer / selection / Outline / registries; whether culled elements stay in `ElementRegistry`/`DrawingRegistry`.
 - Any `<canvas>` precedent, a11y or determinism rule for a canvas overlay; ssr is SVG only.
 - A viewport rect / visible-set API on `Canvas`; `viewport`/`zoom` in `ReboundEvent`.
