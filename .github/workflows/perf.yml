@@ -1,0 +1,82 @@
+name: Perf · C10 frame-time
+
+# C10 (roadmap §11): viewport culling for large diagrams. This lane runs the Playwright `perf`
+# project (apps/storybook/playwright/perf.spec.ts) over the ~23k-element fixture in the SAME pinned
+# container as the e2e net, and publishes the numbers (CDP Task/Script/Layout/RecalcStyle durations
+# plus rAF frame deltas) to the job summary and as an artifact.
+#
+# The culling-ON arm asserts the frame-time ceiling in apps/storybook/playwright/perf-budget.json
+# (blocking; user decision: blocking from day one, separation safeguard in design §7 held).
+# Whether this job is a *required* check is a GitHub branch-protection setting, not in the repo. `perf.spec.ts` is never collected by the required e2e job (its `chromium` project
+# ignores it), so this lane cannot slow or flake `visual-regression.yml`.
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  pull_request:
+  workflow_dispatch:
+
+# Keep this image tag in lockstep with @playwright/test (apps/storybook/package.json:27) and with
+# .github/workflows/visual-regression.yml (PLAT-08): bump all three together.
+env:
+  PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.56.1-noble
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  perf:
+    name: playwright perf (pinned container)
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trust workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      # The perf spec locates the harness story through storybook-static/index.json.
+      - name: Build Storybook
+        run: pnpm build-storybook
+
+      - name: Run perf project
+        run: pnpm --filter @d3-polytree/storybook test:perf 2>&1 | tee perf.log
+
+      - name: Publish numbers to the job summary
+        if: always()
+        run: |
+          {
+            echo '### C10 perf measurements'
+            echo '```'
+            grep -E '^\[(perf|triggers|probe|lod-spike)\]' perf.log || echo '(no measurement lines found)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload perf log and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-measurements
+          path: |
+            perf.log
+            apps/storybook/playwright-report
+          retention-days: 14
+          if-no-files-found: ignore

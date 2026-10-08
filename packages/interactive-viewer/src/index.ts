@@ -15,6 +15,7 @@ import {
   axesModule,
   mouseEventsModule,
   selectionModule,
+  cullingModule,
   outlineModule,
   keyboardNavModule,
   ariaAnnouncerModule,
@@ -48,6 +49,9 @@ export class InteractiveViewer<E extends ReboundEvent = InteractiveViewerEvent> 
     axesModule as DiagramModule,
     mouseEventsModule as DiagramModule,
     selectionModule as DiagramModule,
+    // viewport culling (C10): before outline (so its label.* handlers reveal before Outline
+    // measures) and before the drawers (so it sees the initial created events)
+    cullingModule as DiagramModule,
     outlineModule as DiagramModule,
     // keyboard-first a11y (C2): roving focus + arrow-cone nav + focus ring, and
     // the aria-live announcer — both subscribe to <class>.created, so they boot

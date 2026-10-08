@@ -1,7 +1,15 @@
 import type { StorybookConfig } from '@storybook/html-vite';
 
+// The C10 culling/perf harness stories boot 3k-23k generated elements: they exist for the Playwright
+// specs (found by title, `harness-only` tag) and must not ship on the public Pages site. Storybook
+// 8.6.18 has no `--exclude-tags` build flag, so the deploy build (`build-storybook:deploy`) drops
+// those two story files by glob; the normal `build-storybook` — which e2e and VR consume — keeps them.
+const deploy = process.env.STORYBOOK_DEPLOY === '1';
+
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(ts|js)'],
+  stories: deploy
+    ? ['../src/**/!(CullingHarness|PerfHarness).stories.@(ts|js)']
+    : ['../src/**/*.stories.@(ts|js)'],
   framework: {
     name: '@storybook/html-vite',
     options: {}

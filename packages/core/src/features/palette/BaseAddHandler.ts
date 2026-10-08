@@ -1,7 +1,5 @@
-import { select } from 'd3-selection';
 import type { Canvas } from '@d3-polytree/canvas';
 import type { DrawingRegistry, Point } from '../../draw';
-import type { GroupSelection } from '@d3-polytree/canvas';
 import type { Modelling } from '../../modelling';
 import type { CreateContext } from '../../modelling/commands';
 import type { CommandStack } from '../../command';
@@ -24,31 +22,15 @@ export abstract class BaseAddHandler {
     protected readonly _commandStack: CommandStack
   ) {}
 
-  private _getElemOfReference(): GroupSelection {
-    const elements = this._drawingRegistry.getAll();
-    if (elements.length > 0) {
-      return select<SVGGElement, unknown>(elements[0].node() as SVGGElement);
-    }
-    return this._canvas.getDrawingLayer();
-  }
-
+  /**
+   * The viewport centre in world coordinates. Derived from the canvas size and transform only —
+   * never from a drawn element's rect, which is empty while that element is culled (C10).
+   */
   protected _calculatePosition(): Point {
-    const elemOfRef = this._getElemOfReference();
-    const container = this._canvas.getContainer().getBoundingClientRect();
-    const refRect = elemOfRef.node()!.getBoundingClientRect();
-    const refTransform = this._canvas.getTransform(elemOfRef);
-    const canvasTransform = this._canvas.getTransform();
-    const translateX = refTransform.e;
-    const translateY = refTransform.f;
-    const scale = canvasTransform.a || 1;
-
-    return {
-      x:
-        (-1.0 * (refRect.left - translateX * scale - (container.left + container.width / 2))) /
-        scale,
-      y:
-        (-1.0 * (refRect.top - translateY * scale - (container.top + container.height / 2))) / scale
-    };
+    const { width, height } = this._canvas.getSize();
+    const t = this._canvas.getTransform();
+    const k = t.a || 1;
+    return { x: (width / 2 - t.e) / k, y: (height / 2 - t.f) / k };
   }
 
   protected _create(parameters: CreateParameters): ModellingModelElement {

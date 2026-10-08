@@ -18,14 +18,19 @@ interface StorybookIndex {
   >;
 }
 
+/** Stories tagged with this are fixtures for dedicated specs, not VR/a11y subjects. */
+export const HARNESS_TAG = 'harness-only';
+
 /**
  * Enumerate every renderable story from the built `storybook-static/index.json`.
  *
  * Read synchronously at collection time so each story becomes its own test. The
  * static build must exist first (`pnpm build-storybook`); a missing index is a
- * hard error rather than an empty, silently-passing suite.
+ * hard error rather than an empty, silently-passing suite. Stories tagged
+ * {@link HARNESS_TAG} are excluded unless `includeHarness` is set, so the VR and a11y
+ * sweeps never screenshot or axe-scan the large perf/culling fixtures.
  */
-export function loadStories(): StoryEntry[] {
+export function loadStories(opts: { includeHarness?: boolean } = {}): StoryEntry[] {
   const indexPath = join(__dirname, '..', 'storybook-static', 'index.json');
   let raw: string;
   try {
@@ -38,13 +43,26 @@ export function loadStories(): StoryEntry[] {
   const index = JSON.parse(raw) as StorybookIndex;
   return Object.values(index.entries)
     .filter((e) => e.type === 'story')
+    .filter((e) => opts.includeHarness || !(e.tags ?? []).includes(HARNESS_TAG))
     .map((e) => ({ id: e.id, title: e.title, name: e.name, tags: e.tags ?? [] }))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-/** The URL of a story rendered in isolation (no Storybook chrome). */
-export function iframeUrl(id: string): string {
-  return `/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`;
+/** Story args selectable per load via the iframe URL (`&args=key:value;key:value`). */
+export type StoryArgs = Record<string, string | number | boolean>;
+
+/**
+ * The URL of a story rendered in isolation (no Storybook chrome). `args` must be declared in
+ * the story's `argTypes`; booleans use Storybook's `!true`/`!false` URL encoding.
+ */
+export function iframeUrl(id: string, args?: StoryArgs): string {
+  const base = `/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`;
+  const entries = Object.entries(args ?? {});
+  if (entries.length === 0) return base;
+  const encoded = entries
+    .map(([k, v]) => `${k}:${typeof v === 'boolean' ? (v ? '!true' : '!false') : String(v)}`)
+    .join(';');
+  return `${base}&args=${encoded}`;
 }
 
 /**
@@ -55,12 +73,18 @@ export function iframeUrl(id: string): string {
 export async function gotoStory(
   page: Page,
   id: string,
-  media: { colorScheme?: 'light' | 'dark'; forcedColors?: 'none' | 'active' } = {}
+  media: {
+    colorScheme?: 'light' | 'dark';
+    forcedColors?: 'none' | 'active';
+    /** Defaults to 'reduce'; G1b needs 'no-preference' so zoom tweens actually run. */
+    reducedMotion?: 'reduce' | 'no-preference';
+  } = {},
+  args?: StoryArgs
 ): Promise<void> {
   // Merge with the always-on reducedMotion; omitted keys are left unchanged, so
   // existing light baselines are unaffected when colorScheme/forcedColors are omitted.
   await page.emulateMedia({ reducedMotion: 'reduce', ...media });
-  await page.goto(iframeUrl(id), { waitUntil: 'networkidle' });
+  await page.goto(iframeUrl(id, args), { waitUntil: 'networkidle' });
   // Kill transitions/animations so a snapshot never catches an in-flight frame.
   await page.addStyleTag({
     content:

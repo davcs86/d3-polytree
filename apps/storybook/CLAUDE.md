@@ -23,7 +23,7 @@ The dev harness / visual-regression baseline / docs site — private, never publ
 Changesets**.
 
 - `@storybook/html-vite` (the components are framework-free DOM/SVG). Stories are `src/**/*.stories.@(ts|js)`.
-- Shared `.pfdn` fixtures live in `src/sample.ts`; the **`Guides/Kitchensink`** story is the worked
+- Shared `.pfdn` fixtures live in `src/sample.ts` (hand-written XML); the seeded, generated large fixtures for the C10 culling/perf work live in `src/perf/` (`fixture.data.ts` is Node-safe pure data, `fixture.xml.ts` builds the XML through moddle, `harness.ts` mounts the stories); the **`Guides/Kitchensink`** story is the worked
   example of the extension seams (custom feature module, custom node-type drawer, programmatic API).
 - Stories import the components' **compiled** CSS (`@d3-polytree/interactive-viewer/style.css`,
   `@d3-polytree/editor/style.css`), so the packages must be built first.
@@ -34,7 +34,8 @@ Changesets**.
 
 `playwright/` holds the Playwright suite that gates on more than "it builds": **visual regression**
 (`vr.spec.ts`), **accessibility** (`a11y.spec.ts`, axe-core), and **live interaction**
-(`interactions.spec.ts`, real selection + command-stack undo/redo). It runs against the _static_
+(`interactions.spec.ts`, real selection + command-stack undo/redo); plus the C10 specs: `harness-filter.spec.ts`,
+`fixture.spec.ts` and `culling-probes.spec.ts` run in the same job, and `perf.spec.ts` runs only under `PERF=1`. It runs against the _static_
 `storybook-static` build, so `pnpm build && pnpm build-storybook` must run first (`playwright.config.ts`
 serves it with `http-server`).
 
@@ -51,6 +52,12 @@ serves it with `http-server`).
   ids currently known to fire (empty today); a new one fails the build. Refresh with
   `pnpm --filter @d3-polytree/storybook test:e2e:update-a11y` (C2 will shrink it toward empty).
 - The `Tests/Interaction Harness` story is fixture-only (`tags: ['!autodocs']`) — it parks a live
-  `Editor` on `window` for the interaction spec.
+  `Editor` on `window` for the interaction spec. The C10 `Tests/Culling Harness` (~10.6k elements) and
+  `Tests/Perf Harness` (~23k) stories are tagged `harness-only`: `loadStories()` omits them so VR/a11y never
+  screenshot or axe-scan them (specs opt in with `loadStories({ includeHarness: true })`); arms are chosen
+  per load with `&args=culling:!false;viewer:editor` (declare args in `argTypes`; booleans are `!true`/`!false`).
+  `pnpm build-storybook:deploy` (Pages) drops them via `STORYBOOK_DEPLOY=1`-gated globs — Storybook 8.6.18 has
+  no `--exclude-tags`.
 - `test:e2e` runs it all; it is deliberately **not** wired into `turbo run test` (which stays a fast,
-  browserless unit lane) — the e2e net is its own CI job.
+  browserless unit lane) — the e2e net is its own CI job. The perf lane is separate again (`test:perf`: `PERF=1`, serial,
+  `.github/workflows/perf.yml`); the required `chromium` project ignores `perf.spec.ts`. The culling-ON arm asserts the ceiling in `playwright/perf-budget.json` (blocking; derived from a pinned CI run — see `measurements.md` §8).

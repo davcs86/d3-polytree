@@ -143,6 +143,10 @@ export abstract class BaseElement {
       return;
     }
     element.datum(definition);
+    // Keep the accessible name in step with the definition (C10: culled elements stay AT-discoverable).
+    const name = this._accessibleName(definition);
+    const title = element.selectChild('title');
+    if (!title.empty() && title.text() !== name) title.text(name);
     this._updateElement(element, definition);
     this._drawingRegistry.set(definition.id as string, element);
     this._elements.set(definition.id as string, definition);

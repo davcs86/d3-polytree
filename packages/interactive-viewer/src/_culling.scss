@@ -1,0 +1,10 @@
+// Viewport culling (C10). The Culling feature marks an off-screen element's `<g>` with
+// `data-pfd-transient="culled"`; this rule hides everything inside it except the accessible
+// <title>/<desc>, so the `<g>` itself — its AX name, focusability and DOM position — survives.
+// Fail-open contract: without this stylesheet nothing is hidden (Culling self-checks the computed
+// style after its first hide and disables itself if the rule is missing).
+.pfdjs-container {
+  .element[data-pfd-transient] > :not(title):not(desc) {
+    display: none;
+  }
+}

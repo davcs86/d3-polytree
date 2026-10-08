@@ -98,6 +98,7 @@ if (validate(doc).ok) {
 | `zoomModule`, `zoomScrollModule`, `axesModule`, `backgroundColorModule`, `mouseEventsModule` | didi module | Pan/zoom, scroll zoom, grid, background, and the DOM-to-bus mouse-event bridge.                                                                     |
 | `selectionModule` / `Selection`                                                              | didi module | Selection tracking; emits `selection.changed`. A Ctrl (Windows/Linux) or Cmd (macOS) click adds to the selection, a plain click replaces it.        |
 | `AdditiveModifiers`                                                                          | type        | `{ ctrlKey?, metaKey? }` — the modifier keys `Selection.select(element, definition, event?)` reads to add rather than replace.                      |
+| `cullingModule` / `Culling`                                                                  | didi module | Viewport culling for large diagrams (default on, inert below `CULL_MIN_ELEMENTS` = 5,000 drawn elements). Compose it before the drawers.            |
 | `outlineModule`, `dragModule`, `resizeElementModule`, `autoLayoutModule`, `paletteModule`    | didi module | Selection outline, dragging, resize handles, auto-layout, and the palette (toolbar + add-handlers + link tool).                                     |
 | `keyboardNavModule` / `KeyboardNav`                                                          | didi module | Keyboard-first navigation: roving focus moved by arrow-key direction, a per-element focus ring, and an Escape hatch. Compose it before the drawers. |
 | `ariaAnnouncerModule` / `AriaAnnouncer`                                                      | didi module | Announces selection and post-boot create/remove events through a visually hidden `aria-live="polite"` region.                                       |
@@ -130,6 +131,15 @@ rethrown.
 | `avoidObstacles(waypoints, obstacles, excludeIds)` | function | Pure obstacle-avoidance router (roadmap C4): nudges a four-point elbow's mid-channel around node boxes; other shapes are returned unchanged. |
 | `segmentIntersectsObstacle`                        | function | The segment-vs-box test the router uses.                                                                                                     |
 | `RoutePoint`, `Obstacle`                           | type     | `{ x, y }` and `{ id, x, y, size }`.                                                                                                         |
+
+### Spatial index
+
+| Export                                         | Kind         | Description                                                                                                    |
+| ---------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| `FlatIndex`, `SpatialIndex`                    | class / type | A pure, DOM-free rectangle index (`upsert` / `remove` / `scan`) behind a seam so a quadtree can replace it.    |
+| `elementBounds(kind, def)`                     | function     | Conservative painted bounds of a node / link / zone / label in world units (always-visible when input is bad). |
+| `CULL_MIN_ELEMENTS`, `CULL_PAD`, `HIDE_BUDGET` | const        | Culling activation threshold, viewport pad (world px) and per-frame hide budget.                               |
+| `Bounds`                                       | type         | `{ x0, y0, x1, y1 }`.                                                                                          |
 
 The package also exports a broad set of TypeScript types (`DiagramModule`, `DiagramEventMap`,
 `CreateParameters`, `DrawingRegistry`, `LayoutOptions`, …) and re-exports the layout runners

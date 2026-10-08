@@ -25,7 +25,7 @@ The base SVG surface every higher package builds on — no engine logic here.
   `canvas.destroy` on the **injected eventBus** (a caller-provided `eventemitter3`). `d3-selection` is a
   **peer** dep.
 - `ElementRegistry` (ids via `ids`) owns the element store; `ElementBuilder` assigns an id then runs a
-  builder callback. `getSvgString` inlines applicable CSS for a standalone SVG export.
+  builder callback. `getSvgString` inlines applicable CSS for a standalone SVG export, serializing a **clone** with every `TRANSIENT_ATTR` (`data-pfd-transient`, written by core's viewport culling) stripped — the live node keeps it. Selector matchers are de-duplicated in O(1) (a former `contains()` guard never matched, making export quadratic in DOM size).
 - The **jsdom `transform.baseVal` identity fallback** lives in `Canvas.getTransform` — intentional, not
   a bug. Keep it.
 - History was preserved from the standalone `d3-canvas` fork when it was absorbed (B2); `git blame`

@@ -38,6 +38,9 @@ Also ships a self-contained **UMD** bundle (`dist/interactive-viewer.umd.js`, gl
   `selectionModule`, `outlineModule`).
 - **Side tabs + search panel** — a folded-in tab host and a searchable index of the diagram's
   elements.
+- **Viewport culling** (`cullingModule`) — on large diagrams (≥ 5,000 drawn elements) elements outside
+  the viewport are hidden so panning stays smooth; each element keeps its accessible name and focusability.
+  Disable with `culling: false`. `data-pfd-culling-idle` on the container reads `"true"` once culling has settled.
 - **Keyboard navigation** (`keyboardNavModule`) — the diagram `<svg>` is a labelled tab stop with
   `role="application"`; the arrow keys move a focus ring (and the selection) to the nearest element in
   that direction, and <kbd>Esc</kbd> leaves the diagram so <kbd>Tab</kbd> follows normal page order.
@@ -71,7 +74,8 @@ import {
 
 Import `@d3-polytree/interactive-viewer/style.css` to style the side-tabs + search chrome. Panel chrome
 is themed with `--pfd-color-*` CSS custom properties and follows `prefers-color-scheme`; force a scheme
-per instance with a `data-pfd-theme="light|dark"` attribute.
+per instance with a `data-pfd-theme="light|dark"` attribute. The stylesheet also carries the one rule that hides a
+culled element; without it culling warns once and turns itself off.
 
 ## API
 

@@ -5,6 +5,7 @@ import { ZoomScroll } from './zoomScroll';
 import { BackgroundColor } from './backgroundColor';
 import { Axes } from './axes';
 import { Outline } from './outline';
+import { Culling } from './culling';
 import { Drag } from './drag';
 import { Exporting } from './exporting';
 import { LocalStorage } from './localStorage';
@@ -32,6 +33,8 @@ export { ZoomScroll } from './zoomScroll';
 export { BackgroundColor } from './backgroundColor';
 export { Axes } from './axes';
 export { Outline } from './outline';
+export { Culling } from './culling';
+export type { CullingInspect } from './culling';
 export { Drag } from './drag';
 export { Exporting } from './exporting';
 export type { ExportFormat, ExportHost } from './exporting';
@@ -98,6 +101,16 @@ export const backgroundColorModule = {
 export const axesModule = {
   __init__: ['axes'],
   axes: ['type', Axes],
+  __depends__: [zoomModule]
+};
+
+/**
+ * didi module for viewport culling (C10). Registered by the interactive components
+ * BEFORE the drawer modules so its `created` listeners see the initial elements.
+ */
+export const cullingModule = {
+  __init__: ['culling'],
+  culling: ['type', Culling],
   __depends__: [zoomModule]
 };
 

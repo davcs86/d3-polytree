@@ -5,12 +5,14 @@
   "description": "Storybook dev harness, visual-regression baseline and docs site for @d3-polytree/*",
   "scripts": {
     "build-storybook": "storybook build --disable-telemetry",
+    "build-storybook:deploy": "STORYBOOK_DEPLOY=1 storybook build --disable-telemetry",
     "storybook": "storybook dev -p 6006 --disable-telemetry",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:update-snapshots": "playwright test --update-snapshots",
     "test:e2e:seed-missing": "playwright test --update-snapshots=missing",
-    "test:e2e:update-a11y": "UPDATE_A11Y=1 playwright test a11y --workers=1"
+    "test:e2e:update-a11y": "UPDATE_A11Y=1 playwright test a11y --workers=1",
+    "test:perf": "PERF=1 playwright test --project=perf"
   },
   "dependencies": {
     "@d3-polytree/canvas": "workspace:*",

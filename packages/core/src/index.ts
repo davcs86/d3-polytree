@@ -31,6 +31,7 @@ export type { Descriptored } from './utils/localName';
 export * from './features';
 export * from './modelling';
 export * from './route';
+export * from './spatial';
 export * from './command';
 export * from './Diagram';
 export * from './model/model';

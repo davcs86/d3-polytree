@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { emptyModel } from '@d3-polytree/core';
+import {
+  emptyModel,
+  cullingModule,
+  zoomModule,
+  outlineModule,
+  keyboardNavModule
+} from '@d3-polytree/core';
 import { Viewer } from '@d3-polytree/viewer';
 import { InteractiveViewer } from './index';
+import { domNotificationsModule } from './notifications';
 
 /** Build a `.pfdn` document with a single node via the core moddle. */
 function oneNodeDiagram(): string {
@@ -23,6 +30,18 @@ describe('@d3-polytree/interactive-viewer', () => {
     const viewer = new InteractiveViewer();
     expect(viewer).toBeInstanceOf(Viewer);
     expect(viewer.getModules().length).toBeGreaterThan(Viewer.modules.length);
+  });
+
+  it('registers culling after zoom, before outline/keyboardNav and the drawers; notifications last', () => {
+    const mods = new InteractiveViewer().getModules();
+    const at = (m: unknown) => mods.indexOf(m as never);
+    expect(at(cullingModule)).toBeGreaterThan(at(zoomModule));
+    expect(at(cullingModule)).toBeLessThan(at(outlineModule));
+    expect(at(cullingModule)).toBeLessThan(at(keyboardNavModule));
+    // before the first drawer module, so it sees the initial created events
+    expect(at(cullingModule)).toBeLessThan(at(Viewer.modules[0]));
+    // the DOM notifications module stays last
+    expect(mods[mods.length - 1]).toBe(domNotificationsModule);
   });
 
   it('renders an imported node with its selection outline attached', async () => {
