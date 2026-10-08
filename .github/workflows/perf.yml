@@ -66,7 +66,7 @@ jobs:
           {
             echo '### C10 perf measurements'
             echo '```'
-            grep -E '^\[(perf|triggers|probe)\]' perf.log || echo '(no measurement lines found)'
+            grep -E '^\[(perf|triggers|probe|lod-spike)\]' perf.log || echo '(no measurement lines found)'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

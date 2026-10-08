@@ -30,7 +30,7 @@ Order follows the approved delivery sequence (design.md "Delivery order"): **(A)
 
 ### Step 1 — Durable spikes `lod-spikes.spec.ts` (S0-1…S0-7, record-only)
 
-**Status**: `pending`
+**Status**: `done` (spec + CI wiring landed; local unpinned run recorded, pinned ≥5 runs pending for Step 2)
 **Files**:
 
 - `apps/storybook/playwright/lod-spikes.spec.ts` — create

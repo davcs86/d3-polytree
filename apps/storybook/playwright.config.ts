@@ -51,14 +51,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /perf\.spec\.ts/,
+      testIgnore: /(perf|lod-spikes)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] }
     },
     ...(PERF
       ? [
           {
             name: 'perf',
-            testMatch: /perf\.spec\.ts/,
+            testMatch: /(perf|lod-spikes)\.spec\.ts/,
             // Booting ~23k elements with listeners takes seconds; the 30 s default is too tight.
             timeout: 180_000,
             // A timing gate that retries masks regressions.
