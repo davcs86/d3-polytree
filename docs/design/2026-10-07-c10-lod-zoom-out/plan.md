@@ -58,7 +58,7 @@ The spec is the measurement (record-only); its trace assertions that are determi
 
 ### Step 2 — Record `lod-measurements.md` and the go/no-go
 
-**Status**: `pending`
+**Status**: `done` (Go, conditional; n=3 pinned — see `lod-measurements.md`)
 **Files**:
 
 - `docs/design/2026-10-07-c10-lod-zoom-out/lod-measurements.md` — create
