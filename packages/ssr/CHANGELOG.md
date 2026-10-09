@@ -1,5 +1,14 @@
 # @d3-polytree/ssr
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [9924ed2]
+  - @d3-polytree/canvas@0.4.0
+  - @d3-polytree/core@0.8.0
+  - @d3-polytree/viewer@0.5.0
+
 ## 0.3.1
 
 ### Patch Changes

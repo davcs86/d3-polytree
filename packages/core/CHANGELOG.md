@@ -1,5 +1,16 @@
 # @d3-polytree/core
 
+## 0.8.0
+
+### Minor Changes
+
+- 9924ed2: Viewport culling for large diagrams (roadmap C10). Diagrams with at least 5,000 drawn elements now hide elements outside the viewport (default on; opt out with `culling: false`), so panning and zooming stay smooth. Culled elements keep their `<g>`, accessible name and focusability, and exports never contain the transient `data-pfd-transient` attribute. Also: a node's accessible `<title>` now refreshes when the element is updated, and the palette places new elements at the viewport centre instead of relative to the first drawn element.
+
+### Patch Changes
+
+- Updated dependencies [9924ed2]
+  - @d3-polytree/canvas@0.4.0
+
 ## 0.7.0
 
 ### Minor Changes
