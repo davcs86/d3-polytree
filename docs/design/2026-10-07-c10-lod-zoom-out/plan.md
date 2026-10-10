@@ -81,7 +81,7 @@ N/A (measurement record).
 
 ### Step 3 — LOD constants in `spatial/types.ts`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/spatial/types.ts` — modify
@@ -105,7 +105,7 @@ Append `LOD_NODE_PX = 25`, `MIN_LEGIBLE_PX = 4`, `LOD_SCALE_ON = MIN_LEGIBLE_PX 
 
 ### Step 4 — Per-slot kind/flags/cleanup and the `hold` predicate in `Culling`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -129,7 +129,7 @@ Extend `culling.test.ts`: kind recorded per class; a removed id's slot is reused
 
 ### Step 5 — Trigger, synchronous exit, pass changes, observability
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -155,7 +155,7 @@ Extend `culling.test.ts` (rAF stub, manual `zoom.start/zoom.end/canvas.zoomed` e
 
 ### Step 6 — Exemptions: selection, focus, fresh
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -180,7 +180,7 @@ Extend `culling.test.ts`: selected in-view node stays painted under ON and its o
 
 ### Step 7 — Harness-only `lod` kill switch (story arg)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/src/perf/harness.ts` — modify
@@ -205,7 +205,7 @@ Covered by Step 9's LOD-forced-off state (the arg is meaningless without a consu
 
 ### Step 8 — Editor property test extension
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/editor/src/culling.property.test.ts` — modify
@@ -228,7 +228,7 @@ The file is the test; run a mutation check and record it in the Deviation Log: s
 
 ### Step 9 — Playwright correctness gates for LOD
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/culling.spec.ts` — modify
@@ -368,6 +368,17 @@ N/A (docs/changeset-only).
 ## Deviation Log
 
 _Populated during execution. Step bodies above are immutable (DN-5) once execution starts; record any divergence here with the step number, what changed, and why._
+
+**Steps 3–9 (executed as one unit, 2026-10-10)**
+
+- **Step 4/5 — no `_holdBacklog` field.** The plan named a `_holdBacklog` member; the frame computes `holdBacklog` locally and derives `data-pfd-lod` (`entering`/`on`/`off`) from it each frame, so a stored field was dead state (it also tripped `noUnusedLocals`). Behaviour is as specified.
+- **Step 4 — slot reset on create.** `_onCreated` clears slot state only for a _new_ id (`existed === false`); a re-`created` event for a live id keeps its flags/exemptions. `_onRemoved` clears too, so a reused slot is clean either way (belt and braces; see the Step 8 mutation note).
+- **Step 5 — test setter not needed.** The Step-4 `__setLod` test hook was never added: the Step-4/5 tests drive LOD through real `zoom.start`/`canvas.zoomed`/`zoom.end` emits instead.
+- **Step 8 — mutation checks** (editor property test, 12 seeds × 25 ops, ≈140 s): dropping the OFF flip in `_onZoomed` ⇒ `sync exit left link_319 hidden` (seeds 4 and 9). Skipping only the `_clearSlotState` call in `_onRemoved` ⇒ **not** caught, because `_onCreated` independently clears a reused slot (the redundant clear masks it); removing **both** clears ⇒ `ghost exemption node_429` (seed 12). The ghost-exemption oracle is therefore live; the removal-time clear is defence in depth, not independently testable by this oracle.
+- **Step 9 — legacy gates pinned to `lod:false`.** `boot()` takes `lod` (default `false`) so G1–G7 keep their strict "nothing in view is hidden" oracle; the new `C10 zoom-out LOD` describe boots `lod:true` and uses `wronglyHeld`. Both arms.
+- **Step 9 — arrow-nav assertion.** `KeyboardNav` has no roving focus when a test calls `g.focus()` directly, so the first arrow enters at the first element in roving order (far outside the viewport). The test now asserts the focused held node is painted and the arrow target is _exempt_, not that it is painted in view. A real roving-focus path is covered by the Step-8 property op.
+- **Step 9 — mutation checks** (Playwright, interactive arm): `_hold` ignoring links ⇒ `in-view nodes/links still painted under LOD`; skipping the OFF branch ⇒ `in-view elements still hidden right after the exit` (single-evaluate assertion).
+- **Step 9 — tween test** keeps zoomable on for the whole d3 transition (turning it off mid-tween makes the zoom handler drop events); pass condition unchanged.
 
 ---
 
