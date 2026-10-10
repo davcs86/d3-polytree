@@ -12,7 +12,8 @@ import { Outline } from './outline';
 vi.mock('../spatial/types', async (orig) => ({
   ...(await orig<typeof import('../spatial/types')>()),
   CULL_MIN_ELEMENTS: 20,
-  HIDE_BUDGET: 5
+  HIDE_BUDGET: 5,
+  LOD_EXEMPT_CAP: 3
 }));
 
 const BUDGET = 5;
@@ -38,7 +39,9 @@ function flushAll(max = 200): void {
   for (let i = 0; i < max && flushFrame(); i++);
 }
 
-function setup(opts: { culling?: boolean; zoom?: Zoom | undefined; size?: [number, number] } = {}) {
+function setup(
+  opts: { culling?: boolean; lod?: boolean; zoom?: Zoom | undefined; size?: [number, number] } = {}
+) {
   const bus = new EventEmitter<DiagramEventMap>();
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -51,7 +54,12 @@ function setup(opts: { culling?: boolean; zoom?: Zoom | undefined; size?: [numbe
   const culling = new Culling(
     canvas,
     bus,
-    { options: opts.culling === undefined ? {} : { culling: opts.culling } },
+    {
+      options: {
+        ...(opts.culling === undefined ? {} : { culling: opts.culling }),
+        ...(opts.lod === undefined ? {} : { lod: opts.lod })
+      }
+    },
     zoom as never
   );
   return { bus, container, canvas, zoom: zoom as Zoom, culling };
@@ -498,5 +506,352 @@ describe('Culling — label reveal-before-measure and CSS self-check (slice D)',
     flushAll();
     expect(culledIds(culling).length).toBeGreaterThan(0);
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Zoom-out LOD (plan Steps 4–6)
+// ---------------------------------------------------------------------------------------------
+
+const LOD = 'data-pfd-lod';
+const CAP = 3;
+
+/** One real zoom gesture: start → scale change → end (what d3-zoom emits). */
+function gesture(zoom: Zoom, bus: Bus, scale: number): void {
+  bus.emit('zoom.start');
+  zoom.scale = scale;
+  bus.emit('canvas.zoomed');
+  bus.emit('zoom.end');
+}
+
+function addLink(bus: Bus, id: string, x: number, y = 0): SVGGElement {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'element');
+  g.append(
+    document.createElementNS('http://www.w3.org/2000/svg', 'title'),
+    document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  );
+  document.body.appendChild(g);
+  const def = {
+    id,
+    waypoint: [
+      { x, y },
+      { x: x + 50, y }
+    ],
+    lineWidth: 1
+  } as unknown as ModellingModelElement;
+  bus.emit('link.created', { node: () => g } as unknown as DrawingSelection, def);
+  return g;
+}
+
+function addOther(bus: Bus, cls: 'label' | 'zone', id: string, x: number): SVGGElement {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'element');
+  g.append(document.createElementNS('http://www.w3.org/2000/svg', 'title'));
+  document.body.appendChild(g);
+  const def =
+    cls === 'label'
+      ? { id, position: { x, y: 0 }, text: 'T', fontSize: 12 }
+      : { id, position: { x, y: 0 }, width: 40, height: 40 };
+  bus.emit(`${cls}.created`, { node: () => g } as unknown as DrawingSelection, def as never);
+  return g;
+}
+
+function select_(bus: Bus, culling: Culling, ids: string[]): void {
+  void culling;
+  const snap = ids.map((id) => ({ element: {} as never, definition: { id } as never }));
+  bus.emit('selection.changed', [], snap);
+}
+
+function info(c: Culling, id: string) {
+  return c.inspect().slots.find((s) => s.id === id)!;
+}
+
+describe('Culling — LOD slot state (Step 4)', () => {
+  it('records the element class per slot and exposes exempt/hold', () => {
+    const { bus, culling } = setup();
+    addNode(bus, 'n', 0);
+    addLink(bus, 'l', 0);
+    addOther(bus, 'label', 'lb', 0);
+    addOther(bus, 'zone', 'z', 0);
+    const kinds = Object.fromEntries(culling.inspect().slots.map((x) => [x.id, x.kind]));
+    expect(kinds).toEqual({ n: 'node', l: 'link', lb: 'label', z: 'zone' });
+    expect(culling.inspect().slots.every((x) => !x.exempt && !x.hold)).toBe(true);
+  });
+
+  it('a removed id’s slot is reused with the NEW kind and clean flags', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    select_(bus, culling, ['n0']);
+    expect(info(culling, 'n0').exempt).toBe(true);
+    bus.emit('node.removed', {} as never, { id: 'n0' } as never);
+    addOther(bus, 'label', 'fresh', 0); // takes n0's slot (LIFO)
+    const s = info(culling, 'fresh');
+    expect(s.kind).toBe('label');
+    expect(s.exempt).toBe(false);
+    expect(s.hold).toBe(false);
+  });
+
+  it('removed with a bare { id } clears LOD state without throwing', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    select_(bus, culling, ['n1']);
+    expect(() => bus.emit('node.removed', {} as never, { id: 'n1' } as never)).not.toThrow();
+    expect(culling.inspect().slots.find((x) => x.id === 'n1')).toBeUndefined();
+  });
+});
+
+describe('Culling — LOD trigger, drain and synchronous exit (Step 5)', () => {
+  it('turns ON only after the gesture ends, never mid-gesture', () => {
+    const { bus, culling, zoom, container } = setup();
+    addRow(bus, 30);
+    flushAll();
+    bus.emit('zoom.start');
+    zoom.scale = 0.1;
+    bus.emit('canvas.zoomed');
+    flushAll();
+    expect(container.getAttribute(LOD)).toBe('off');
+    expect(culling.inspect().slots.some((x) => x.hold)).toBe(false);
+    bus.emit('zoom.end');
+    flushAll();
+    expect(container.getAttribute(LOD)).toBe('on');
+  });
+
+  it('a programmatic zoom (canvas.zoomed only, no start/end) also arms LOD', () => {
+    const { bus, zoom, container } = setup();
+    addRow(bus, 30);
+    zoom.scale = 0.1;
+    bus.emit('canvas.zoomed');
+    flushAll();
+    expect(container.getAttribute(LOD)).toBe('on');
+  });
+
+  it('holds in-view nodes and links in ≤ HIDE_BUDGET batches, entering → on', () => {
+    const { bus, culling, zoom, container } = setup();
+    addRow(bus, 30);
+    for (let i = 0; i < 6; i++) addLink(bus, `l${i}`, i * 100);
+    flushAll();
+    gesture(zoom, bus, 0.1);
+    expect(container.getAttribute('data-pfd-culling-idle')).toBe('false');
+    flushFrame();
+    expect(container.getAttribute(LOD)).toBe('entering');
+    expect(culledIds(culling).length).toBeLessThanOrEqual(BUDGET * 2);
+    flushAll();
+    expect(container.getAttribute(LOD)).toBe('on');
+    expect(container.getAttribute('data-pfd-culling-idle')).toBe('true');
+    expect(culling.inspect().stats.maxHides).toBeLessThanOrEqual(BUDGET);
+    const held = culling.inspect().slots.filter((x) => x.hold);
+    expect(held).toHaveLength(36);
+    expect(held.every((x) => x.culled)).toBe(true);
+  });
+
+  it('labels and zones are never held', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    addOther(bus, 'label', 'lb', 100);
+    addOther(bus, 'zone', 'z', 100);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    expect(info(culling, 'lb').culled).toBe(false);
+    expect(info(culling, 'z').culled).toBe(false);
+    expect(info(culling, 'n3').culled).toBe(true);
+  });
+
+  it('a pan while ON does not reveal a held in-view node', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    pan(zoom, bus, -100);
+    flushAll();
+    expect(info(culling, 'n3').culled).toBe(true);
+  });
+
+  it('exit is synchronous: crossing above S_OFF reveals every in-view node with no flush', () => {
+    const { bus, culling, zoom, container } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    zoom.scale = 0.5;
+    bus.emit('canvas.zoomed'); // programmatic: no flush after this
+    // scale 0.5 → viewport 1600 wide → n0..n15 in view
+    for (let i = 0; i <= 15; i++) expect(info(culling, `n${i}`).culled).toBe(false);
+    expect(container.getAttribute(LOD)).toBe('off');
+  });
+
+  it('exit is synchronous in the inert window too (below the activation threshold)', () => {
+    const { bus, culling, zoom, container } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    expect(culledIds(culling).length).toBe(30);
+    for (let i = 0; i < 12; i++) bus.emit('node.removed', {} as never, { id: `n${i}` } as never);
+    // 18 < CULL_MIN_ELEMENTS(20): inert
+    zoom.scale = 0.5;
+    bus.emit('canvas.zoomed');
+    expect(culledIds(culling)).toEqual([]);
+    expect(container.hasAttribute(LOD)).toBe(false);
+  });
+
+  it('hysteresis: between S_ON and S_OFF the state is sticky both ways', () => {
+    const { bus, zoom, container } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.18); // never entered: stays off
+    flushAll();
+    expect(container.getAttribute(LOD)).toBe('off');
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    expect(container.getAttribute(LOD)).toBe('on');
+    gesture(zoom, bus, 0.18); // inside the band: stays on
+    flushAll();
+    expect(container.getAttribute(LOD)).toBe('on');
+    gesture(zoom, bus, 0.21);
+    expect(container.getAttribute(LOD)).toBe('off');
+  });
+
+  it('options.lod === false and culling === false keep LOD off', () => {
+    const a = setup({ lod: false });
+    addRow(a.bus, 30);
+    gesture(a.zoom, a.bus, 0.1);
+    flushAll();
+    expect(a.container.getAttribute(LOD)).toBe('off');
+    expect(culledIds(a.culling)).toEqual([]);
+    const b = setup({ culling: false });
+    addRow(b.bus, 30);
+    gesture(b.zoom, b.bus, 0.1);
+    flushAll();
+    expect(b.container.hasAttribute(LOD)).toBe(false);
+  });
+
+  it('destroy removes the attributes and the listeners', () => {
+    const { bus, container, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    expect(container.hasAttribute(LOD)).toBe(true);
+    bus.emit('d3canvas.destroy');
+    expect(container.hasAttribute(LOD)).toBe(false);
+    expect(container.hasAttribute('data-pfd-culling-idle')).toBe(false);
+  });
+});
+
+describe('Culling — LOD exemptions (Step 6)', () => {
+  it('a selected in-view node stays painted under LOD; deselecting re-holds it next frame', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    expect(info(culling, 'n2').culled).toBe(true);
+    select_(bus, culling, ['n2']); // synchronous reveal, no flush
+    expect(info(culling, 'n2').culled).toBe(false);
+    flushAll();
+    expect(info(culling, 'n2').culled).toBe(false);
+    select_(bus, culling, []);
+    flushAll();
+    expect(info(culling, 'n2').culled).toBe(true);
+  });
+
+  it('unknown / bare snapshot entries are ignored', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    expect(() =>
+      bus.emit('selection.changed', [], [
+        undefined,
+        { definition: {} },
+        { definition: { id: 'zz' } }
+      ] as never)
+    ).not.toThrow();
+    expect(culling.inspect().slots.some((x) => x.exempt)).toBe(false);
+  });
+
+  it('first-N sticky admission in ascending slot order; newcomers do not evict', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    select_(bus, culling, ['n5', 'n3', 'n1', 'n2', 'n4']); // 5 wanted, cap 3 → n1,n2,n3
+    flushAll();
+    const exempt = () =>
+      culling
+        .inspect()
+        .slots.filter((x) => x.exempt)
+        .map((x) => x.id);
+    expect(exempt()).toEqual(['n1', 'n2', 'n3']);
+    select_(bus, culling, ['n0', 'n1', 'n2', 'n3']); // n0 is lower but n1..n3 are sticky
+    expect(exempt()).toEqual(['n1', 'n2', 'n3']);
+    select_(bus, culling, ['n0', 'n1', 'n2']); // n3 released → room → n0 promoted
+    expect(exempt()).toEqual(['n0', 'n1', 'n2']);
+  });
+
+  it('select-all over the cap leaves exactly cap painted and LOD stays on', () => {
+    const { bus, culling, zoom, container } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    select_(
+      bus,
+      culling,
+      Array.from({ length: 30 }, (_, i) => `n${i}`)
+    );
+    flushAll();
+    expect(culling.inspect().slots.filter((x) => !x.culled)).toHaveLength(CAP);
+    expect(container.getAttribute(LOD)).toBe('on');
+  });
+
+  it('focus exempts the focused element and releases it on focusout', () => {
+    const { bus, culling, zoom, container } = setup();
+    const gs = addRow(bus, 30);
+    gs.forEach((g, i) => {
+      g.setAttribute('element-id', `n${i}`);
+      container.append(g); // focus events bubble to the container listener
+    });
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    gs[4].dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    expect(info(culling, 'n4').culled).toBe(false);
+    expect(info(culling, 'n4').exempt).toBe(true);
+    gs[6].dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    expect(info(culling, 'n4').exempt).toBe(false);
+    expect(info(culling, 'n6').exempt).toBe(true);
+    gs[6].dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    flushAll();
+    expect(info(culling, 'n6').exempt).toBe(false);
+    expect(info(culling, 'n6').culled).toBe(true);
+  });
+
+  it('an element created while ON stays painted until the viewport changes', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    addNode(bus, 'new', 300);
+    flushAll();
+    expect(info(culling, 'new').culled).toBe(false);
+    expect(info(culling, 'new').exempt).toBe(true);
+    pan(zoom, bus, -10);
+    flushAll();
+    expect(info(culling, 'new').exempt).toBe(false);
+    expect(info(culling, 'new').culled).toBe(true);
+  });
+
+  it('a reused slot never inherits SEL/FOCUS/FRESH from its previous element', () => {
+    const { bus, culling, zoom } = setup();
+    addRow(bus, 30);
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    addNode(bus, 'f', 300); // fresh
+    select_(bus, culling, ['f']);
+    expect(info(culling, 'f').exempt).toBe(true);
+    bus.emit('node.removed', {} as never, { id: 'f' } as never);
+    addNode(bus, 'g', 500); // reuses f's slot; created while ON ⇒ fresh, but NOT selected
+    select_(bus, culling, []);
+    pan(zoom, bus, -5);
+    flushAll();
+    expect(info(culling, 'g').exempt).toBe(false);
+    expect(info(culling, 'g').culled).toBe(true);
   });
 });

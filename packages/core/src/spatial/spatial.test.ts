@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { FlatIndex } from './FlatIndex';
 import { elementBounds } from './elementBounds';
-import { CULL_MIN_ELEMENTS, CULL_PAD, HIDE_BUDGET, type Bounds } from './types';
+import {
+  CULL_MIN_ELEMENTS,
+  CULL_PAD,
+  HIDE_BUDGET,
+  LOD_CLICK_TOL_PX,
+  LOD_EXEMPT_CAP,
+  LOD_NODE_PX,
+  LOD_SCALE_OFF,
+  LOD_SCALE_ON,
+  MIN_LEGIBLE_PX,
+  type Bounds
+} from './types';
 
 function mulberry32(a: number): () => number {
   return () => {
@@ -157,5 +168,15 @@ describe('culling constants', () => {
     expect(CULL_MIN_ELEMENTS).toBe(5000);
     expect(CULL_PAD).toBe(7);
     expect(HIDE_BUDGET).toBe(300);
+  });
+
+  it('LOD constants equal the recorded values (change ⇒ update lod-measurements.md)', () => {
+    expect(LOD_NODE_PX).toBe(25);
+    expect(MIN_LEGIBLE_PX).toBe(4);
+    expect(LOD_SCALE_ON).toBeCloseTo(0.16, 10);
+    expect(LOD_SCALE_OFF).toBeCloseTo(0.2, 10);
+    expect(LOD_SCALE_OFF).toBeGreaterThan(LOD_SCALE_ON);
+    expect(LOD_EXEMPT_CAP).toBe(200);
+    expect(LOD_CLICK_TOL_PX).toBe(4);
   });
 });
