@@ -250,7 +250,7 @@ The spec is the test; mutation check recorded in the Deviation Log: temporarily 
 
 ### Step 10 — Perf arms and the pinned go/no-go for the real mechanism
 
-**Status**: `pending`
+**Status**: `done` (go recorded at n=4 pinned runs; budgets pending the 5th)
 **Files**:
 
 - `apps/storybook/playwright/perf.spec.ts` — modify
