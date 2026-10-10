@@ -45,11 +45,13 @@ Plan Step 2 asks for ≥ 5 pinned runs; n = 3 exist and the session cannot dispa
 
 ## Step 10 — the real mechanism, pinned
 
-Source: `perf.spec.ts` › `C10 perf (zoom-out LOD)` in the pinned `perf.yml` container; **n = 4 completed runs so far**
+Source: `perf.spec.ts` › `C10 perf (zoom-out LOD)` in the pinned `perf.yml` container; **n = 6 completed runs**
 ([41](https://github.com/davcs86/d3-polytree/actions/runs/38073121507),
 [42](https://github.com/davcs86/d3-polytree/actions/runs/38073124013),
 [45](https://github.com/davcs86/d3-polytree/actions/runs/38074570796),
-[46](https://github.com/davcs86/d3-polytree/actions/runs/38074574463)); runs 43/44 were cancelled by the next push. Fixture: 23,040 elements,
+[46](https://github.com/davcs86/d3-polytree/actions/runs/38074574463),
+[47](https://github.com/davcs86/d3-polytree/actions/runs/38075507197),
+[48](https://github.com/davcs86/d3-polytree/actions/runs/38075509324)); runs 43/44 were cancelled by the next push. Fixture: 23,040 elements,
 interactive arm, scale 0.1, 5 pans per arm per run. The baseline is the **same build** with the `@internal` `lod:false` switch.
 
 | Run | LOD p95 median (min–max) | no-LOD p95 median (min–max) | Separation | Ratio | Enter long task / worst frame | Sync exit long task / worst frame |
@@ -71,4 +73,4 @@ Culling-only (LOD not applicable at scale 1) is unchanged at 16.8 ms in the same
 
 ### Go / No-go for merging the LOD arm: **GO**
 
-The safeguard passes in every run, the pinned fit-all LOD p95 is ≥ 2× better than no-LOD in every run (7.9–8.9×), and no correctness gate regressed. Budgets (`fitAllPan`, `lodCrossing` in `perf-budget.json`) stay **record-only until ≥ 5 pinned runs exist**; with n = 4 the plan's rule is not yet satisfied and this section is updated when it is.
+The safeguard passes in every run (6.9–8.9× better than no-LOD), and no correctness gate regressed. With n = 6 the plan's ≥ 5 rule is met, so the budgets are now set in `perf-budget.json`: `fitAllPan.budgetMs` = **50.1 ms** (ceil-to-frame of 1.5 × the worst pinned LOD p95, 33.3 ms) asserted together with the separation safeguard, and `lodCrossing.budgetMs` = **1052 ms** (1.5 × the worst pinned frame, 700 ms) as a regression ceiling. Neither is a smoothness goal: the enter long task (≈ 350–440 ms) is a known limitation recorded above.
