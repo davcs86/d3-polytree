@@ -1,5 +1,20 @@
 # @d3-polytree/interactive-viewer
 
+## 0.8.0
+
+### Minor Changes
+
+- 9924ed2: Viewport culling for large diagrams (roadmap C10). Diagrams with at least 5,000 drawn elements now hide elements outside the viewport (default on; opt out with `culling: false`), so panning and zooming stay smooth (zoomed far out, nodes and links are also hidden — see the zoom-out LOD changeset). Culled elements keep their `<g>`, accessible name and focusability, and exports never contain the transient `data-pfd-transient` attribute. Also: a node's accessible `<title>` now refreshes when the element is updated, and the palette places new elements at the viewport centre instead of relative to the first drawn element.
+
+### Patch Changes
+
+- 60c88d5: Zoom-out level of detail for large diagrams (roadmap C10). On a diagram with at least 5,000 drawn elements, zooming out to a scale of 0.16 or less hides nodes and links (labels and zones stay painted) and leaving that range restores them synchronously; it follows the `culling` option (`culling: false` disables both). At fit-all the settled pan frame time drops from ≈150 ms to ≈17–33 ms on the 23k-element perf fixture. Clicks and double-clicks on hidden elements are resolved through the spatial index, so selection still works; hover, drag and resize need a painted element, so zoom in first. Selected (first 200), focused and just-created elements stay painted. `@d3-polytree/core` also exports the provisional `LOD_*` constants and sets a `data-pfd-lod` attribute on the container.
+- Updated dependencies [60c88d5]
+- Updated dependencies [9924ed2]
+  - @d3-polytree/core@0.8.0
+  - @d3-polytree/viewer@0.5.0
+  - @d3-polytree/canvas@0.4.0
+
 ## 0.7.2
 
 ### Patch Changes
