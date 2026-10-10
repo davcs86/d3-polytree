@@ -93,19 +93,19 @@ if (validate(doc).ok) {
 
 ### Features
 
-| Export                                                                                       | Kind        | Description                                                                                                                                         |
-| -------------------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zoomModule`, `zoomScrollModule`, `axesModule`, `backgroundColorModule`, `mouseEventsModule` | didi module | Pan/zoom, scroll zoom, grid, background, and the DOM-to-bus mouse-event bridge.                                                                     |
-| `selectionModule` / `Selection`                                                              | didi module | Selection tracking; emits `selection.changed`. A Ctrl (Windows/Linux) or Cmd (macOS) click adds to the selection, a plain click replaces it.        |
-| `AdditiveModifiers`                                                                          | type        | `{ ctrlKey?, metaKey? }` — the modifier keys `Selection.select(element, definition, event?)` reads to add rather than replace.                      |
-| `cullingModule` / `Culling`                                                                  | didi module | Viewport culling for large diagrams (default on, inert below `CULL_MIN_ELEMENTS` = 5,000 drawn elements). Compose it before the drawers.            |
-| `outlineModule`, `dragModule`, `resizeElementModule`, `autoLayoutModule`, `paletteModule`    | didi module | Selection outline, dragging, resize handles, auto-layout, and the palette (toolbar + add-handlers + link tool).                                     |
-| `keyboardNavModule` / `KeyboardNav`                                                          | didi module | Keyboard-first navigation: roving focus moved by arrow-key direction, a per-element focus ring, and an Escape hatch. Compose it before the drawers. |
-| `ariaAnnouncerModule` / `AriaAnnouncer`                                                      | didi module | Announces selection and post-boot create/remove events through a visually hidden `aria-live="polite"` region.                                       |
-| `exportingModule` / `Exporting`                                                              | didi module | `trigger(format)` downloads the diagram. `trigger('png')` rejects if the SVG cannot be rendered.                                                    |
-| `ExportFormat`                                                                               | type        | `'pfdn' \| 'svg' \| 'png'`.                                                                                                                         |
-| `uploadModule` / `Upload`                                                                    | didi module | Opens a `.pfdn` file from disk. A file that fails to import is reported through the `notifications` service, and the current diagram stays open.    |
-| `localStorageModule` / `LocalStorage`, `readSavedDiagram()`                                  | didi module | Browser persistence (`save()`, `restore()`).                                                                                                        |
+| Export                                                                                       | Kind        | Description                                                                                                                                                         |
+| -------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zoomModule`, `zoomScrollModule`, `axesModule`, `backgroundColorModule`, `mouseEventsModule` | didi module | Pan/zoom, scroll zoom, grid, background, and the DOM-to-bus mouse-event bridge.                                                                                     |
+| `selectionModule` / `Selection`                                                              | didi module | Selection tracking; emits `selection.changed`. A Ctrl (Windows/Linux) or Cmd (macOS) click adds to the selection, a plain click replaces it.                        |
+| `AdditiveModifiers`                                                                          | type        | `{ ctrlKey?, metaKey? }` — the modifier keys `Selection.select(element, definition, event?)` reads to add rather than replace.                                      |
+| `cullingModule` / `Culling`                                                                  | didi module | Viewport culling for large diagrams (default on, inert below `CULL_MIN_ELEMENTS` = 5,000 drawn elements), plus zoom-out LOD (below). Compose it before the drawers. |
+| `outlineModule`, `dragModule`, `resizeElementModule`, `autoLayoutModule`, `paletteModule`    | didi module | Selection outline, dragging, resize handles, auto-layout, and the palette (toolbar + add-handlers + link tool).                                                     |
+| `keyboardNavModule` / `KeyboardNav`                                                          | didi module | Keyboard-first navigation: roving focus moved by arrow-key direction, a per-element focus ring, and an Escape hatch. Compose it before the drawers.                 |
+| `ariaAnnouncerModule` / `AriaAnnouncer`                                                      | didi module | Announces selection and post-boot create/remove events through a visually hidden `aria-live="polite"` region.                                                       |
+| `exportingModule` / `Exporting`                                                              | didi module | `trigger(format)` downloads the diagram. `trigger('png')` rejects if the SVG cannot be rendered.                                                                    |
+| `ExportFormat`                                                                               | type        | `'pfdn' \| 'svg' \| 'png'`.                                                                                                                                         |
+| `uploadModule` / `Upload`                                                                    | didi module | Opens a `.pfdn` file from disk. A file that fails to import is reported through the `notifications` service, and the current diagram stays open.                    |
+| `localStorageModule` / `LocalStorage`, `readSavedDiagram()`                                  | didi module | Browser persistence (`save()`, `restore()`).                                                                                                                        |
 
 ### Commands (undo/redo)
 
@@ -134,12 +134,37 @@ rethrown.
 
 ### Spatial index
 
-| Export                                         | Kind         | Description                                                                                                    |
-| ---------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
-| `FlatIndex`, `SpatialIndex`                    | class / type | A pure, DOM-free rectangle index (`upsert` / `remove` / `scan`) behind a seam so a quadtree can replace it.    |
-| `elementBounds(kind, def)`                     | function     | Conservative painted bounds of a node / link / zone / label in world units (always-visible when input is bad). |
-| `CULL_MIN_ELEMENTS`, `CULL_PAD`, `HIDE_BUDGET` | const        | Culling activation threshold, viewport pad (world px) and per-frame hide budget.                               |
-| `Bounds`                                       | type         | `{ x0, y0, x1, y1 }`.                                                                                          |
+| Export                                                                                                 | Kind         | Description                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `FlatIndex`, `SpatialIndex`                                                                            | class / type | A pure, DOM-free rectangle index (`upsert` / `remove` / `scan`) behind a seam so a quadtree can replace it.                                                        |
+| `elementBounds(kind, def)`                                                                             | function     | Conservative painted bounds of a node / link / zone / label in world units (always-visible when input is bad).                                                     |
+| `CULL_MIN_ELEMENTS`, `CULL_PAD`, `HIDE_BUDGET`                                                         | const        | Culling activation threshold, viewport pad (world px) and per-frame hide budget.                                                                                   |
+| `LOD_SCALE_ON`, `LOD_SCALE_OFF`, `LOD_EXEMPT_CAP`, `LOD_CLICK_TOL_PX`, `LOD_NODE_PX`, `MIN_LEGIBLE_PX` | const        | Zoom-out LOD thresholds (0.16 on / 0.20 off), the selection-exemption cap (200), the click tolerance (px) and the inputs they derive from. Provisional; see below. |
+| `Bounds`                                                                                               | type         | `{ x0, y0, x1, y1 }`.                                                                                                                                              |
+
+#### Zoom-out LOD
+
+On a diagram large enough for culling to be active, zooming out to a scale of **0.16 or less** (a node
+narrower than ~4 screen pixels) turns on _level of detail_: **nodes and links are hidden** (their
+paint only; the `<g>`, accessible name and focusability stay, exactly as for culled elements) while
+**labels and zones stay painted**. It turns off again above **0.20** — the gap is hysteresis, so the
+band does not flicker. There is no option or mode for it: it is a state of the culling feature, and
+`culling: false` disables it too.
+
+- The container carries `data-pfd-lod` (`off` → `entering` while the budgeted hide pass drains → `on`)
+  alongside `data-pfd-culling-idle`.
+- **Entering is budgeted** (`HIDE_BUDGET` writes per frame); **leaving is synchronous**: zooming in
+  never shows a hidden element late, at the price of one frame of work proportional to the elements in
+  view (≈ 0.1–0.4 s at a fit-all of ~20k elements).
+- A fit-all view therefore shows topology only through labels and zones. Hover, drag, resize handles,
+  the context menu and link-tool picking need a painted element, so they work again once you zoom in.
+  **Click and double-click are resolved through the spatial index** (nearest hidden node, else hidden
+  link within 4 px), so selection still works at fit-all; touch double-tap zooms natively.
+- Elements that are **selected** (the first 200, in a stable order), **focused**, or **just created**
+  stay painted. Incident links of a selected node are not exempted.
+- The thresholds are provisional measured values (`docs/design/2026-10-07-c10-lod-zoom-out/`), tuned for
+  the default node size of 25; a diagram of much larger nodes would want a lower threshold. A manual
+  assistive-technology pass over LOD is still outstanding.
 
 The package also exports a broad set of TypeScript types (`DiagramModule`, `DiagramEventMap`,
 `CreateParameters`, `DrawingRegistry`, `LayoutOptions`, …) and re-exports the layout runners

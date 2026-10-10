@@ -328,7 +328,7 @@ The specs are the tests; mutation check recorded in the Deviation Log: remove `m
 
 ### Step 13 — Docs, changesets, ledger note, ROADMAP
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/README.md` — modify
