@@ -126,6 +126,8 @@ async function taskMs(cdp: CDPSession): Promise<number> {
 }
 
 test.describe('C10 LOD spikes (record-only)', () => {
+  // Recorded in lod-measurements.md; re-run on demand with LOD_SPIKES=1 (adds ~7 min to the lane).
+  test.skip(!process.env.LOD_SPIKES, 'set LOD_SPIKES=1 to re-run the step-0 spikes');
   test.setTimeout(420_000);
 
   test('S0-1 zoom event trace per zoom path', async ({ page }) => {
