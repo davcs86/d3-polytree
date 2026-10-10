@@ -58,7 +58,7 @@ The spec is the measurement (record-only); its trace assertions that are determi
 
 ### Step 2 — Record `lod-measurements.md` and the go/no-go
 
-**Status**: `pending`
+**Status**: `done` (Go, conditional; n=3 pinned — see `lod-measurements.md`)
 **Files**:
 
 - `docs/design/2026-10-07-c10-lod-zoom-out/lod-measurements.md` — create
@@ -81,7 +81,7 @@ N/A (measurement record).
 
 ### Step 3 — LOD constants in `spatial/types.ts`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/spatial/types.ts` — modify
@@ -105,7 +105,7 @@ Append `LOD_NODE_PX = 25`, `MIN_LEGIBLE_PX = 4`, `LOD_SCALE_ON = MIN_LEGIBLE_PX 
 
 ### Step 4 — Per-slot kind/flags/cleanup and the `hold` predicate in `Culling`
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -129,7 +129,7 @@ Extend `culling.test.ts`: kind recorded per class; a removed id's slot is reused
 
 ### Step 5 — Trigger, synchronous exit, pass changes, observability
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -155,7 +155,7 @@ Extend `culling.test.ts` (rAF stub, manual `zoom.start/zoom.end/canvas.zoomed` e
 
 ### Step 6 — Exemptions: selection, focus, fresh
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -180,7 +180,7 @@ Extend `culling.test.ts`: selected in-view node stays painted under ON and its o
 
 ### Step 7 — Harness-only `lod` kill switch (story arg)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/src/perf/harness.ts` — modify
@@ -205,7 +205,7 @@ Covered by Step 9's LOD-forced-off state (the arg is meaningless without a consu
 
 ### Step 8 — Editor property test extension
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/editor/src/culling.property.test.ts` — modify
@@ -228,7 +228,7 @@ The file is the test; run a mutation check and record it in the Deviation Log: s
 
 ### Step 9 — Playwright correctness gates for LOD
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/culling.spec.ts` — modify
@@ -250,7 +250,7 @@ The spec is the test; mutation check recorded in the Deviation Log: temporarily 
 
 ### Step 10 — Perf arms and the pinned go/no-go for the real mechanism
 
-**Status**: `pending`
+**Status**: `done` (go + budgets recorded at n=6 pinned runs)
 **Files**:
 
 - `apps/storybook/playwright/perf.spec.ts` — modify
@@ -276,7 +276,7 @@ With non-null budgets the spec asserts them; verify it fails against the `lod:fa
 
 ### Step 11 — Click/dblclick resolver (`_onPointer`) with mark-and-skip
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -304,7 +304,7 @@ In `zoom.ts` add an exported module-level `const resolvedEvents = new WeakSet<Ev
 
 ### Step 12 — Resolver gates (Playwright + property test)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/culling.spec.ts` — modify
@@ -328,7 +328,7 @@ The specs are the tests; mutation check recorded in the Deviation Log: remove `m
 
 ### Step 13 — Docs, changesets, ledger note, ROADMAP
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/README.md` — modify
@@ -368,6 +368,25 @@ N/A (docs/changeset-only).
 ## Deviation Log
 
 _Populated during execution. Step bodies above are immutable (DN-5) once execution starts; record any divergence here with the step number, what changed, and why._
+
+**Steps 3–9 (executed as one unit, 2026-10-10)**
+
+- **Step 4/5 — no `_holdBacklog` field.** The plan named a `_holdBacklog` member; the frame computes `holdBacklog` locally and derives `data-pfd-lod` (`entering`/`on`/`off`) from it each frame, so a stored field was dead state (it also tripped `noUnusedLocals`). Behaviour is as specified.
+- **Step 4 — slot reset on create.** `_onCreated` clears slot state only for a _new_ id (`existed === false`); a re-`created` event for a live id keeps its flags/exemptions. `_onRemoved` clears too, so a reused slot is clean either way (belt and braces; see the Step 8 mutation note).
+- **Step 5 — test setter not needed.** The Step-4 `__setLod` test hook was never added: the Step-4/5 tests drive LOD through real `zoom.start`/`canvas.zoomed`/`zoom.end` emits instead.
+- **Step 8 — mutation checks** (editor property test, 12 seeds × 25 ops, ≈140 s): dropping the OFF flip in `_onZoomed` ⇒ `sync exit left link_319 hidden` (seeds 4 and 9). Skipping only the `_clearSlotState` call in `_onRemoved` ⇒ **not** caught, because `_onCreated` independently clears a reused slot (the redundant clear masks it); removing **both** clears ⇒ `ghost exemption node_429` (seed 12). The ghost-exemption oracle is therefore live; the removal-time clear is defence in depth, not independently testable by this oracle.
+- **Step 9 — legacy gates pinned to `lod:false`.** `boot()` takes `lod` (default `false`) so G1–G7 keep their strict "nothing in view is hidden" oracle; the new `C10 zoom-out LOD` describe boots `lod:true` and uses `wronglyHeld`. Both arms.
+- **Step 9 — arrow-nav assertion.** `KeyboardNav` has no roving focus when a test calls `g.focus()` directly, so the first arrow enters at the first element in roving order (far outside the viewport). The test now asserts the focused held node is painted and the arrow target is _exempt_, not that it is painted in view. A real roving-focus path is covered by the Step-8 property op.
+- **Step 9 — mutation checks** (Playwright, interactive arm): `_hold` ignoring links ⇒ `in-view nodes/links still painted under LOD`; skipping the OFF branch ⇒ `in-view elements still hidden right after the exit` (single-evaluate assertion).
+- **Step 9 — tween test** keeps zoomable on for the whole d3 transition (turning it off mid-tween makes the zoom handler drop events); pass condition unchanged.
+
+**Steps 10–12 (2026-10-10)**
+
+- **Step 10 ordering.** The plan puts the pinned real-mechanism go/no-go _before_ the resolver (Steps 11–12). The session cannot re-dispatch workflows, and a push produces two `perf.yml` runs (push + PR), so the Step 10 commit was pushed first to start accumulating pinned runs and Steps 11–12 were developed on the same unmerged branch while they ran. Nothing is merged before the go/no-go is recorded in `lod-measurements.md`; if it came back No-go, Steps 11–12 would be dropped with it. First local (unpinned) read: LOD fit-all pan p95 median 33.3 ms vs 233.4 ms without LOD (7×), crossing enter ≈ 470 ms, exit ≈ 120 ms.
+- **Step 11 — `resolvedEvents.ts`.** The `WeakSet` and `markResolved` live in a new `features/resolvedEvents.ts` (with `isResolved`), not in `zoom.ts`, because a second consumer appeared: `MouseEvents`' per-element listeners also skip a resolved event. Without it, a click on a painted **zone** that the resolver turned into a click on the hidden node under it was _also_ delivered natively as `zone.click`, replacing the selection with the zone (found by the Step-12 Playwright case). Resolved events are therefore not delivered twice; nothing stops propagation, and `dblclick.zoom` still runs.
+- **Step 11 — dblclick test.** d3-zoom swallows a handled `dblclick` with `preventDefault` + a 250 ms transition, so the unit test asserts `defaultPrevented` (d3's handler ran); the Playwright case asserts the transform really changes (zoomable enabled, as for a real user).
+- **Step 12 — editor arm has axes.** The editor draws axis/grid `line`/`path` elements over the canvas, outside the zoom group, so (pre-existing, not LOD) a click on one is not a drawing-layer click. The "background click" and "visible label" cases therefore pick a spot whose `elementFromPoint` is the drawing area / the label itself.
+- **Step 12 — mutation checks.** Removing `markResolved` ⇒ `no background.click` assertion fails (selection cleared). Inverting the node ranking ⇒ the new unit case `ranks overlapping candidates by distance to the centre, not by slot` fails; the property-test op did **not** catch it (grid nodes 130 apart never overlap within tolerance), so ranking is covered by the unit test only. Pick-order (label-first/zone-transparent) is covered by the Playwright zone/label cases and the unit tests.
 
 ---
 

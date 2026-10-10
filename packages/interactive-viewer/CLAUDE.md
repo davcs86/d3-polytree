@@ -25,7 +25,7 @@ notifications override stays **last** so it wins the `notifications` token.
 
 - `interactionModules` = backgroundColor, zoom, zoomScroll, axes, mouseEvents, selection, **culling**,
   outline, keyboardNav, ariaAnnouncer, then the folded **sideTabs** + **searchPanel** modules. `culling`
-  must stay after `zoom` (it reads the persisted zoom settings) and before `outline` and the drawers.
+  must stay after `zoom` (it reads the persisted zoom settings) and before `outline` and the drawers. It also owns zoom-out LOD and the LOD click resolver, which listens on the container in capture, so keep it ahead of the element listeners.
 - The former `@d3-polytree/side-tabs` and `@d3-polytree/search-panel` packages are **folded in** here
   under `src/side-tabs/` and `src/search-panel/` (decision O10) and re-exported from `index.ts`
   (`sideTabsModule`, `searchPanelModule`, …). Their tests moved with them.

@@ -9,6 +9,7 @@ import { getLocalName } from '../utils/localName';
 import type { CalculateCenter } from '../utils/calculateCenter';
 import type { Point } from '../draw';
 import type { ModellingModelElement } from '../modelling/types';
+import { isResolved } from './resolvedEvents';
 
 /** Zoom limits: min/max scale. */
 const SCALE_EXTENT: [number, number] = [0.1, 15];
@@ -149,6 +150,7 @@ export class Zoom {
       .on('end', () => this._eventBus.emit('zoom.end'));
 
     drawingLayer.on('click', (event: Event) => {
+      if (isResolved(event)) return;
       // Only a click on empty canvas clears the selection. A click that lands on
       // a drawn element (its `.element` group or its `.element-outline`) — even on
       // an inner `<use>`/`<rect>` that bubbles up here — must not, or selecting a

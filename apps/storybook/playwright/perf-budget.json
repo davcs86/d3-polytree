@@ -1,14 +1,63 @@
 {
   "metric": "pan frame-delta p95 (ms), culling ON, interactive arm, 23,040-element fixture; max over 5 pans",
   "budgetMs": 40,
-  "margin": "≈2.4x the pinned ON result (16.8 ms); allows 2 frames at 60 Hz, rejects 3; below the OFF median p95 (66.7 ms)",
+  "margin": "\u22482.4x the pinned ON result (16.8 ms); allows 2 frames at 60 Hz, rejects 3; below the OFF median p95 (66.7 ms)",
   "provenance": {
     "image": "mcr.microsoft.com/playwright:v1.56.1-noble (perf.yml)",
     "commit": "4748b68cd8b52a9034188ee24804da03d507f35c",
     "runs": 1,
     "pansPerRun": 5,
-    "on": { "median": 16.8, "min": 16.7, "max": 16.8, "spread": 0.1 },
-    "off": { "median": 66.7, "min": 66.7, "max": 83.3 },
+    "on": {
+      "median": 16.8,
+      "min": 16.7,
+      "max": 16.8,
+      "spread": 0.1
+    },
+    "off": {
+      "median": 66.7,
+      "min": 66.7,
+      "max": 83.3
+    },
     "note": "n=1 CI run by user decision (plan Step 24); re-derive from more runs and tighten when available"
+  },
+  "fitAllPan": {
+    "metric": "pan frame-delta p95 (ms), LOD ON, interactive arm, 23,040-element fixture at scale 0.1; max over 5 pans",
+    "budgetMs": 50.1,
+    "margin": "ceil-to-frame(1.5 x 33.3 ms, the worst LOD pan p95 in 30 pinned pans) = 3 frames at 60 Hz; the no-LOD median p95 is 117-150 ms",
+    "provenance": {
+      "image": "mcr.microsoft.com/playwright:v1.56.1-noble (perf.yml)",
+      "runs": 6,
+      "runIds": [38073121507, 38073124013, 38074570796, 38074574463, 38075507197, 38075509324],
+      "pansPerRun": 5,
+      "lod": {
+        "median": 16.8,
+        "max": 33.3,
+        "spread": 16.6
+      },
+      "nolod": {
+        "median": "116.6-150.0",
+        "max": 166.6
+      },
+      "separation": "99.8-133.2 ms vs 2 x spread <= 33.2 ms",
+      "note": "set from n=6 pinned runs (plan Step 10); the safeguard off-median - on-max >= 2 x on-spread is asserted alongside"
+    }
+  },
+  "lodCrossing": {
+    "metric": "worst rAF delta (ms) across the enter (1 -> 0.1) and the synchronous exit (0.1 -> 1), 23,040-element fixture",
+    "budgetMs": 1052,
+    "margin": "ceil-to-frame(1.5 x 700 ms, the worst frame in 6 pinned runs); a regression ceiling, not a smoothness goal - enter is a ~350-440 ms long task by design",
+    "provenance": {
+      "image": "mcr.microsoft.com/playwright:v1.56.1-noble (perf.yml)",
+      "runs": 6,
+      "enter": {
+        "longTaskMs": "351-436",
+        "worstFrameMs": "567-700"
+      },
+      "exit": {
+        "longTaskMs": "96-121",
+        "worstFrameMs": "133-183"
+      },
+      "note": "set from n=6 pinned runs (plan Step 10)"
+    }
   }
 }

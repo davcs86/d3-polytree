@@ -41,6 +41,9 @@ Also ships a self-contained **UMD** bundle (`dist/interactive-viewer.umd.js`, gl
 - **Viewport culling** (`cullingModule`) — on large diagrams (≥ 5,000 drawn elements) elements outside
   the viewport are hidden so panning stays smooth; each element keeps its accessible name and focusability.
   Disable with `culling: false`. `data-pfd-culling-idle` on the container reads `"true"` once culling has settled.
+  Zoomed out to a scale of 0.16 or less, **nodes and links are hidden** too (labels and zones stay painted) and
+  `data-pfd-lod` reads `on`; clicks and double-clicks on hidden elements are still resolved, but hover, drag and
+  resize need you to zoom in. `culling: false` turns this off as well.
 - **Keyboard navigation** (`keyboardNavModule`) — the diagram `<svg>` is a labelled tab stop with
   `role="application"`; the arrow keys move a focus ring (and the selection) to the nearest element in
   that direction, and <kbd>Esc</kbd> leaves the diagram so <kbd>Tab</kbd> follows normal page order.

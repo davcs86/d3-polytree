@@ -1,5 +1,12 @@
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
-import { CULL_PAD, HIDE_BUDGET, elementBounds, CULL_MIN_ELEMENTS } from '@d3-polytree/core';
+import {
+  CULL_PAD,
+  HIDE_BUDGET,
+  LOD_EXEMPT_CAP,
+  LOD_SCALE_OFF,
+  elementBounds,
+  CULL_MIN_ELEMENTS
+} from '@d3-polytree/core';
 import { gotoStory, loadStories } from './_support';
 import { SMALL, drawnElementCount, generateFixtureSpec } from '../src/perf/fixture.data';
 
@@ -15,6 +22,10 @@ import { SMALL, drawnElementCount, generateFixtureSpec } from '../src/perf/fixtu
  *  G5  exportSVG is byte-identical ON vs OFF
  *  G6  the shipped CSS really hides a culled element; a missing stylesheet fails open with one warn
  *  G7  jitter cost across a pad boundary (RECORD-ONLY; fails only on a wrongly-culled element)
+ *
+ * Gates G1–G7 above run with the zoom-out LOD kill switch OFF (`lod:false`): their oracle is the
+ * strict "nothing in view is hidden" rule, which LOD deliberately breaks for nodes/links. The
+ * "LOD" describe at the bottom re-runs the relevant gates with LOD ON against `wronglyHeld`.
  */
 
 const TITLE = 'Tests/Culling Harness';
@@ -42,11 +53,12 @@ async function boot(
   page: Page,
   viewer: Arm,
   culling: boolean,
-  media: { reducedMotion?: 'reduce' | 'no-preference' } = {}
+  media: { reducedMotion?: 'reduce' | 'no-preference' } = {},
+  lod = false
 ): Promise<void> {
   const story = loadStories({ includeHarness: true }).find((s) => s.title === TITLE);
   expect(story, `${TITLE} missing from the build`).toBeTruthy();
-  await gotoStory(page, story!.id, media, { culling, viewer });
+  await gotoStory(page, story!.id, media, { culling, viewer, lod });
   await page.evaluate(
     () => (window as unknown as { __polytreeCullingReady: Promise<void> }).__polytreeCullingReady
   );
@@ -758,6 +770,834 @@ for (const arm of ['interactive', 'editor'] as const) {
       );
       expect(await paintedCount(page), 'nothing hidden without the stylesheet').toBe(total);
       expect(warns).toHaveLength(1);
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Zoom-out LOD gates (plan Step 9): the same fixture with `lod:true`.
+// ---------------------------------------------------------------------------------------------
+
+const LOD_ATTR = 'data-pfd-lod';
+const LOD_STATE: State = { tx: -300, ty: -200, s: 0.12 };
+const ZOOMED_IN: State = { tx: -300, ty: -200, s: 0.5 };
+
+interface HeldReport {
+  /** In-view node/link that should be held (settled LOD ON, not exempt) but is painted. */
+  heldMissing: string[];
+  /** In-view label/zone, or an exempt element, that is hidden. */
+  wronglyHeld: string[];
+}
+
+/**
+ * LOD oracle: strictly-in-view elements against the fixture truth. Nodes/links must carry the
+ * attribute unless exempt; labels/zones and exempt ids must never carry it. (`wronglyCulled` stays
+ * the strict "nothing in view is hidden" rule for LOD-off states.)
+ */
+async function wronglyHeld(
+  page: Page,
+  truth: Truth[],
+  st: State,
+  size: { width: number; height: number },
+  exempt: string[] = []
+): Promise<HeldReport> {
+  return page.evaluate(
+    ({ truth: t, st: v, size: sz, attr, ex }) => {
+      const x0 = -v.tx / v.s;
+      const y0 = -v.ty / v.s;
+      const x1 = (sz.width - v.tx) / v.s;
+      const y1 = (sz.height - v.ty) / v.s;
+      const exempt = new Set(ex);
+      const els = new Map<string, Element>();
+      document
+        .querySelectorAll('g.element[element-id]')
+        .forEach((g) => els.set(g.getAttribute('element-id')!, g));
+      const heldMissing: string[] = [];
+      const wronglyHeld: string[] = [];
+      for (const b of t) {
+        if (b.x0 > x1 || b.x1 < x0 || b.y0 > y1 || b.y1 < y0) continue;
+        const g = els.get(b.id);
+        if (!g) continue;
+        const eligible = b.id.startsWith('node_') || b.id.startsWith('link_');
+        const hidden = g.hasAttribute(attr);
+        if (eligible && !exempt.has(b.id)) {
+          if (!hidden) heldMissing.push(b.id);
+        } else if (hidden) {
+          wronglyHeld.push(b.id);
+        }
+      }
+      return { heldMissing, wronglyHeld };
+    },
+    { truth, st, size, attr: ATTR, ex: exempt }
+  );
+}
+
+const lodState = (page: Page) =>
+  page.evaluate(
+    (a) => document.querySelector('.pfdjs-container')?.getAttribute(a) ?? null,
+    LOD_ATTR
+  );
+
+/** Real d3-zoom path: `setInitialZoom` brackets `zoom.start` / `canvas.zoomed` / `zoom.end`. */
+async function zoomInitial(page: Page, st: State): Promise<void> {
+  await page.evaluate(({ tx, ty, s }) => {
+    const z = (
+      window as unknown as { __polytreeCullingViewer: PageViewer }
+    ).__polytreeCullingViewer.get<{
+      setZoomable(b: boolean): void;
+      setInitialZoom(x: number, y: number, k: number): void;
+    }>('zoom');
+    z.setZoomable(true);
+    z.setInitialZoom(tx, ty, s);
+    z.setZoomable(false);
+  }, st);
+}
+
+for (const arm of ['interactive', 'editor'] as const) {
+  test.describe(`C10 zoom-out LOD — ${arm}`, () => {
+    test.describe.configure({ mode: 'serial' });
+    test.setTimeout(120_000);
+
+    test('enter/exit through the real zoom path; exit is synchronous; hysteresis holds', async ({
+      page
+    }) => {
+      await boot(page, arm, true, {}, true);
+      const size = await viewSize(page);
+      const truth = specBounds();
+      expect(await lodState(page)).toBe('off');
+
+      await zoomInitial(page, LOD_STATE);
+      await settled(page);
+      expect(await lodState(page)).toBe('on');
+      const held = await wronglyHeld(page, truth, LOD_STATE, size);
+      expect(held.heldMissing, 'in-view nodes/links still painted under LOD').toEqual([]);
+      expect(held.wronglyHeld, 'labels/zones hidden under LOD').toEqual([]);
+
+      // hysteresis: 0.18 is inside the band, so LOD stays ON
+      await zoomInitial(page, { tx: -300, ty: -200, s: 0.18 });
+      await settled(page);
+      expect(await lodState(page)).toBe('on');
+
+      // exit: the check runs in the SAME evaluate that zooms — no frame, no flush in between
+      const exited = await page.evaluate(
+        ({ st, truth: t, size: sz, attr }) => {
+          const z = (
+            window as unknown as { __polytreeCullingViewer: PageViewer }
+          ).__polytreeCullingViewer.get<{
+            setZoomable(b: boolean): void;
+            setInitialZoom(x: number, y: number, k: number): void;
+          }>('zoom');
+          z.setZoomable(true);
+          z.setInitialZoom(st.tx, st.ty, st.s);
+          z.setZoomable(false);
+          const x0 = -st.tx / st.s;
+          const y0 = -st.ty / st.s;
+          const x1 = (sz.width - st.tx) / st.s;
+          const y1 = (sz.height - st.ty) / st.s;
+          const els = new Map<string, Element>();
+          document
+            .querySelectorAll('g.element[element-id]')
+            .forEach((g) => els.set(g.getAttribute('element-id')!, g));
+          let stillHidden = 0;
+          let inView = 0;
+          for (const b of t) {
+            if (b.x0 > x1 || b.x1 < x0 || b.y0 > y1 || b.y1 < y0) continue;
+            inView++;
+            if (els.get(b.id)?.hasAttribute(attr)) stillHidden++;
+          }
+          return {
+            inView,
+            stillHidden,
+            lod: document.querySelector('.pfdjs-container')!.getAttribute('data-pfd-lod')
+          };
+        },
+        { st: ZOOMED_IN, truth, size, attr: ATTR }
+      );
+      expect(exited.inView).toBeGreaterThan(0);
+      expect(exited.stillHidden, 'in-view elements still hidden right after the exit').toBe(0);
+      expect(exited.lod).toBe('off');
+
+      // hysteresis the other way: 0.18 from OFF does not enter
+      await zoomInitial(page, { tx: -300, ty: -200, s: 0.18 });
+      await settled(page);
+      expect(await lodState(page)).toBe('off');
+    });
+
+    test('enter drains in bounded batches and reports entering → on', async ({ page }) => {
+      await boot(page, arm, true, {}, true);
+      await setView(page, { tx: -300, ty: -200, s: 0.5 });
+      await settled(page);
+      const r = await page.evaluate(
+        async ({ st }) => {
+          const v = (window as unknown as { __polytreeCullingViewer: PageViewer })
+            .__polytreeCullingViewer;
+          const culling = v.get<{
+            inspect(): {
+              slots: { kind: string; bounds: { x0: number; y0: number; x1: number; y1: number } }[];
+              stats: { maxHides: number };
+            };
+          }>('culling');
+          const z = v.get<{
+            setZoomable(b: boolean): void;
+            setInitialZoom(x: number, y: number, k: number): void;
+          }>('zoom');
+          const c = document.querySelector('.pfdjs-container')!;
+          const eligible = culling
+            .inspect()
+            .slots.filter((s) => s.kind === 'node' || s.kind === 'link').length;
+          z.setZoomable(true);
+          z.setInitialZoom(st.tx, st.ty, st.s);
+          z.setZoomable(false);
+          let frames = 0;
+          let sawEntering = false;
+          let idleFalseWhileEntering = true;
+          do {
+            await new Promise<void>((r) => requestAnimationFrame(() => r()));
+            frames++;
+            if (c.getAttribute('data-pfd-lod') === 'entering') {
+              sawEntering = true;
+              if (c.getAttribute('data-pfd-culling-idle') !== 'false')
+                idleFalseWhileEntering = false;
+            }
+          } while (c.getAttribute('data-pfd-culling-idle') === 'false' && frames < 600);
+          return {
+            eligible,
+            frames,
+            sawEntering,
+            idleFalseWhileEntering,
+            maxHides: culling.inspect().stats.maxHides,
+            final: c.getAttribute('data-pfd-lod')
+          };
+        },
+        { st: LOD_STATE }
+      );
+      expect(r.sawEntering, 'an entering phase was observable').toBe(true);
+      expect(r.idleFalseWhileEntering, 'idle stays "false" while entering').toBe(true);
+      expect(r.maxHides).toBeLessThanOrEqual(HIDE_BUDGET);
+      expect(r.frames).toBeGreaterThanOrEqual(Math.ceil((r.eligible * 0.5) / HIDE_BUDGET));
+      expect(r.final).toBe('on');
+    });
+
+    test('selection stays painted up to the cap; focus + ArrowRight paint the target', async ({
+      page
+    }) => {
+      await boot(page, arm, true, {}, true);
+      const size = await viewSize(page);
+      const truth = specBounds();
+      await zoomInitial(page, LOD_STATE);
+      await settled(page);
+
+      // select cap+3 nodes through the bus (what a click does) — only the first cap stay painted
+      const view = worldRect(LOD_STATE, size.width, size.height, 0);
+      const ids = truth
+        .filter((b) => b.id.startsWith('node_') && intersects(b, view))
+        .map((b) => b.id);
+      expect(ids.length, 'enough in-view nodes to exceed the cap').toBeGreaterThan(
+        LOD_EXEMPT_CAP + 3
+      );
+      const picked = ids.slice(0, LOD_EXEMPT_CAP + 3);
+      await page.evaluate((list) => {
+        const v = (window as unknown as { __polytreeCullingViewer: PageViewer })
+          .__polytreeCullingViewer;
+        const bus = v.get<{ emit(e: string, ...a: unknown[]): void }>('eventBus');
+        const nodes = v.get<{ getAll(): { id: string }[] }>('nodes').getAll();
+        const byId = new Map(nodes.map((d) => [d.id, d]));
+        for (const id of list) {
+          const def = byId.get(id)!;
+          const g = document.querySelector(`g[element-id="${id}"]`);
+          const el = { classed: () => el, node: () => g };
+          bus.emit('node.click', el, def, { ctrlKey: true });
+        }
+      }, picked);
+      await settled(page);
+      const painted = await page.evaluate(
+        (a) => document.querySelectorAll(`g.nodeItem.element:not([${a}])`).length,
+        ATTR
+      );
+      expect(painted, 'exactly the cap of selected nodes stays painted').toBe(LOD_EXEMPT_CAP);
+      const held = await wronglyHeld(page, truth, LOD_STATE, size, picked.slice(0, LOD_EXEMPT_CAP));
+      expect(held.heldMissing).toEqual([]);
+      expect(held.wronglyHeld).toEqual([]);
+      await page.evaluate(() =>
+        (
+          window as unknown as {
+            __polytreeCullingViewer: { get<T>(n: string): T };
+          }
+        ).__polytreeCullingViewer
+          .get<{ emit(e: string): void }>('eventBus')
+          .emit('background.click')
+      );
+      await settled(page);
+      expect(
+        await page.evaluate(
+          (a) => document.querySelectorAll(`g.nodeItem.element:not([${a}])`).length,
+          ATTR
+        ),
+        'after clearing the selection every node is held again'
+      ).toBe(0);
+
+      // focus a held node; ArrowRight moves focus to a neighbour that is painted
+      const navId = ids[300];
+      const nav = await page.evaluate(
+        async ({ a, id }) => {
+          const g = document.querySelector(`g[element-id="${id}"]`) as SVGGElement;
+          const hiddenBefore = g.hasAttribute(a);
+          g.focus();
+          const focusedPainted = !g.hasAttribute(a);
+          // KeyboardNav has no roving focus yet, so the first arrow enters at the first element
+          // (which is far outside the viewport): focus must still land and be exempt.
+          g.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+          );
+          await new Promise<void>((r) => requestAnimationFrame(() => r()));
+          const el = document.activeElement as Element | null;
+          const after = el?.getAttribute('element-id') ?? null;
+          const slot = (
+            window as unknown as { __polytreeCullingViewer: PageViewer }
+          ).__polytreeCullingViewer
+            .get<{ inspect(): { slots: { id: string; exempt: boolean }[] } }>('culling')
+            .inspect()
+            .slots.find((s) => s.id === after);
+          return { hiddenBefore, focusedPainted, after, afterExempt: slot?.exempt ?? false };
+        },
+        { a: ATTR, id: navId }
+      );
+      expect(nav.hiddenBefore, `${navId} was held before focus`).toBe(true);
+      expect(nav.focusedPainted, 'focusing a held node paints it').toBe(true);
+      expect(nav.after).not.toBeNull();
+      expect(nav.after).not.toBe(navId);
+      expect(nav.afterExempt, 'the arrow-nav target is exempt (focus + selection)').toBe(true);
+    });
+
+    if (arm === 'editor') {
+      test('undo of a delete stays visible, then is held after a viewport change', async ({
+        page
+      }) => {
+        await boot(page, arm, true, {}, true);
+        await zoomInitial(page, LOD_STATE);
+        await settled(page);
+        const r = await page.evaluate(async (a) => {
+          const v = (window as unknown as { __polytreeCullingViewer: PageViewer })
+            .__polytreeCullingViewer as unknown as {
+            get<T>(n: string): T;
+            select(def: unknown): void;
+            deleteSelected(): void;
+            undo(): void;
+          };
+          const def = v.get<{ getAll(): { id: string }[] }>('nodes').getAll()[20];
+          v.select(def);
+          v.deleteSelected();
+          v.undo();
+          const g = document.querySelector(`g[element-id="${def.id}"]`)!;
+          const painted = !g.hasAttribute(a);
+          const z = v.get<{
+            setZoomable(b: boolean): void;
+            setZoom(x: number, y: number, k: number): void;
+          }>('zoom');
+          z.setZoomable(true);
+          z.setZoom(-310, -200, 0.12);
+          z.setZoomable(false);
+          for (let i = 0; i < 400; i++) {
+            await new Promise<void>((res) => requestAnimationFrame(() => res()));
+            if (
+              document.querySelector('.pfdjs-container')!.getAttribute('data-pfd-culling-idle') ===
+              'true'
+            )
+              break;
+          }
+          const again = document.querySelector(`g[element-id="${def.id}"]`)!;
+          return { painted, heldAfter: again.hasAttribute(a) };
+        }, ATTR);
+        expect(r.painted, 'restored element is painted right after undo').toBe(true);
+        expect(r.heldAfter, 'and held once the viewport changes').toBe(true);
+      });
+    }
+
+    test('G4 under LOD: AX (role, name) and group count equal ON vs OFF at fit-all', async ({
+      page,
+      context
+    }) => {
+      const spec = generateFixtureSpec(SMALL);
+      const ids = [spec.nodes[0].id, spec.nodes[3000].id, spec.links[10].id, spec.labels[5].id];
+      const cdp = await context.newCDPSession(page);
+      await cdp.send('DOM.enable');
+      await cdp.send('Accessibility.enable');
+      await boot(page, arm, false, {}, false);
+      await setView(page, LOD_STATE);
+      await settled(page);
+      const off: Record<string, { role?: string; name?: string }> = {};
+      for (const id of ids) off[id] = await axOf(cdp, id);
+      const groupsOff = await groupCount(cdp);
+
+      await boot(page, arm, true, {}, true);
+      await setView(page, LOD_STATE);
+      await settled(page);
+      expect(await lodState(page)).toBe('on');
+      expect(
+        await page.evaluate((a) => document.querySelectorAll(`g.element[${a}]`).length, ATTR)
+      ).toBeGreaterThan(0);
+      for (const id of ids) expect(await axOf(cdp, id), `AX ${id}`).toEqual(off[id]);
+      expect(await groupCount(cdp), 'every element group survives LOD').toBe(groupsOff);
+    });
+
+    test('G5 under LOD: exportSVG is byte-identical ON vs OFF at fit-all', async ({ page }) => {
+      const exportNow = () =>
+        page.evaluate(() =>
+          (
+            window as unknown as { __polytreeCullingViewer: PageViewer }
+          ).__polytreeCullingViewer.exportSVG()
+        );
+      await boot(page, arm, false, {}, false);
+      await setView(page, LOD_STATE);
+      await settled(page);
+      const off = await exportNow();
+
+      await boot(page, arm, true, {}, true);
+      await setView(page, LOD_STATE);
+      await settled(page);
+      expect(await lodState(page)).toBe('on');
+      const hiddenBefore = await page.evaluate(
+        (a) => document.querySelectorAll(`g.element[${a}]`).length,
+        ATTR
+      );
+      expect(hiddenBefore).toBeGreaterThan(0);
+      const on = await exportNow();
+      expect(on).not.toContain(ATTR + '=');
+      expect(on === off, 'export identical with LOD ON').toBe(true);
+      expect(
+        await page.evaluate((a) => document.querySelectorAll(`g.element[${a}]`).length, ATTR),
+        'export must not touch the live DOM'
+      ).toBe(hiddenBefore);
+    });
+
+    test('G6 under LOD: the shipped CSS really hides a held node and a held link', async ({
+      page
+    }) => {
+      await boot(page, arm, true, {}, true);
+      await zoomInitial(page, LOD_STATE);
+      await settled(page);
+      const r = await page.evaluate((a) => {
+        const pick = (sel: string) => {
+          const g = document.querySelector(sel);
+          if (!g) return null;
+          return {
+            held: g.hasAttribute(a),
+            kids: Array.from(g.children).map((c) => `${c.localName}:${getComputedStyle(c).display}`)
+          };
+        };
+        return { node: pick('g.nodeItem.element'), link: pick('g.linkItem.element') };
+      }, ATTR);
+      for (const part of [r.node, r.link]) {
+        expect(part, 'element present').not.toBeNull();
+        expect(part!.held).toBe(true);
+        expect(part!.kids.length).toBeGreaterThan(0);
+        for (const k of part!.kids) {
+          const [name, display] = k.split(':');
+          expect(display, name).toBe(name === 'title' || name === 'desc' ? 'inline' : 'none');
+        }
+      }
+    });
+
+    test('a tween from 0.1 to 1.2 exits LOD with no wrongly-hidden sighting', async ({ page }) => {
+      await boot(page, arm, true, { reducedMotion: 'no-preference' }, true);
+      const size = await viewSize(page);
+      const truth = specBounds();
+      await zoomInitial(page, { tx: -300, ty: -200, s: 0.1 });
+      await settled(page);
+      expect(await lodState(page)).toBe('on');
+      const r = await page.evaluate(
+        async ({ truth: t, sz, attr, off }) => {
+          const v = (window as unknown as { __polytreeCullingViewer: PageViewer })
+            .__polytreeCullingViewer;
+          const canvas = v.get<{ getDrawingLayer(): { attr(n: string): string | null } }>('canvas');
+          const z = v.get<{
+            setZoomable(b: boolean): void;
+            setInitialZoom(x: number, y: number, k: number, d?: number): void;
+          }>('zoom');
+          const els = new Map<string, Element>();
+          document
+            .querySelectorAll('g.element[element-id]')
+            .forEach((g) => els.set(g.getAttribute('element-id')!, g));
+          z.setZoomable(true);
+          z.setInitialZoom(-300, -200, 1.2, 600); // zoomable stays on for the whole tween
+          const scales = new Set<string>();
+          let bad = 0;
+          let sawAbove = 0;
+          for (let i = 0; i < 90; i++) {
+            await new Promise<void>((res) => requestAnimationFrame(() => res()));
+            const m = /translate\(\s*([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(\s*([-\d.e]+)/.exec(
+              canvas.getDrawingLayer().attr('transform') ?? ''
+            );
+            if (!m) continue;
+            const tx = +m[1];
+            const ty = +m[2];
+            const k = +m[3];
+            scales.add(m[3]);
+            if (k <= off) continue;
+            sawAbove++;
+            const x0 = -tx / k;
+            const y0 = -ty / k;
+            const x1 = (sz.width - tx) / k;
+            const y1 = (sz.height - ty) / k;
+            for (const b of t) {
+              if (b.x0 > x1 || b.x1 < x0 || b.y0 > y1 || b.y1 < y0) continue;
+              if (els.get(b.id)?.hasAttribute(attr)) bad++;
+            }
+          }
+          z.setZoomable(false);
+          return { distinct: scales.size, sawAbove, bad };
+        },
+        { truth, sz: size, attr: ATTR, off: LOD_SCALE_OFF }
+      );
+      expect(r.distinct, 'the tween produced distinct scales').toBeGreaterThanOrEqual(5);
+      expect(r.sawAbove, 'frames above S_OFF were sampled').toBeGreaterThan(0);
+      expect(r.bad, 'in-view hidden elements once above S_OFF').toBe(0);
+      expect(await lodState(page)).toBe('off');
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------------------------
+// LOD click/dblclick resolver (plan Step 12): real mouse input at zoom-out.
+// ---------------------------------------------------------------------------------------------
+
+type Rect = { left: number; top: number; width: number; height: number };
+const SPEC = generateFixtureSpec(SMALL);
+const LINE_W = 4; // fixture links paint with lineWidth 4 (specBounds)
+
+const clientOf = (r: Rect, st: State, wx: number, wy: number) => ({
+  x: r.left + st.tx + wx * st.s,
+  y: r.top + st.ty + wy * st.s
+});
+
+function segDist(ax: number, ay: number, bx: number, by: number, x: number, y: number): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2));
+  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy));
+}
+function linkDist(l: (typeof SPEC.links)[number], x: number, y: number): number {
+  let best = Infinity;
+  for (let i = 1; i < l.waypoints.length; i++) {
+    const a = l.waypoints[i - 1];
+    const b = l.waypoints[i];
+    best = Math.min(best, segDist(a.x, a.y, b.x, b.y, x, y));
+  }
+  return best;
+}
+const inZone = (x: number, y: number, pad = 0) =>
+  SPEC.zones.some(
+    (z) => x >= z.x - pad && x <= z.x + z.width + pad && y >= z.y - pad && y <= z.y + z.height + pad
+  );
+
+/** World rect of the strict viewport shrunk by `margin` screen pixels. */
+function inner(st: State, size: { width: number; height: number }, margin: number) {
+  return {
+    x0: (margin - st.tx) / st.s,
+    y0: (margin - st.ty) / st.s,
+    x1: (size.width - margin - st.tx) / st.s,
+    y1: (size.height - margin - st.ty) / st.s
+  };
+}
+
+const selectedIds = (page: Page) =>
+  page.evaluate(() =>
+    (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+      .get<{ getSelectedElements(): { definition: { id: string } }[] }>('selection')
+      .getSelectedElements()
+      .map((e) => e.definition.id)
+      .sort()
+  );
+
+const svgRect = (page: Page) =>
+  page.evaluate(() => {
+    // The canvas svg itself (the editor's palette also renders svg icons inside the container).
+    const svg = (
+      window as unknown as { __polytreeCullingViewer: PageViewer }
+    ).__polytreeCullingViewer
+      .get<{ getSVG(): { node(): Element } }>('canvas')
+      .getSVG()
+      .node();
+    const r = svg.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+
+/** Record bus events the page sees from here on (`window.__bus`). */
+const listen = (page: Page, events: string[]) =>
+  page.evaluate((list) => {
+    const bus = (
+      window as unknown as { __polytreeCullingViewer: PageViewer }
+    ).__polytreeCullingViewer.get<{ on(e: string, fn: () => void): void }>('eventBus');
+    const w = window as unknown as { __bus: Record<string, number> };
+    w.__bus = {};
+    for (const e of list) bus.on(e, () => (w.__bus[e] = (w.__bus[e] ?? 0) + 1));
+  }, events);
+const heard = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __bus: Record<string, number> }).__bus);
+
+for (const arm of ['interactive', 'editor'] as const) {
+  test.describe(`C10 LOD click resolver — ${arm}`, () => {
+    test.describe.configure({ mode: 'serial' });
+    test.setTimeout(120_000);
+
+    async function scene(page: Page) {
+      await boot(page, arm, true, {}, true);
+      await zoomInitial(page, LOD_STATE);
+      await settled(page);
+      expect(await lodState(page)).toBe('on');
+      const size = await viewSize(page);
+      const rect = await svgRect(page);
+      const box = inner(LOD_STATE, size, 40);
+      const inView = (x: number, y: number) => x > box.x0 && x < box.x1 && y > box.y0 && y < box.y1;
+      return { size, rect, inView };
+    }
+
+    /** A plain node: in view, no label, outside every zone. */
+    const plainNodes = (inView: (x: number, y: number) => boolean) =>
+      SPEC.nodes.filter((n) => {
+        const cx = n.x + n.size / 2;
+        const cy = n.y + n.size / 2;
+        return inView(cx, cy) && !n.labelId && !inZone(cx, cy, 60);
+      });
+    const center = (n: (typeof SPEC.nodes)[number]) => ({
+      x: n.x + n.size / 2,
+      y: n.y + n.size / 2
+    });
+
+    test('click selects a hidden node, paints it, and never reaches background.click', async ({
+      page
+    }) => {
+      const { rect, inView } = await scene(page);
+      const [a, b] = plainNodes(inView);
+      await listen(page, ['background.click', 'node.click']);
+      const pa = center(a);
+      const ca = clientOf(rect, LOD_STATE, pa.x, pa.y);
+      await page.mouse.click(ca.x, ca.y);
+      expect(await selectedIds(page)).toEqual([a.id]);
+      const painted = await page.evaluate(
+        ({ id, attr }) => {
+          const g = document.querySelector(`g[element-id="${id}"]`)!;
+          const outline = g.querySelector('.element-outline');
+          return {
+            selected: g.classList.contains('selected'),
+            held: g.hasAttribute(attr),
+            outline: outline ? getComputedStyle(outline).display : 'missing'
+          };
+        },
+        { id: a.id, attr: ATTR }
+      );
+      expect(painted.selected).toBe(true);
+      expect(painted.held, 'the selected node is exempt, hence painted').toBe(false);
+      expect(painted.outline).not.toBe('none');
+      expect(await heard(page)).toEqual({ 'node.click': 1 });
+
+      // ctrl-click adds a second
+      const pb = center(b);
+      const cb = clientOf(rect, LOD_STATE, pb.x, pb.y);
+      await page.keyboard.down('Control');
+      await page.mouse.click(cb.x, cb.y);
+      await page.keyboard.up('Control');
+      expect(await selectedIds(page)).toEqual([a.id, b.id].sort());
+    });
+
+    test('click on a hidden link selects the brute-force nearest link', async ({ page }) => {
+      const { rect, inView } = await scene(page);
+      const tol = 4 / LOD_STATE.s;
+      const nodeNear = (x: number, y: number) =>
+        SPEC.nodes.some(
+          (n) =>
+            x > n.x - 2 * tol &&
+            x < n.x + n.size + 2 * tol &&
+            y > n.y - 2 * tol &&
+            y < n.y + n.size + 2 * tol
+        );
+      let pick: { id: string; x: number; y: number } | null = null;
+      for (const l of SPEC.links) {
+        const a = l.waypoints[0];
+        const b = l.waypoints[1];
+        const mx = (a.x + b.x) / 2;
+        const my = (a.y + b.y) / 2;
+        if (Math.abs(a.x - b.x) < 100 && Math.abs(a.y - b.y) < 100) continue;
+        if (!inView(mx, my) || nodeNear(mx, my) || inZone(mx, my, 60)) continue;
+        // exact ties (links sharing a row/column) resolve to the lowest slot = lowest link index
+        const best = SPEC.links.find((k) => linkDist(k, mx, my) <= 0.01);
+        if (!best) continue;
+        pick = { id: best.id, x: mx, y: my };
+        break;
+      }
+      expect(pick, 'a link click point exists in view').not.toBeNull();
+      const c = clientOf(rect, LOD_STATE, pick!.x, pick!.y);
+      await page.mouse.click(c.x, c.y);
+      expect(await selectedIds(page)).toEqual([pick!.id]);
+      void LINE_W;
+    });
+
+    test('a click inside a painted zone resolves the hidden node under it (zone transparent)', async ({
+      page
+    }) => {
+      const { rect, inView } = await scene(page);
+      const node = SPEC.nodes.find((n) => {
+        const c = center(n);
+        return inView(c.x, c.y) && !n.labelId && inZone(c.x, c.y, -30);
+      });
+      expect(node, 'a plain node inside a zone is in view').toBeTruthy();
+      const p = center(node!);
+      const c = clientOf(rect, LOD_STATE, p.x, p.y);
+      const top = await page.evaluate(
+        ([x, y]) =>
+          document.elementFromPoint(x, y)?.closest('.element')?.getAttribute('class') ?? null,
+        [c.x, c.y]
+      );
+      expect(top, 'the painted zone is the click target').toContain('zoneItem');
+      await page.mouse.click(c.x, c.y);
+      expect(await selectedIds(page)).toEqual([node!.id]);
+    });
+
+    test('empty background clears the selection; a pan-drag selects nothing', async ({ page }) => {
+      const { rect, inView } = await scene(page);
+      const [a] = plainNodes(inView);
+      const pa = center(a);
+      const ca = clientOf(rect, LOD_STATE, pa.x, pa.y);
+      await page.mouse.click(ca.x, ca.y);
+      expect(await selectedIds(page)).toEqual([a.id]);
+
+      // a spot with no node, no link and no zone nearby → true background
+      const tol = 4 / LOD_STATE.s;
+      const candidates: { x: number; y: number }[] = [];
+      for (let wx = 2600; wx < 4400 && candidates.length < 60; wx += 17) {
+        for (let wy = 1700; wy < 3200 && candidates.length < 60; wy += 17) {
+          if (!inView(wx, wy) || inZone(wx, wy, 80)) continue;
+          if (SPEC.links.some((l) => linkDist(l, wx, wy) < tol + LINE_W + 4)) continue;
+          if (
+            SPEC.nodes.some(
+              (n) =>
+                wx > n.x - tol - 4 &&
+                wx < n.x + n.size + tol + 4 &&
+                wy > n.y - tol - 4 &&
+                wy < n.y + n.size + tol + 4
+            )
+          )
+            continue;
+          candidates.push({ x: wx, y: wy });
+        }
+      }
+      // The editor draws axes/grid lines over the canvas; they sit outside the zoom group, so a
+      // click on one is not a drawing-layer click. Use a spot whose target is the drawing area.
+      const idx = await page.evaluate(
+        ({ pts, r, st }) => {
+          const v = (window as unknown as { __polytreeCullingViewer: PageViewer })
+            .__polytreeCullingViewer;
+          const canvas = v.get<{
+            getSVG(): { node(): Element };
+            getDrawingLayer(): { node(): Element };
+          }>('canvas');
+          const svg = canvas.getSVG().node();
+          const outer = canvas.getDrawingLayer().node().parentNode as Element;
+          return pts.findIndex((p) => {
+            const el = document.elementFromPoint(
+              r.left + st.tx + p.x * st.s,
+              r.top + st.ty + p.y * st.s
+            );
+            return el === svg || (!!el && outer.contains(el));
+          });
+        },
+        { pts: candidates, r: rect, st: LOD_STATE }
+      );
+      const spot = idx >= 0 ? candidates[idx] : null;
+      expect(spot, 'a background spot exists').not.toBeNull();
+      const cs = clientOf(rect, LOD_STATE, spot!.x, spot!.y);
+      await page.mouse.click(cs.x, cs.y);
+      expect(await selectedIds(page), 'background click clears the selection').toEqual([]);
+
+      // pan-drag released on a node: d3-drag suppresses the click, nothing is selected
+      await page.mouse.move(ca.x, ca.y);
+      await page.mouse.down();
+      await page.mouse.move(ca.x + 25, ca.y + 10, { steps: 4 });
+      await page.mouse.up();
+      expect(await selectedIds(page)).toEqual([]);
+    });
+
+    test('dblclick on a hidden node records node.dblclick and still zooms', async ({ page }) => {
+      const { rect, inView } = await scene(page);
+      const [a] = plainNodes(inView);
+      await listen(page, ['node.dblclick', 'background.click']);
+      const before = await page.evaluate(() =>
+        (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+          .get<{ getDrawingLayer(): { attr(n: string): string | null } }>('canvas')
+          .getDrawingLayer()
+          .attr('transform')
+      );
+      const pa = center(a);
+      const c = clientOf(rect, LOD_STATE, pa.x, pa.y);
+      // double-click zoom is gated by the zoomable flag (as for a real user with zoom enabled)
+      await page.evaluate(() =>
+        (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+          .get<{ setZoomable(b: boolean): void }>('zoom')
+          .setZoomable(true)
+      );
+      await page.mouse.dblclick(c.x, c.y);
+      await page.waitForTimeout(800);
+      const after = await page.evaluate(() =>
+        (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+          .get<{ getDrawingLayer(): { attr(n: string): string | null } }>('canvas')
+          .getDrawingLayer()
+          .attr('transform')
+      );
+      expect((await heard(page))['node.dblclick'], 'node.dblclick reached the bus').toBe(1);
+      expect(after, 'd3-zoom double-click zoom still ran').not.toBe(before);
+    });
+
+    test('a visible label next to a hidden node is selected natively', async ({ page }) => {
+      const { inView } = await scene(page);
+      const ids = SPEC.labels.filter((l) => inView(l.x + 10, l.y + 8)).map((l) => l.id);
+      expect(ids.length).toBeGreaterThan(0);
+      // labels are tiny at this scale and the editor draws axes over the canvas: click the first
+      // label whose centre is actually the topmost thing there
+      const hit = await page.evaluate((list) => {
+        for (const id of list) {
+          const g = document.querySelector(`g[element-id="${id}"]`);
+          if (!g) continue;
+          const r = g.getBoundingClientRect();
+          const x = r.left + r.width / 2;
+          const y = r.top + r.height / 2;
+          const el = document.elementFromPoint(x, y);
+          if (el && g.contains(el)) return { id, x, y };
+        }
+        return null;
+      }, ids);
+      expect(hit, 'a label is hit-testable at fit-all').not.toBeNull();
+      await page.mouse.click(hit!.x, hit!.y);
+      expect(await selectedIds(page)).toEqual([hit!.id]);
+    });
+
+    test('the add-link tool owns clicks: the resolver ignores them', async ({ page }) => {
+      const { rect, inView } = await scene(page);
+      const [a] = plainNodes(inView);
+      await page.evaluate(() =>
+        (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+          .get<{ getRootLayer(): { classed(n: string, v: boolean): void } }>('canvas')
+          .getRootLayer()
+          .classed('cursor-add-link', true)
+      );
+      const pa = center(a);
+      const c = clientOf(rect, LOD_STATE, pa.x, pa.y);
+      await page.mouse.click(c.x, c.y);
+      expect(await selectedIds(page)).toEqual([]);
+    });
+
+    test('synthesised clicks on a held <g> keep native dispatch (exactly one selection)', async ({
+      page
+    }) => {
+      const { inView } = await scene(page);
+      const [a] = plainNodes(inView);
+      await listen(page, ['node.click']);
+      await page.evaluate((id) => {
+        const g = document.querySelector(`g[element-id="${id}"]`)!;
+        g.dispatchEvent(new MouseEvent('click', { bubbles: true })); // detail 0
+      }, a.id);
+      expect(await selectedIds(page)).toEqual([a.id]);
+      expect((await heard(page))['node.click']).toBe(1);
     });
   });
 }

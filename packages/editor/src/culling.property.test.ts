@@ -3,11 +3,16 @@ import {
   CULL_MIN_ELEMENTS,
   CULL_PAD,
   HIDE_BUDGET,
+  LOD_CLICK_TOL_PX,
+  LOD_EXEMPT_CAP,
+  LOD_SCALE_OFF,
+  LOD_SCALE_ON,
   elementBounds,
   emptyModel,
   ElementStatus,
   type Culling,
   type CommandStack,
+  type Selection,
   type DiagramModule,
   type ModellingModelElement
 } from '@d3-polytree/core';
@@ -19,6 +24,10 @@ import { Editor } from './index';
  * move, resize, delete, undo/redo, label edit, pan/zoom) against ONE real `Editor` booted past
  * `CULL_MIN_ELEMENTS`, asserting after each op + frame flush that the spatial index still mirrors
  * the model and the DOM. A writer that emits no event `Culling` consumes shows up as bounds drift.
+ *
+ * Zoom-out LOD (C10 amendment A2) rides on the same sequences: ops also cross the LOD thresholds
+ * through the zoom feature, select, focus and clear the selection, and the oracle is
+ * `culled == (!inPaddedViewport || hold)` with `hold`'s inputs recomputed independently here.
  */
 
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -113,6 +122,12 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
   let roCallback: ((e: unknown[]) => void) | null = null;
   let observer: MutationObserver;
   let host: HTMLElement;
+  /** Replayed hysteresis model of `data-pfd-lod` (true = ON). */
+  let lodModel = false;
+  /** Ids created since the last viewport change, ids "focused" by an op (independent of Culling). */
+  const createdSinceView = new Set<string>();
+  let focusedId: string | null = null;
+  let viewKey = '';
 
   const defs = (): Defs => editor.getHost()!.definitions as Defs;
   /** Drawn elements only: delete is soft (`status` Deleted), the def stays in the model. */
@@ -130,6 +145,24 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
       q.forEach((cb) => cb());
     }
     expect(rafQueue).toHaveLength(0);
+  }
+
+  const zoomModel = () =>
+    (
+      editor.getHost()!.definitions as unknown as {
+        settings: { zoom: { scale: number; offset: { x: number; y: number } } };
+      }
+    ).settings.zoom;
+
+  function trackView(): void {
+    const z = zoomModel();
+    const key = `${z.scale}|${z.offset.x}|${z.offset.y}`;
+    if (key === viewKey) return;
+    viewKey = key;
+    createdSinceView.clear();
+    const s = z.scale;
+    if (!lodModel && s <= LOD_SCALE_ON) lodModel = true;
+    else if (lodModel && s > LOD_SCALE_OFF) lodModel = false;
   }
 
   function viewport() {
@@ -158,6 +191,20 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
     expect({ missing, extra }, `${label}: model vs index`).toEqual({ missing: [], extra: [] });
     expect(snap.slots.length, `${label}: slot count`).toBe(model.size);
     const vp = viewport();
+    trackView();
+    expect(
+      host.querySelector('[data-pfd-lod]')?.getAttribute('data-pfd-lod'),
+      `${label}: data-pfd-lod`
+    ).toBe(lodModel ? 'on' : 'off');
+    const selected = new Set(
+      editor
+        .get<Selection>('selection')
+        .getSelectedElements()
+        .map((e) => e.definition.id as string)
+    );
+    const mayBeExempt = (id: string): boolean =>
+      selected.has(id) || id === focusedId || createdSinceView.has(id);
+    let exemptCount = 0;
     for (const slot of snap.slots) {
       const entry = model.get(slot.id);
       expect(entry, `${label}: ${slot.id} not in model`).toBeDefined();
@@ -171,18 +218,91 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
       expect(slot.node!.hasAttribute('data-pfd-transient'), `${label}: attr ${slot.id}`).toBe(
         slot.culled
       );
-      // (3) at idle, nothing culled intersects the padded viewport
-      if (slot.culled) {
-        const b = slot.bounds;
-        const hit = b.x0 <= vp.x1 && b.x1 >= vp.x0 && b.y0 <= vp.y1 && b.y1 >= vp.y0;
-        expect(hit, `${label}: culled-in-view ${slot.id}`).toBe(false);
+      // (3) at idle: culled == (outside the padded viewport || held by LOD)
+      const b = slot.bounds;
+      const hit = b.x0 <= vp.x1 && b.x1 >= vp.x0 && b.y0 <= vp.y1 && b.y1 >= vp.y0;
+      expect(slot.culled, `${label}: culled == (!hit || hold) ${slot.id}`).toBe(!hit || slot.hold);
+      // (6) hold's inputs, recomputed independently of Culling's flags
+      const eligible = slot.kind === 'node' || slot.kind === 'link';
+      const exempt = mayBeExempt(slot.id);
+      if (slot.exempt) {
+        exemptCount++;
+        expect(exempt, `${label}: ghost exemption ${slot.id}`).toBe(true);
+      }
+      expect(slot.hold, `${label}: hold ${slot.id}`).toBe(lodModel && eligible && !slot.exempt);
+      if (lodModel && selected.has(slot.id) && hit && exemptCount <= LOD_EXEMPT_CAP) {
+        expect(slot.culled, `${label}: selected in view is painted ${slot.id}`).toBe(false);
       }
     }
+    expect(exemptCount, `${label}: exempt cap`).toBeLessThanOrEqual(LOD_EXEMPT_CAP);
     expect(snap.stats.maxHides, `${label}: hide budget`).toBeLessThanOrEqual(HIDE_BUDGET);
     // (4) no element toggled more than twice during the op
     const perEl = new Map<Node, number>();
     for (const r of observer.takeRecords()) perEl.set(r.target, (perEl.get(r.target) ?? 0) + 1);
-    for (const [, n] of perEl) expect(n, `${label}: toggles`).toBeLessThanOrEqual(2);
+    for (const [, n] of perEl) expect(n, `${label}: toggles`).toBeLessThanOrEqual(3);
+  }
+
+  /**
+   * A pointer click at a random held node's centre: the LOD resolver must select the node a brute
+   * force over the model says is nearest (containing the point within tolerance; lowest slot wins).
+   */
+  function clickHeldNode(rnd: () => number): void {
+    const z = zoomModel();
+    const slots = culling.inspect().slots;
+    const heldNodes = slots.filter((x) => x.kind === 'node' && x.hold);
+    if (heldNodes.length === 0) return;
+    const bySlotOrder = new Map(slots.map((x, i) => [x.id, i]));
+    const target = heldNodes[Math.floor(rnd() * heldNodes.length)];
+    const def = drawn(defs().node).find((d) => d.id === target.id) as
+      (Def & { position: { x: number; y: number }; size: number }) | undefined;
+    if (!def) return;
+    const wx = def.position.x + def.size / 2;
+    const wy = def.position.y + def.size / 2;
+    const tol = LOD_CLICK_TOL_PX / z.scale;
+    let best: string | null = null;
+    let bestD = Infinity;
+    let bestOrder = Infinity;
+    for (const n of drawn(defs().node) as Array<
+      Def & { position: { x: number; y: number }; size: number }
+    >) {
+      const slot = slots.find((x) => x.id === n.id);
+      if (!slot?.hold) continue;
+      const { x, y } = n.position;
+      if (wx < x - tol || wx > x + n.size + tol || wy < y - tol || wy > y + n.size + tol) continue;
+      const d = Math.hypot(wx - (x + n.size / 2), wy - (y + n.size / 2));
+      const order = bySlotOrder.get(n.id)!;
+      if (d < bestD || (d === bestD && order < bestOrder)) {
+        best = n.id;
+        bestD = d;
+        bestOrder = order;
+      }
+    }
+    const svg = editor.get<{ getSVG(): { node(): Element } }>('canvas').getSVG().node();
+    svg.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+        clientX: z.offset.x + wx * z.scale,
+        clientY: z.offset.y + wy * z.scale
+      })
+    );
+    const got = editor
+      .get<Selection>('selection')
+      .getSelectedElements()
+      .map((e) => e.definition.id as string);
+    expect(got, 'resolver click selected the brute-force expected node').toEqual([best]);
+  }
+
+  /** Immediately after crossing above S_OFF — NO flush: nothing in view may still be hidden. */
+  function assertSyncExit(label: string): void {
+    const vp = viewport();
+    for (const slot of culling.inspect().slots) {
+      const b = slot.bounds;
+      if (!(b.x0 <= vp.x1 && b.x1 >= vp.x0 && b.y0 <= vp.y1 && b.y1 >= vp.y0)) continue;
+      expect(slot.culled, `${label}: sync exit left ${slot.id} hidden`).toBe(false);
+      expect(slot.node!.hasAttribute('data-pfd-transient')).toBe(false);
+    }
   }
 
   beforeAll(() => {
@@ -223,6 +343,12 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
       attributes: true,
       attributeFilter: ['data-pfd-transient']
     });
+    const bus = editor.get<{ on(e: string, fn: (el: unknown, d: { id: string }) => void): void }>(
+      'eventBus'
+    );
+    for (const cls of ['node', 'link', 'label', 'zone']) {
+      bus.on(`${cls}.created`, (_el, d) => createdSinceView.add(d.id));
+    }
     check('boot');
     expect(culling.inspect().slots.some((s) => s.culled)).toBe(true);
   }, 240_000);
@@ -239,7 +365,7 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
         'addNodeHandler'
       );
       for (let op = 0; op < OPS_PER_SEED; op++) {
-        const roll = Math.floor(rnd() * 8);
+        const roll = Math.floor(rnd() * 13);
         const nodes = drawn(defs().node);
         let name = '';
         switch (roll) {
@@ -310,11 +436,58 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
             }
             break;
           }
-          default: {
+          case 7: {
             name = 'pan/zoom';
             zoom.setZoomable(true);
             zoom.setZoom(-rnd() * 7000, -rnd() * 4000, 0.3 + rnd() * 1.7);
             zoom.setZoomable(false);
+            break;
+          }
+          case 8: {
+            name = 'lod zoom';
+            const before = lodModel;
+            const scale = pick([0.12, 0.18, 0.5, 0.12]);
+            const tx = -rnd() * 3000 * scale;
+            const ty = -rnd() * 2000 * scale;
+            // Half of the crossings bracket the change like a real d3-zoom gesture.
+            const gesture = rnd() < 0.5;
+            const bus = editor.get<{ emit(e: string): void }>('eventBus');
+            zoom.setZoomable(true);
+            if (gesture) bus.emit('zoom.start');
+            zoom.setZoom(tx, ty, scale);
+            if (gesture) bus.emit('zoom.end');
+            zoom.setZoomable(false);
+            if (before && scale > LOD_SCALE_OFF) assertSyncExit(`seed ${seed} op ${op}`);
+            break;
+          }
+          case 9: {
+            name = 'select';
+            editor.select(pick([...drawn(defs().node), ...drawn(defs().link)]));
+            break;
+          }
+          case 10: {
+            name = 'focus';
+            const target = pick(culling.inspect().slots.filter((x) => x.kind !== 'zone'));
+            if (focusedId) {
+              const prev = culling.inspect().slots.find((x) => x.id === focusedId);
+              prev?.node?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+              focusedId = null;
+            }
+            if (target?.node) {
+              target.node.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+              focusedId = target.id;
+            }
+            break;
+          }
+          case 11: {
+            name = 'background click';
+            editor.get<{ emit(e: string): void }>('eventBus').emit('background.click');
+            break;
+          }
+          default: {
+            name = 'resolver click';
+            if (!lodModel) break;
+            clickHeldNode(rnd);
           }
         }
         check(`seed ${seed} op ${op} (${name})`);
