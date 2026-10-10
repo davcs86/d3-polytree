@@ -4,6 +4,7 @@ import { getLocalName } from '../utils/localName';
 import type { DrawingSelection } from '../draw';
 import type { ElementClass } from '../modelling';
 import type { ModellingModelElement } from '../modelling/types';
+import { isResolved } from './resolvedEvents';
 
 /** DOM mouse events re-broadcast on the bus for each drawn element. */
 const MOUSE_EVENTS = [
@@ -45,6 +46,8 @@ export class MouseEvents {
     const type: ElementClass = className ?? (getLocalName(definition) as ElementClass);
     MOUSE_EVENTS.forEach((kind) => {
       element.on(kind, (event: Event) => {
+        // Already dispatched (as another element) by the LOD click resolver: do not deliver twice.
+        if (isResolved(event)) return;
         this._eventBus.emit(`${type}.${kind}`, element, definition, event);
       });
     });

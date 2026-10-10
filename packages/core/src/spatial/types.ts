@@ -37,3 +37,42 @@ export const CULL_PAD = 7;
  * @internal
  */
 export const HIDE_BUDGET = 300;
+
+/**
+ * Nominal node size in world units (the moddle `size` default) used to turn a legibility floor in
+ * screen pixels into a zoom scale (`lod-measurements.md`; provisional).
+ * @internal
+ */
+export const LOD_NODE_PX = 25;
+
+/**
+ * A node narrower than this many screen pixels is illegible; below it LOD holds nodes and links.
+ * @internal
+ */
+export const MIN_LEGIBLE_PX = 4;
+
+/**
+ * Zoom scale at or below which zoom-out LOD turns ON (`MIN_LEGIBLE_PX / LOD_NODE_PX` = 0.16).
+ * @internal
+ */
+export const LOD_SCALE_ON = MIN_LEGIBLE_PX / LOD_NODE_PX;
+
+/**
+ * Zoom scale above which LOD turns OFF; one pixel of hysteresis above {@link LOD_SCALE_ON}
+ * (0.20) so the band does not thrash.
+ * @internal
+ */
+export const LOD_SCALE_OFF = (MIN_LEGIBLE_PX + 1) / LOD_NODE_PX;
+
+/**
+ * Most selected elements LOD keeps painted (first N in ascending slot order, sticky); bounds the
+ * exempt set so a select-all cannot defeat the optimisation.
+ * @internal
+ */
+export const LOD_EXEMPT_CAP = 200;
+
+/**
+ * Click tolerance, in screen pixels, when the resolver hit-tests a held (hidden) node or link.
+ * @internal
+ */
+export const LOD_CLICK_TOL_PX = 4;

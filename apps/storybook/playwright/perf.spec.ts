@@ -127,7 +127,7 @@ async function panOnce(
 /** Boot an arm of the Perf Harness and return the CDP session + drawn-element count. */
 async function bootArm(
   page: Page,
-  args: { culling: boolean; viewer: 'interactive' | 'editor'; nodes?: number }
+  args: { culling: boolean; lod?: boolean; viewer: 'interactive' | 'editor'; nodes?: number }
 ): Promise<{ drawn: number; bootMs: number }> {
   const story = loadStories({ includeHarness: true }).find((s) => s.title === 'Tests/Perf Harness');
   expect(story, 'Tests/Perf Harness missing from the build').toBeTruthy();
@@ -297,6 +297,191 @@ test.describe('C10 perf (culling on)', () => {
     expect(Math.max(...p95s), `ON-arm pan p95 over budget (${budgetMs} ms)`).toBeLessThanOrEqual(
       budgetMs
     );
+  });
+});
+
+/** Optional budgets for the LOD arms; `null` = record-only until a pinned derivation sets them. */
+interface LodBudgets {
+  fitAllPan: { budgetMs: number | null };
+  lodCrossing: { budgetMs: number | null };
+}
+const lodBudgets = (): LodBudgets =>
+  JSON.parse(readFileSync(join(__dirname, 'perf-budget.json'), 'utf8')) as LodBudgets;
+
+/** Park at fit-all (scale 0.1) and wait until the arm has settled (LOD `on` when enabled). */
+async function parkFitAll(page: Page, lod: boolean): Promise<void> {
+  await page.evaluate(() => {
+    const v = (window as unknown as { __polytreePerfViewer: Viewerish }).__polytreePerfViewer;
+    v.get<Zoomish>('zoom').setInitialZoom(-50, -30, 0.1);
+  });
+  await page.waitForTimeout(250);
+  await page.waitForFunction(
+    (wantLod) => {
+      const c = document.querySelector('.pfdjs-container');
+      if (c?.getAttribute('data-pfd-culling-idle') === 'false') return false;
+      return wantLod ? c?.getAttribute('data-pfd-lod') === 'on' : true;
+    },
+    lod,
+    { timeout: 120_000 }
+  );
+}
+
+async function measureFitAll(page: Page, context: BrowserContext, lod: boolean, runs: number) {
+  await parkFitAll(page, lod);
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Performance.enable');
+  const start = await panStartPoint(page);
+  const out: RunResult[] = [];
+  for (let i = 0; i < runs; i++) {
+    out.push(await panOnce(page, cdp, start));
+    await parkFitAll(page, lod);
+  }
+  const p95s = out.map((r) => r.frameMs.p95);
+  return {
+    runs: out,
+    median: q(p95s, 0.5),
+    min: Math.min(...p95s),
+    max: Math.max(...p95s),
+    spread: Math.max(...p95s) - Math.min(...p95s)
+  };
+}
+
+/**
+ * Zoom-out LOD (C10 amendment A2): settled fit-all pan, LOD ON vs the same-build `lod:false`
+ * baseline, and the enter/exit crossing cost. Budgets live in `perf-budget.json` (`fitAllPan`,
+ * `lodCrossing`) and are `null` (record-only) until set from ≥ 5 pinned runs.
+ */
+test.describe('C10 perf (zoom-out LOD)', () => {
+  test.setTimeout(480_000);
+
+  test('fit-all pan: LOD on vs LOD off', async ({ page, context }, testInfo) => {
+    const on = await bootArm(page, { culling: true, lod: true, viewer: 'interactive' });
+    expect(on.drawn, 'fixture failed to boot').toBeGreaterThanOrEqual(20_000);
+    const lodArm = await measureFitAll(page, context, true, 5);
+    const state = await page.evaluate(() => {
+      const c = document.querySelector('.pfdjs-container')!;
+      return { lod: c.getAttribute('data-pfd-lod') };
+    });
+    expect(state.lod, 'LOD is on at fit-all').toBe('on');
+
+    await bootArm(page, { culling: true, lod: false, viewer: 'interactive' });
+    const base = await measureFitAll(page, context, false, 5);
+
+    const separation = base.median - lodArm.max;
+    console.log(
+      `[perf] arm=lod fit-all p95 median=${lodArm.median.toFixed(1)}ms (min ${lodArm.min.toFixed(1)} / max ${lodArm.max.toFixed(1)}, spread ${lodArm.spread.toFixed(1)}); ` +
+        `task/pan=${q(
+          lodArm.runs.map((r) => r.metricsMs.TaskDuration),
+          0.5
+        ).toFixed(0)}ms`
+    );
+    console.log(
+      `[perf] arm=nolod fit-all p95 median=${base.median.toFixed(1)}ms (min ${base.min.toFixed(1)} / max ${base.max.toFixed(1)}, spread ${base.spread.toFixed(1)}); ` +
+        `task/pan=${q(
+          base.runs.map((r) => r.metricsMs.TaskDuration),
+          0.5
+        ).toFixed(0)}ms`
+    );
+    console.log(
+      `[perf] fit-all separation=${separation.toFixed(1)}ms safeguard=${(2 * lodArm.spread).toFixed(1)}ms ratio=${(base.median / Math.max(lodArm.median, 1)).toFixed(2)}x`
+    );
+    await testInfo.attach('perf-fitall.json', {
+      body: JSON.stringify({ lod: lodArm, nolod: base, separation }, null, 2),
+      contentType: 'application/json'
+    });
+    for (const r of [...lodArm.runs, ...base.runs]) expect(r.frames).toBeGreaterThanOrEqual(10);
+
+    const { budgetMs } = lodBudgets().fitAllPan;
+    if (budgetMs !== null) {
+      expect(lodArm.max, `LOD fit-all pan p95 over budget (${budgetMs} ms)`).toBeLessThanOrEqual(
+        budgetMs
+      );
+      expect(separation, 'LOD vs no-LOD separation safeguard').toBeGreaterThanOrEqual(
+        2 * lodArm.spread
+      );
+    }
+  });
+
+  test('crossing: enter drain and synchronous exit (record, then ceiling)', async ({
+    page
+  }, testInfo) => {
+    await bootArm(page, { culling: true, lod: true, viewer: 'interactive' });
+    await parkViewport(page);
+    const observe = () =>
+      page.evaluate(() => {
+        const w = window as unknown as {
+          __long: number[];
+          __frames: number[];
+          __poll: boolean;
+        };
+        w.__long = [];
+        w.__frames = [];
+        w.__poll = true;
+        new PerformanceObserver((l) =>
+          l.getEntries().forEach((e) => w.__long.push(e.duration))
+        ).observe({ entryTypes: ['longtask'] });
+        let last = performance.now();
+        const tick = (t: number): void => {
+          w.__frames.push(t - last);
+          last = t;
+          if (w.__poll) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+    const phase = async (tx: number, ty: number, k: number, wantLod: boolean) => {
+      await page.evaluate(() => {
+        const w = window as unknown as { __long: number[]; __frames: number[] };
+        w.__long.length = 0;
+        w.__frames.length = 0;
+      });
+      const callMs = await page.evaluate(
+        ([x, y, s]) => {
+          const v = (window as unknown as { __polytreePerfViewer: Viewerish }).__polytreePerfViewer;
+          const t0 = performance.now();
+          v.get<Zoomish>('zoom').setInitialZoom(x, y, s);
+          return performance.now() - t0;
+        },
+        [tx, ty, k] as const
+      );
+      await page.waitForFunction(
+        (want) => {
+          const c = document.querySelector('.pfdjs-container');
+          if (c?.getAttribute('data-pfd-culling-idle') === 'false') return false;
+          return want
+            ? c?.getAttribute('data-pfd-lod') === 'on'
+            : c?.getAttribute('data-pfd-lod') === 'off';
+        },
+        wantLod,
+        { timeout: 120_000 }
+      );
+      await page.waitForTimeout(300);
+      return page.evaluate((call) => {
+        const w = window as unknown as { __long: number[]; __frames: number[] };
+        return {
+          callMs: call,
+          maxLongTaskMs: Math.max(0, ...w.__long),
+          maxFrameMs: Math.max(0, ...w.__frames.slice(1))
+        };
+      }, callMs);
+    };
+    await observe();
+    const enter = await phase(-50, -30, 0.1, true);
+    const exit = await phase(-5000, -3000, 1, false);
+    console.log(
+      `[perf] crossing enter longtask=${enter.maxLongTaskMs.toFixed(0)}ms maxFrame=${enter.maxFrameMs.toFixed(0)}ms call=${enter.callMs.toFixed(0)}ms; ` +
+        `exit longtask=${exit.maxLongTaskMs.toFixed(0)}ms maxFrame=${exit.maxFrameMs.toFixed(0)}ms call=${exit.callMs.toFixed(0)}ms`
+    );
+    await testInfo.attach('perf-crossing.json', {
+      body: JSON.stringify({ enter, exit }, null, 2),
+      contentType: 'application/json'
+    });
+    const { budgetMs } = lodBudgets().lodCrossing;
+    if (budgetMs !== null) {
+      expect(
+        Math.max(enter.maxFrameMs, exit.maxFrameMs),
+        `LOD crossing worst frame over budget (${budgetMs} ms)`
+      ).toBeLessThanOrEqual(budgetMs);
+    }
   });
 });
 

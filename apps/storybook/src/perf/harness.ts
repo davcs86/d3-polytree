@@ -15,6 +15,11 @@ import '@d3-polytree/editor/style.css';
 export interface HarnessArgs {
   /** The `culling` viewer option; the baseline ("off") arm passes `false`. */
   culling: boolean;
+  /**
+   * `@internal` harness-only LOD kill switch (never a public option): `false` keeps viewport
+   * culling but never holds nodes/links at zoom-out, giving a same-build baseline for the perf gate.
+   */
+  lod?: boolean;
   /** Which component to boot: the read-mostly interactive viewer or the full editor. */
   viewer: 'interactive' | 'editor';
   /**
@@ -68,11 +73,14 @@ export function mountFixtureHarness(kind: HarnessKind, args: HarnessArgs): HTMLE
   // Declared args may arrive as the string form via the URL; coerce defensively because the
   // viewer test is `options.culling !== false`.
   const culling = !(args.culling === false || (args.culling as unknown) === 'false');
+  const lod = !(args.lod === false || (args.lod as unknown) === 'false');
   const Ctor = args.viewer === 'editor' ? FixtureEditor : FixtureInteractiveViewer;
   const viewer = new Ctor({
     container: host,
     modules: deterministicModules(),
-    culling
+    culling,
+    // Passed only when explicitly off so the default path is byte-identical to a plain viewer.
+    ...(lod ? {} : { lod: false })
   }) as AnyViewer;
 
   const preset = kind === 'perf' ? LARGE : SMALL;

@@ -6,6 +6,7 @@ import { emptyModel } from '../model/model';
 import { CalculateCenter } from '../utils/calculateCenter';
 import type { ModellingModelElement } from '../modelling/types';
 import { Zoom } from './zoom';
+import { markResolved } from './resolvedEvents';
 import { ZoomScroll } from './zoomScroll';
 
 function setup() {
@@ -82,6 +83,34 @@ describe('@d3-polytree/core Zoom', () => {
     const outer = canvas.getDrawingLayer().node()?.parentNode as SVGGElement;
     outer.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(bg).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not emit background.click for a click the LOD resolver already handled', () => {
+    const { bus, canvas, calculateCenter, options } = setup();
+    new Zoom(options, canvas, bus, calculateCenter);
+    const bg = vi.fn();
+    bus.on('background.click', bg);
+    const outer = canvas.getDrawingLayer().node()?.parentNode as SVGGElement;
+
+    const marked = new MouseEvent('click', { bubbles: true });
+    markResolved(marked);
+    outer.dispatchEvent(marked);
+    expect(bg).not.toHaveBeenCalled();
+
+    outer.dispatchEvent(new MouseEvent('click', { bubbles: true })); // an unmarked one still does
+    expect(bg).toHaveBeenCalledTimes(1);
+  });
+
+  it('a marked dblclick still zooms (d3-zoom is untouched; nothing stops propagation)', () => {
+    const { bus, canvas, calculateCenter, options } = setup();
+    const zoom = new Zoom(options, canvas, bus, calculateCenter);
+    zoom.setZoomable(true);
+    const outer = canvas.getDrawingLayer().node()?.parentNode as SVGGElement;
+    const ev = new MouseEvent('dblclick', { bubbles: true, cancelable: true, detail: 2 });
+    markResolved(ev);
+    outer.dispatchEvent(ev);
+    // d3-zoom's dblclick handler ran: it swallows the event with preventDefault (`noevent`)
+    expect(ev.defaultPrevented).toBe(true);
   });
 
   it('does not emit background.click when a drawn element is clicked', () => {

@@ -55,9 +55,9 @@ serves it with `http-server`).
   `Editor` on `window` for the interaction spec. The C10 `Tests/Culling Harness` (~10.6k elements) and
   `Tests/Perf Harness` (~23k) stories are tagged `harness-only`: `loadStories()` omits them so VR/a11y never
   screenshot or axe-scan them (specs opt in with `loadStories({ includeHarness: true })`); arms are chosen
-  per load with `&args=culling:!false;viewer:editor` (declare args in `argTypes`; booleans are `!true`/`!false`).
+  per load with `&args=culling:!false;viewer:editor` (declare args in `argTypes`; booleans are `!true`/`!false`). The `@internal` `lod` arg (`&args=lod:!false`) is the harness-only zoom-out LOD kill switch that gives the perf gate a same-build baseline; it is not a public option.
   `pnpm build-storybook:deploy` (Pages) drops them via `STORYBOOK_DEPLOY=1`-gated globs — Storybook 8.6.18 has
   no `--exclude-tags`.
 - `test:e2e` runs it all; it is deliberately **not** wired into `turbo run test` (which stays a fast,
   browserless unit lane) — the e2e net is its own CI job. The perf lane is separate again (`test:perf`: `PERF=1`, serial,
-  `.github/workflows/perf.yml`); the required `chromium` project ignores `perf.spec.ts`. The culling-ON arm asserts the ceiling in `playwright/perf-budget.json` (blocking; derived from a pinned CI run — see `measurements.md` §8).
+  `.github/workflows/perf.yml`); the required `chromium` project ignores `perf.spec.ts`. The culling-ON arm asserts the ceiling in `playwright/perf-budget.json` (blocking; derived from a pinned CI run — see `measurements.md` §8). Zoom-out LOD adds a fit-all pan arm (LOD vs `lod:false`) and a crossing arm there (`fitAllPan` / `lodCrossing`, record-only until set from pinned runs — `lod-measurements.md`); the step-0 spikes (`lod-spikes.spec.ts`) only run with `LOD_SPIKES=1`. `culling.spec.ts` holds the LOD correctness gates (`wronglyHeld` oracle) and the real-mouse click-resolver cases; G1–G7 keep a strict oracle by booting with `lod:false`.
