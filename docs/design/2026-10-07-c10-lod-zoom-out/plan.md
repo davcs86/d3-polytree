@@ -276,7 +276,7 @@ With non-null budgets the spec asserts them; verify it fails against the `lod:fa
 
 ### Step 11 — Click/dblclick resolver (`_onPointer`) with mark-and-skip
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `packages/core/src/features/culling.ts` — modify
@@ -304,7 +304,7 @@ In `zoom.ts` add an exported module-level `const resolvedEvents = new WeakSet<Ev
 
 ### Step 12 — Resolver gates (Playwright + property test)
 
-**Status**: `pending`
+**Status**: `done`
 **Files**:
 
 - `apps/storybook/playwright/culling.spec.ts` — modify
@@ -379,6 +379,14 @@ _Populated during execution. Step bodies above are immutable (DN-5) once executi
 - **Step 9 — arrow-nav assertion.** `KeyboardNav` has no roving focus when a test calls `g.focus()` directly, so the first arrow enters at the first element in roving order (far outside the viewport). The test now asserts the focused held node is painted and the arrow target is _exempt_, not that it is painted in view. A real roving-focus path is covered by the Step-8 property op.
 - **Step 9 — mutation checks** (Playwright, interactive arm): `_hold` ignoring links ⇒ `in-view nodes/links still painted under LOD`; skipping the OFF branch ⇒ `in-view elements still hidden right after the exit` (single-evaluate assertion).
 - **Step 9 — tween test** keeps zoomable on for the whole d3 transition (turning it off mid-tween makes the zoom handler drop events); pass condition unchanged.
+
+**Steps 10–12 (2026-10-10)**
+
+- **Step 10 ordering.** The plan puts the pinned real-mechanism go/no-go _before_ the resolver (Steps 11–12). The session cannot re-dispatch workflows, and a push produces two `perf.yml` runs (push + PR), so the Step 10 commit was pushed first to start accumulating pinned runs and Steps 11–12 were developed on the same unmerged branch while they ran. Nothing is merged before the go/no-go is recorded in `lod-measurements.md`; if it came back No-go, Steps 11–12 would be dropped with it. First local (unpinned) read: LOD fit-all pan p95 median 33.3 ms vs 233.4 ms without LOD (7×), crossing enter ≈ 470 ms, exit ≈ 120 ms.
+- **Step 11 — `resolvedEvents.ts`.** The `WeakSet` and `markResolved` live in a new `features/resolvedEvents.ts` (with `isResolved`), not in `zoom.ts`, because a second consumer appeared: `MouseEvents`' per-element listeners also skip a resolved event. Without it, a click on a painted **zone** that the resolver turned into a click on the hidden node under it was _also_ delivered natively as `zone.click`, replacing the selection with the zone (found by the Step-12 Playwright case). Resolved events are therefore not delivered twice; nothing stops propagation, and `dblclick.zoom` still runs.
+- **Step 11 — dblclick test.** d3-zoom swallows a handled `dblclick` with `preventDefault` + a 250 ms transition, so the unit test asserts `defaultPrevented` (d3's handler ran); the Playwright case asserts the transform really changes (zoomable enabled, as for a real user).
+- **Step 12 — editor arm has axes.** The editor draws axis/grid `line`/`path` elements over the canvas, outside the zoom group, so (pre-existing, not LOD) a click on one is not a drawing-layer click. The "background click" and "visible label" cases therefore pick a spot whose `elementFromPoint` is the drawing area / the label itself.
+- **Step 12 — mutation checks.** Removing `markResolved` ⇒ `no background.click` assertion fails (selection cleared). Inverting the node ranking ⇒ the new unit case `ranks overlapping candidates by distance to the centre, not by slot` fails; the property-test op did **not** catch it (grid nodes 130 apart never overlap within tolerance), so ranking is covered by the unit test only. Pick-order (label-first/zone-transparent) is covered by the Playwright zone/label cases and the unit tests.
 
 ---
 

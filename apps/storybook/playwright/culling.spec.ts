@@ -1256,3 +1256,348 @@ for (const arm of ['interactive', 'editor'] as const) {
     });
   });
 }
+
+// ---------------------------------------------------------------------------------------------
+// LOD click/dblclick resolver (plan Step 12): real mouse input at zoom-out.
+// ---------------------------------------------------------------------------------------------
+
+type Rect = { left: number; top: number; width: number; height: number };
+const SPEC = generateFixtureSpec(SMALL);
+const LINE_W = 4; // fixture links paint with lineWidth 4 (specBounds)
+
+const clientOf = (r: Rect, st: State, wx: number, wy: number) => ({
+  x: r.left + st.tx + wx * st.s,
+  y: r.top + st.ty + wy * st.s
+});
+
+function segDist(ax: number, ay: number, bx: number, by: number, x: number, y: number): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2));
+  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy));
+}
+function linkDist(l: (typeof SPEC.links)[number], x: number, y: number): number {
+  let best = Infinity;
+  for (let i = 1; i < l.waypoints.length; i++) {
+    const a = l.waypoints[i - 1];
+    const b = l.waypoints[i];
+    best = Math.min(best, segDist(a.x, a.y, b.x, b.y, x, y));
+  }
+  return best;
+}
+const inZone = (x: number, y: number, pad = 0) =>
+  SPEC.zones.some(
+    (z) => x >= z.x - pad && x <= z.x + z.width + pad && y >= z.y - pad && y <= z.y + z.height + pad
+  );
+
+/** World rect of the strict viewport shrunk by `margin` screen pixels. */
+function inner(st: State, size: { width: number; height: number }, margin: number) {
+  return {
+    x0: (margin - st.tx) / st.s,
+    y0: (margin - st.ty) / st.s,
+    x1: (size.width - margin - st.tx) / st.s,
+    y1: (size.height - margin - st.ty) / st.s
+  };
+}
+
+const selectedIds = (page: Page) =>
+  page.evaluate(() =>
+    (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+      .get<{ getSelectedElements(): { definition: { id: string } }[] }>('selection')
+      .getSelectedElements()
+      .map((e) => e.definition.id)
+      .sort()
+  );
+
+const svgRect = (page: Page) =>
+  page.evaluate(() => {
+    // The canvas svg itself (the editor's palette also renders svg icons inside the container).
+    const svg = (
+      window as unknown as { __polytreeCullingViewer: PageViewer }
+    ).__polytreeCullingViewer
+      .get<{ getSVG(): { node(): Element } }>('canvas')
+      .getSVG()
+      .node();
+    const r = svg.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+
+/** Record bus events the page sees from here on (`window.__bus`). */
+const listen = (page: Page, events: string[]) =>
+  page.evaluate((list) => {
+    const bus = (
+      window as unknown as { __polytreeCullingViewer: PageViewer }
+    ).__polytreeCullingViewer.get<{ on(e: string, fn: () => void): void }>('eventBus');
+    const w = window as unknown as { __bus: Record<string, number> };
+    w.__bus = {};
+    for (const e of list) bus.on(e, () => (w.__bus[e] = (w.__bus[e] ?? 0) + 1));
+  }, events);
+const heard = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __bus: Record<string, number> }).__bus);
+
+for (const arm of ['interactive', 'editor'] as const) {
+  test.describe(`C10 LOD click resolver — ${arm}`, () => {
+    test.describe.configure({ mode: 'serial' });
+    test.setTimeout(120_000);
+
+    async function scene(page: Page) {
+      await boot(page, arm, true, {}, true);
+      await zoomInitial(page, LOD_STATE);
+      await settled(page);
+      expect(await lodState(page)).toBe('on');
+      const size = await viewSize(page);
+      const rect = await svgRect(page);
+      const box = inner(LOD_STATE, size, 40);
+      const inView = (x: number, y: number) => x > box.x0 && x < box.x1 && y > box.y0 && y < box.y1;
+      return { size, rect, inView };
+    }
+
+    /** A plain node: in view, no label, outside every zone. */
+    const plainNodes = (inView: (x: number, y: number) => boolean) =>
+      SPEC.nodes.filter((n) => {
+        const cx = n.x + n.size / 2;
+        const cy = n.y + n.size / 2;
+        return inView(cx, cy) && !n.labelId && !inZone(cx, cy, 60);
+      });
+    const center = (n: (typeof SPEC.nodes)[number]) => ({
+      x: n.x + n.size / 2,
+      y: n.y + n.size / 2
+    });
+
+    test('click selects a hidden node, paints it, and never reaches background.click', async ({
+      page
+    }) => {
+      const { rect, inView } = await scene(page);
+      const [a, b] = plainNodes(inView);
+      await listen(page, ['background.click', 'node.click']);
+      const pa = center(a);
+      const ca = clientOf(rect, LOD_STATE, pa.x, pa.y);
+      await page.mouse.click(ca.x, ca.y);
+      expect(await selectedIds(page)).toEqual([a.id]);
+      const painted = await page.evaluate(
+        ({ id, attr }) => {
+          const g = document.querySelector(`g[element-id="${id}"]`)!;
+          const outline = g.querySelector('.element-outline');
+          return {
+            selected: g.classList.contains('selected'),
+            held: g.hasAttribute(attr),
+            outline: outline ? getComputedStyle(outline).display : 'missing'
+          };
+        },
+        { id: a.id, attr: ATTR }
+      );
+      expect(painted.selected).toBe(true);
+      expect(painted.held, 'the selected node is exempt, hence painted').toBe(false);
+      expect(painted.outline).not.toBe('none');
+      expect(await heard(page)).toEqual({ 'node.click': 1 });
+
+      // ctrl-click adds a second
+      const pb = center(b);
+      const cb = clientOf(rect, LOD_STATE, pb.x, pb.y);
+      await page.keyboard.down('Control');
+      await page.mouse.click(cb.x, cb.y);
+      await page.keyboard.up('Control');
+      expect(await selectedIds(page)).toEqual([a.id, b.id].sort());
+    });
+
+    test('click on a hidden link selects the brute-force nearest link', async ({ page }) => {
+      const { rect, inView } = await scene(page);
+      const tol = 4 / LOD_STATE.s;
+      const nodeNear = (x: number, y: number) =>
+        SPEC.nodes.some(
+          (n) =>
+            x > n.x - 2 * tol &&
+            x < n.x + n.size + 2 * tol &&
+            y > n.y - 2 * tol &&
+            y < n.y + n.size + 2 * tol
+        );
+      let pick: { id: string; x: number; y: number } | null = null;
+      for (const l of SPEC.links) {
+        const a = l.waypoints[0];
+        const b = l.waypoints[1];
+        const mx = (a.x + b.x) / 2;
+        const my = (a.y + b.y) / 2;
+        if (Math.abs(a.x - b.x) < 100 && Math.abs(a.y - b.y) < 100) continue;
+        if (!inView(mx, my) || nodeNear(mx, my) || inZone(mx, my, 60)) continue;
+        // exact ties (links sharing a row/column) resolve to the lowest slot = lowest link index
+        const best = SPEC.links.find((k) => linkDist(k, mx, my) <= 0.01);
+        if (!best) continue;
+        pick = { id: best.id, x: mx, y: my };
+        break;
+      }
+      expect(pick, 'a link click point exists in view').not.toBeNull();
+      const c = clientOf(rect, LOD_STATE, pick!.x, pick!.y);
+      await page.mouse.click(c.x, c.y);
+      expect(await selectedIds(page)).toEqual([pick!.id]);
+      void LINE_W;
+    });
+
+    test('a click inside a painted zone resolves the hidden node under it (zone transparent)', async ({
+      page
+    }) => {
+      const { rect, inView } = await scene(page);
+      const node = SPEC.nodes.find((n) => {
+        const c = center(n);
+        return inView(c.x, c.y) && !n.labelId && inZone(c.x, c.y, -30);
+      });
+      expect(node, 'a plain node inside a zone is in view').toBeTruthy();
+      const p = center(node!);
+      const c = clientOf(rect, LOD_STATE, p.x, p.y);
+      const top = await page.evaluate(
+        ([x, y]) =>
+          document.elementFromPoint(x, y)?.closest('.element')?.getAttribute('class') ?? null,
+        [c.x, c.y]
+      );
+      expect(top, 'the painted zone is the click target').toContain('zoneItem');
+      await page.mouse.click(c.x, c.y);
+      expect(await selectedIds(page)).toEqual([node!.id]);
+    });
+
+    test('empty background clears the selection; a pan-drag selects nothing', async ({ page }) => {
+      const { rect, inView } = await scene(page);
+      const [a] = plainNodes(inView);
+      const pa = center(a);
+      const ca = clientOf(rect, LOD_STATE, pa.x, pa.y);
+      await page.mouse.click(ca.x, ca.y);
+      expect(await selectedIds(page)).toEqual([a.id]);
+
+      // a spot with no node, no link and no zone nearby → true background
+      const tol = 4 / LOD_STATE.s;
+      const candidates: { x: number; y: number }[] = [];
+      for (let wx = 2600; wx < 4400 && candidates.length < 60; wx += 17) {
+        for (let wy = 1700; wy < 3200 && candidates.length < 60; wy += 17) {
+          if (!inView(wx, wy) || inZone(wx, wy, 80)) continue;
+          if (SPEC.links.some((l) => linkDist(l, wx, wy) < tol + LINE_W + 4)) continue;
+          if (
+            SPEC.nodes.some(
+              (n) =>
+                wx > n.x - tol - 4 &&
+                wx < n.x + n.size + tol + 4 &&
+                wy > n.y - tol - 4 &&
+                wy < n.y + n.size + tol + 4
+            )
+          )
+            continue;
+          candidates.push({ x: wx, y: wy });
+        }
+      }
+      // The editor draws axes/grid lines over the canvas; they sit outside the zoom group, so a
+      // click on one is not a drawing-layer click. Use a spot whose target is the drawing area.
+      const idx = await page.evaluate(
+        ({ pts, r, st }) => {
+          const v = (window as unknown as { __polytreeCullingViewer: PageViewer })
+            .__polytreeCullingViewer;
+          const canvas = v.get<{
+            getSVG(): { node(): Element };
+            getDrawingLayer(): { node(): Element };
+          }>('canvas');
+          const svg = canvas.getSVG().node();
+          const outer = canvas.getDrawingLayer().node().parentNode as Element;
+          return pts.findIndex((p) => {
+            const el = document.elementFromPoint(
+              r.left + st.tx + p.x * st.s,
+              r.top + st.ty + p.y * st.s
+            );
+            return el === svg || (!!el && outer.contains(el));
+          });
+        },
+        { pts: candidates, r: rect, st: LOD_STATE }
+      );
+      const spot = idx >= 0 ? candidates[idx] : null;
+      expect(spot, 'a background spot exists').not.toBeNull();
+      const cs = clientOf(rect, LOD_STATE, spot!.x, spot!.y);
+      await page.mouse.click(cs.x, cs.y);
+      expect(await selectedIds(page), 'background click clears the selection').toEqual([]);
+
+      // pan-drag released on a node: d3-drag suppresses the click, nothing is selected
+      await page.mouse.move(ca.x, ca.y);
+      await page.mouse.down();
+      await page.mouse.move(ca.x + 25, ca.y + 10, { steps: 4 });
+      await page.mouse.up();
+      expect(await selectedIds(page)).toEqual([]);
+    });
+
+    test('dblclick on a hidden node records node.dblclick and still zooms', async ({ page }) => {
+      const { rect, inView } = await scene(page);
+      const [a] = plainNodes(inView);
+      await listen(page, ['node.dblclick', 'background.click']);
+      const before = await page.evaluate(() =>
+        (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+          .get<{ getDrawingLayer(): { attr(n: string): string | null } }>('canvas')
+          .getDrawingLayer()
+          .attr('transform')
+      );
+      const pa = center(a);
+      const c = clientOf(rect, LOD_STATE, pa.x, pa.y);
+      // double-click zoom is gated by the zoomable flag (as for a real user with zoom enabled)
+      await page.evaluate(() =>
+        (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+          .get<{ setZoomable(b: boolean): void }>('zoom')
+          .setZoomable(true)
+      );
+      await page.mouse.dblclick(c.x, c.y);
+      await page.waitForTimeout(800);
+      const after = await page.evaluate(() =>
+        (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+          .get<{ getDrawingLayer(): { attr(n: string): string | null } }>('canvas')
+          .getDrawingLayer()
+          .attr('transform')
+      );
+      expect((await heard(page))['node.dblclick'], 'node.dblclick reached the bus').toBe(1);
+      expect(after, 'd3-zoom double-click zoom still ran').not.toBe(before);
+    });
+
+    test('a visible label next to a hidden node is selected natively', async ({ page }) => {
+      const { inView } = await scene(page);
+      const ids = SPEC.labels.filter((l) => inView(l.x + 10, l.y + 8)).map((l) => l.id);
+      expect(ids.length).toBeGreaterThan(0);
+      // labels are tiny at this scale and the editor draws axes over the canvas: click the first
+      // label whose centre is actually the topmost thing there
+      const hit = await page.evaluate((list) => {
+        for (const id of list) {
+          const g = document.querySelector(`g[element-id="${id}"]`);
+          if (!g) continue;
+          const r = g.getBoundingClientRect();
+          const x = r.left + r.width / 2;
+          const y = r.top + r.height / 2;
+          const el = document.elementFromPoint(x, y);
+          if (el && g.contains(el)) return { id, x, y };
+        }
+        return null;
+      }, ids);
+      expect(hit, 'a label is hit-testable at fit-all').not.toBeNull();
+      await page.mouse.click(hit!.x, hit!.y);
+      expect(await selectedIds(page)).toEqual([hit!.id]);
+    });
+
+    test('the add-link tool owns clicks: the resolver ignores them', async ({ page }) => {
+      const { rect, inView } = await scene(page);
+      const [a] = plainNodes(inView);
+      await page.evaluate(() =>
+        (window as unknown as { __polytreeCullingViewer: PageViewer }).__polytreeCullingViewer
+          .get<{ getRootLayer(): { classed(n: string, v: boolean): void } }>('canvas')
+          .getRootLayer()
+          .classed('cursor-add-link', true)
+      );
+      const pa = center(a);
+      const c = clientOf(rect, LOD_STATE, pa.x, pa.y);
+      await page.mouse.click(c.x, c.y);
+      expect(await selectedIds(page)).toEqual([]);
+    });
+
+    test('synthesised clicks on a held <g> keep native dispatch (exactly one selection)', async ({
+      page
+    }) => {
+      const { inView } = await scene(page);
+      const [a] = plainNodes(inView);
+      await listen(page, ['node.click']);
+      await page.evaluate((id) => {
+        const g = document.querySelector(`g[element-id="${id}"]`)!;
+        g.dispatchEvent(new MouseEvent('click', { bubbles: true })); // detail 0
+      }, a.id);
+      expect(await selectedIds(page)).toEqual([a.id]);
+      expect((await heard(page))['node.click']).toBe(1);
+    });
+  });
+}

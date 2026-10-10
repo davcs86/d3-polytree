@@ -46,9 +46,14 @@ function setup(
   const container = document.createElement('div');
   document.body.appendChild(container);
   const [w, h] = opts.size ?? [800, 600];
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  container.appendChild(svg);
+  const rootClasses = new Set<string>();
   const canvas = {
     getContainer: () => container,
-    getSize: vi.fn(() => ({ width: w, height: h }))
+    getSize: vi.fn(() => ({ width: w, height: h })),
+    getSVG: () => ({ node: () => svg }),
+    getRootLayer: () => ({ classed: (name: string) => rootClasses.has(name) })
   } as unknown as Canvas;
   const zoom: Zoom | undefined = 'zoom' in opts ? opts.zoom : { scale: 1, offset: { x: 0, y: 0 } };
   const culling = new Culling(
@@ -62,7 +67,7 @@ function setup(
     },
     zoom as never
   );
-  return { bus, container, canvas, zoom: zoom as Zoom, culling };
+  return { bus, container, canvas, svg, rootClasses, zoom: zoom as Zoom, culling };
 }
 
 type Bus = EventEmitter<DiagramEventMap>;
@@ -853,5 +858,176 @@ describe('Culling — LOD exemptions (Step 6)', () => {
     flushAll();
     expect(info(culling, 'g').exempt).toBe(false);
     expect(info(culling, 'g').culled).toBe(true);
+  });
+});
+
+describe('Culling — LOD click resolver (Step 11)', () => {
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  type Emitted = { type: string; el: unknown; def: { id: string }; event: MouseEvent };
+
+  /** Scale-0.1 LOD ON with a held row: world = client × 10, so n_i spans client x 10i..10i+2.5. */
+  function lodScene(opts: { links?: boolean } = {}) {
+    const ctx = setup();
+    const { bus, zoom } = ctx;
+    // 25 nodes far below the click area keep the diagram active (>= CULL_MIN_ELEMENTS)
+    for (let i = 0; i < 25; i++) addNode(bus, `f${i}`, i * 100, 5000);
+    if (opts.links) {
+      addLink(bus, 'l0', 1000, 1000); // (1000,1000) → (1050,1000)
+      addLink(bus, 'l1', 1000, 1000); // coincident: tie → lowest slot
+    } else {
+      addNode(bus, 'a', 300, 0);
+      addNode(bus, 'b', 300, 0); // coincident: tie → lowest slot
+    }
+    gesture(zoom, bus, 0.1);
+    flushAll();
+    const emitted: Emitted[] = [];
+    for (const t of ['click', 'dblclick'] as const) {
+      for (const cls of ['node', 'link', 'label', 'zone'] as const) {
+        (bus as unknown as { on(e: string, fn: (...a: unknown[]) => void): void }).on(
+          `${cls}.${t}`,
+          (el, def, event) =>
+            emitted.push({
+              type: `${cls}.${t}`,
+              el,
+              def: def as { id: string },
+              event: event as MouseEvent
+            })
+        );
+      }
+    }
+    return { ...ctx, emitted };
+  }
+
+  function fire(
+    target: Element,
+    type: 'click' | 'dblclick',
+    x: number,
+    y: number,
+    init: MouseEventInit = {}
+  ): MouseEvent {
+    const ev = new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y,
+      detail: type === 'dblclick' ? 2 : 1,
+      ...init
+    });
+    target.dispatchEvent(ev);
+    return ev;
+  }
+
+  const group = (cls: string, parent: Element): SVGGElement => {
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', `${cls} element`);
+    parent.appendChild(g);
+    return g;
+  };
+
+  it('a click on a hidden node is dispatched as node.click with the original event', () => {
+    const { svg, emitted } = lodScene();
+    const ev = fire(svg, 'click', 31, 1, { ctrlKey: true }); // world (310, 10) → inside a/b
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0].type).toBe('node.click');
+    expect(emitted[0].event).toBe(ev); // ctrl/meta modifiers survive for Selection
+    expect(emitted[0].event.ctrlKey).toBe(true);
+  });
+
+  it('ties break on the lowest slot', () => {
+    const { svg, emitted } = lodScene();
+    fire(svg, 'click', 31, 1);
+    expect(emitted[0].def.id).toBe('a');
+  });
+
+  it('ranks overlapping candidates by distance to the centre, not by slot', () => {
+    const ctx = setup();
+    for (let i = 0; i < 25; i++) addNode(ctx.bus, `f${i}`, i * 100, 5000);
+    addNode(ctx.bus, 'near', 300, 0); // lower slot, centre (312.5, 12.5)
+    addNode(ctx.bus, 'far', 320, 0); // higher slot, centre (332.5, 12.5)
+    gesture(ctx.zoom, ctx.bus, 0.1);
+    flushAll();
+    const picked: string[] = [];
+    ctx.bus.on('node.click', ((_el: unknown, def: { id: string }) => picked.push(def.id)) as never);
+    fire(ctx.svg, 'click', 32.8, 1.2); // world (328, 12): 4.5 from 'far', 15.5 from 'near'
+    expect(picked).toEqual(['far']);
+  });
+
+  it('dblclick emits node.dblclick and never stops propagation', () => {
+    const { svg, emitted, container } = lodScene();
+    const after = vi.fn();
+    svg.addEventListener('dblclick', after); // a bubble listener below the capture resolver
+    const stop = vi.spyOn(Event.prototype, 'stopPropagation');
+    const stopImm = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
+    fire(svg, 'dblclick', 31, 1);
+    expect(emitted.map((e) => e.type)).toEqual(['node.dblclick']);
+    expect(after).toHaveBeenCalledTimes(1);
+    expect(stop).not.toHaveBeenCalled();
+    expect(stopImm).not.toHaveBeenCalled();
+    void container;
+  });
+
+  it('a hidden link within tolerance is picked; a node beats a link', () => {
+    const { svg, emitted } = lodScene({ links: true });
+    // link at world y=1000 → client y=100; tolerance 4px = 40 world units: 1 px off the line
+    fire(svg, 'click', 102, 101);
+    expect(emitted.map((e) => e.type)).toEqual(['link.click']);
+    expect(emitted[0].def.id).toBe('l0');
+  });
+
+  it('a miss is left to native dispatch (nothing emitted)', () => {
+    const { svg, emitted } = lodScene();
+    fire(svg, 'click', 500, 300);
+    expect(emitted).toEqual([]);
+  });
+
+  it('synthesised clicks (detail 0) are left native', () => {
+    const { svg, emitted } = lodScene();
+    fire(svg, 'click', 31, 1, { detail: 0 });
+    expect(emitted).toEqual([]);
+  });
+
+  it('a click whose target is a held <g> or a visible node/label stays native', () => {
+    const { svg, emitted } = lodScene();
+    fire(group('nodeItem', svg), 'click', 31, 1);
+    fire(group('labelItem', svg), 'click', 31, 1);
+    fire(group('linkItem', svg), 'click', 31, 1);
+    expect(emitted).toEqual([]);
+  });
+
+  it('zones are transparent: a click on a zone resolves the hidden node under it', () => {
+    const { svg, emitted } = lodScene();
+    fire(group('zoneItem', svg), 'click', 31, 1);
+    expect(emitted.map((e) => e.type)).toEqual(['node.click']);
+  });
+
+  it('ignores clicks while the link tool is active', () => {
+    const { svg, emitted, rootClasses } = lodScene();
+    rootClasses.add('cursor-add-link');
+    fire(svg, 'click', 31, 1);
+    expect(emitted).toEqual([]);
+  });
+
+  it('does nothing when LOD is off (scale above S_OFF) or culling is inert', () => {
+    const a = lodScene();
+    gesture(a.zoom, a.bus, 0.5);
+    flushAll();
+    fire(a.svg, 'click', 31, 1);
+    expect(a.emitted).toEqual([]);
+
+    const b = setup();
+    addRow(b.bus, 10); // below the activation threshold: inert
+    gesture(b.zoom, b.bus, 0.1);
+    flushAll();
+    const spy = vi.fn();
+    b.bus.on('node.click', spy);
+    fire(b.svg, 'click', 31, 1);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('destroy removes the resolver listeners', () => {
+    const { svg, emitted, bus } = lodScene();
+    bus.emit('d3canvas.destroy');
+    fire(svg, 'click', 31, 1);
+    expect(emitted).toEqual([]);
   });
 });

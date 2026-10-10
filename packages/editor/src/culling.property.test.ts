@@ -3,6 +3,7 @@ import {
   CULL_MIN_ELEMENTS,
   CULL_PAD,
   HIDE_BUDGET,
+  LOD_CLICK_TOL_PX,
   LOD_EXEMPT_CAP,
   LOD_SCALE_OFF,
   LOD_SCALE_ON,
@@ -241,6 +242,58 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
     for (const [, n] of perEl) expect(n, `${label}: toggles`).toBeLessThanOrEqual(3);
   }
 
+  /**
+   * A pointer click at a random held node's centre: the LOD resolver must select the node a brute
+   * force over the model says is nearest (containing the point within tolerance; lowest slot wins).
+   */
+  function clickHeldNode(rnd: () => number): void {
+    const z = zoomModel();
+    const slots = culling.inspect().slots;
+    const heldNodes = slots.filter((x) => x.kind === 'node' && x.hold);
+    if (heldNodes.length === 0) return;
+    const bySlotOrder = new Map(slots.map((x, i) => [x.id, i]));
+    const target = heldNodes[Math.floor(rnd() * heldNodes.length)];
+    const def = drawn(defs().node).find((d) => d.id === target.id) as
+      (Def & { position: { x: number; y: number }; size: number }) | undefined;
+    if (!def) return;
+    const wx = def.position.x + def.size / 2;
+    const wy = def.position.y + def.size / 2;
+    const tol = LOD_CLICK_TOL_PX / z.scale;
+    let best: string | null = null;
+    let bestD = Infinity;
+    let bestOrder = Infinity;
+    for (const n of drawn(defs().node) as Array<
+      Def & { position: { x: number; y: number }; size: number }
+    >) {
+      const slot = slots.find((x) => x.id === n.id);
+      if (!slot?.hold) continue;
+      const { x, y } = n.position;
+      if (wx < x - tol || wx > x + n.size + tol || wy < y - tol || wy > y + n.size + tol) continue;
+      const d = Math.hypot(wx - (x + n.size / 2), wy - (y + n.size / 2));
+      const order = bySlotOrder.get(n.id)!;
+      if (d < bestD || (d === bestD && order < bestOrder)) {
+        best = n.id;
+        bestD = d;
+        bestOrder = order;
+      }
+    }
+    const svg = editor.get<{ getSVG(): { node(): Element } }>('canvas').getSVG().node();
+    svg.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+        clientX: z.offset.x + wx * z.scale,
+        clientY: z.offset.y + wy * z.scale
+      })
+    );
+    const got = editor
+      .get<Selection>('selection')
+      .getSelectedElements()
+      .map((e) => e.definition.id as string);
+    expect(got, 'resolver click selected the brute-force expected node').toEqual([best]);
+  }
+
   /** Immediately after crossing above S_OFF — NO flush: nothing in view may still be hidden. */
   function assertSyncExit(label: string): void {
     const vp = viewport();
@@ -312,7 +365,7 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
         'addNodeHandler'
       );
       for (let op = 0; op < OPS_PER_SEED; op++) {
-        const roll = Math.floor(rnd() * 12);
+        const roll = Math.floor(rnd() * 13);
         const nodes = drawn(defs().node);
         let name = '';
         switch (roll) {
@@ -426,9 +479,15 @@ describe('culling index ⇄ model consistency (random sequences)', () => {
             }
             break;
           }
-          default: {
+          case 11: {
             name = 'background click';
             editor.get<{ emit(e: string): void }>('eventBus').emit('background.click');
+            break;
+          }
+          default: {
+            name = 'resolver click';
+            if (!lodModel) break;
+            clickHeldNode(rnd);
           }
         }
         check(`seed ${seed} op ${op} (${name})`);

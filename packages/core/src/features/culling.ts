@@ -1,14 +1,17 @@
 import type EventEmitter from 'eventemitter3';
+import { pointer } from 'd3-selection';
 import type { DiagramEventMap } from '@d3-polytree/canvas';
 import { TRANSIENT_ATTR, type Canvas } from '@d3-polytree/canvas';
 import type { DrawingSelection } from '../draw';
 import type { ModellingModelElement } from '../modelling/types';
 import { FlatIndex } from '../spatial/FlatIndex';
+import { markResolved } from './resolvedEvents';
 import { elementBounds } from '../spatial/elementBounds';
 import {
   CULL_MIN_ELEMENTS,
   CULL_PAD,
   HIDE_BUDGET,
+  LOD_CLICK_TOL_PX,
   LOD_EXEMPT_CAP,
   LOD_SCALE_OFF,
   LOD_SCALE_ON,
@@ -82,6 +85,7 @@ export class Culling {
   ];
 
   private readonly _canvas: Canvas;
+  private readonly _bus: EventEmitter<DiagramEventMap>;
   private readonly _zoom: ZoomModel | undefined;
   private readonly _enabled: boolean;
 
@@ -110,6 +114,7 @@ export class Culling {
   private _lastView = '';
   private readonly _onFocusIn = (e: Event): void => this._focusChanged(e, true);
   private readonly _onFocusOut = (e: Event): void => this._focusChanged(e, false);
+  private readonly _onPointer = (e: Event): void => this._resolvePointer(e as MouseEvent);
 
   private _ro: ResizeObserver | null = null;
   private _roSize: { width: number; height: number } | null = null;
@@ -130,6 +135,7 @@ export class Culling {
     zoom: ZoomModel | undefined
   ) {
     this._canvas = canvas;
+    this._bus = eventBus;
     this._zoom = zoom;
     const options = (d3polytree as { options?: { culling?: boolean; lod?: boolean } } | undefined)
       ?.options;
@@ -164,6 +170,10 @@ export class Culling {
       const container = canvas.getContainer();
       container.addEventListener('focusin', this._onFocusIn);
       container.addEventListener('focusout', this._onFocusOut);
+      // Capture: runs before the root-layer bubble handlers and below d3-drag's window capture, so
+      // a post-drag click (suppressed there) never reaches it.
+      container.addEventListener('click', this._onPointer, true);
+      container.addEventListener('dblclick', this._onPointer, true);
     }
   }
 
@@ -401,6 +411,98 @@ export class Culling {
     this._fresh = [];
   }
 
+  // ---- LOD click resolver ------------------------------------------------------------------
+
+  /**
+   * A held node/link has no hit area (its children are `display:none`), so a pointer click on it
+   * would fall through to the background. Resolve it through the spatial index instead and hand it
+   * to the bus exactly as `mouseEvents` would. Pick order: a visible node/label/link wins (native);
+   * zones are transparent; otherwise nearest hidden node, then nearest hidden link; a miss is left
+   * to native dispatch. Nothing stops propagation, so d3-zoom's double-click zoom still runs.
+   */
+  private _resolvePointer(event: MouseEvent): void {
+    if (this._destroyed || !this._lod || !this._mayRun()) return;
+    // Synthesised clicks (keyboard activation, `.click()`) have detail 0: leave them native.
+    if (!(event.detail > 0)) return;
+    if (typeof PointerEvent === 'function' && event instanceof PointerEvent && !event.pointerType) {
+      return;
+    }
+    const root = this._canvas.getRootLayer() as unknown as {
+      classed(name: string): boolean;
+    };
+    if (root.classed('cursor-add-link')) return; // the link tool owns clicks while active
+    const svg = this._canvas.getSVG().node() as SVGSVGElement | null;
+    const target = event.target as Element | null;
+    if (!svg || !target || !svg.contains(target)) return;
+    const onElement = target.closest?.('.element, .element-outline');
+    if (onElement) {
+      const cls = onElement.closest?.('.element') ?? onElement;
+      const isZone = cls.classList?.contains('zoneItem');
+      if (!isZone) return; // a visible node/label/link (or a held <g>): native wins
+    }
+    const z = this._zoom;
+    const s = this._scale();
+    const tx = z?.offset?.x;
+    const ty = z?.offset?.y;
+    if (s === null || typeof tx !== 'number' || typeof ty !== 'number') return;
+    const [px, py] = pointer(event, svg);
+    const wx = (px - tx) / s;
+    const wy = (py - ty) / s;
+    const tol = LOD_CLICK_TOL_PX / s;
+    const hit = this._pick(wx, wy, tol);
+    if (hit === null) return;
+    markResolved(event);
+    const cls = this._kind[hit] === K_NODE ? 'node' : 'link';
+    // `<class>.<type>` keys are only weakly typed on the bus (mirrors `mouseEvents`).
+    (this._bus as unknown as { emit(e: string, ...a: unknown[]): void }).emit(
+      `${cls}.${event.type}`,
+      this._els[hit],
+      this._defs[hit],
+      event
+    );
+  }
+
+  /** Nearest held node containing the point, else nearest held link within tolerance; or null. */
+  private _pick(wx: number, wy: number, tol: number): number | null {
+    let bestNode = -1;
+    let bestNodeD = Infinity;
+    let bestLink = -1;
+    let bestLinkD = Infinity;
+    this._index.scan({ x0: wx - tol, y0: wy - tol, x1: wx + tol, y1: wy + tol }, (slot, inside) => {
+      if (!inside || !this._hold(slot)) return;
+      const def = this._defs[slot] as unknown as {
+        position?: { x?: number; y?: number };
+        size?: number;
+        waypoint?: Array<{ x?: number; y?: number } | undefined>;
+        lineWidth?: number;
+      } | null;
+      if (!def) return;
+      if (this._kind[slot] === K_NODE) {
+        const x = def.position?.x;
+        const y = def.position?.y;
+        const size = def.size ?? 0;
+        if (typeof x !== 'number' || typeof y !== 'number' || !Number.isFinite(x + y + size))
+          return;
+        if (wx < x - tol || wx > x + size + tol || wy < y - tol || wy > y + size + tol) return;
+        const d = Math.hypot(wx - (x + size / 2), wy - (y + size / 2));
+        if (d < bestNodeD) {
+          bestNodeD = d;
+          bestNode = slot;
+        }
+      } else {
+        const pts = def.waypoint;
+        if (!pts || pts.length === 0) return;
+        const d = polylineDistance(pts, wx, wy);
+        if (d <= (def.lineWidth ?? 0) / 2 + tol && d < bestLinkD) {
+          bestLinkD = d;
+          bestLink = slot;
+        }
+      }
+    });
+    if (bestNode >= 0) return bestNode;
+    return bestLink >= 0 ? bestLink : null;
+  }
+
   // ---- LOD exemptions ----------------------------------------------------------------------
 
   private _markFresh(slot: number): void {
@@ -602,6 +704,8 @@ export class Culling {
     container.removeAttribute(LOD_ATTR);
     container.removeEventListener('focusin', this._onFocusIn);
     container.removeEventListener('focusout', this._onFocusOut);
+    container.removeEventListener('click', this._onPointer, true);
+    container.removeEventListener('dblclick', this._onPointer, true);
   }
 
   /** @internal Read-only snapshot for tests and diagnostics. */
@@ -628,4 +732,34 @@ export class Culling {
       stats: { ...this._stats }
     };
   }
+}
+
+/** Minimum distance from (x, y) to a polyline; Infinity when it has no finite point. */
+function polylineDistance(
+  pts: ReadonlyArray<{ x?: number; y?: number } | undefined>,
+  x: number,
+  y: number
+): number {
+  let best = Infinity;
+  let prev: { x: number; y: number } | null = null;
+  for (const p of pts) {
+    const px = p?.x;
+    const py = p?.y;
+    if (typeof px !== 'number' || typeof py !== 'number' || !Number.isFinite(px + py)) {
+      prev = null;
+      continue;
+    }
+    if (prev) {
+      const dx = px - prev.x;
+      const dy = py - prev.y;
+      const len2 = dx * dx + dy * dy;
+      const t =
+        len2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - prev.x) * dx + (y - prev.y) * dy) / len2));
+      best = Math.min(best, Math.hypot(x - (prev.x + t * dx), y - (prev.y + t * dy)));
+    } else {
+      best = Math.min(best, Math.hypot(x - px, y - py));
+    }
+    prev = { x: px, y: py };
+  }
+  return best;
 }
