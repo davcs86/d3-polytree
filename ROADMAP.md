@@ -1,6 +1,6 @@
 # d3-polytree — Modernization Roadmap
 
-> **Status:** Proposal / RFC · **Owner:** @davcs86 · **Last updated:** 2026-09-18
+> **Status:** Living roadmap — shipped work is archived under [`docs/archive/`](./docs/archive/) · **Owner:** @davcs86 · **Last updated:** 2026-10-14
 > **Strategy:** Hybrid, phased-to-consolidation · **Language target:** TypeScript
 > **Distribution:** monorepo → scoped npm packages · **D3:** slim, modular peer dependency
 > **Dev/docs harness:** Storybook
@@ -51,24 +51,12 @@ The chosen direction is **hybrid, phased-to-consolidation**:
 Track B is **consolidation, not a from-scratch rewrite** — the v2 architecture already exists and
 is the asset being modernized. This materially lowers risk versus the greenfield framing.
 
-> **Status — B3 engine consolidation complete.** The `v2.0-beta` engine (staged as the
-> `@d3-polytree/core-v2beta` import) has been fully carved into TypeScript packages and that
-> staging package is now **retired**:
->
-> - **`@d3-polytree/canvas`** — the base canvas/registry/exporting layer (de-duplicated with `d3-canvas`).
-> - **`@d3-polytree/pfdn-moddle`** — the `.pfdn` moddle model + XML reader/writer.
-> - **`@d3-polytree/core`** — the full engine: the `draw` layer (nodes/links/labels/zones, icons,
->   markers, defs, registries), the `model` provider (with settings normalisation), the `modelling`
->   layer (four element handlers + orchestrator), and **every `features/*` module** — pan/zoom,
->   grid/axes, background, mouse events, selection, outline, drag, export, localStorage, upload, the
->   palette (toolbar + add-handlers + link tool), resize, alert icons, tooltip, notifications — each
->   ported to slim modular **D3 v7** peers, off the removed `d3.event` global and legacy
->   `min-dom`/`lodash`/`q`/`xml2js`/`d3-tip` deps.
-> - **`@d3-polytree/viewer` / `interactive-viewer` / `editor`** — compose those modules (in the
->   correct boot order) into working components that render and edit a `.pfdn` document end-to-end.
->
-> Remaining Track B work is the companion **panels** (search-panel, side-tabs, properties-panel —
-> B6 de-jQuery) and the cross-cutting toolchain/CI/Storybook/distribution items below.
+> **Status (2026-10-14).** The v2 engine, toolchain, TypeScript/D3 v7 migration, panels, Storybook +
+> CI quality gates, and most of the C-series (C1–C4, C7–C9, C11–C15) have **shipped** and are archived
+> in [`docs/archive/`](./docs/archive/) ([Track B](./docs/archive/track-b-consolidation.md) ·
+> [C-series](./docs/archive/c-series-shipped.md) · [CommandStack RFC](./docs/archive/rfc-commandstack.md)).
+> **Still open:** the Track A remainder (§6), **B9** (migration guides, `2.0.0` cut), C5 / C6 / C10
+> residue and the small follow-ups in §11.1, and all of Track D (§13). See §10 for the list.
 
 ---
 
@@ -144,18 +132,11 @@ Severity: **S1** = broken/insecure/blocks build · **S2** = major maintainabilit
 | F14 | **S3** | **No a11y** (no `role`/`aria`/`<title>`; mouse-only).                                                                                         | render code                                                                                            | Not screen-reader/keyboard accessible.                                                       |
 | F15 | **S3** | **Distribution gaps:** no lockfile, no `exports`/`types`/`sideEffects`, bower primary, D3 a hard dep not peer.                                | root config                                                                                            | Poor DX, non-deterministic installs.                                                         |
 
-### 3.2 `v2.0-beta` + companion repos — findings
+### 3.2 `v2.0-beta` + companion repos — findings (G1–G8, all resolved; archived)
 
-| #   | Sev    | Finding                                                                                                                                                                     | Impact                                                                                                     |
-| --- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| G1  | **S2** | **Frozen 2017 toolchain** across all repos: webpack 1–3, rollup 0.45, node-sass 4, ESLint 3/4, uglify-js 2/3.                                                               | Won't build reliably on modern Node; no ESM/`exports`; slow, unmaintained loaders.                         |
-| G2  | **S2** | **Fragmentation via `github:` deps.** Packages reference each other and unreleased forks (`d3-canvas`, `pfdn-moddle`, `scroll-tabs`, `pfdn-moddle`) by git URL, not semver. | No reproducible dependency resolution; a change ripples across repos by hand. Not published to npm.        |
-| G3  | **S2** | **`d3-canvas` duplicated.** Its `lib/core/*` is copy-vendored into v2 `lib/base/core/*`.                                                                                    | Two divergent copies of the base canvas; bug fixes must be applied twice.                                  |
-| G4  | **S2** | **jQuery-era properties panel.** `jquery` 1.11 + `jquery-ui` + `slickgrid` + `spectrum-colorpicker` + `choices.js`.                                                         | Largest bundle and biggest security/maintenance liability; several deps unmaintained.                      |
-| G5  | **S2** | **Modular D3 at v1.** `d3-selection/zoom/drag/force/scale/dispatch/collection` pinned to 1.x.                                                                               | Three majors behind v7; `d3-collection` is deprecated/removed in v7 (migrate to `Map`/`Set` + `d3-array`). |
-| G6  | **S3** | **Runtime `xml2js` persists in v2** devDeps for icon parsing.                                                                                                               | Same class of issue as F3; move icon parsing to build time.                                                |
-| G7  | **S3** | **Duplicated per-repo config** (`.eslintrc`, `postcss.config.js`, sass setup).                                                                                              | Drift; a monorepo collapses this to shared config.                                                         |
-| G8  | **S3** | **No unit tests** except `pfdn-moddle` (mocha/chai) and `scroll-tabs` (karma).                                                                                              | Consolidation should carry `pfdn-moddle`'s tests forward and backfill the rest.                            |
+The frozen-2017-toolchain, `github:`-dependency, duplicated-canvas, jQuery-panel, D3-v1, runtime-`xml2js`,
+duplicated-config and test-gap findings were each closed by B1–B6. The finding table and the
+verification evidence are in [`docs/archive/track-b-consolidation.md`](./docs/archive/track-b-consolidation.md).
 
 ### 3.3 What is worth preserving
 
@@ -253,21 +234,43 @@ calendar commitments (S < M < L < XL).
 
 **Track A explicitly does NOT** upgrade D3, convert to TS, or change the API — those are Track B.
 
+**State (verified 2026-10-14 against the `v1` branch @ `87ea3ce`):** Track A is **not complete** and is
+therefore not archived — `v1` is still `1.0.0` and no `v1.1.0` tag exists.
+
+| Phase | State | Evidence                                                                                                                                                |
+| ----- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A0    | ◐     | lockfile + CI run on Linux; the "smoke demo" is not evidenced                                                                                           |
+| A1    | ◐     | **F1 ✅** (`0f59471`, plus `scripts/check-requires.js` guard); **F2/F3 ❌** — `xml2js` is still a runtime `dependency` in `package.json`                |
+| A2    | ✅    | F6 fixed (`87ea3ce`, #4) — attached-data table via DOM/`textContent`, tooltip escaped; lightbox `innerHTML` deliberately left (author-supplied content) |
+| A3    | ◐     | `package-lock.json` ✅; `dist/` still tracked ❌ (F12)                                                                                                  |
+| A4    | ◐     | GitHub Actions runs `check-requires` + JSHint on Linux; no render smoke test                                                                            |
+| A5    | ❌    | package is still `d3-simple-networks`; bower/dist/global names unchanged (F9)                                                                           |
+
 ### Track B — Consolidate & modernize the v2 monorepo (parallel after A ships)
 
-| Phase                                      | Deliverable                                       | Exit criteria                                                                                                                                                                                                                                                        | Effort |
-| ------------------------------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| **B0 — Monorepo scaffold**                 | pnpm + Turborepo workspace                        | Empty-but-wired workspace: shared `tsconfig.base`, flat ESLint, Prettier, Vitest, Changesets, Turbo task graph; CI green on an empty build                                                                                                                           | M      |
-| **B1 — Absorb repos (history-preserving)** | 8 repos → `packages/*`                            | Each repo imported via `git subtree`/`git filter-repo` **preserving history**; `github:` cross-deps replaced with `workspace:*`; builds still pass on old toolchain in-place                                                                                         | M      |
-| **B2 — De-duplicate & model**              | `@d3-polytree/canvas`, `@d3-polytree/pfdn-moddle` | Vendored `lib/base/core` deleted in favor of `canvas` (**G3**); `pfdn-moddle` tests run green in the workspace (**G8**)                                                                                                                                              | M      |
-| **B3 — Toolchain migration**               | modern build per package                          | Vite/tsup lib mode → ESM+CJS+`.d.ts`, `exports`/`types`/`sideEffects` maps; node-sass→dart-sass/PostCSS; drop webpack 1–3/rollup 0.45/uglify (**G1, F7, F15**); build-time icons (**G6**)                                                                            | L      |
-| **B4 — TypeScript migration**              | typed packages                                    | Incremental JS→TS (allowJs bridge) starting at `canvas`/`core`; strict mode; public `.d.ts` for every package; typed options API                                                                                                                                     | L      |
-| **B5 — D3 v7 + native collections**        | modern D3                                         | Modular D3 v1→v7 as **peer deps**; `d3-collection`→`Map`/`Set`+`d3-array` (**G5**); interaction parity verified via Storybook visual tests                                                                                                                           | L      |
-| **B6 — De-jQuery properties panel**        | modern `properties-panel`                         | Replace jquery-ui/slickgrid/spectrum/choices/scroll-tabs (**G4**, §7.5); absorb `scroll-tabs`; feature-parity checklist vs 2017 panel                                                                                                                                | XL     |
-| **B7 — Storybook**                         | dev/docs harness                                  | Stories for viewer, interactive-viewer, editor, search-panel, side-tabs, properties-panel, icon packs; visual-regression wired (**§7.1**)                                                                                                                            | M      |
-| **B8 — a11y + theming**                    | accessible, themeable                             | SVG `role`/`<title>`/`<desc>`, keyboard nav/focus; CSS custom properties; drop normalize/Bootstrap remnants (**F14, F11**)                                                                                                                                           | M      |
-| **B9 — Release**                           | `@d3-polytree/*` on npm                           | Changesets-driven versioning/changelog/publish with provenance; migration guide (v1→v2 and beta→v2); Storybook deployed as docs site; JSFiddle/CodePen replaced                                                                                                      | M      |
-| **B10 — Transactional modelling**          | `commandStack` in `@d3-polytree/core`             | Every model mutation flows through `commandStack.execute`; `execute`/`revert` round-trips are XML-identical; multi-element gestures are one undo entry; `undo()`/`redo()` on the components; `document.changed` dirty flag. Full spec in **§12**; decided in **O11** | L      |
+| Phase                                      | Deliverable                                       | State                                                                                 |
+| ------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **B0 — Monorepo scaffold**                 | pnpm + Turborepo workspace                        | ✅ archived                                                                           |
+| **B1 — Absorb repos (history-preserving)** | 8 repos → `packages/*`                            | ✅ archived                                                                           |
+| **B2 — De-duplicate & model**              | `@d3-polytree/canvas`, `@d3-polytree/pfdn-moddle` | ✅ archived                                                                           |
+| **B3 — Toolchain migration**               | modern build per package                          | ✅ archived                                                                           |
+| **B4 — TypeScript migration**              | typed packages                                    | ✅ archived                                                                           |
+| **B5 — D3 v7 + native collections**        | modern D3                                         | ✅ archived                                                                           |
+| **B6 — De-jQuery properties panel**        | modern `properties-panel`                         | ✅ archived                                                                           |
+| **B7 — Storybook**                         | dev/docs harness                                  | ✅ archived                                                                           |
+| **B8 — a11y + theming**                    | accessible, themeable                             | ✅ archived (delivered as C2 + C13)                                                   |
+| **B9 — Release**                           | `@d3-polytree/*` on npm                           | ◐ **open** — see below                                                                |
+| **B10 — Transactional modelling**          | `commandStack` in `@d3-polytree/core`             | ✅ archived (delivered as C1; spec §12; unmet exit criteria → C1 follow-ups in §11.1) |
+
+Exit criteria, effort and verification evidence for the archived phases:
+[`docs/archive/track-b-consolidation.md`](./docs/archive/track-b-consolidation.md).
+
+**B9 — Release (open).** Exit criteria: Changesets-driven versioning/changelog/publish with
+provenance; migration guide (v1→v2 and beta→v2); Storybook deployed as docs site; JSFiddle/CodePen
+replaced. **Effort:** M. **State (verified 2026-10-14):** ✅ Changesets versioning/changelog/publish
+(hybrid token + OIDC, `release.yml`, `scripts/publish.mjs`) · ✅ Storybook deployed to GitHub Pages ·
+❌ migration guides absent · ❌ no `2.0.0` (all packages `0.x`) · ❓ provenance not explicit in config ·
+❓ JSFiddle/CodePen replacement not verifiable from the repo.
 
 ### Track D — Host-app integrations (post-consolidation; Google Workspace first)
 
@@ -342,19 +345,11 @@ regression` on PR; release workflow on tag.
 - **Semver:** v1.x = fixes only; `@d3-polytree/*` v2.0 = the modernized line; document a v1 support
   window. Retire Bower everywhere.
 
-### 7.5 De-jQuery migration (properties-panel, B6)
+### 7.5 De-jQuery migration (properties-panel, B6) — done, archived
 
-The 2017 properties panel is the single largest liability. Proposed replacements (framework-free):
-
-| Legacy dep             | Purpose                         | Modern replacement (candidate)                                                     |
-| ---------------------- | ------------------------------- | ---------------------------------------------------------------------------------- |
-| `jquery` / `jquery-ui` | DOM + widgets                   | native DOM + small typed helpers (`min-dom` successor)                             |
-| `slickgrid`            | data grid (spreadsheet entries) | headless grid (e.g. a lightweight virtualized grid) or a purpose-built typed table |
-| `spectrum-colorpicker` | color picker                    | native `<input type="color">` or a small vanilla picker                            |
-| `choices.js`           | select/autocomplete             | native `<select>` + a small combobox, or a maintained vanilla lib                  |
-| `scroll-tabs`          | scrollable tab strip            | absorb + reimplement with `ResizeObserver`/`scrollIntoView`                        |
-
-Each replacement is gated by a Storybook story and a feature-parity check against the 2017 panel.
+The panel is jQuery-free; `scroll-tabs` was absorbed (O4) and the panel folded into
+`@d3-polytree/editor` (O10). The legacy-dependency → replacement table is archived in
+[`docs/archive/track-b-consolidation.md`](./docs/archive/track-b-consolidation.md).
 
 ### 7.6 Documentation
 
@@ -476,20 +471,31 @@ remain; new ones should be appended below as they arise.
 
 ---
 
-## 10. Immediate next actions (first PRs)
+## 10. Immediate next actions
 
-1. **Fix F1** (import casing) — one-line change; unblocks Linux/CI. _(A1)_
-2. **Remove runtime `xml2js`** on `master` — pre-parse icons at build; delete the README manual-patch
-   step. _(A1 / F2 / F3)_
-3. **Add GitHub Actions** on `master` — `install → build` on Linux to prevent F1-class regressions. _(A4)_
-4. **Commit lockfile; gitignore `dist/`.** _(A3 / F12)_
-5. **Stand up the monorepo skeleton** on a `v2` branch under the `@d3-polytree/*` scope (O2): pnpm +
-   Turborepo + Changesets + shared TS/ESLint/Vitest/Storybook scaffolding — no code moved yet. _(B0)_
-6. **Absorb the 8 repos with `git filter-repo`** (O6) into `packages/*` subdirectories, preserving
-   authorship/history, then swap `github:` cross-deps for `workspace:*`. _(B1)_
+_(The original first-PR list — F1 fix, skeleton, repo absorption — is archived in
+[`docs/archive/track-b-consolidation.md`](./docs/archive/track-b-consolidation.md); its Track B items
+are done and its Track A items are restated here against the verified state of the `v1` branch.)_
 
-Each is small, independently reviewable, and moves the ecosystem toward a green baseline before the
-consolidation phases begin.
+What is outstanding, grouped by whether it is blocked on anything (derived 2026-10-14; ordering inside
+a group is not a priority claim):
+
+**Unblocked now**
+
+1. **Track A remainder (on `v1`):** remove runtime `xml2js` (F2/F3), take `dist/` out of VCS (A3/F12),
+   settle package identity (A5/F9), cut `v1.1.0`.
+2. **B9 — Release:** write the v1→v2 and beta→v2 migration guides; decide the `2.0.0` cut (all packages
+   are `0.x`); confirm npm provenance on publish; confirm the standalone `0.1.0` panel packages are
+   deprecated on npm (O10) — not verifiable from the repo.
+3. **C1 follow-ups** (§11.1): autosave + unsaved-changes guard on `document.changed`; palette undo/redo
+   entries; confirm the lint tripwire is dropped; schedule `doAction` shim removal.
+4. **Track D / D0** (`@d3-polytree/embed`): its prerequisites C7 and C9 have shipped; neither
+   `packages/embed` nor `apps/gws-addon` exists yet.
+
+**Own design gate first:** C5 `applyDiff` / overlay / three-way (§11.1) · C6 collab adapter · C10 Stage 2
+overlay · C7 read-only viewer adapters.
+
+**Needs a human, not a PR:** C2.a real-AT pass · C10 manual AT pass.
 
 ---
 
@@ -500,17 +506,12 @@ Track A and Track B take the ecosystem from _end-of-life_ to _modern and publish
 correctly. The C-series is the first backlog of genuinely **new** capability, derived from an audit
 of the consolidated tree (2026-09-17) rather than from the v1/beta inventory.
 
-Audit findings that define the surface — each verified against the working tree, not assumed:
+Audit findings that define the surface — each verified against the working tree, not assumed.
+**H1–H7 are closed** (H1/H2 by C1, H3 by C2, H4 by C3, H5 by C4, H6 by C10's shipped culling/LOD — its Stage 2 overlay is still open, H7 by C8) and archived in
+[`docs/archive/c-series-shipped.md`](./docs/archive/c-series-shipped.md); **H8** stays open and defines Track D:
 
 | #   | Finding                                                                                                                                                                                                                                                                                                                                                                                                                                     | Evidence                                                                                                                                                            |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| H1  | **No transactional boundary around mutation.** Model writes are fire-and-forget side effects of draw-layer events; nothing records what changed, nothing can invert it.                                                                                                                                                                                                                                                                     | `core/src/modelling/Modelling.ts` `_init()` routes `<class>.created/.deleted` straight to `saveToModel`/`delete`                                                    |
-| H2  | **Multi-element gestures are not atomic.** Deleting a selection of N emits N unrelated mutations; a throw partway leaves a torn document.                                                                                                                                                                                                                                                                                                   | `core/src/features/selection.ts` `deleteSelected()`                                                                                                                 |
-| H3  | **No accessibility of any kind.** No roles, no labels, no focus management, no keyboard path — the diagram is mouse-only and opaque to assistive tech.                                                                                                                                                                                                                                                                                      | `grep -rn "keydown\|tabindex\|aria-\|role="` over `packages/*/src` returns **zero** matches                                                                         |
-| H4  | **No layout engine.** Node coordinates are authored by hand into the `.pfdn`; v1's `calculateLevels`/`calculateNodes` geometry was never ported (§3.3 flagged this and it remains open).                                                                                                                                                                                                                                                    | `model` supplies `Coordinates`; no solver exists in `core`                                                                                                          |
-| H5  | **Links are unrouted polylines.** Waypoints are read from the model and stringified; there is no routing, port assignment, or obstacle avoidance.                                                                                                                                                                                                                                                                                           | `core/src/draw/Links.ts` `generateWayPointPath()`                                                                                                                   |
-| H6  | **No rendering performance strategy.** Every element is resident in the DOM; no frame batching, no spatial index, no viewport culling, no level-of-detail, no off-main-thread work.                                                                                                                                                                                                                                                         | `grep -rn "requestAnimationFrame\|Worker\|cull\|virtual"` over `packages/*/src` returns **zero** matches                                                            |
-| H7  | **CI verifies that it builds, not that it works.** The pipeline ends at `build-storybook`; there is no visual-regression net (B7's stated purpose), no a11y assertion, no performance budget.                                                                                                                                                                                                                                               | `.github/workflows/ci.yml`                                                                                                                                          |
 | H8  | **No host-application embed path.** The components mount into a DOM node the _consumer_ already controls, which assumes the consumer is building an app. Nothing addresses a diagram by stable identity, nothing produces a document-insertable image, and there is no custom-element wrapper to host in a third-party frame — so the editors where process documentation actually gets written are unreachable. **Defines Track D (§13).** | `grep -rn "customElements.define" packages/ apps/` returns **zero**; `@d3-polytree/ssr` exports `renderToSvg` only — no rasterizer, no identity or refresh contract |
 
 ### 11.1 The backlog
@@ -518,24 +519,28 @@ Audit findings that define the surface — each verified against the working tre
 Tiered by architectural depth. **Unlocks** names the items that become cheap once it lands;
 **Gated by** names the hard prerequisite.
 
-| ID         | Capability                                                             | Why it is load-bearing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Gated by                             | Effort |
-| ---------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------ |
-| **C1** ✅  | **CommandStack + transactional undo/redo** (→ phase **B10**, spec §12) | Closes H1 + H2. The prerequisite for every other mutating feature: without an invertible, atomic mutation primitive, auto-layout, diff-apply, and collaboration each have to invent their own. Also yields the dirty flag that autosave and an unsaved-changes guard need. **Shipped 2026-09-17** (#60, as B10): `@d3-polytree/core` `CommandStack` — transactional undo/redo with a boot latch, quarantine-on-failed-revert, and the `document.changed` dirty flag (save point: `markSaved()`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | —                                    | L      |
-| **C2** ✅  | **Keyboard-first accessibility (WCAG 2.2 AA)**                         | Closes H3. Roving `tabindex` over a **topological** traversal order (not DOM order), arrow-key spatial navigation by direction cone, an `aria-live` region announcing selection and mutation, per-element `<title>`/`<desc>`, focus rings drawn _in SVG_ (CSS `outline` is unreliable on SVG), a real Escape hatch out of `role="application"`, and a `prefers-reduced-motion` guard on transitions. Announcements are driven off C1's command stream. **Shipped 2026-09-24**: `keyboardNavModule` (`role="application"` + roving/arrow-cone/Escape, in-SVG forced-colors focus ring) + `ariaAnnouncerModule`, registered ahead of drawers; per-element `<title>`/`<desc>` in `BaseElement` (accessible in SSR/`exportSVG` too); shared `buildModelGraph`; reduced-motion zoom guard; a real-Chromium Playwright interaction spec (roving + Escape/Tab exit). **C2.a (follow-up)** — manual real-AT verification of forms-mode navigation under NVDA/JAWS/VoiceOver: AT-navigation correctness is not CI-gateable (axe cannot see a keyboard trap); the changeset/README claim sighted-keyboard + accessible structure, not a certified AA AT audit.                                                                                                                                         | C1 (for announcements), C8 (to gate) | L      |
-| **C3** ✅  | **`@d3-polytree/layout` — layered auto-layout**                        | Closes H4 and makes H5 tractable. A pure Sugiyama pipeline: cycle-break (cheap and assertable on a polytree) → layer assignment (longest-path, Coffman-Graham when width is bounded) → crossing reduction (median + transpose) → Brandes–Köpf coordinate assignment. Zero DOM and zero D3, so it is exactly unit-testable on numeric fixtures and hostable in a Worker behind a typed `postMessage` protocol with a transferable `Float64Array` position buffer. Emits one command, so auto-layout is a single undo. **Shipped 2026-09-18** (#74): `@d3-polytree/layout` (pure + `./worker`), wired as the Editor's `autoLayout()` / palette entry as one undoable move.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | C1                                   | L      |
-| **C4** ✅  | **Orthogonal link routing + port assignment**                          | Closes H5. Turns waypoints from authored data into solver output; obstacle-avoiding orthogonal routes with stable port ordering, degrading to the current polyline when a route is pinned by the user. **Shipped 2026-09-19**: pure `@d3-polytree/core` `route/` obstacle-nudge, single reroute writer on `commandStack.changed`, `pfdn:Link.pinned` degrade. Perf (O(L·(L+N))/txn) → C10.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | C3                                   | M      |
-| **C5** ◐   | **Semantic `.pfdn` diff + visual merge**                               | `diff(a, b)` over the moddle tree producing typed ops (added / removed / moved / retyped / reattached), rendered as a review overlay with ghosted prior positions, plus a three-way helper for git conflicts. Pure and fixture-testable. Retroactively _earns_ the O1 decision to keep an XML document format. **Partially shipped 2026-09-23** (#86): `@d3-polytree/diff` `diff(a, b)` typed ops only. Outstanding (own design gate): `applyDiff` as one command-stack transaction, the ghosted review overlay, and the three-way git helper.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | C1 (to apply a diff atomically)      | M      |
-| **C6**     | **CRDT collaboration adapter (`@d3-polytree/collab-yjs`)**             | Y.Doc projection of the moddle tree, awareness-driven remote cursors and selection halos, and **origin-tagged** ops so remote changes never enter the local undo stack. Viable only because O13 keeps command contexts serializable.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | C1, O13                              | XL     |
-| **C7** ✅  | **Custom Element + React adapter**                                     | `<d3-polytree-editor>` with attribute/property reflection, shadow-DOM style encapsulation, and `ElementInternals` form association of the serialized document; plus a thin React wrapper bridging the event bus through `useSyncExternalStore` so React 18/19 concurrent rendering cannot tear. The largest single adoption unlock in this table. **Now also a Track D prerequisite (O16):** the custom element is what the add-on sidebar hosts, which promotes C7 from an adoption nicety to a path dependency. **Shipped 2026-09-20**: `@d3-polytree/element` + `@d3-polytree/react`, on a reboot-surviving `Viewer.on/off` surface; Track D unblocked. Follow-up (own design gate): read-only `<d3-polytree-viewer>` / `PolytreeViewer` adapters; both editor adapters now accept `modules`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | —                                    | M      |
-| **C8** ✅  | **Visual regression + interaction + a11y gates in CI**                 | Closes H7 and completes B7's stated purpose. Storybook test-runner + Playwright, made deterministic by a seeded `ids` source, disabled transitions, and pinned fonts; `@axe-core/playwright` asserted per story. This is what makes every other item in this table safe to land. **Shipped 2026-09-18** (#63): Playwright VR + interaction + `@axe-core/playwright` gates over Storybook (`apps/storybook/playwright/{vr,a11y}.spec.ts`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | C9 (seeded ids)                      | M      |
-| **C9** ✅  | **Deterministic IDs + `@d3-polytree/ssr`**                             | Make the `ids` seed injectable, then render `.pfdn` → static SVG string in Node with no browser, for thumbnails, OG images, PDF pipelines, and golden-file tests. Determinism is the precondition for C8. **Shipped 2026-09-18** (#61): injectable id generator + `@d3-polytree/ssr` `renderToSvg`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | —                                    | M      |
-| **C10** ◐  | **Spatial index, viewport culling, perf budget**                       | Closes H6. Quadtree over element bounding boxes, culling driven off the zoom transform, RAF-coalesced enter/update/exit, level-of-detail below a zoom threshold, optional canvas overlay past ~5k elements — enforced by a CI frame-time assertion on a 10k-node fixture. **Design approved 2026-10-06** (`docs/design/2026-10-06-c10-spatial-index-culling-perf/design.md`, deep, 5 rounds): hide-the-paint-keep-the-`<g>` culling (AT-discoverable), pure flat-scan index behind a seam (quadtree waived), canvas overlay deferred, reroute/boot/SearchPanel out of scope, frame-time assertion **blocking** (budget from PR1 data); 3 PRs (measure → culling → LOD/ceiling). **Shipped**: PR1+PR2 — flat-scan index, hide-the-paint culling, correctness lane G1–G7 and the blocking pan ceiling (#93); **zoom-out LOD** (design Amendment A2, `docs/design/2026-10-07-c10-lod-zoom-out/`) supersedes the label-only LOD: nodes+links held at scale ≤ 0.16, synchronous exit, click/dblclick resolved through the index, selection/focus/fresh exemptions — fit-all pan p95 ≈150 → ≈17–33 ms pinned. Recorded non-goals: reroute / boot / SearchPanel / Selection O(N²) untouched; aggregate overlay deferred (Stage 2); fit-all topology is blank by design; manual AT pass outstanding. | C8 (to measure)                      | L      |
-| **C11** ✅ | **JSON adapter + generated runtime validator**                         | The additive JSON path O1 explicitly left open, over the _same_ moddle model, plus a runtime validator generated from `pfdn.json` so consumers get typed, validated documents without touching XML. **Shipped 2026-09-20**: descriptor-driven `toJson`/`fromJson` (refs→id, defaults omitted, two-pass re-link), a dependency-free generated validator + typed documents (committed `pfdn.generated.ts` + CI drift gate), `loadModelFromJson` in core (validate-first, strict-throw, `{lax}` opt-in).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | —                                    | M      |
-| **C12** ✅ | **Typed event bus**                                                    | Replace the stringly-typed `eventemitter3` surface with a declaration-merged event map so `on`/`emit` are checked against payload types. Small diff, disproportionate effect on DX and on the safety of C1's rerouting. **Shipped 2026-09-18** (#61): declaration-merged `DiagramEventMap` (`packages/canvas/src/events.ts`); component `on()`/`off()` narrowed per class to the events it emits.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | —                                    | S      |
-| **C13** ✅ | **Theming: CSS custom properties, dark mode, forced-colors**           | B8's other half. Tokenised colors with `color-mix()` derivations, a dark scheme, and `forced-colors` support — the visual counterpart to C2. **Shipped 2026-09-20**: chrome-scoped `--pfd-*` tokens on `:root,:host` (shared `_tokens.scss`), auto dark via `prefers-color-scheme` + `[data-pfd-theme]` override, `color-mix()` dark derivations, forced-colors selection/focus, theme-invariant export. Diagram body/canvas stay as document data (theme-aware defaults deferred — needs model default-provenance).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —                                    | M      |
+| ID         | Capability                                                         | Shipped / state                                                                             | Open follow-up                                                                                                                                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **C1** ✅  | CommandStack + transactional undo/redo (→ phase **B10**, spec §12) | 2026-09-17 (#60)                                                                            | **§12.6 gaps:** autosave + unsaved-changes guard off `document.changed`; undo/redo palette entries; lint tripwire (superseded by round-trip test — confirm drop); `doAction` shim removal before 1.0                                                                    |
+| **C2** ✅  | Keyboard-first accessibility (WCAG 2.2 AA)                         | 2026-09-24                                                                                  | **C2.a:** manual real-AT verification (NVDA/JAWS/VoiceOver) of forms-mode navigation — not CI-gateable                                                                                                                                                                  |
+| **C3** ✅  | `@d3-polytree/layout` — layered auto-layout                        | 2026-09-18 (#74)                                                                            | —                                                                                                                                                                                                                                                                       |
+| **C4** ✅  | Orthogonal link routing + port assignment                          | 2026-09-19                                                                                  | Perf of the reroute (O(L·(L+N))/txn) was handed to C10 and recorded there as a non-goal                                                                                                                                                                                 |
+| **C5** ◐   | **Semantic `.pfdn` diff + visual merge**                           | `@d3-polytree/diff` `diff(a, b)` typed ops only — 2026-09-23 (#86)                          | `applyDiff` as one command-stack transaction; ghosted review overlay; three-way git-conflict helper (own design gate). Gated by C1 ✅                                                                                                                                   |
+| **C6**     | **CRDT collaboration adapter (`@d3-polytree/collab-yjs`)**         | not started                                                                                 | Y.Doc projection of the moddle tree, awareness-driven remote cursors and selection halos, and **origin-tagged** ops so remote changes never enter the local undo stack. Viable only because O13 keeps command contexts serializable. Gated by C1 ✅, O13. Effort **XL** |
+| **C7** ✅  | Custom Element + React adapter                                     | 2026-09-20 — `@d3-polytree/element` + `@d3-polytree/react`; Track D unblocked               | Read-only `<d3-polytree-viewer>` / `PolytreeViewer` adapters (own design gate); both editor adapters already accept `modules`                                                                                                                                           |
+| **C8** ✅  | Visual regression + interaction + a11y gates in CI                 | 2026-09-18 (#63)                                                                            | —                                                                                                                                                                                                                                                                       |
+| **C9** ✅  | Deterministic IDs + `@d3-polytree/ssr`                             | 2026-09-18 (#61)                                                                            | `ssr` geometry is flat by design (jsdom shims) — the D4 precondition, §13.3                                                                                                                                                                                             |
+| **C10** ◐  | **Spatial index, viewport culling, perf budget**                   | PR1+PR2 culling + blocking pan ceiling (#93); zoom-out LOD (#99) — released in `core@0.8.0` | Manual AT pass; **Stage 2** aggregate/canvas overlay (deferred); recorded non-goals: reroute / boot / SearchPanel / `Selection` O(N²) untouched. Design: `docs/design/2026-10-06-c10-spatial-index-culling-perf/`, `docs/design/2026-10-07-c10-lod-zoom-out/`           |
+| **C11** ✅ | JSON adapter + generated runtime validator                         | 2026-09-20                                                                                  | —                                                                                                                                                                                                                                                                       |
+| **C12** ✅ | Typed event bus                                                    | 2026-09-18 (#61)                                                                            | —                                                                                                                                                                                                                                                                       |
+| **C13** ✅ | Theming: CSS custom properties, dark mode, forced-colors           | 2026-09-20                                                                                  | Theme-aware diagram body/canvas defaults — needs model default-provenance                                                                                                                                                                                               |
+| **C14** ✅ | JSON adapter — caller-extended schema support                      | 2026-09-23 (#86)                                                                            | —                                                                                                                                                                                                                                                                       |
+| **C15** ✅ | Coalesced text-edit undo                                           | 2026-09-23 (#86)                                                                            | —                                                                                                                                                                                                                                                                       |
 
-| **C14** ✅ | **JSON adapter — caller-extended schema support** | Today `fromJson`/`validate` are generated from the base `pfdn.json` (`SCHEMA`/`CONCRETE_TYPES`), so a `createPfdnModdle(extraPackages)` extension never reaches the JSON path — extended types fail `validate`, and `buildTree` instantiates a base-only moddle. Thread caller packages through validate/build (or accept a supplemental descriptor) and regenerate the typed schema, so JSON documents round-trip extended models the way XML already does. Surfaced by the context-forge audit (2026-09-23). **Shipped 2026-09-23** (#86): `validate`/`fromJson` accept caller `packages`. | C11 | M |
-| **C15** ✅ | **Coalesced text-edit undo** | Property-panel text edits currently commit one undo step per ~300 ms idle gap, so a single typing burst becomes several `Ctrl+Z` steps. Add a `CommandStack` merge seam (a `mergeKey` / replace-top-transaction facility) so consecutive same-target `element.updateProperties` collapse into one transaction while keeping live preview — needs dedicated tests around the transactional / redo-tail / quarantine semantics. Surfaced by the context-forge audit (2026-09-23). **Shipped 2026-09-23** (#86): `CommandStack` `mergeKey` coalescing, per-selection edit sessions in the properties panel. | C1 | S |
+> Full original rows (rationale, design notes, shipped detail) for every ✅ item, and the shipped
+> history of C5 and C10, are archived verbatim in
+> [`docs/archive/c-series-shipped.md`](./docs/archive/c-series-shipped.md). Only C5, C6 and C10 carry
+> unshipped _scope_; the other follow-ups are small, independently shippable residues.
 
 ### 11.2 Sequencing
 
@@ -562,127 +567,12 @@ the critical path to the Google Workspace add-on (O16), alongside C9 — which h
 
 ---
 
-## 12. RFC — CommandStack (C1 / phase B10)
+## 12. RFC — CommandStack (C1 / phase B10) — shipped, archived
 
 > Decided: **O11** (full reroute), **O12** (pre-1.0 breaking changes accepted), **O13** (serializable
-> contexts, collaboration deferred).
-
-### 12.1 Problem
-
-Model mutation today is a side effect of a notification:
-
-- `Modelling._init()` subscribes to `label|link|node|zone.created` / `.deleted` and `element.updated`,
-  and dispatches straight into `saveToModel` / `delete` / `reconcile` on the matching handler.
-- `Selection.deleteSelected()` iterates the selection and emits one `.deleted` per entry.
-- `Drag`, `ResizeElement`, and the palette add-handlers all mutate through that same path.
-
-Four consequences follow directly, and none is fixable without a mutation primitive:
-
-1. **No undo/redo.** Nothing captures what changed, so nothing can invert it.
-2. **No atomicity.** Deleting a multi-selection is N independent mutations (H2). A throw partway
-   through leaves the document torn, with no rollback and no record of how far it got.
-3. **No dirty tracking.** `localStorage` autosave and `exporting` cannot tell a modified document
-   from an untouched one, so neither can offer an unsaved-changes guard.
-4. **No op stream.** Auto-layout (C3), diff-apply (C5), and collaboration (C6) each need to apply a
-   batch of changes as one reversible unit. Without this, each invents its own half-solution.
-
-### 12.2 Design
-
-**Service.** `commandStack` (type `CommandStack`), contributed by `commandStackModule`:
-
-```ts
-execute(command: string, context: CommandContext): void;
-undo(): void;
-redo(): void;
-canUndo(): boolean;
-canRedo(): boolean;
-clear(): void;
-registerHandler(command: string, handler: Constructor<CommandHandler>): void;
-```
-
-**Handler contract.** Handlers are didi-resolvable types registered against a command name:
-
-```ts
-interface CommandHandler<C extends CommandContext = CommandContext> {
-  canExecute?(context: C): boolean;
-  preExecute?(context: C): void; // may execute() sub-commands into this transaction
-  execute(context: C): DirtyElements;
-  revert(context: C): DirtyElements; // the exact inverse of execute
-  postExecute?(context: C): void;
-}
-```
-
-The **context object is the memento**: `execute` captures prior values onto the same context it was
-handed, and `revert` restores from them. There is no separate snapshot store, and no structural clone
-of the document. Per O13, a context holds ids and plain values only — never live element handles or
-D3 selections — so it stays serializable for a future collaboration adapter.
-
-`DirtyElements` is the set of model elements a command touched. The stack emits it as
-`elements.changed`, and the draw layer reconciles exactly those — replacing today's implicit coupling
-where a drawer already having rendered is what keeps the view in sync.
-
-**Transactions.** A top-level `execute()` opens a transaction; any `execute()` issued from within
-`preExecute`/`postExecute` joins it rather than opening its own. On close the whole transaction is
-pushed as **one** stack entry, so a multi-select delete or a full auto-layout run is a single Ctrl+Z.
-`revert` walks that entry's commands in reverse order.
-
-**Redo.** The stack is a pointer into an array. `execute` after `undo` truncates the redo tail.
-
-**Failure semantics (the fault-tolerance argument).** An exception inside `execute` reverts the
-commands already applied in that transaction, discards the entry, and rethrows. The document is
-never left half-mutated, and the stack never records a transaction that did not fully apply.
-
-**Command vocabulary (v1 set).** `element.create`, `element.delete`, `element.move`,
-`element.resize`, `element.updateProperties`, `link.create`, `link.reconnect`,
-`link.updateWaypoints`, and composites such as `elements.align` that fan out in `preExecute`.
-
-### 12.3 Rerouting
-
-- The four modelling handlers (`modellingNodes` / `Labels` / `Zones` / `Links`) are refactored into
-  `CommandHandler` implementations registered against the vocabulary above.
-- `Modelling` stops being an event→mutation router and becomes the registration site plus a thin
-  façade; `doAction` survives as a deprecated shim for one minor, then is removed (O12).
-- Draw-layer `<class>.created` / `.deleted` events **remain**, as notifications only. The boot-order
-  invariant documented in `CLAUDE.md` — features that must observe the initial render register ahead
-  of the drawers — is unchanged and still load-bearing.
-- `Drag`, `ResizeElement`, `Selection.deleteSelected`, and the palette add-handlers become command
-  _dispatchers_.
-
-**Boot-time hazard — the riskiest detail in this RFC.** The initial render currently round-trips every
-loaded element through `saveToModel`. Once mutation is command-driven, the boot render must not enter
-the stack, or every opened document starts with N undoable entries and `canUndo()` true on an
-untouched file. Mitigation: the stack stays disabled until boot completes, and a test asserts
-`canUndo() === false` immediately after `importDiagram`.
-
-### 12.4 Public API impact (breaking, accepted under O12)
-
-- `Modelling.doAction(cls, action, params)` → deprecated shim, removed before 1.0.
-- `ModellingElement` gains the handler shape; `saveToModel` / `delete` / `reconcile` are re-expressed
-  in terms of it.
-- New exports from `@d3-polytree/core`: `commandStackModule`, `CommandStack`, `CommandHandler`,
-  and the command-context types.
-- `Viewer` subclasses gain `undo()` / `redo()` and a `document.changed` event carrying a dirty flag.
-- Shipped as a Changesets **minor** across `core` and the three components, with a migration note.
-
-### 12.5 Testing
-
-- **Round-trip property test, per handler.** For each fixture document and each command,
-  `execute → revert` must restore a byte-identical `moddle.toXML()`. This single invariant is the
-  whole safety net, and it is mechanically checkable across the entire vocabulary.
-- **Transaction tests.** A multi-select delete produces exactly one stack entry; a handler that
-  throws mid-transaction leaves the document and the stack unchanged.
-- **Boot test.** `importDiagram` leaves `canUndo() === false` (§12.3).
-- **Ordering test.** The existing folded-panel guards must still pass — proof that turning the
-  created/deleted events into pure notifications did not disturb the boot-order invariant.
-
-### 12.6 Exit criteria
-
-- Every model mutation in the workspace flows through `commandStack.execute`, enforced by a lint rule
-  banning direct writes to `definitions.*` outside a registered handler.
-- `execute`/`revert` round-trips are XML-identical for every command in the v1 vocabulary.
-- Ctrl+Z / Ctrl+Shift+Z wired in `interactive-viewer`; undo/redo palette entries in `editor`.
-- `document.changed` drives `localStorage` autosave and an unsaved-changes guard.
-- Storybook story demonstrating atomic multi-select delete and undo of an auto-layout run.
+> contexts, collaboration deferred). **Implemented** as C1 (#60); the full spec (§12.1–§12.6) and an
+> exit-criteria audit live in [`docs/archive/rfc-commandstack.md`](./docs/archive/rfc-commandstack.md).
+> The unmet exit criteria are tracked as **C1 follow-ups** in §11.1.
 
 ---
 
